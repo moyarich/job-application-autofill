@@ -11,9 +11,9 @@
     "test": "vitest run --passWithNoTests --exclude '**/*.spec.*' --exclude '**/*.specs.*'"
   },
   "dependencies": {
-    "@template/example": "0.1.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "@moyarich/job-application-autofill": "0.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

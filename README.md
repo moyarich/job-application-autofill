@@ -19,13 +19,13 @@ Run the main checks before committing:
 npm run checks
 ```
 
-Then rename the `@template/*` workspaces, replace the sample code, and review the workflow configuration **before enabling releases or publishing**.
+Then replace the remaining template code, and review the workflow configuration **before enabling releases or publishing**.
 
 ## What's included?
 
 | Location                                   | What you'll find                    |
 | ------------------------------------------ | ----------------------------------- |
-| [`packages/example/`](packages/example/)   | Example TypeScript library          |
+| [`packages/job-application-autofill/`](packages/job-application-autofill/)   | Job application autofill TypeScript package          |
 | [`apps/playground/`](apps/playground/)     | Vite + React playground             |
 | [`.github/workflows/`](.github/workflows/) | CI, release and maintenance callers |
 | [`docs/`](docs/)                           | Setup and operations guides         |
