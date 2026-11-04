@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   createApplication, emptyCandidate, parseCandidateJson, statuses, validateCandidate,
   type CandidateProfile, type JobApplication, type ApplicationStatus,
-} from "@moyarich/job-application-autofill";
+} from "../../../packages/job-application-autofill/src/index";
 import "./styles.css";
 
 const PROFILE_KEY = "moya-job-autofill:profile:v1";
