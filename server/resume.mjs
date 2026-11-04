@@ -72,7 +72,7 @@ export async function extractResumeText(buffer, extension) {
     if (!stdout.trim()) throw new Error("No selectable text was found. Scanned PDFs require OCR.");
     return stdout;
   } catch (error) {
-    if (error.code === "ENOENT") throw new Error("PDF parsing requires Poppler (pdftotext). On macOS: brew install poppler.");
+    if (error.code === "ENOENT") throw new Error("PDF parsing requires Poppler (pdftotext). On macOS: brew install poppler.", { cause: error });
     throw error;
   } finally { await rm(dir, { recursive: true, force: true }); }
 }
