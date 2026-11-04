@@ -60,21 +60,41 @@ export function extractDocxText(buffer) {
 }
 export async function extractResumeText(buffer, extension) {
   if (extension === "docx") return extractDocxText(buffer);
-  // Poppler pdftotext preserves line breaks and reading order. Install using `brew install poppler` (macOS).
+  // Python PDFium extracts selectable text and invokes RapidOCR only for scanned pages.
   const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
-  const { join } = await import("node:path");
+  const { join, resolve } = await import("node:path");
   const dir = await mkdtemp(join(tmpdir(), "moya-resume-"));
   try {
     const input = join(dir, "resume.pdf");
     await writeFile(input, buffer, { mode: 0o600 });
-    const { stdout } = await execFileAsync("pdftotext", ["-layout", "-enc", "UTF-8", input, "-"], { maxBuffer: 15 * 1024 * 1024 });
-    if (!stdout.trim()) throw new Error("No selectable text was found. Scanned PDFs require OCR.");
-    return stdout;
+    const python = process.env.PYTHON_EXECUTABLE || "python3";
+    const script = resolve(import.meta.dirname, "pdf_ocr.py");
+    const { stdout } = await execFileAsync(python, [script, input], {
+      timeout: 120000,
+      maxBuffer: 15 * 1024 * 1024,
+      windowsHide: true,
+    });
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch (error) {
+      throw new Error("PDF extraction produced an invalid response.", { cause: error });
+    }
+    if (typeof result.text !== "string" || !result.text.trim())
+      throw new Error("PDF extraction found no readable text.");
+    return result.text;
   } catch (error) {
-    if (error.code === "ENOENT") throw new Error("PDF parsing requires Poppler (pdftotext). On macOS: brew install poppler.", { cause: error });
+    if (error.code === "ENOENT")
+      throw new Error("Python is required for PDF extraction. Set PYTHON_EXECUTABLE to your virtual environment's Python executable.", { cause: error });
+    if (error.killed || error.code === "ETIMEDOUT")
+      throw new Error("PDF extraction exceeded the 120-second timeout.", { cause: error });
+    if (error.stderr)
+      throw new Error(`PDF extraction failed: ${error.stderr.toString().trim().slice(0, 700)}`, { cause: error });
     throw error;
-  } finally { await rm(dir, { recursive: true, force: true }); }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 export function extractProfile(text) {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);

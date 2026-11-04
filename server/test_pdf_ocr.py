@@ -41,7 +41,10 @@ class TestPdfPipeline(unittest.TestCase):
     def test_scanned_page_falls_back_to_ocr(self):
         import pypdfium2 as pdfium
         from PIL import Image, ImageDraw
-        from reportlab.pdfgen import canvas
+        try:
+            from reportlab.pdfgen import canvas
+        except ImportError:
+            self.skipTest("reportlab is not installed")
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder)
             image = Image.new("RGB", (1200, 300), "white")
