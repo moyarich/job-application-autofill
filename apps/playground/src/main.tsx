@@ -6,6 +6,31 @@ import {
 } from "../../../packages/job-application-autofill/src/index";
 import "./styles.css";
 
+type ApplySession = { id: string; state: string; message: string; url: string; screenshot: string | null };
+
+async function requestApi<T>(url: string, data: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Moya-Client": "dashboard" },
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Local API request failed");
+  return result as T;
+}
+async function filePayload(file: File): Promise<{ fileName: string; base64: string }> {
+  if (file.size > 10 * 1024 * 1024) throw new Error("Maximum resume size is 10 MB.");
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve({ fileName: file.name, base64: result.slice(result.indexOf(",") + 1) });
+    };
+    reader.onerror = () => reject(new Error("Unable to read resume file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 const PROFILE_KEY = "moya-job-autofill:profile:v1";
 const JOBS_KEY = "moya-job-autofill:jobs:v1";
 
@@ -45,7 +70,7 @@ const statusLabels: Record<ApplicationStatus, string> = {
 };
 
 function App() {
-  const [tab, setTab] = useState<"applications" | "profile">("applications");
+  const [tab, setTab] = useState<"applications" | "profile" | "parser">("applications");
   const [profile, setProfile] = useState(loadProfile);
   const [jobs, setJobs] = useState(loadJobs);
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
@@ -54,6 +79,10 @@ function App() {
   const importRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLInputElement>(null);
   const [resume, setResume] = useState<File | null>(null);
+  const [parseBusy, setParseBusy] = useState(false);
+  const [applyBusy, setApplyBusy] = useState(false);
+  const [parsePreview, setParsePreview] = useState("");
+  const [session, setSession] = useState<ApplySession | null>(null);
   useEffect(() => { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }, [profile]);
   useEffect(() => { localStorage.setItem(JOBS_KEY, JSON.stringify(jobs)); }, [jobs]);
   const errors = validateCandidate(profile);
@@ -66,7 +95,7 @@ function App() {
       const job = createApplication(newJob.company, newJob.role, newJob.url);
       setJobs(items => [job, ...items]);
       setNewJob({ company: "", role: "", url: "" });
-      setMessage("Job saved. Application submission is not implemented.");
+      setMessage("Job added. Select Apply on its row to start browser automation.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not add job"); }
   }
   function changeJob(id: string, status: ApplicationStatus) {
@@ -84,13 +113,83 @@ function App() {
   }
   function chooseResume(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
-    if (file && !/\.(pdf|docx)$/i.test(file.name)) {
-      setMessage("Choose a PDF or DOCX resume."); return;
+    if (file && (!/\.(pdf|docx)$/i.test(file.name) || file.size > 10 * 1024 * 1024)) {
+      setMessage("Choose a PDF or DOCX resume of 10 MB or less."); return;
     }
     setResume(file);
     setProfile(value => ({ ...value, resumeFileName: file?.name ?? "" }));
-    setMessage(file ? "Resume selected for this session; not uploaded or parsed." : "");
+    setMessage(file ? "Resume selected. Click Parse resume to extract fields." : "");
   }
+
+  async function parseResume() {
+    if (!resume) { setMessage("Choose a PDF or DOCX resume first."); setTab("parser"); return; }
+    setParseBusy(true);
+    setMessage("");
+    try {
+      const upload = await filePayload(resume);
+      const result = await requestApi<{ profile: CandidateProfile; preview: string; warnings: string[] }>("/api/resume/parse", upload);
+      setProfile(previous => {
+        const updated = { ...previous };
+        for (const [key, value] of Object.entries(result.profile)) {
+          if (typeof value === "string" && value.trim()) (updated as unknown as Record<string,string>)[key] = value;
+        }
+        return updated;
+      });
+      setParsePreview(result.preview);
+      setMessage("Resume parsed. Review and correct extracted information in Candidate profile.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Resume parse failed"); }
+    finally { setParseBusy(false); }
+  }
+  async function prepareJob(job: JobApplication) {
+    if (!job.url) { setMessage("Add a job URL before applying."); return; }
+    if (errors.length) { setMessage("Complete first name, last name and email in Candidate profile before applying."); setTab("profile"); return; }
+    setApplyBusy(true);
+    setMessage("Launching Playwright browser and filling supported fields...");
+    try {
+      const upload = resume ? await filePayload(resume) : null;
+      const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, profile, resume: upload });
+      setSession(result);
+      changeJob(job.id, result.state === "ready_for_review" ? "ready_for_review" : "in_progress");
+      setMessage(result.message);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to prepare application"); }
+    finally { setApplyBusy(false); }
+  }
+  async function finalizeApplication(submit: boolean) {
+    if (!session) return;
+    if (submit && !window.confirm("Confirm final submission? Check every field in the opened browser first.")) return;
+    setApplyBusy(true);
+    try {
+      const result = await requestApi<ApplySession | {closed:boolean}>("/api/apply/" + session.id + "/" + (submit ? "submit" : "close"), submit ? {confirm:true} : {});
+      if (submit) {
+        const next = result as ApplySession;
+        setSession(next); setMessage(next.message);
+        setJobs(items => items.map(job => job.url === session.url ? { ...job, status:"submitted" as ApplicationStatus } : job));
+      } else { setSession(null); setMessage("Browser session closed."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Browser action failed"); }
+    finally { setApplyBusy(false); }
+  }
+  const parserPanel = <section className="panel">
+    <div className="panel-title"><h2>Resume parser</h2><p>Upload a PDF or DOCX to extract contact details and skills. Review the results before applying.</p></div>
+    <div className="parser-grid">
+      <div className="parser-left">
+        <input ref={resumeRef} hidden type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={chooseResume}/>
+        <div className="drop-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files[0]; if(file) { if(!/\\.(pdf|docx)$/i.test(file.name)||file.size>10*1024*1024) {setMessage("Choose a PDF or DOCX resume of 10 MB or less.");return;} setResume(file);setProfile(p=>({...p,resumeFileName:file.name}));setMessage("Resume ready to parse.");}}}>
+          <div className="upload-symbol">⇧</div><strong>{resume?.name || "Drag and drop your resume here"}</strong>
+          <p>PDF or DOCX · 10 MB max</p>
+          <button className="secondary" type="button" onClick={()=>resumeRef.current?.click()}>Choose resume</button>
+        </div>
+        <button className="primary parser-button" type="button" disabled={parseBusy || !resume} onClick={parseResume}>{parseBusy ? "Parsing..." : "✧ Parse resume"}</button>
+      </div>
+      <div className="parsed-profile">
+        <div className="parsed-title"><strong>Parsed profile</strong><button className="secondary" onClick={()=>setTab("profile")}>Edit profile</button></div>
+        <div><span>Name</span><strong>{[profile.firstName,profile.lastName].filter(Boolean).join(" ") || "Not extracted"}</strong></div>
+        <div><span>Email</span><strong>{profile.email || "Not extracted"}</strong></div>
+        <div><span>Skills</span><strong>{profile.skills || "Not extracted"}</strong></div>
+        <div><span>Resume</span><strong>{profile.resumeFileName || "Not selected"}</strong></div>
+      </div>
+    </div>
+    {parsePreview && <details className="text-preview"><summary>View extracted text preview</summary><pre>{parsePreview}</pre></details>}
+  </section>;
 
   return <div className="app">
     <aside className="sidebar">
@@ -98,12 +197,15 @@ function App() {
       <div className="nav-label">WORKSPACE</div>
       <button className={tab === "applications" ? "nav active" : "nav"} onClick={() => setTab("applications")}>◫ &nbsp; Applications</button>
       <button className={tab === "profile" ? "nav active" : "nav"} onClick={() => setTab("profile")}>♙ &nbsp; Candidate profile</button>
+      <button className={tab === "parser" ? "nav active" : "nav"} onClick={() => setTab("parser")}>⇧ &nbsp; Resume parser</button>
       <div className="sidebar-bottom">Local-first prototype<br/>React + TypeScript<br/><span>v0.1 foundation</span></div>
     </aside>
     <main className="main">
-      <header><div><div className="eyebrow">JOB APPLICATION WORKSPACE</div><h1>{tab === "profile" ? "Candidate profile" : "Application tracker"}</h1>
-        <p>{tab === "profile" ? "Maintain the structured information you'll use for future automation." : "Organize opportunities and keep every application in one place."}</p></div>
-        <div className="header-chip">● &nbsp; Saved in this browser</div>
+      <header><div><div className="eyebrow">JOB APPLICATION WORKSPACE</div><h1>{tab === "profile" ? "Candidate profile" : tab === "parser" ? "Resume parser" : "Application tracker"}</h1>
+        <p>{tab === "profile" ? "Maintain your structured candidate information." : tab === "parser" ? "Extract profile data from a resume file." : "Organize opportunities and apply to supported job boards."}</p></div>
+        <div className="actions"><span className="header-chip">● &nbsp; Saved in this browser</span>
+        <button className="secondary" onClick={()=>setTab("parser")}>Parse resume</button>
+        <button className="primary" onClick={()=>{setTab("applications");document.getElementById("applications-list")?.scrollIntoView({behavior:"smooth"});}}>Apply to job</button></div>
       </header>
       {message && <div className="notice" role="status">{message}<button onClick={() => setMessage("")} aria-label="Dismiss notification">×</button></div>}
       {tab === "applications" ? <>
@@ -113,6 +215,13 @@ function App() {
           <div className="stat"><span>Submitted</span><strong>{jobs.filter(x=>x.status==="submitted").length}</strong></div>
           <div className="stat"><span>Interviews</span><strong>{jobs.filter(x=>x.status==="interview").length}</strong></div>
         </section>
+        {parserPanel}
+        {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
+          <p><strong>Session:</strong> {session.state} · {session.url}</p>
+          <div className="actions"><button disabled={applyBusy || session.state !== "ready_for_review"} className="primary" onClick={()=>finalizeApplication(true)}>Confirm & submit</button>
+          <button disabled={applyBusy} className="secondary" onClick={()=>finalizeApplication(false)}>Close browser session</button></div>
+          <p className="review-note">Review the actual Playwright browser window and answer any required questions before submitting. Submission is never automatic.</p>
+        </section>}
         <section className="panel"><div className="panel-title"><h2>Add an opportunity</h2><p>Save a job URL and track its progress.</p></div>
           <form className="add-form" onSubmit={addJob}>
             <label>Company<input required value={newJob.company} onChange={e=>setNewJob(x=>({...x,company:e.target.value}))} placeholder="Company name"/></label>
@@ -121,17 +230,18 @@ function App() {
             <button className="primary" type="submit">+ Add job</button>
           </form>
         </section>
-        <section className="panel"><div className="panel-title horizontal"><div><h2>Applications</h2><p>Update a job status after taking action.</p></div>
+        <section className="panel" id="applications-list"><div className="panel-title horizontal"><div><h2>Applications</h2><p>Update a job status after taking action.</p></div>
         <input aria-label="Search applications" className="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company or role..."/></div>
         <div className="job-list">{filtered.length === 0 ? <div className="empty">No applications found. Add a job above to get started.</div> :
           filtered.map(job => <article className="job" key={job.id}><div className="job-icon">{job.company.slice(0,1).toUpperCase()}</div>
             <div className="job-info"><strong>{job.role}</strong><span>{job.company} · {new Date(job.createdAt).toLocaleDateString()}</span>
               {job.url && <a href={job.url} target="_blank" rel="noopener noreferrer">Open listing ↗</a>}</div>
+            <button className="primary" disabled={applyBusy || !job.url} onClick={()=>prepareJob(job)}>{applyBusy ? "Working..." : "Apply"}</button>
             <select aria-label={`Status for ${job.company} ${job.role}`} value={job.status} onChange={e=>changeJob(job.id,e.target.value as ApplicationStatus)}>
               {statuses.map(status=><option key={status} value={status}>{statusLabels[status]}</option>)}</select>
             <button className="remove" aria-label={`Remove ${job.role} at ${job.company}`} onClick={()=>setJobs(items=>items.filter(x=>x.id!==job.id))}>×</button>
           </article>)}</div></section>
-      </> : <>
+      </> : tab === "parser" ? parserPanel : <>
         <section className="panel"><div className="panel-title horizontal"><div><h2>Personal information</h2><p>Stored locally in your browser. Import or export as JSON.</p></div>
           <div className="actions"><input ref={importRef} hidden type="file" accept=".json,application/json" onChange={importProfile}/>
             <button className="secondary" onClick={()=>importRef.current?.click()}>Import JSON</button>
@@ -141,12 +251,9 @@ function App() {
         <label className="wide-label">Professional summary<textarea rows={4} value={profile.summary} onChange={e=>setProfile(x=>({...x,summary:e.target.value}))} placeholder="Brief summary of your experience..."/></label>
         <div className={errors.length?"validation warning":"validation"}>{errors.length ? "Missing required profile data: "+errors.join(", ") : "✓ Required profile fields look valid."}</div>
         </section>
-        <section className="panel"><div className="panel-title"><h2>Resume document</h2><p>PDF/DOCX selection only. Resume parsing and automated uploads require a future local backend.</p></div>
-          <input ref={resumeRef} hidden type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={chooseResume}/>
-          <div className="resume-box"><span>▤</span><div><strong>{resume?.name || profile.resumeFileName || "No resume selected"}</strong><p>The browser does not retain file bytes between sessions.</p></div><button className="secondary" onClick={()=>resumeRef.current?.click()}>Choose file</button></div>
-        </section>
+
       </>}
-      <footer>Local prototype • No automatic applications or resume parsing yet • Do not store secrets in your profile.</footer>
+      <footer>Local-first prototype · Resume data stays on your computer · Playwright requires the local API · Review before submission.</footer>
     </main>
   </div>;
 }

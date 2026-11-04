@@ -21,7 +21,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "storybook": "storybook dev",
-    "build:storybook": "storybook build"
+    "build:storybook": "storybook build",
+    "dev:server": "node server/index.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
