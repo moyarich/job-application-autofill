@@ -1,53 +1,38 @@
-# Reusable Workflows Callers
+# MoyaApply
 
-A GitHub repository template for **npm-workspaces monorepos**, with example TypeScript and React projects and ready-to-adapt GitHub Actions workflow callers.
+A standalone **React + TypeScript** job application workspace (not a browser extension).
 
-This repository contains the **caller workflows**. Their shared implementations live in [moyarich/reusable-workflows](https://github.com/moyarich/reusable-workflows).
+## Features
 
-## Quick start
+- Candidate profile editor with required name/email validation
+- Local profile JSON import/export
+- PDF/DOCX file selection (not yet parsed or uploaded)
+- Job application tracker with status changes, job URLs and search
+- Local persistence using browser `localStorage`
+- Responsive layout
 
-Create a repository using **[Use this template](https://github.com/new?template_owner=moyarich&template_name=reusable-workflows-callers)**, clone it, and run:
+## Run locally
 
-```sh
+```bash
 npm install
-npm run dev
+npm run dev --workspace apps/playground
 ```
 
-Run the main checks before committing:
+Run validations:
 
-```sh
+```bash
 npm run checks
 ```
 
-Then replace the remaining template code, and review the workflow configuration **before enabling releases or publishing**.
+## Architecture
 
-## What's included?
+- `apps/playground`: React 19 + Vite + TypeScript interface
+- `packages/job-application-autofill`: shared TypeScript candidate and application models
+- `tests`: Vitest tests
+- Existing GitHub Actions workflows continue to provide CI and releases.
 
-| Location                                   | What you'll find                    |
-| ------------------------------------------ | ----------------------------------- |
-| [`packages/job-application-autofill/`](packages/job-application-autofill/)   | Job application autofill TypeScript package          |
-| [`apps/playground/`](apps/playground/)     | Vite + React playground             |
-| [`.github/workflows/`](.github/workflows/) | CI, release and maintenance callers |
-| [`docs/`](docs/)                           | Setup and operations guides         |
+## Planned automation (not implemented)
 
-## Common commands
+Use an external Node.js/Playwright service for Greenhouse, Lever, Workday and other ATS flows, with review-before-submit. A local API or desktop shell will be needed to securely store resume files and automate browser applications. This prototype does not parse a resume, launch Playwright, or submit an application.
 
-| Command              | Purpose                                               |
-| -------------------- | ----------------------------------------------------- |
-| `npm run dev`        | Start workspace development                           |
-| `npm run checks`     | Run formatting, linting, type checks, tests and build |
-| `npm run test:unit`  | Run Vitest unit tests                                 |
-| `npm run test:e2e`   | Run Playwright end-to-end tests                       |
-| `npm run storybook`  | Open Storybook                                        |
-| `npm run pack:check` | Dry-run packaging for all workspaces                  |
-
-See [Template development](docs/template-development.md) for setup, test prerequisites and configuration.
-
-## Guides
-
-- **[Template development](docs/template-development.md)** — project layout, adapting packages, scripts, testing, and Storybook.
-- **[Workflow and release operations](docs/workflow-operations.md)** — release setup, safety checks, caller synchronization, and troubleshooting.
-- **[Workflow consumer inventory](docs/workflow-consumers.md)** — generated inventory of repositories consuming reusable workflows.
-
-> [!IMPORTANT]
-> This is a **template**, not a ready-to-publish application. Review package selection, release triggers, publishing credentials, and workflow permissions before using release jobs. The workflow synchronization controller and destination inventory are maintained [upstream](https://github.com/moyarich/reusable-workflows), not in this repository.
+Profile data is currently saved in the browser's localStorage. Do not put passwords, authentication tokens or other secrets in profile fields.
