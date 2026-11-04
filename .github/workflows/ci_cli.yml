@@ -1,0 +1,54 @@
+name: CI / CLI and workspace quality
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ci_cli.yml"
+      - "src/**"
+      - "packages/**"
+      - "apps/**"
+      - "tests/**"
+      - "**/*.{ts,tsx,js,jsx,mjs,cjs}"
+      - "**/{vite,vitest,eslint,tsconfig}*.{js,mjs,cjs,ts,json}"
+      - "package*.json"
+      - ".npmrc"
+  pull_request:
+  workflow_call:
+    inputs:
+      checkout-sha:
+        description: Exact commit SHA to validate
+        type: string
+        required: false
+        default: ""
+  workflow_dispatch:
+    inputs:
+      show-input-summary:
+        description: Show workflow input parameters
+        type: boolean
+        default: true
+      checkout-sha:
+        description: Exact commit SHA to validate
+        type: string
+        required: false
+        default: ""
+concurrency:
+  group: ci-${{ github.repository }}-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.checkout-sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+jobs:
+  workflow-call-input-summary:
+    name: "job: Reusable workflow parameters"
+    if: ${{ inputs.show-input-summary && github.event_name == 'workflow_dispatch' }}
+    permissions:
+      contents: read
+    uses: moyarich/reusable-workflows/.github/workflows/reusable_dispatch-input-summary.yml@main
+    with:
+      parameters-json: ${{ toJSON(inputs) }}
+      exclude-inputs: '["show-input-summary"]'
+      heading: "Workflow inputs"
+
+  cli:
+    uses: moyarich/reusable-workflows/.github/workflows/reusable_ci_cli.yml@main
+    with:
+      checkout-sha: ${{ inputs.checkout-sha }}

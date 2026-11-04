@@ -1,0 +1,35 @@
+name: CI / Actionlint
+on:
+  push:
+    branches: [main]
+    paths: &actionlint_paths
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+  pull_request:
+    paths: *actionlint_paths
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      show-input-summary:
+        description: Show workflow input parameters
+        type: boolean
+        default: true
+concurrency:
+  group: ci-${{ github.repository }}-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  workflow-call-input-summary:
+    name: "job: Reusable workflow parameters"
+    if: ${{ inputs.show-input-summary && github.event_name == 'workflow_dispatch' }}
+    permissions:
+      contents: read
+    uses: moyarich/reusable-workflows/.github/workflows/reusable_dispatch-input-summary.yml@main
+    with:
+      parameters-json: ${{ toJSON(inputs) }}
+      exclude-inputs: '["show-input-summary"]'
+      heading: "Workflow inputs"
+
+  actionlint:
+    uses: moyarich/reusable-workflows/.github/workflows/reusable_actionlint.yml@main
