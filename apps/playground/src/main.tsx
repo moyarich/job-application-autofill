@@ -6,7 +6,7 @@ import {
 } from "../../../packages/job-application-autofill/src/index";
 import "./styles.css";
 
-type ApplySession = { id: string; state: string; message: string; url: string; screenshot: string | null; reviewUrl: string | null };
+type ApplySession = { id: string; jobId: string; state: string; message: string; url: string; screenshot: string | null; reviewUrl: string | null; filled: string[]; missing: string[]; };
 
 async function requestApi<T>(url: string, data: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -84,6 +84,14 @@ function App() {
   const [parsePreview, setParsePreview] = useState("");
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/apply/active", { headers: { "X-Moya-Client": "dashboard" } })
+      .then(response => response.ok ? response.json() : null)
+      .then(result => { if (!cancelled && result?.session) setSession(result.session as ApplySession); })
+      .catch(() => { /* Local API might not be running. */ });
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }, [profile]);
   useEffect(() => { localStorage.setItem(JOBS_KEY, JSON.stringify(jobs)); }, [jobs]);
   const errors = validateCandidate(profile);
@@ -142,13 +150,14 @@ function App() {
     finally { setParseBusy(false); }
   }
   async function prepareJob(job: JobApplication) {
+    if (session) { setMessage("Close the current browser session before applying to another job."); return; }
     if (!job.url) { setMessage("Add a job URL before applying."); return; }
     if (errors.length) { setMessage("Complete first name, last name and email in Candidate profile before applying."); setTab("profile"); return; }
     setApplyBusy(true);
     setMessage("Launching Playwright browser and filling supported fields...");
     try {
       const upload = resume ? await filePayload(resume) : null;
-      const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, profile, resume: upload });
+      const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, jobId: job.id, profile, resume: upload });
       setSession(result);
       setReviewed(false);
       changeJob(job.id, result.state === "ready_for_review" ? "ready_for_review" : "in_progress");
@@ -166,7 +175,9 @@ function App() {
       if (submit) {
         const next = result as ApplySession;
         setSession(next); setMessage(next.message);
-        setJobs(items => items.map(job => job.url === session.url ? { ...job, status:"submitted" as ApplicationStatus } : job));
+        setJobs(items => items.map(job => job.id === session.jobId
+          ? { ...job, status: (next.state === "submitted" ? "submitted" : "in_progress") as ApplicationStatus }
+          : job));
       } else { setSession(null); setMessage("Browser session closed."); }
     } catch (error) { setMessage(error instanceof Error ? error.message : "Browser action failed"); }
     finally { setApplyBusy(false); }
@@ -176,7 +187,7 @@ function App() {
     <div className="parser-grid">
       <div className="parser-left">
         <input ref={resumeRef} hidden type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={chooseResume}/>
-        <div className="drop-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files[0]; if(file) { if(!/\\.(pdf|docx)$/i.test(file.name)||file.size>10*1024*1024) {setMessage("Choose a PDF or DOCX resume of 10 MB or less.");return;} setResume(file);setProfile(p=>({...p,resumeFileName:file.name}));setMessage("Resume ready to parse.");}}}>
+        <div className="drop-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files[0]; if(file) { if(!/\.(pdf|docx)$/i.test(file.name)||file.size>10*1024*1024) {setMessage("Choose a PDF or DOCX resume of 10 MB or less.");return;} setResume(file);setProfile(p=>({...p,resumeFileName:file.name}));setMessage("Resume ready to parse.");}}}>
           <div className="upload-symbol">⇧</div><strong>{resume?.name || "Drag and drop your resume here"}</strong>
           <p>PDF or DOCX · 10 MB max</p>
           <button className="secondary" type="button" onClick={()=>resumeRef.current?.click()}>Choose resume</button>
@@ -220,13 +231,16 @@ function App() {
         </section>
         {parserPanel}
         {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
-          <p><strong>Session:</strong> {session.state} · {session.url}</p>
+          <p><strong>Session:</strong> {session.state.replaceAll("_", " ")} · {session.url}</p>
+          {session.state === "submission_unverified" && <p className="validation warning">Submission was attempted but the employer did not show a recognizable confirmation. Verify the result manually before updating the job status.</p>}
           {session.reviewUrl && <div className="browser-review">
             <div className="browser-review-header">
               <strong>Live employer application</strong>
               <a className="browser-open" href={session.reviewUrl} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open in full window ↗</a>
             </div>
             <p>Enter the VNC password from your Docker Compose configuration to interact with Chromium. Review every field and complete any missing questions before submitting.</p>
+            {session.filled?.length > 0 && <p><strong>Prepared:</strong> {session.filled.join(", ")}</p>}
+            {session.missing?.length > 0 && <p className="validation warning"><strong>Review manually:</strong> {session.missing.join(", ")}</p>}
             <iframe className="browser-viewer" title="Interactive Playwright application browser" src={session.reviewUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
             <label className="review-checkbox"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> I inspected the live application and reviewed all fields.</label>
           </div>}
@@ -248,7 +262,7 @@ function App() {
           filtered.map(job => <article className="job" key={job.id}><div className="job-icon">{job.company.slice(0,1).toUpperCase()}</div>
             <div className="job-info"><strong>{job.role}</strong><span>{job.company} · {new Date(job.createdAt).toLocaleDateString()}</span>
               {job.url && <a href={job.url} target="_blank" rel="noopener noreferrer">Open listing ↗</a>}</div>
-            <button className="primary" disabled={applyBusy || !job.url} onClick={()=>prepareJob(job)}>{applyBusy ? "Working..." : "Apply"}</button>
+            <button className="primary" disabled={applyBusy || Boolean(session) || !job.url} onClick={()=>prepareJob(job)}>{applyBusy ? "Working..." : "Apply"}</button>
             <select aria-label={`Status for ${job.company} ${job.role}`} value={job.status} onChange={e=>changeJob(job.id,e.target.value as ApplicationStatus)}>
               {statuses.map(status=><option key={status} value={status}>{statusLabels[status]}</option>)}</select>
             <button className="remove" aria-label={`Remove ${job.role} at ${job.company}`} onClick={()=>setJobs(items=>items.filter(x=>x.id!==job.id))}>×</button>

@@ -24,7 +24,7 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", "http://localhost");
     if (req.method === "GET" && url.pathname === "/api/health") return send(res, 200, { ok: true });
-    if (req.headers.origin !== ORIGIN || req.headers["x-moya-client"] !== "dashboard")
+    if ((req.headers.origin && req.headers.origin !== ORIGIN) || req.headers["x-moya-client"] !== "dashboard")
       return send(res, 403, { error: "Only the local dashboard may access this API." });
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
       const upload = decodeUpload(await readJson(req));
