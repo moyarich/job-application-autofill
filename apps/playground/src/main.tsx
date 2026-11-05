@@ -144,7 +144,7 @@ function App() {
   function changeJob(id: string, status: ApplicationStatus) {
     setJobs(items => items.map(item => item.id === id ? { ...item, status } : item));
   }
-  function exportResumePdf() {
+  async function exportResumePdf() {
     try {
       const missing = validateCandidate(profile);
       if (missing.length) throw new Error("Complete contact information first: " + missing.join(", "));
