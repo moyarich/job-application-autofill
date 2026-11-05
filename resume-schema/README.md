@@ -1,26 +1,24 @@
 # job-application-autofill resume data contract
 
-This directory defines the **canonical résumé JSON format**, independent of PDF/DOCX extraction.
-Import any JSON file conforming to [resume.schema.json](resume.schema.json) in the dashboard under **Candidate profile → Import JSON**.
-The user may fill it manually, export it from another tool, or generate it via the optional `@moyarich/extract-resume` parser.
+This directory defines the canonical résumé JSON format, independent of PDF/DOCX extraction.
+Import a conforming JSON file under **Candidate profile → Import JSON**.
+The application API accepts JSON as `profile` in `POST /api/apply/prepare`; a PDF attachment is generated for job submissions when no PDF is uploaded.
 
-The application API accepts the JSON as `profile` in `POST /api/apply/prepare`. A PDF or DOCX is **not required** to apply; attaching a resume remains an optional, separate action when the employer requests it.
+## Unicode PDF export
 
-Use the [example résumé](resume.example.json) as a starting point. The fields `contact`, `summary`, `experience`, `skills`, `education`, `projects`, `certifications`, `languages`, `awards` and `source` are the canonical contract; empty arrays are valid for sections with no information. No legacy flat-profile keys are accepted.
+PDF export is handled by **Chromium's print engine**, with embedded fonts and script-aware shaping. The legacy built-in PDF Latin encoder has been removed. Unicode text is preserved exactly, including bullets, accented names, CJK, Arabic, Devanagari and emoji when supported by the installed font. There is no transliteration or character substitution.
 
-The `x-atsExportGuidance` annotation describes ATS-friendly *document rendering*, not parser requirements; JSON validation cannot guarantee that a PDF or DOCX has a readable layout or appropriate formatting.
+The Docker image installs Noto Sans families (including CJK and emoji) for broad script coverage. Rendering and text extraction depend on actual installed fonts and glyph support; Unicode code points without a matching font glyph cannot be guaranteed to display. Review output before submitting to an ATS.
 
-## PDF export
+From the local dashboard choose **Export PDF**. The dashboard sends validated canonical JSON to `POST /api/resume/pdf` and downloads the returned PDF. Automatically generated attachments during job applications use the same endpoint. The API requires the local dashboard header and allowed origin, as do other routes.
 
-Use the dashboard's **Export PDF** action after importing JSON or editing the résumé. The renderer is at [`pdf.mjs`](pdf.mjs); it accepts the canonical schema directly and does not load OCR, PDF/DOCX parsing, or optional extractor dependencies.
+Server-side usage:
 
 ```js
 import { renderResumePdf } from "./resume-schema/pdf.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 const resume = JSON.parse(readFileSync("./resume-schema/resume.example.json", "utf8"));
-writeFileSync("resume.pdf", renderResumePdf(resume));
+writeFileSync("resume.pdf", await renderResumePdf(resume));
 ```
 
-The PDF is US Letter, one column, left aligned, with standard ATS headings, reverse-chronological employment, simple text bullets and automatic page breaks. It is **selectable text**, not an image or browser print screenshot.
-
-**Limitations:** This minimal dependency-free exporter uses built-in PDF Latin fonts. Common résumé bullets (including ●, •, ▪ and ◆), smart punctuation and check marks are normalized to ATS-readable ASCII equivalents before encoding. For names or content requiring other non-Latin Unicode, it reports an error rather than silently corrupting characters. Visual formatting and employer-specific ATS import behavior still need review.
+The renderer is asynchronous because it launches a fresh headless Chromium instance and closes it after producing the PDF. It renders US Letter, one-column, selectable text with page breaks and ATS-friendly headings. A working Playwright Chromium installation is required.
