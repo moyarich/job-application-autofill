@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
+import { fillKnownFields } from "../server/automation.mjs";
+import { renderResumePdf } from "../resume-schema/pdf.mjs";
+import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
 import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
 
 const samples = {
@@ -82,6 +86,58 @@ test("five ATS-style browser fixtures: discover and fill employer questions", as
         assert.equal(await page.locator("#experience").inputValue(), "5+");
         assert.equal(await page.locator("#confirm").isChecked(), true);
         assert.equal(await page.locator("#password").inputValue(), "");
+      } finally { await page.close(); }
+    }
+  } finally { await browser.close(); }
+});
+
+test("Playwright uses structured resume JSON for autofill and the matching PDF for upload", async () => {
+  const profile = JSON.parse(readFileSync(new URL("../resume-schema/resume.example.json", import.meta.url), "utf8"));
+  profile.contact.firstName = "Ada";
+  profile.contact.lastName = "Lovelace";
+  profile.contact.email = "ada@example.com";
+  const pdf = renderResumePdf(profile);
+  const attachment = decodePdfAttachment({
+    fileName: "Ada-Lovelace.pdf",
+    base64: Buffer.from(pdf).toString("base64"),
+  });
+  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+  try {
+    for (const url of [
+      "https://job-boards.greenhouse.io/example/jobs/123",
+      "https://example.wd1.myworkdayjobs.com/en-US/example/job/123",
+    ]) {
+      const page = await browser.newPage();
+      try {
+        await page.route(url, route => route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: '<!doctype html><html><body><form>' +
+            '<label>First Name<input name="firstName"></label>' +
+            '<label>Last Name<input name="lastName"></label>' +
+            '<label>Email<input name="email" type="email"></label>' +
+            '<label>Resume<input name="resume" type="file" accept=".pdf"></label>' +
+            '</form></body></html>',
+        }));
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+        const result = await fillKnownFields(page, profile);
+        assert.ok(result.filled.includes("firstName"), url);
+        assert.ok(result.filled.includes("lastName"), url);
+        assert.ok(result.filled.includes("email"), url);
+        assert.equal(await page.locator('[name=firstName]').inputValue(), "Ada");
+        assert.equal(await page.locator('[name=lastName]').inputValue(), "Lovelace");
+        assert.equal(await page.locator('[name=email]').inputValue(), "ada@example.com");
+        await page.locator('input[type="file"]').setInputFiles({
+          name: attachment.fileName,
+          mimeType: "application/pdf",
+          buffer: attachment.buffer,
+        });
+        const upload = await page.locator('input[type="file"]').evaluate(async input => {
+          const file = input.files?.[0];
+          const bytes = file ? new Uint8Array(await file.arrayBuffer()) : null;
+          return { name: file?.name, type: file?.type, prefix: bytes ? String.fromCharCode(...bytes.slice(0, 5)) : "" };
+        });
+        assert.deepEqual(upload, { name: "Ada-Lovelace.pdf", type: "application/pdf", prefix: "%PDF-" });
       } finally { await page.close(); }
     }
   } finally { await browser.close(); }
