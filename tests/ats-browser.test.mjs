@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
+import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
 
 const samples = {
   greenhouse: ["https://boards.greenhouse.io/acme/jobs/123", "First Name", "Last Name"],
@@ -24,6 +24,19 @@ test("Elevance Health JR209310 is Workday, not Greenhouse", () => {
   assert.equal(adapterForUrl(url)?.id, "workday");
   assert.notEqual(adapterForUrl(url)?.id, "greenhouse");
   assert.equal(new URL(url).hostname, "elevancehealth.wd1.myworkdayjobs.com");
+});
+
+test("Smartsheet 8250247 is a Greenhouse-hosted job application", () => {
+  const url = "https://job-boards.greenhouse.io/smartsheet/jobs/8250247";
+  assert.equal(adapterForUrl(url)?.id, "greenhouse");
+  assert.equal(new URL(url).hostname, "job-boards.greenhouse.io");
+  assert.equal(formState("Apply for this job", url), "ready_for_review");
+  for (const label of ["Applicant Privacy Notice", "Are you legally authorized to work in the United States?", "Do you now or will you in the future require immigration sponsorship for work authorization?"]) {
+    assert.equal(classifyQuestion(label), "general");
+  }
+  for (const label of ["I identify my gender as", "My veteran status is", "I identify my race / ethnicity as"]) {
+    assert.equal(classifyQuestion(label), "voluntary");
+  }
 });
 
 test("sign-in, SSO and challenge detection", () => {

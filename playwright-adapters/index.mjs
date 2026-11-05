@@ -82,7 +82,7 @@ export async function fillQuestionAnswers(page, questions, answers) {
   const results = { filled: [], unresolved: [] };
   for (const [label, answer] of Object.entries(answers)) {
     const question = findQuestion(questions, label);
-    if (!question || classifyQuestion(label) === "sensitive" || typeof answer !== "string" || !answer.trim()) {
+    if (!question || classifyQuestion(label) !== "general" || typeof answer !== "string" || !answer.trim()) {
       results.unresolved.push(label);
       continue;
     }
