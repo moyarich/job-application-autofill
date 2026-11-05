@@ -84,6 +84,7 @@ function App() {
   const [parsePreview, setParsePreview] = useState("");
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
+  const [notesJobId, setNotesJobId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/apply/active", { headers: { "X-Moya-Client": "dashboard" } })
@@ -165,6 +166,18 @@ function App() {
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to prepare application"); }
     finally { setApplyBusy(false); }
   }
+  async function continueAfterChallenge() {
+    if (!session) return;
+    setApplyBusy(true);
+    try {
+      const updated = await requestApi<ApplySession>("/api/apply/" + session.id + "/continue", {});
+      setSession(updated);
+      setReviewed(false);
+      changeJob(updated.jobId, updated.state === "ready_for_review" ? "ready_for_review" : "in_progress");
+      setMessage(updated.message);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Challenge is not complete."); }
+    finally { setApplyBusy(false); }
+  }
   async function finalizeApplication(submit: boolean) {
     if (!session) return;
     if (submit && session.reviewUrl && !reviewed) { setMessage("Open the browser viewer and confirm you reviewed the application first."); return; }
@@ -232,6 +245,10 @@ function App() {
         {parserPanel}
         {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
           <p><strong>Session:</strong> {session.state.replaceAll("_", " ")} · {session.url}</p>
+          {session.state === "manual_intervention" && <div className="validation warning">
+            Complete the security challenge in the interactive browser viewer, then
+            <button className="secondary" disabled={applyBusy} onClick={continueAfterChallenge}>Continue after challenge</button>
+          </div>}
           {session.state === "submission_unverified" && <p className="validation warning">Submission was attempted but the employer did not show a recognizable confirmation. Verify the result manually before updating the job status.</p>}
           {session.reviewUrl && <div className="browser-review">
             <div className="browser-review-header">
@@ -257,6 +274,7 @@ function App() {
           </form>
         </section>
         <section className="panel" id="applications-list"><div className="panel-title horizontal"><div><h2>Applications</h2><p>Update a job status after taking action.</p></div>
+        <button className="secondary" onClick={()=>downloadJson("job-applications.json",jobs)}>Export applications</button>
         <input aria-label="Search applications" className="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company or role..."/></div>
         <div className="job-list">{filtered.length === 0 ? <div className="empty">No applications found. Add a job above to get started.</div> :
           filtered.map(job => <article className="job" key={job.id}><div className="job-icon">{job.company.slice(0,1).toUpperCase()}</div>
@@ -265,7 +283,11 @@ function App() {
             <button className="primary" disabled={applyBusy || Boolean(session) || !job.url} onClick={()=>prepareJob(job)}>{applyBusy ? "Working..." : "Apply"}</button>
             <select aria-label={`Status for ${job.company} ${job.role}`} value={job.status} onChange={e=>changeJob(job.id,e.target.value as ApplicationStatus)}>
               {statuses.map(status=><option key={status} value={status}>{statusLabels[status]}</option>)}</select>
+            <button className="secondary" onClick={()=>setNotesJobId(notesJobId===job.id ? null : job.id)} aria-label={`Edit notes for ${job.role} at ${job.company}`}>Notes</button>
             <button className="remove" aria-label={`Remove ${job.role} at ${job.company}`} onClick={()=>setJobs(items=>items.filter(x=>x.id!==job.id))}>×</button>
+            {notesJobId === job.id && <label className="job-notes">Application notes
+              <textarea rows={3} value={job.notes || ""} onChange={e=>setJobs(items=>items.map(item=>item.id===job.id?{...item,notes:e.target.value}:item))} placeholder="Recruiter, interview date, follow-up details..." />
+            </label>}
           </article>)}</div></section>
       </> : tab === "parser" ? parserPanel : <>
         <section className="panel"><div className="panel-title horizontal"><div><h2>Personal information</h2><p>Stored locally in your browser. Import or export as JSON.</p></div>
