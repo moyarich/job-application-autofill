@@ -1,9 +1,9 @@
 {
-  "name": "@moyarich/example",
+  "name": "@moyarich/job-application-autofill",
   "version": "0.1.0",
   "publisher": "moyarich",
   "author": "Moya Richards",
-  "description": "",
+  "description": "Job application autofill package",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
