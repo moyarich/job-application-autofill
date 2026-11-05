@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume-schema/validate.mjs";
+import { renderResumePdf } from "../resume-schema/pdf.mjs";
 import { openStore } from "./store.mjs";
 import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
@@ -39,13 +40,20 @@ const server = createServer(async (req, res) => {
         throw error;
       }
     }
+    if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
+      const profile = validateResume(await readJson(req));
+      const bytes = await renderResumePdf(profile);
+      if (bytes.length > 10 * 1024 * 1024)
+        return send(res, 413, { error: "Generated PDF exceeds the 10 MB attachment limit." });
+      return send(res, 200, { base64: Buffer.from(bytes).toString("base64") });
+    }
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
       // Resume extraction is optional; JSON-only applicants never load its dependencies.
       const { decodeUpload, extractProfile, extractResumeText } = await import("@moyarich/extract-resume");
       const upload = decodeUpload(await readJson(req));
       const text = await extractResumeText(upload.buffer, upload.extension);
       return send(res, 200, { profile: { ...extractProfile(text), source: { fileName: upload.fileName } },
-        preview: text.slice(0, 3500), warnings: ["Review parsed fields before applying."] });
+        preview: text, warnings: ["Review parsed fields before applying."] });
     }
     if (req.method === "GET" && url.pathname === "/api/apply/active")
       return send(res, 200, { session: getActiveApplication() });

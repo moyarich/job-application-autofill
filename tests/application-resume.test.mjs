@@ -7,9 +7,15 @@ import { validateResume } from "../resume-schema/validate.mjs";
 const example = JSON.parse(readFileSync(new URL("../resume-schema/resume.example.json",import.meta.url),"utf8"));
 
 describe("application needs structured resume JSON and a PDF attachment",()=>{
-  it("accepts JSON-only profile data, renders PDF, and decodes the resulting attachment without an extractor",()=>{
+  it("accepts JSON-only profile data and decodes generated Unicode PDF attachments",async()=>{
     const resume=validateResume({...example,source:{fileName:""}});
-    const bytes=renderResumePdf(resume);
+    const bytes=await renderResumePdf(resume, { launchBrowser: async()=>({
+      newPage: async()=>({
+        setContent: async()=>{}, evaluate: async()=>{},
+        pdf: async()=>Buffer.from("%PDF-1.4\nUnicode PDF bytes\n%%EOF")
+      }),
+      close: async()=>{}
+    }) });
     const decoded=decodePdfAttachment({fileName:"Ada-Lovelace.pdf",base64:Buffer.from(bytes).toString("base64")});
     expect(decoded.extension).toBe("pdf");
     expect(decoded.fileName).toBe("Ada-Lovelace.pdf");

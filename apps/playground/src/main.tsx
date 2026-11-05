@@ -4,7 +4,6 @@ import {
   createApplication, emptyCandidate, parseCandidateJson, statuses, validateCandidate,
   type CandidateProfile, type JobApplication, type ApplicationStatus,
 } from "../../../packages/job-application-autofill/src/index";
-import { renderResumePdf } from "../../../resume-schema/pdf.mjs";
 import "./styles.css";
 
 type AtsQuestion = { label: string; kind: "text" | "textarea" | "select" | "combobox" | "radio" | "checkbox"; required: boolean; options: string[] };
@@ -145,14 +144,15 @@ function App() {
   function changeJob(id: string, status: ApplicationStatus) {
     setJobs(items => items.map(item => item.id === id ? { ...item, status } : item));
   }
-  function exportResumePdf() {
+  async function exportResumePdf() {
     try {
       const missing = validateCandidate(profile);
       if (missing.length) throw new Error("Complete contact information first: " + missing.join(", "));
       // Revalidate the entire user-supplied JSON before producing a document.
       const valid = parseCandidateJson(JSON.stringify(profile));
-      const pdf = renderResumePdf(valid);
-      const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
+      const { base64 } = await requestApi<{ base64: string }>("/api/resume/pdf", valid);
+      const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const name = [profile.contact.firstName, profile.contact.lastName].filter(Boolean).join("-");
       const anchor = document.createElement("a");
@@ -209,8 +209,9 @@ function App() {
       // Reuse the user's uploaded PDF when available; otherwise create one from JSON.
       const validProfile = parseCandidateJson(JSON.stringify(profile));
       const uploadedPdf = resume && /\.pdf$/i.test(resume.name) ? resume : null;
+      const generated = uploadedPdf ? null : await requestApi<{ base64: string }>("/api/resume/pdf", validProfile);
       const attachment = uploadedPdf || new File(
-        [new Uint8Array(renderResumePdf(validProfile))],
+        [Uint8Array.from(atob(generated!.base64), char => char.charCodeAt(0))],
         ([validProfile.contact.firstName, validProfile.contact.lastName].filter(Boolean).join("-") || "resume")
           .replace(/[^a-z0-9-]/gi, "_") + ".pdf",
         { type: "application/pdf" }
