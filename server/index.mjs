@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { decodeUpload, extractProfile, extractResumeText } from "@moyarich/extract-resume";
-import { prepareApplication, getApplication, getActiveApplication, continueApplication, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
+import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
 const ORIGIN = process.env.AUTOFILL_ORIGIN || "http://localhost:5173";
@@ -42,10 +42,14 @@ const server = createServer(async (req, res) => {
       const resume = payload.resume ? decodeUpload(payload.resume) : null;
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
-    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue))?$/);
+    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers))?$/);
     if (match) {
       const [, id, action] = match;
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
+      if (req.method === "POST" && action === "answers") {
+        const payload = await readJson(req);
+        return send(res, 200, await answerApplicationQuestions(id, payload.answers));
+      }
       if (req.method === "POST" && action === "continue")
         return send(res, 200, await continueApplication(id));
       if (req.method === "POST" && action === "snapshot")
