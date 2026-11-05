@@ -34,3 +34,7 @@ data/
 *.sqlite3-shm
 *.sqlite3-wal
 *.sqlite3-journal
+
+# Private SQLite bind mount must not enter the image build context
+sqlite-data/
+**/sqlite-data/

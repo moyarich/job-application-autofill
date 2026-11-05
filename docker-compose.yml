@@ -34,7 +34,7 @@ services:
       start_period: 20s
     volumes:
       - screenshots:/app/screenshots
-      - moya_data:/app/data
+      - ./sqlite-data:/app/data
 
   web:
     image: job-application-autofill:local
@@ -52,5 +52,4 @@ services:
     init: true
 
 volumes:
-  moya_data:
   screenshots:

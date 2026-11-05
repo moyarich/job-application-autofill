@@ -6,15 +6,33 @@ Standalone **React + TypeScript** job application dashboard with a local **Node.
 
 job-application-autofill stores your **structured résumé JSON**, application records, statuses and notes in a SQLite database rather than browser localStorage. The local API owns the database, not the PDF extractor. The app loads saved records on startup and automatically saves edits. Writes are atomic and revision-checked to avoid silently overwriting another tab's updates; if a conflict occurs, reload to pick up the saved state.
 
-- **Docker Compose:** database at `/app/data/moyaapply.sqlite`, persisted in the named `moya_data` volume. Ordinary `docker compose down` does not remove the data. **`docker compose down -v` deletes the database volume**, so back up before using it.
-- **Existing installations:** the Docker Compose project and existing SQLite database filename remain unchanged so this naming update does not orphan stored applications.
-- **Git privacy:** SQLite databases, write-ahead logs and the local `data/` directory are excluded by `.gitignore` and `.dockerignore`. The Docker named volume lives outside the Git working tree. Do not force-add databases or store unencrypted database backups in the repository.
-- **Stopping safely:** Ctrl+C, `npm run dev:down` (`docker compose down`), and normal Docker Desktop shutdowns preserve the `moyaapply_moya_data` named volume. **Do not use `docker compose down -v`, `docker volume rm` or destructive Docker volume pruning** unless you intentionally want to delete saved résumés and applications.
+- **Docker Compose:** SQLite is stored on your computer in `./sqlite-data/moyaapply.sqlite` (mounted as `/app/data/moyaapply.sqlite` in the container), not in a Docker named volume. The `npm run dev` launcher creates `./sqlite-data/` if it does not exist. Data survives Ctrl+C, `docker compose down`, container rebuilds and Docker Desktop shutdown. Even `docker compose down -v` does **not** delete this bind-mounted directory, although that command can remove other named volumes. Keep `./sqlite-data/` private and back it up.
+- **Existing installations (migration required):** Before switching from the old named volume `moyaapply_moya_data`, stop Docker Compose and copy its contents to `./sqlite-data/` (see below). Otherwise the new folder starts with an empty SQLite database while the old data remains in its volume. Do not remove the old volume until you have verified the copy.
+- **Git privacy:** `./sqlite-data/` and common SQLite database/WAL/journal filenames are ignored by Git and excluded from Docker builds. Never `git add -f` this directory.
+- **Stopping safely:** `npm run dev:down` and Ctrl+C preserve `./sqlite-data/`. Do not delete it unless you want to lose local applications and résumé data.
 - **Without Docker:** database at `./data/moyaapply.sqlite` relative to the API process working directory. Override with `MOYA_DB_PATH=/absolute/path/moyaapply.sqlite`.
 - **Backups:** stop the API and copy the SQLite file (and any WAL file), or use SQLite's online backup command while it is running. The database contains personal résumé information; keep backups private.
 - **Scope:** structured résumé and tracked job data persist. Uploaded PDF bytes, live Playwright sessions and screenshots are not stored in SQLite; a PDF can be regenerated from JSON when preparing an application. No browser-localStorage migration is provided because this is a new application.
 
 SQLite uses the built-in Node.js `node:sqlite` module (Node.js 22.13+); no native npm packages or external database server are required.
+
+### Migrate from the previous Docker named volume
+
+If you already have saved applications from before this change, stop the application **before** copying the SQLite database and its WAL files:
+
+```sh
+docker compose down
+mkdir -p sqlite-data
+# Check that the old named volume exists before attempting migration.
+docker volume inspect moyaapply_moya_data
+# Copy all database files (including SQLite WAL/SHM files) to the host folder.
+docker run --rm \
+  -v moyaapply_moya_data:/from:ro \
+  -v "$PWD/sqlite-data:/to" \
+  alpine:3.20 sh -c 'cp -a /from/. /to/'
+```
+
+Run `npm run dev` and verify your saved résumé and application history. Keep the old volume until you confirm the migration; `docker compose down` does not delete it. This step is needed only when migrating from the previous named-volume configuration.
 
 ## Start the complete app with npm
 
@@ -25,7 +43,7 @@ npm run dev
 
 Run this from the repository root with **Docker Engine/Desktop and Docker Compose v2 installed and running**. It starts the entire stack: React/Vite, the Node API, SQLite storage, Playwright Chromium, and the interactive noVNC browser viewer. The first start creates a private `.env` with a randomly generated VNC password (printed once and saved in the file), unless `WEB_VNC_PASSWORD` is already configured. Custom passwords are preserved. To change ports, edit `.env`.
 
-Open the dashboard at **http://localhost:5173** and the browser viewer at **http://localhost:6080/vnc.html**. Use the password in `.env` when prompted for the viewer. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the Docker volume after a normal stop.
+Open the dashboard at **http://localhost:5173** and the browser viewer at **http://localhost:6080/vnc.html**. Use the password in `.env` when prompted for the viewer. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the local `./sqlite-data/` directory after a normal stop.
 
 `npm run dev:web` runs **only Vite**; it is useful when the API is already running separately and does not start the full application.
 
