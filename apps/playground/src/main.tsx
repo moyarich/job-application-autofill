@@ -4,6 +4,7 @@ import {
   createApplication, emptyCandidate, parseCandidateJson, statuses, validateCandidate,
   type CandidateProfile, type JobApplication, type ApplicationStatus,
 } from "../../../packages/job-application-autofill/src/index";
+import { renderResumePdf } from "../../../resume-schema/pdf.mjs";
 import "./styles.css";
 
 type AtsQuestion = { label: string; kind: "text" | "textarea" | "select" | "combobox" | "radio" | "checkbox"; required: boolean; options: string[] };
@@ -111,6 +112,26 @@ function App() {
   }
   function changeJob(id: string, status: ApplicationStatus) {
     setJobs(items => items.map(item => item.id === id ? { ...item, status } : item));
+  }
+  function exportResumePdf() {
+    try {
+      const missing = validateCandidate(profile);
+      if (missing.length) throw new Error("Complete contact information first: " + missing.join(", "));
+      // Revalidate the entire user-supplied JSON before producing a document.
+      const valid = parseCandidateJson(JSON.stringify(profile));
+      const pdf = renderResumePdf(valid);
+      const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const name = [profile.contact.firstName, profile.contact.lastName].filter(Boolean).join("-");
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = (name || "resume").replace(/[^a-z0-9-]/gi, "_") + ".pdf";
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage("Generated a selectable-text résumé PDF from structured JSON. Review the PDF before submitting.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "PDF export failed.");
+    }
   }
   async function importProfile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -222,7 +243,7 @@ function App() {
         </div>
       </div>
       <div className="parsed-profile">
-        <div className="parsed-title"><strong>Parsed profile</strong><button className="secondary" onClick={()=>setTab("profile")}>Edit profile</button></div>
+        <div className="parsed-title"><strong>Parsed profile</strong><div className="actions"><button className="secondary" onClick={()=>setTab("profile")}>Edit profile</button><button className="secondary" onClick={exportResumePdf}>Export PDF</button></div></div>
         <div><span>Name</span><strong>{[profile.contact.firstName,profile.contact.lastName].filter(Boolean).join(" ") || "Not extracted"}</strong></div>
         <div><span>Email</span><strong>{profile.contact.email || "Not extracted"}</strong></div>
         <div><span>Skills</span><strong>{profile.skills.join(", ") || "Not extracted"}</strong></div>
@@ -331,7 +352,8 @@ function App() {
         <section className="panel"><div className="panel-title horizontal"><div><h2>Personal information</h2><p>Stored locally in your browser. Import or export as JSON.</p></div>
           <div className="actions"><input ref={importRef} hidden type="file" accept=".json,application/json" onChange={importProfile}/>
             <button className="secondary" onClick={()=>importRef.current?.click()}>Import JSON</button>
-            <button className="primary" onClick={()=>downloadJson("candidate-profile.json",profile)}>Export JSON</button></div>
+            <button className="primary" onClick={()=>downloadJson("candidate-profile.json",profile)}>Export JSON</button>
+            <button className="primary" onClick={exportResumePdf}>Export PDF</button></div>
         </div>
         <div className="profile-grid">{fields.map(({key,label})=><label key={key}>{label}<input type={key==="email"?"email":"text"} value={profile.contact[key]} onChange={e=>setProfile(x=>({...x,contact:{...x.contact,[key]:e.target.value}}))} placeholder={label}/></label>)}</div>
         <label className="wide-label">Professional summary<textarea rows={4} value={profile.summary} onChange={e=>setProfile(x=>({...x,summary:e.target.value}))} placeholder="Brief summary of your experience..."/></label>
