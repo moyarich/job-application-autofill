@@ -19,7 +19,7 @@ describe("employment history",()=>{
       "Software Engineer",
       "January "+(2025-i)+" - December "+(2025-i),
       "● "+("Built and deployed reliable services ".repeat(150))+"END-"+i
-    ]).flat(),"Education"].join("\\n");
+    ]).flat(),"Education"].join("\n");
     const jobs=extractEmploymentHistory(text);
     expect(jobs).toHaveLength(45);
     expect(jobs.at(-1).company).toBe("Company 44 Technologies");
@@ -28,7 +28,7 @@ describe("employment history",()=>{
     expect(jobs.at(-1).description).toContain("END-44");
   });
   it("recognizes more history headings and expanded date separators",()=>{
-    const jobs=extractEmploymentHistory("Professional Background\\nExample Technologies\\nPrincipal Engineer\\n2020-01—2024-02\\n• Led platform engineering\\nEducation");
+    const jobs=extractEmploymentHistory("Professional Background\nExample Technologies\nPrincipal Engineer\n2020-01—2024-02\n• Led platform engineering\nEducation");
     expect(jobs).toHaveLength(1);
     expect(jobs[0].description).toBe("Led platform engineering");
   });
