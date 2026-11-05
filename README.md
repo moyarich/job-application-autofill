@@ -1,10 +1,10 @@
-# MoyaApply
+# job-application-autofill
 
 Standalone **React + TypeScript** job application dashboard with a local **Node.js + Playwright** runner. Not a browser extension.
 
 ## Persistent local SQLite storage
 
-MoyaApply stores your **structured résumé JSON**, application records, statuses and notes in a SQLite database rather than browser localStorage. The local API owns the database, not the PDF extractor. The app loads saved records on startup and automatically saves edits. Writes are atomic and revision-checked to avoid silently overwriting another tab's updates; if a conflict occurs, reload to pick up the saved state.
+job-application-autofill stores your **structured résumé JSON**, application records, statuses and notes in a SQLite database rather than browser localStorage. The local API owns the database, not the PDF extractor. The app loads saved records on startup and automatically saves edits. Writes are atomic and revision-checked to avoid silently overwriting another tab's updates; if a conflict occurs, reload to pick up the saved state.
 
 - **Docker Compose:** database at `/app/data/moyaapply.sqlite`, persisted in the named `moya_data` volume. Ordinary `docker compose down` does not remove the data. **`docker compose down -v` deletes the database volume**, so back up before using it.
 - **Without Docker:** database at `./data/moyaapply.sqlite` relative to the API process working directory. Override with `MOYA_DB_PATH=/absolute/path/moyaapply.sqlite`.
@@ -74,7 +74,7 @@ The JSON contains `contact`, `summary`, `experience`, `skills`, `education`, `pr
 
 ## Application résumé inputs: JSON + PDF
 
-The JSON résumé drives ATS autofill; a PDF résumé is attached to the employer's application. You can import a schema-valid résumé JSON directly without using OCR or the extractor. When clicking **Apply**, MoyaApply attaches the uploaded PDF if one is available; otherwise it renders the current JSON to a PDF and attaches that generated file automatically. You can export and review the PDF separately before applying.
+The JSON résumé drives ATS autofill; a PDF résumé is attached to the employer's application. You can import a schema-valid résumé JSON directly without using OCR or the extractor. When clicking **Apply**, job-application-autofill attaches the uploaded PDF if one is available; otherwise it renders the current JSON to a PDF and attaches that generated file automatically. You can export and review the PDF separately before applying.
 
 The PDF generator supports Latin text; if a résumé contains unsupported characters and no uploaded PDF is available, application preparation reports an error rather than attaching corrupted text. A file-input mismatch or custom upload widget still requires manual completion in the browser viewer. Final submission always requires explicit browser review and confirmation.
 

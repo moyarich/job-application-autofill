@@ -93,4 +93,4 @@ const server = createServer(async (req, res) => {
   }
 });
 const HOST = process.env.AUTOFILL_HOST || "127.0.0.1";
-server.listen(PORT, HOST, () => console.log("MoyaApply local API listening on " + HOST + ":" + PORT));
+server.listen(PORT, HOST, () => console.log("job-application-autofill local API listening on " + HOST + ":" + PORT));

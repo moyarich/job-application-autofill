@@ -298,7 +298,7 @@ function App() {
   if (!hydrated) return <div className="app"><main className="main"><h1>Loading SQLite data</h1><p>{message || "Connecting to the local API..."}</p></main></div>;
   return <div className="app">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-symbol">M</span><span>Moya<span className="brand-light">Apply</span></span></div>
+      <div className="brand"><span className="brand-symbol">J</span><span>job-application-<span className="brand-light">autofill</span></span></div>
       <div className="nav-label">WORKSPACE</div>
       <button className={tab === "applications" ? "nav active" : "nav"} onClick={() => setTab("applications")}>◫ &nbsp; Applications</button>
       <button className={tab === "profile" ? "nav active" : "nav"} onClick={() => setTab("profile")}>♙ &nbsp; Candidate profile</button>

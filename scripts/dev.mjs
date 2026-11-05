@@ -63,7 +63,7 @@ export function main() {
       console.log("Created .env with a random viewer password (private file).");
       console.log("First-run noVNC password: " + generated + " (also saved as WEB_VNC_PASSWORD in .env)");
     }
-    console.log("Starting MoyaApply: React, API, SQLite, Chromium and noVNC via Docker Compose.");
+    console.log("Starting job-application-autofill: React, API, SQLite, Chromium and noVNC via Docker Compose.");
     console.log("Dashboard: http://localhost:" + (process.env.MOYA_WEB_PORT || "5173"));
     console.log("Browser viewer: http://localhost:" + (process.env.MOYA_REVIEW_PORT || "6080") + "/vnc.html");
     const child = spawn("docker", ["compose", "up", "--build"], { cwd: root, stdio: "inherit", env: process.env });
@@ -71,7 +71,7 @@ export function main() {
     child.on("error", error => { console.error("Could not launch Docker Compose:", error.message); process.exitCode = 1; });
     child.on("exit", (code, signal) => { process.exitCode = code ?? (signal ? 130 : 1); });
   } catch (error) {
-    console.error("MoyaApply startup failed:", error.message);
+    console.error("job-application-autofill startup failed:", error.message);
     process.exitCode = 1;
   }
 }
