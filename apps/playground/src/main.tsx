@@ -32,7 +32,7 @@ async function filePayload(file: File): Promise<{ fileName: string; base64: stri
   });
 }
 
-const PROFILE_KEY = "moya-job-autofill:profile:v1";
+const PROFILE_KEY = "moya-job-autofill:resume:v2";
 const JOBS_KEY = "moya-job-autofill:jobs:v1";
 
 function loadProfile(): CandidateProfile {
@@ -58,12 +58,11 @@ function downloadJson(filename: string, value: unknown) {
   anchor.href = url; anchor.download = filename; anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-const fields: { key: keyof CandidateProfile; label: string; placeholder?: string }[] = [
+const fields: { key: keyof CandidateProfile["contact"]; label: string; placeholder?: string }[] = [
   { key: "firstName", label: "First name" }, { key: "lastName", label: "Last name" },
   { key: "email", label: "Email" }, { key: "phone", label: "Phone" },
   { key: "location", label: "Location" }, { key: "linkedIn", label: "LinkedIn URL" },
   { key: "github", label: "GitHub URL" }, { key: "website", label: "Website" },
-  { key: "skills", label: "Skills (comma-separated)" },
 ];
 const statusLabels: Record<ApplicationStatus, string> = {
   saved: "Saved", in_progress: "In progress", ready_for_review: "Ready for review",
@@ -129,7 +128,7 @@ function App() {
       setMessage("Choose a PDF or DOCX resume of 10 MB or less."); return;
     }
     setResume(file);
-    setProfile(value => ({ ...value, resumeFileName: file?.name ?? "" }));
+    setProfile(value => ({ ...value, source: { fileName: file?.name ?? "" } }));
     setMessage(file ? "Resume selected. Click Parse resume to extract fields." : "");
   }
 
@@ -140,13 +139,7 @@ function App() {
     try {
       const upload = await filePayload(resume);
       const result = await requestApi<{ profile: CandidateProfile; preview: string; warnings: string[] }>("/api/resume/parse", upload);
-      setProfile(previous => {
-        const updated = { ...previous };
-        for (const [key, value] of Object.entries(result.profile)) {
-          if (typeof value === "string" && value.trim()) (updated as unknown as Record<string,string>)[key] = value;
-        }
-        return updated;
-      });
+      setProfile(result.profile);
       setParsePreview(result.preview);
       setMessage("Resume parsed. Review and correct extracted information in Candidate profile.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Resume parse failed"); }
@@ -216,7 +209,7 @@ function App() {
     <div className="parser-grid">
       <div className="parser-left">
         <input ref={resumeRef} hidden type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={chooseResume}/>
-        <div className="drop-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files[0]; if(file) { if(!/\.(pdf|docx)$/i.test(file.name)||file.size>10*1024*1024) {setMessage("Choose a PDF or DOCX resume of 10 MB or less.");return;} setResume(file);setProfile(p=>({...p,resumeFileName:file.name}));setMessage("Resume ready to parse.");}}}>
+        <div className="drop-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files[0]; if(file) { if(!/\.(pdf|docx)$/i.test(file.name)||file.size>10*1024*1024) {setMessage("Choose a PDF or DOCX resume of 10 MB or less.");return;} setResume(file);setProfile(p=>({...p,source:{fileName:file.name}}));setMessage("Resume ready to parse.");}}}>
           <div className="upload-symbol">⇧</div><strong>{resume?.name || "Drag and drop your resume here"}</strong>
           <p>PDF or DOCX · 10 MB max</p>
           <button className="secondary" type="button" onClick={()=>resumeRef.current?.click()}>Choose resume</button>
@@ -225,10 +218,10 @@ function App() {
       </div>
       <div className="parsed-profile">
         <div className="parsed-title"><strong>Parsed profile</strong><button className="secondary" onClick={()=>setTab("profile")}>Edit profile</button></div>
-        <div><span>Name</span><strong>{[profile.firstName,profile.lastName].filter(Boolean).join(" ") || "Not extracted"}</strong></div>
-        <div><span>Email</span><strong>{profile.email || "Not extracted"}</strong></div>
-        <div><span>Skills</span><strong>{profile.skills || "Not extracted"}</strong></div>
-        <div><span>Resume</span><strong>{profile.resumeFileName || "Not selected"}</strong></div>
+        <div><span>Name</span><strong>{[profile.contact.firstName,profile.contact.lastName].filter(Boolean).join(" ") || "Not extracted"}</strong></div>
+        <div><span>Email</span><strong>{profile.contact.email || "Not extracted"}</strong></div>
+        <div><span>Skills</span><strong>{profile.skills.join(", ") || "Not extracted"}</strong></div>
+        <div><span>Resume</span><strong>{profile.source.fileName || "Not selected"}</strong></div>
       </div>
     </div>
     {parsePreview && <details className="text-preview"><summary>View extracted text preview</summary><pre>{parsePreview}</pre></details>}
@@ -335,8 +328,19 @@ function App() {
             <button className="secondary" onClick={()=>importRef.current?.click()}>Import JSON</button>
             <button className="primary" onClick={()=>downloadJson("candidate-profile.json",profile)}>Export JSON</button></div>
         </div>
-        <div className="profile-grid">{fields.map(({key,label})=><label key={key}>{label}<input type={key==="email"?"email":"text"} value={profile[key]} onChange={e=>setProfile(x=>({...x,[key]:e.target.value}))} placeholder={label}/></label>)}</div>
+        <div className="profile-grid">{fields.map(({key,label})=><label key={key}>{label}<input type={key==="email"?"email":"text"} value={profile.contact[key]} onChange={e=>setProfile(x=>({...x,contact:{...x.contact,[key]:e.target.value}}))} placeholder={label}/></label>)}</div>
         <label className="wide-label">Professional summary<textarea rows={4} value={profile.summary} onChange={e=>setProfile(x=>({...x,summary:e.target.value}))} placeholder="Brief summary of your experience..."/></label>
+        <label className="wide-label">Skills (comma-separated)<textarea rows={2} value={profile.skills.join(", ")} onChange={e=>setProfile(x=>({...x,skills:e.target.value.split(",").map(v=>v.trim()).filter(Boolean)}))} placeholder="React, AWS, TypeScript"/></label>
+        <section className="employment-editor">
+          <div className="panel-title horizontal"><h2>Work experience</h2><button className="secondary" onClick={()=>setProfile(x=>({...x,experience:[...x.experience,{company:"",jobTitle:"",location:"",startDate:"",endDate:null,isCurrent:false,description:""}]}))}>+ Add job</button></div>
+          {profile.experience.map((job,index)=><div className="employment-entry" key={index}>
+            <div className="profile-grid">{(["company","jobTitle","location","startDate"] as const).map(key=><label key={key}>{({company:"Employer",jobTitle:"Job title",location:"Location",startDate:"Start date (YYYY-MM)"})[key]}<input value={job[key]} onChange={e=>setProfile(x=>({...x,experience:x.experience.map((item,i)=>i===index?{...item,[key]:e.target.value}:item)}))}/></label>)}
+              <label>End date (YYYY-MM)<input disabled={job.isCurrent} value={job.endDate??""} onChange={e=>setProfile(x=>({...x,experience:x.experience.map((item,i)=>i===index?{...item,endDate:e.target.value}:item)}))}/></label>
+              <label className="review-checkbox"><input type="checkbox" checked={job.isCurrent} onChange={e=>setProfile(x=>({...x,experience:x.experience.map((item,i)=>i===index?{...item,isCurrent:e.target.checked,endDate:e.target.checked?null:""}:item)}))}/>Current role</label></div>
+            <label className="wide-label">Responsibilities<textarea rows={3} value={job.description} onChange={e=>setProfile(x=>({...x,experience:x.experience.map((item,i)=>i===index?{...item,description:e.target.value}:item)}))}/></label>
+            <button className="remove" aria-label="Remove employment entry" onClick={()=>setProfile(x=>({...x,experience:x.experience.filter((_,i)=>i!==index)}))}>Remove job</button>
+          </div>)}
+        </section>
         <div className={errors.length?"validation warning":"validation"}>{errors.length ? "Missing required profile data: "+errors.join(", ") : "✓ Required profile fields look valid."}</div>
         </section>
 
