@@ -50,9 +50,13 @@ export async function fillKnownFields(page, profile) {
   ];
   const filled = [];
   const missing = [];
+  const adapter = adapterForUrl(page.url?.() || "");
+  if (adapter?.fields?.fullName && profile.firstName && profile.lastName)
+    fields.push(["fullName", adapter.fields.fullName]);
   for (const [key, locators] of fields) {
-    if (!profile[key]) continue;
-    (await fill(page, locators, profile[key]) ? filled : missing).push(key);
+    const value = key === "fullName" ? [profile.firstName, profile.lastName].join(" ") : profile[key];
+    if (!value) continue;
+    (await fill(page, adapter?.fields?.[key] || locators, value) ? filled : missing).push(key);
   }
   return { filled, missing };
 }
