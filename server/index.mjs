@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume-schema/validate.mjs";
+import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
@@ -43,9 +44,7 @@ const server = createServer(async (req, res) => {
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
         return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
       if (!payload.resume) return send(res, 400, { error: "A PDF resume attachment is required alongside the structured resume JSON." });
-      const resume = (await import("@moyarich/extract-resume")).decodeUpload(payload.resume);
-      if (resume.extension !== "pdf")
-        return send(res, 400, { error: "Application attachments must be PDF files." });
+      const resume = decodePdfAttachment(payload.resume);
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers))?$/);
