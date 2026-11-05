@@ -51,10 +51,10 @@ export async function fillKnownFields(page, profile) {
   const filled = [];
   const missing = [];
   const adapter = adapterForUrl(page.url?.() || "");
-  if (adapter?.fields?.fullName && profile.firstName && profile.lastName)
+  if (adapter?.fields?.fullName && profile.contact.firstName && profile.contact.lastName)
     fields.push(["fullName", adapter.fields.fullName]);
   for (const [key, locators] of fields) {
-    const value = key === "fullName" ? [profile.firstName, profile.lastName].join(" ") : profile[key];
+    const value = key === "fullName" ? [profile.contact.firstName, profile.contact.lastName].join(" ") : profile.contact[key];
     if (!value) continue;
     (await fill(page, adapter?.fields?.[key] || locators, value) ? filled : missing).push(key);
   }
