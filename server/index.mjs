@@ -53,7 +53,7 @@ const server = createServer(async (req, res) => {
       const upload = decodeUpload(await readJson(req));
       const text = await extractResumeText(upload.buffer, upload.extension);
       return send(res, 200, { profile: { ...extractProfile(text), source: { fileName: upload.fileName } },
-        preview: text.slice(0, 3500), warnings: ["Review parsed fields before applying."] });
+        preview: text, warnings: ["Review parsed fields before applying."] });
     }
     if (req.method === "GET" && url.pathname === "/api/apply/active")
       return send(res, 200, { session: getActiveApplication() });
