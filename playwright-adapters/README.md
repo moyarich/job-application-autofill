@@ -29,3 +29,11 @@ Publicly visible application fields include first and last name, **preferred fir
 **Manual review is required** for unprovided preferred name, country/autocomplete, education dropdowns, consent, referral/screening questions, authorization/sponsorship, and voluntary demographic answers. The adapter does not guess those values or choose an answer automatically.
 
 The exact URL has a provider-regression test. Public page inspection is **not** an authenticated Playwright run or a completed application submission.
+
+## Workday structured work experience
+
+The Workday helper at `workday/experience.mjs` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+
+To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
+
+Browser fixtures: `node --test tests/workday-experience.test.mjs`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.
