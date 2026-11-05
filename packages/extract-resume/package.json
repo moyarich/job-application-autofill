@@ -6,13 +6,33 @@
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.mjs"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "files": [
     "src",
-    "python"
+    "python",
+    "dist"
   ],
   "scripts": {
-    "test:python": "python -m unittest discover -s python -p 'test_*.py' -v"
-  }
+    "build": "npm run build:js && npm run build:python",
+    "test:python": "poetry run python -m unittest discover -s python -p 'test_*.py' -v",
+    "build:js": "vite build && tsc -p tsconfig.build.json",
+    "build:python": "poetry install --only main --no-root",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  },
+  "bin": {
+    "extract-resume": "./dist/cli.js"
+  },
+  "devDependencies": {
+    "vite": "^7.3.7",
+    "typescript": "^5.9.2",
+    "@types/node": "^24.3.1"
+  },
+  "types": "./dist/index.d.ts"
 }

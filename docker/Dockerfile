@@ -52,6 +52,7 @@ RUN cd packages/extract-resume \
 # Dependency import check runs with the same interpreter used by the API above.
 
 COPY . .
+RUN npm run build:js --workspace packages/extract-resume
 RUN chmod +x docker/start-review.sh
 
 # Ensure browser binaries match npm's Playwright dependency.

@@ -65,7 +65,7 @@ Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node
 
 ## Run without Docker
 
-Requires Node.js 22.13+ (for built-in node:sqlite), Chromium for Playwright, Python 3.10–3.13 and Poetry for the local PDF OCR environment.
+Requires Node.js 22.13+ (for built-in node:sqlite), Chromium for Playwright, Python 3.12–3.14 and Poetry for the local PDF OCR environment.
 
 ```sh
 npm ci
