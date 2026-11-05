@@ -19,6 +19,13 @@ for (const [id, [url]] of Object.entries(samples)) {
   });
 }
 
+test("Elevance Health JR209310 is Workday, not Greenhouse", () => {
+  const url = "https://elevancehealth.wd1.myworkdayjobs.com/en-US/ANT/job/IL-CHICAGO-8600-W-BRYN-MAWR-AVE-10th--11th-FL/Developer-Senior_JR209310";
+  assert.equal(adapterForUrl(url)?.id, "workday");
+  assert.notEqual(adapterForUrl(url)?.id, "greenhouse");
+  assert.equal(new URL(url).hostname, "elevancehealth.wd1.myworkdayjobs.com");
+});
+
 test("sign-in, SSO and challenge detection", () => {
   assert.equal(formState("Create an account to continue", "https://jobs.lever.co/acme/apply"), "login_required");
   assert.equal(formState("Welcome back", "https://acme.wd5.myworkdayjobs.com/login"), "login_required");
