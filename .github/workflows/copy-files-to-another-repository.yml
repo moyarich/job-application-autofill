@@ -51,8 +51,10 @@ on:
           - all
           - ci_actionlint.yml
           - ci_cli.yml
+          - ci_docker.yml
           - ci_npm-package-lint.yml
           - ci_package-lock.yml
+          - ci_pdf-ocr.yml
           - ci_playwright.yml
           - ci_prettier.yml
           - ci_storybook.yml
