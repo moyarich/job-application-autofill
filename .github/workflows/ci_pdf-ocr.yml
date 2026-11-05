@@ -5,14 +5,14 @@ on:
     paths:
       - "packages/extract-resume/python/pdf_ocr.py"
       - "packages/extract-resume/python/test_pdf_ocr.py"
-      - "packages/extract-resume/python/requirements-ocr.txt"
+      - "packages/extract-resume/pyproject.toml"
       - ".github/workflows/ci_pdf-ocr.yml"
   push:
     branches: [main]
     paths:
       - "packages/extract-resume/python/pdf_ocr.py"
       - "packages/extract-resume/python/test_pdf_ocr.py"
-      - "packages/extract-resume/python/requirements-ocr.txt"
+      - "packages/extract-resume/pyproject.toml"
       - ".github/workflows/ci_pdf-ocr.yml"
 
 permissions:
@@ -28,9 +28,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: packages/extract-resume/python/requirements-ocr.txt
+          cache-dependency-path: packages/extract-resume/pyproject.toml
       - name: Install Python OCR dependencies
-        run: python -m pip install -r packages/extract-resume/python/requirements-ocr.txt reportlab
+        run: python -m pip install -e 'packages/extract-resume[test]'
       - name: Python syntax check
         run: python -m compileall -q packages/extract-resume/python/pdf_ocr.py packages/extract-resume/python/test_pdf_ocr.py
       - name: PDF parsing and scanned-page fallback tests

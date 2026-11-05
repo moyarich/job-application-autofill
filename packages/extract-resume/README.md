@@ -16,18 +16,20 @@ const profile = { ...extractProfile(text), resumeFileName: upload.fileName };
 - DOCX: built-in Node ZIP decompression and document XML extraction.
 - Profile: heuristic extraction of contact details and known skills; results should be reviewed.
 
+The Python project is independently installable from `pyproject.toml`. Python distribution name: `moya-extract-resume-ocr`.
+
 ## Python setup
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -r packages/extract-resume/python/requirements-ocr.txt
+.venv/bin/python -m pip install -e packages/extract-resume
 PYTHON_EXECUTABLE=.venv/bin/python npm run dev:server
 ```
 
 ## Tests
 
 ```sh
-.venv/bin/python -m pip install reportlab
+.venv/bin/python -m pip install -e 'packages/extract-resume[test]'
 .venv/bin/python -m unittest discover -s packages/extract-resume/python -p 'test_*.py' -v
 npm test
 ```

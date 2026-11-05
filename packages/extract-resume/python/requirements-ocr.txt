@@ -1,6 +1,0 @@
-# Native PDF text extraction and scanned-page OCR fallback.
-# Install into a dedicated Python virtual environment.
-pypdfium2>=4.30,<6
-rapidocr>=3.10,<4
-onnxruntime>=1.18,<2
-Pillow>=10,<13

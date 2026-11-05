@@ -11,7 +11,7 @@ npm ci
 npx playwright install chromium
 # macOS/Linux:
 python3 -m venv .venv
-.venv/bin/python -m pip install -r packages/extract-resume/python/requirements-ocr.txt
+.venv/bin/python -m pip install -e packages/extract-resume
 # Windows: use .venv\\Scripts\\python.exe instead
 ```
 
@@ -47,7 +47,9 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 - `apps/playground`: React + Vite application
 - `packages/job-application-autofill`: typed candidate and job models
 - `packages/extract-resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
-- `server/resume.mjs`: Node bridge to the local Python extractor and profile heuristics\n- `server/pdf_ocr.py`: PDFium extraction with lazy RapidOCR fallback for scanned pages\n- `packages/extract-resume/python/requirements-ocr.txt`: Python OCR dependencies
+- `packages/extract-resume/src/index.mjs`: Node.js resume extraction and profile heuristics
+- `packages/extract-resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
+- `packages/extract-resume/pyproject.toml`: Python package metadata and OCR dependencies
 - `server/automation.mjs`: Playwright review-before-submit sessions
 - `server/index.mjs`: local JSON HTTP API
 
@@ -61,7 +63,7 @@ npm run checks
 
 ```sh
 # Installs the optional fixture library for Python tests.
-.venv/bin/python -m pip install reportlab
+.venv/bin/python -m pip install -e 'packages/extract-resume[test]'
 .venv/bin/python -m unittest discover -s packages/extract-resume/python -p 'test_*.py' -v
 ```
 
