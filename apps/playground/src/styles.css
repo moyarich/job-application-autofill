@@ -6,3 +6,5 @@
 .browser-review-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}.browser-review-header strong{font-size:14px}.browser-viewer{display:block;width:100%;height:min(65vh,700px);min-height:380px;background:#141c2e;border:1px solid #cbd5e8;border-radius:10px;margin:12px 0 18px}.review-checkbox{margin-top:12px}@media(max-width:700px){.browser-viewer{height:460px;min-height:300px}}
 
 .job-notes{flex-basis:100%;margin:9px 0 4px 57px}.job-notes textarea{resize:vertical}.review-panel .validation button{margin-left:9px}
+
+.application-questions{border:1px solid #e1e7f2;border-radius:12px;background:white;margin:16px 0;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.application-questions .panel-title,.application-questions .actions{grid-column:1/-1}.application-questions h3{margin:0 0 5px;font-size:16px}.application-questions textarea{resize:vertical}

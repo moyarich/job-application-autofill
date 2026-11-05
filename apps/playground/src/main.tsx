@@ -6,7 +6,8 @@ import {
 } from "../../../packages/job-application-autofill/src/index";
 import "./styles.css";
 
-type ApplySession = { id: string; jobId: string; state: string; message: string; url: string; screenshot: string | null; reviewUrl: string | null; filled: string[]; missing: string[]; };
+type AtsQuestion = { label: string; kind: "text" | "textarea" | "select" | "combobox" | "radio" | "checkbox"; required: boolean; options: string[] };
+type ApplySession = { id: string; jobId: string; state: string; message: string; url: string; screenshot: string | null; reviewUrl: string | null; filled: string[]; missing: string[]; ats?: string; questions?: AtsQuestion[]; answerResult?: { filled: string[]; unresolved: string[] } };
 
 async function requestApi<T>(url: string, data: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -84,6 +85,7 @@ function App() {
   const [parsePreview, setParsePreview] = useState("");
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -161,9 +163,23 @@ function App() {
       const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, jobId: job.id, profile, resume: upload });
       setSession(result);
       setReviewed(false);
+      setQuestionAnswers({});
       changeJob(job.id, result.state === "ready_for_review" ? "ready_for_review" : "in_progress");
       setMessage(result.message);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to prepare application"); }
+    finally { setApplyBusy(false); }
+  }
+  async function fillCustomQuestions() {
+    if (!session) return;
+    setApplyBusy(true);
+    try {
+      const updated = await requestApi<ApplySession>("/api/apply/" + session.id + "/answers", { answers: questionAnswers });
+      setSession(updated);
+      setReviewed(false);
+      setMessage(updated.answerResult?.unresolved.length
+        ? "Could not resolve: " + updated.answerResult.unresolved.join(", ") + ". Please use the browser viewer."
+        : updated.message);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to fill employer questions."); }
     finally { setApplyBusy(false); }
   }
   async function continueAfterChallenge() {
@@ -245,11 +261,35 @@ function App() {
         {parserPanel}
         {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
           <p><strong>Session:</strong> {session.state.replaceAll("_", " ")} · {session.url}</p>
-          {session.state === "manual_intervention" && <div className="validation warning">
-            Complete the security challenge in the interactive browser viewer, then
-            <button className="secondary" disabled={applyBusy} onClick={continueAfterChallenge}>Continue after challenge</button>
+          {(session.state === "manual_intervention" || session.state === "login_required") && <div className="validation warning">
+            {session.state === "login_required"
+              ? "Sign in or create your account in the interactive browser viewer. Enter credentials and MFA codes only on the employer or identity provider website."
+              : "Complete the security challenge in the interactive browser viewer."}
+            <button className="secondary" disabled={applyBusy} onClick={continueAfterChallenge}>I've finished — continue</button>
           </div>}
           {session.state === "submission_unverified" && <p className="validation warning">Submission was attempted but the employer did not show a recognizable confirmation. Verify the result manually before updating the job status.</p>}
+          {session.ats && <p><strong>ATS:</strong> {session.ats}</p>}
+          {session.state === "ready_for_review" && <div className="application-questions">
+            <div className="panel-title"><h3>Employer-specific questions</h3><p>Only your own answers are filled. Sensitive and voluntary questions stay in the employer browser.</p></div>
+            {(session.questions || []).filter(q => !/password|passcode|otp|social security|ssn|date of birth|birth date|credit card|bank account|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif/i.test(q.label)).map(q =>
+              <label key={q.label}>{q.label}{q.required ? " (required)" : ""}
+                {q.options.length > 0 && (q.kind === "select" || q.kind === "radio" || q.kind === "combobox")
+                  ? <select value={questionAnswers[q.label] || ""} onChange={e=>setQuestionAnswers(value=>({...value,[q.label]:e.target.value}))}>
+                      <option value="">Select an answer</option>{q.options.map(option=><option key={option} value={option}>{option}</option>)}
+                    </select>
+                  : q.kind === "checkbox"
+                    ? <select value={questionAnswers[q.label] || ""} onChange={e=>setQuestionAnswers(value=>({...value,[q.label]:e.target.value}))}>
+                        <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
+                      </select>
+                    : q.kind === "textarea"
+                      ? <textarea rows={3} value={questionAnswers[q.label] || ""} onChange={e=>setQuestionAnswers(value=>({...value,[q.label]:e.target.value}))} />
+                      : <input value={questionAnswers[q.label] || ""} onChange={e=>setQuestionAnswers(value=>({...value,[q.label]:e.target.value}))} />}
+              </label>)}
+            <div className="actions">
+              <button className="secondary" disabled={applyBusy || !Object.values(questionAnswers).some(Boolean)} onClick={fillCustomQuestions}>Fill my answers</button>
+              <button className="secondary" disabled={applyBusy} onClick={continueAfterChallenge}>Refresh form after next step</button>
+            </div>
+          </div>}
           {session.reviewUrl && <div className="browser-review">
             <div className="browser-review-header">
               <strong>Live employer application</strong>
