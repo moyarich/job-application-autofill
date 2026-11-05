@@ -29,17 +29,20 @@ From the repository root:
 npm run build --workspace packages/extract-resume
 ```
 
-This builds the JavaScript library and Commander CLI with Vite, emits TypeScript
-declarations, then runs `poetry install --only main --no-root` to prepare the Python
-PDF/OCR dependencies. Install Poetry and a compatible Python
-(3.12 through 3.14) first. Build output is written to `dist/` as Node.js ES modules. The repository's workspace build also runs this step.
+This builds the JavaScript library and Commander CLI with Vite and emits TypeScript
+declarations. Build output is written to `dist/` as Node.js ES modules. The
+repository's workspace build runs this Node.js step without requiring Python.
+
+For PDF/OCR support, separately run `npm run build:python --workspace packages/extract-resume`
+after installing Poetry and a compatible Python (3.12 through 3.14). This installs
+the locked Python dependencies without creating a Python wheel.
 
 The Poetry project uses `package-mode = false`, so this step installs dependencies;
 it does not create a Python wheel with `poetry build`.
 
-Use `npm run build:js --workspace packages/extract-resume` for only the Vite and
+Use `npm run build:js --workspace packages/extract-resume` for the Vite and
 declaration build, `npm run build:python --workspace packages/extract-resume` for
-only Poetry setup, and `npm run typecheck --workspace packages/extract-resume`
+Poetry setup, and `npm run typecheck --workspace packages/extract-resume`
 for TypeScript checks. All extraction modules and the CLI use TypeScript with strict checking.
 
 ## CLI
