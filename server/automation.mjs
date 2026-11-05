@@ -77,6 +77,7 @@ export function getActiveApplication() {
 
 async function populateSession(session) {
   const page = session.page;
+  validateUrl(page.url());
     const results = await fillKnownFields(page, session.profile);
     session.filled = results.filled;
     session.missing = results.missing;
