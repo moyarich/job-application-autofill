@@ -176,7 +176,7 @@ function App() {
       // The JSON drives autofill. The application also needs a PDF attachment.
       // Reuse the user's uploaded PDF when available; otherwise create one from JSON.
       const validProfile = parseCandidateJson(JSON.stringify(profile));
-      const uploadedPdf = resume && /\\.pdf$/i.test(resume.name) ? resume : null;
+      const uploadedPdf = resume && /\.pdf$/i.test(resume.name) ? resume : null;
       const attachment = uploadedPdf || new File(
         [new Uint8Array(renderResumePdf(validProfile))],
         ([validProfile.contact.firstName, validProfile.contact.lastName].filter(Boolean).join("-") || "resume")
