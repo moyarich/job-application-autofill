@@ -57,7 +57,16 @@ export function extractEmploymentHistory(text){
     // A promoted role at the same employer may show only its title and dates.
     if(!id&&jobs.length&&parts.length===1)id=identity(parts,jobs.at(-1).company);
     if(!id&&jobs.length&&suffix)id=identity([suffix],jobs.at(-1).company);
-    if(id)jobs.push({...id,startDate,endDate,isCurrent,begin,end:i});
+    let end=i;
+    // Some resumes place the date range before the company and job title.
+    if(!id&&!prefix&&!suffix){
+      const following=lines.slice(i+1,i+3);
+      if(following.length===2&&following.every(x=>header(x)&&!RANGE.test(x))){
+        id=identity(following);
+        if(id)end=i+2;
+      }
+    }
+    if(id)jobs.push({...id,startDate,endDate,isCurrent,begin,end});
   }
   return jobs.map((j,n)=>({
     company:j.company,jobTitle:j.jobTitle,location:j.location,startDate:j.startDate,endDate:j.endDate,isCurrent:j.isCurrent,
