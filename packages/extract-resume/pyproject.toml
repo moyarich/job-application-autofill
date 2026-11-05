@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "moya-extract-resume-ocr"
+name = "job-application-autofill-extract-resume-ocr"
 version = "0.1.0"
-description = "Local PDF text extraction with scanned-page OCR fallback for MoyaApply"
-authors = ["MoyaApply contributors"]
+description = "Local PDF text extraction with scanned-page OCR fallback for job-application-autofill"
+authors = ["job-application-autofill contributors"]
 readme = "README.md"
 package-mode = false
 
