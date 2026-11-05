@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PORTS = "MOYA_WEB_PORT=5173\nMOYA_REVIEW_PORT=6080\n";
-export function makePassword(bytes = randomBytes(12)) {
+export function makePassword(bytes = randomBytes(6)) {
   // VNC's classic password scheme only considers the first eight bytes.
-  return bytes.toString("hex").slice(0, 8);
+  return bytes.toString("base64url").slice(0, 8);
 }
 export function parsePassword(text) {
   const entries = [...text.matchAll(/^\s*(?:export\s+)?WEB_VNC_PASSWORD\s*=\s*(.*?)\s*$/gm)];
@@ -36,7 +36,7 @@ export function setupEnv(dir = root, env = process.env, random = makePassword) {
     return { source: ".env", generated: null };
   }
   const generated = random();
-  if (!/^[0-9a-f]{8}$/.test(generated)) throw new Error("Could not generate a valid VNC password.");
+  if (!/^[A-Za-z0-9_-]{8}$/.test(generated)) throw new Error("Could not generate a valid VNC password.");
   const entry = "WEB_VNC_PASSWORD=" + generated;
   const updated = existing === null
     ? "# Local-only Playwright viewer credentials. Keep this file private.\n" + entry + "\n" + DEFAULT_PORTS
