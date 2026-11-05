@@ -48,6 +48,12 @@ Importing does **not** call the OCR/PDF parser or require a résumé file. You c
 
 The JSON contains `contact`, `summary`, `experience`, `skills`, `education`, `projects`, `certifications`, `languages`, `awards`, and `source`. `source.fileName` may be empty. There is no legacy flat-profile format or migration layer.
 
+## Application résumé inputs: JSON + PDF
+
+The JSON résumé drives ATS autofill; a PDF résumé is attached to the employer's application. You can import a schema-valid résumé JSON directly without using OCR or the extractor. When clicking **Apply**, MoyaApply attaches the uploaded PDF if one is available; otherwise it renders the current JSON to a PDF and attaches that generated file automatically. You can export and review the PDF separately before applying.
+
+The PDF generator supports Latin text; if a résumé contains unsupported characters and no uploaded PDF is available, application preparation reports an error rather than attaching corrupted text. A file-input mismatch or custom upload widget still requires manual completion in the browser viewer. Final submission always requires explicit browser review and confirmation.
+
 ## Generate an ATS-friendly PDF from résumé JSON
 
 Import a JSON résumé conforming to [`resume-schema/resume.schema.json`](resume-schema/resume.schema.json), or optionally parse a PDF/DOCX into that structure. On the **Candidate profile** page, select **Export PDF**; the same action is available next to the parsed profile preview. The browser generates and downloads a standard US Letter PDF without uploading personal information to an external service.
