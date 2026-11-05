@@ -88,6 +88,10 @@ async function populateSession(session) {
     const results = await fillKnownFields(page, session.profile);
     session.filled = results.filled;
     session.missing = results.missing;
+    // Structured work history is passed to the session, but repeating ATS
+    // employment forms are not safely autofilled without site-specific mapping.
+    if (Array.isArray(session.profile.experience) && session.profile.experience.length)
+      session.missing.push("work experience (" + session.profile.experience.length + " entries; review in employer browser)");
 
     if (session.pendingResume?.buffer?.length) {
       const filename = join(session.directory, session.pendingResume.fileName);
