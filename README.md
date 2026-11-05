@@ -13,9 +13,22 @@ MoyaApply stores your **structured résumé JSON**, application records, statuse
 
 SQLite uses the built-in Node.js `node:sqlite` module (Node.js 22.13+); no native npm packages or external database server are required.
 
+## Start the complete app with npm
+
+```sh
+npm ci
+npm run dev
+```
+
+Run this from the repository root with **Docker Engine/Desktop and Docker Compose v2 installed and running**. It starts the entire stack: React/Vite, the Node API, SQLite storage, Playwright Chromium, and the interactive noVNC browser viewer. The first start creates a private `.env` with a randomly generated VNC password (printed once and saved in the file), unless `WEB_VNC_PASSWORD` is already configured. Custom passwords are preserved. To change ports, edit `.env`.
+
+Open the dashboard at **http://localhost:5173** and the browser viewer at **http://localhost:6080/vnc.html**. Use the password in `.env` when prompted for the viewer. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the Docker volume after a normal stop.
+
+`npm run dev:web` runs **only Vite**; it is useful when the API is already running separately and does not start the full application.
+
 ## Run with Docker Compose
 
-From the repository root, configure a private VNC password in an untracked `.env` file, then start the stack:
+For manual Docker Compose usage, configure a private VNC password in an untracked `.env` file, then start the stack:
 
 ```sh
 cp .env.example .env
@@ -42,7 +55,7 @@ poetry install --with test --no-root
 cd ../..
 ```
 
-Run these in two terminals:
+For advanced host-only development without the Docker noVNC viewer, run these in two terminals:
 
 ```sh
 PYTHON_EXECUTABLE="$(cd packages/extract-resume && poetry env info --executable)" npm run dev:server
