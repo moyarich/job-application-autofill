@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: ["npm", "run", "dev", "--workspace", "apps/playground", "--", "--host", "0.0.0.0"]
+    command: ["npm", "run", "dev", "--workspace", "apps/playground"]
     environment:
       VITE_API_PROXY_TARGET: http://api:4177
     ports:
