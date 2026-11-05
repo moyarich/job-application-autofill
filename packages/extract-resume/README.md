@@ -2,6 +2,8 @@
 
 Local Node.js resume extraction package used by MoyaApply. Supports PDF and DOCX uploads and structured profile heuristics. No cloud services.
 
+See [the structured resume JSON Schema](schemas/resume.schema.json) and [example JSON](schemas/resume.example.json) for the parsed profile contract and optional future résumé sections.
+
 ## API
 
 ```js
