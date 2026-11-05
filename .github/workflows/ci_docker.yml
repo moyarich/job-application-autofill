@@ -31,7 +31,7 @@ jobs:
     env:
       WEB_VNC_PASSWORD: "testpass123"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate Compose definition
         run: docker compose config --quiet
       - name: Build application image
