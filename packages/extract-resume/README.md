@@ -30,10 +30,13 @@ npm run build --workspace packages/extract-resume
 ```
 
 This builds the JavaScript library and Commander CLI with Vite, emits TypeScript
-declarations, then runs `poetry install --only main --no-root` to prepare the Python
-PDF/OCR dependencies. Install Poetry and a compatible Python
-(3.12 through 3.14) first. Build output is written to `dist/` as Node.js ES modules.
-The CI CLI workflow installs Python and Poetry before running the full workspace build.
+declarations, then installs the Python PDF/OCR dependencies. If Poetry is missing,
+the build installs it automatically into the project-local
+`packages/extract-resume/node_modules/.cache/poetry` virtual environment, then
+runs `poetry install --only main --no-root --no-interaction`.
+A compatible Python (3.12 through 3.14) must already be installed. The bootstrap
+reuses Poetry when available and does not modify global Python packages.
+Build output is written to `dist/` as Node.js ES modules.
 
 The Poetry project uses `package-mode = false`, so this step installs dependencies;
 it does not create a Python wheel with `poetry build`.
@@ -85,12 +88,10 @@ existing Poetry command installed under 3.10.6 available. This keeps
 the package separate from a parent directory's Python selection (Python 3.15 is
 outside this package's supported range).
 
-Install Poetry, then prepare the Python environment:
+The build automatically installs Poetry if needed, then prepares the Python environment:
 
 ```sh
-cd packages/extract-resume
-poetry install --only main --no-root
-cd ../..
+npm run build --workspace packages/extract-resume
 npm exec -- extract-resume "Moya Richards - Resume.pdf" -o resume.json
 ```
 
