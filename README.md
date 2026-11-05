@@ -2,7 +2,21 @@
 
 Standalone **React + TypeScript** job application dashboard with a local **Node.js + Playwright** runner. Not a browser extension.
 
-## Run
+## Run with Docker Compose
+
+From the repository root:
+
+```sh
+docker compose up --build
+```
+
+Open http://localhost:5173. Override the local port with `MOYA_WEB_PORT=5174 docker compose up --build`.
+
+Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node/Playwright/Poetry `api` service. The backend stays on the internal Docker network; only the web port is bound to `127.0.0.1`. Python OCR is installed from `packages/extract-resume/pyproject.toml` at image build time. Rebuild the image after source changes.
+
+**Headless browser limitation:** Docker mode supports resume parsing and preparing forms in headless Chromium, but does **not** provide interactive employer-site browser review. To avoid unreviewed applications, final submission is disabled inside Docker. For manual review and submission, use the native local development workflow below.
+
+## Run without Docker
 
 Requires Node.js 20+, Chromium for Playwright, Python 3.10–3.13 and Poetry for the local PDF OCR environment.
 

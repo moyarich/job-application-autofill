@@ -64,4 +64,5 @@ const server = createServer(async (req, res) => {
     return send(res, 400, { error: error instanceof Error ? error.message : "Request failed" });
   }
 });
-server.listen(PORT, "127.0.0.1", () => console.log("MoyaApply local API at http://127.0.0.1:" + PORT));
+const HOST = process.env.AUTOFILL_HOST || "127.0.0.1";
+server.listen(PORT, HOST, () => console.log("MoyaApply local API listening on " + HOST + ":" + PORT));

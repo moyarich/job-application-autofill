@@ -61,7 +61,9 @@ export async function prepareApplication({ jobUrl, profile, resume }) {
     }
     // Never click Continue/Submit automatically: user must inspect site-specific questions.
     session.state = "ready_for_review";
-    session.message = "Known fields filled. Review required questions in the opened browser; submission requires explicit confirmation.";
+    session.message = process.env.CONTAINER_MODE === "true"
+      ? "Known fields filled in headless Chromium. Docker does not expose an interactive browser; final submission is disabled in container mode. Run locally to review and submit."
+      : "Known fields filled. Review required questions in the opened browser; submission requires explicit confirmation.";
     const screenshots = resolve("screenshots");
     await mkdir(screenshots, { recursive: true });
     const destination = join(screenshots, id + ".png");
@@ -79,6 +81,7 @@ export function getApplication(id) {
   return status(session);
 }
 export async function submitApplication(id) {
+  if (process.env.CONTAINER_MODE === "true") throw new Error("Final submission is unavailable in Docker headless mode. Run the application locally to review the browser and submit.");
   const session = sessions.get(id);
   if (!session || session.state !== "ready_for_review") throw new Error("Application is not ready for submission.");
   const page = session.page;

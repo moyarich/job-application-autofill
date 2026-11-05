@@ -38,3 +38,10 @@ Thumbs.db
 !.vscode/extensions.json
 
 .local
+
+# Docker and local OCR
+screenshots/
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
