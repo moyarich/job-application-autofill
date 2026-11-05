@@ -45,3 +45,10 @@ screenshots/
 **/.venv/
 __pycache__/
 *.pyc
+
+# SQLite profile and application database
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
