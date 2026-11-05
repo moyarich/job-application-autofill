@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx \
+    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc fluxbox novnc websockify \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pipx install poetry && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
@@ -33,9 +33,10 @@ RUN cd packages/extract-resume \
     && ln -s "$(cat /tmp/moya-python-path)" /opt/venv/bin/python
 
 COPY . .
+RUN chmod +x docker/start-review.sh
 
 # Ensure browser binaries match npm's Playwright dependency.
 RUN npx playwright install chromium
 
-EXPOSE 4177 5173
+EXPOSE 4177 5173 6080
 CMD ["node", "server/index.mjs"]

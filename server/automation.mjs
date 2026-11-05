@@ -26,7 +26,8 @@ async function fill(page, labels, value) {
   return false;
 }
 function status(session) {
-  return { id: session.id, state: session.state, url: session.url, message: session.message, screenshot: session.screenshot };
+  return { id: session.id, state: session.state, url: session.url, message: session.message, screenshot: session.screenshot,
+    reviewUrl: process.env.BROWSER_REVIEW_URL || null };
 }
 export async function prepareApplication({ jobUrl, profile, resume }) {
   const url = validateUrl(jobUrl);
@@ -61,8 +62,8 @@ export async function prepareApplication({ jobUrl, profile, resume }) {
     }
     // Never click Continue/Submit automatically: user must inspect site-specific questions.
     session.state = "ready_for_review";
-    session.message = process.env.CONTAINER_MODE === "true"
-      ? "Known fields filled in headless Chromium. Docker does not expose an interactive browser; final submission is disabled in container mode. Run locally to review and submit."
+    session.message = process.env.BROWSER_REVIEW_URL
+      ? "Known fields filled. Open the password-protected browser viewer to inspect and edit the application before confirming submission."
       : "Known fields filled. Review required questions in the opened browser; submission requires explicit confirmation.";
     const screenshots = resolve("screenshots");
     await mkdir(screenshots, { recursive: true });
@@ -81,7 +82,8 @@ export function getApplication(id) {
   return status(session);
 }
 export async function submitApplication(id) {
-  if (process.env.CONTAINER_MODE === "true") throw new Error("Final submission is unavailable in Docker headless mode. Run the application locally to review the browser and submit.");
+  if (process.env.CONTAINER_MODE === "true" && (!process.env.BROWSER_REVIEW_URL || process.env.HEADLESS === "true"))
+    throw new Error("Final submission requires an interactive browser viewer.");
   const session = sessions.get(id);
   if (!session || session.state !== "ready_for_review") throw new Error("Application is not ready for submission.");
   const page = session.page;

@@ -46,7 +46,8 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
       if (req.method === "POST" && action === "submit") {
         const payload = await readJson(req);
-        if (payload.confirm !== true) return send(res, 400, { error: "Explicit confirmation is required." });
+        if (payload.confirm !== true || (process.env.CONTAINER_MODE === "true" && payload.reviewed !== true))
+          return send(res, 400, { error: "Confirm submission and acknowledge reviewing the browser first." });
         return send(res, 200, await submitApplication(id));
       }
       if (req.method === "POST" && action === "close") {

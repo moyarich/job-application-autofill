@@ -4,17 +4,19 @@ Standalone **React + TypeScript** job application dashboard with a local **Node.
 
 ## Run with Docker Compose
 
-From the repository root:
+From the repository root, configure a private VNC password in an untracked `.env` file, then start the stack:
 
 ```sh
+cp .env.example .env
+# Edit .env and set MOYA_VNC_PASSWORD before starting.
 docker compose up --build
 ```
 
-Open http://localhost:5173. Override the local port with `MOYA_WEB_PORT=5174 docker compose up --build`.
+Open http://localhost:5173. The **interactive Playwright browser viewer** is available at http://localhost:6080/vnc.html (or use the **Open interactive browser viewer** link inside the application review panel). Enter the password configured as `MOYA_VNC_PASSWORD`. Override local ports with `MOYA_WEB_PORT=5174` or `MOYA_REVIEW_PORT=6081`.
 
 Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node/Playwright/Poetry `api` service. The backend stays on the internal Docker network; only the web port is bound to `127.0.0.1`. Python OCR is installed from `packages/extract-resume/pyproject.toml` at image build time. Rebuild the image after source changes.
 
-**Headless browser limitation:** Docker mode supports resume parsing and preparing forms in headless Chromium, but does **not** provide interactive employer-site browser review. To avoid unreviewed applications, final submission is disabled inside Docker. For manual review and submission, use the native local development workflow below.
+**Interactive browser review:** Docker launches Chromium in an Xvfb desktop with noVNC (password protected). The viewer and dashboard are published on host-loopback ports only, not on the public interface. Before final submission you must open the viewer, inspect the actual employer form, complete any mandatory fields, check the review acknowledgment, and explicitly click **Confirm & submit**. VNC password authentication uses a legacy protocol (only the first eight password bytes are significant); do not expose port 6080 externally or use this setup across an untrusted network. The display is shared among application sessions.
 
 ## Run without Docker
 
@@ -50,9 +52,9 @@ Open http://localhost:5173.
 
 ## Security & limitations
 
-The API listens on `127.0.0.1:4177` and checks the dashboard origin and custom header. Resume extraction and browser automation run locally without a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
+In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction and browser automation run locally without a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
 
-Field mapping remains rule based, and OCR may misread low-quality scans or complex layouts. Review and correct extracted fields before applying. Playwright supports common text inputs; custom selects, MFA, CAPTCHAs, account logins and unknown questions require manual intervention. It does not bypass anti-bot mechanisms. The browser is headed by default; `HEADLESS=true` is supported for scripted testing.
+Field mapping remains rule based, and OCR may misread low-quality scans or complex layouts. Review and correct extracted fields before applying. Playwright supports common text inputs; custom selects, MFA, CAPTCHAs, account logins and unknown questions require manual intervention. It does not bypass anti-bot mechanisms. The browser is headed by default and uses Xvfb/noVNC in Docker; `HEADLESS=true` is supported for scripted testing outside the interactive-review Compose setup.
 
 The screenshot is an approximate visual reference, not proof of real ATS coverage. Always verify the destination, content and application result on the employer website.
 

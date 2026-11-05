@@ -6,7 +6,7 @@ import {
 } from "../../../packages/job-application-autofill/src/index";
 import "./styles.css";
 
-type ApplySession = { id: string; state: string; message: string; url: string; screenshot: string | null };
+type ApplySession = { id: string; state: string; message: string; url: string; screenshot: string | null; reviewUrl: string | null };
 
 async function requestApi<T>(url: string, data: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -83,6 +83,7 @@ function App() {
   const [applyBusy, setApplyBusy] = useState(false);
   const [parsePreview, setParsePreview] = useState("");
   const [session, setSession] = useState<ApplySession | null>(null);
+  const [reviewed, setReviewed] = useState(false);
   useEffect(() => { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }, [profile]);
   useEffect(() => { localStorage.setItem(JOBS_KEY, JSON.stringify(jobs)); }, [jobs]);
   const errors = validateCandidate(profile);
@@ -149,6 +150,7 @@ function App() {
       const upload = resume ? await filePayload(resume) : null;
       const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, profile, resume: upload });
       setSession(result);
+      setReviewed(false);
       changeJob(job.id, result.state === "ready_for_review" ? "ready_for_review" : "in_progress");
       setMessage(result.message);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to prepare application"); }
@@ -156,10 +158,11 @@ function App() {
   }
   async function finalizeApplication(submit: boolean) {
     if (!session) return;
+    if (submit && session.reviewUrl && !reviewed) { setMessage("Open the browser viewer and confirm you reviewed the application first."); return; }
     if (submit && !window.confirm("Confirm final submission? Check every field in the opened browser first.")) return;
     setApplyBusy(true);
     try {
-      const result = await requestApi<ApplySession | {closed:boolean}>("/api/apply/" + session.id + "/" + (submit ? "submit" : "close"), submit ? {confirm:true} : {});
+      const result = await requestApi<ApplySession | {closed:boolean}>("/api/apply/" + session.id + "/" + (submit ? "submit" : "close"), submit ? {confirm:true, reviewed: session.reviewUrl ? reviewed : true} : {});
       if (submit) {
         const next = result as ApplySession;
         setSession(next); setMessage(next.message);
@@ -218,7 +221,12 @@ function App() {
         {parserPanel}
         {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
           <p><strong>Session:</strong> {session.state} · {session.url}</p>
-          <div className="actions"><button disabled={applyBusy || session.state !== "ready_for_review"} className="primary" onClick={()=>finalizeApplication(true)}>Confirm & submit</button>
+          {session.reviewUrl && <div className="browser-review">
+            <a className="browser-open" href={session.reviewUrl} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open interactive browser viewer ↗</a>
+            <p>The browser is accessible on this computer only. Enter the VNC password from your Docker Compose configuration. Review every field, complete missing questions, and return here to submit.</p>
+            <label className="review-checkbox"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> I reviewed the application in the browser viewer.</label>
+          </div>}
+          <div className="actions"><button disabled={applyBusy || session.state !== "ready_for_review" || Boolean(session.reviewUrl && !reviewed)} className="primary" onClick={()=>finalizeApplication(true)}>Confirm & submit</button>
           <button disabled={applyBusy} className="secondary" onClick={()=>finalizeApplication(false)}>Close browser session</button></div>
           <p className="review-note">Review the actual Playwright browser window and answer any required questions before submitting. Submission is never automatic.</p>
         </section>}

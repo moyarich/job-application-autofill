@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     image: moyaapply:local
+    entrypoint: ["/app/docker/start-review.sh"]
     command: ["node", "server/index.mjs"]
     environment:
       NODE_ENV: development
@@ -13,10 +14,15 @@ services:
       AUTOFILL_HOST: "0.0.0.0"
       AUTOFILL_ORIGIN: "http://localhost:${MOYA_WEB_PORT:-5173}"
       PYTHON_EXECUTABLE: /opt/venv/bin/python
-      HEADLESS: "true"
+      HEADLESS: "false"
+      DISPLAY: ":99"
+      BROWSER_REVIEW_URL: "http://localhost:${MOYA_REVIEW_PORT:-6080}/vnc.html"
+      MOYA_VNC_PASSWORD: "${MOYA_VNC_PASSWORD:?Set MOYA_VNC_PASSWORD in .env before starting Docker Compose}"
       CONTAINER_MODE: "true"
     expose:
       - "4177"
+    ports:
+      - "127.0.0.1:${MOYA_REVIEW_PORT:-6080}:6080"
     init: true
     shm_size: "1gb"
     healthcheck:
