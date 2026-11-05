@@ -48,6 +48,14 @@ Importing does **not** call the OCR/PDF parser or require a résumé file. You c
 
 The JSON contains `contact`, `summary`, `experience`, `skills`, `education`, `projects`, `certifications`, `languages`, `awards`, and `source`. `source.fileName` may be empty. There is no legacy flat-profile format or migration layer.
 
+## Generate an ATS-friendly PDF from résumé JSON
+
+Import a JSON résumé conforming to [`resume-schema/resume.schema.json`](resume-schema/resume.schema.json), or optionally parse a PDF/DOCX into that structure. On the **Candidate profile** page, select **Export PDF**; the same action is available next to the parsed profile preview. The browser generates and downloads a standard US Letter PDF without uploading personal information to an external service.
+
+The standalone generator [`resume-schema/pdf.mjs`](resume-schema/pdf.mjs) creates a single-column, left-aligned document with ordinary headings, plain text bullets, selectable text, reverse-chronological work experience and automatic page breaks. This PDF generation functionality works directly from JSON; it does **not** depend on `packages/extract-resume`, Python, OCR or a source PDF file.
+
+The built-in font supports Latin text; unsupported Unicode characters produce an actionable error rather than a corrupted résumé. As with any résumé, review the finished PDF and follow the employer's file-format instructions.
+
 ## Features
 
 - Add, search, and track job applications (persisted in browser localStorage).
