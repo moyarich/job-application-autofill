@@ -1,4 +1,5 @@
 import { extractEmploymentHistory } from "./experience.mjs";
+import { getPdfPython } from "./python-runtime.mjs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -69,7 +70,7 @@ export async function extractResumeText(buffer, extension) {
   try {
     const input = join(dir, "resume.pdf");
     await writeFile(input, buffer, { mode: 0o600 });
-    const python = process.env.PYTHON_EXECUTABLE || "python3";
+    const python = await getPdfPython();
     const script = resolve(import.meta.dirname, "../python/pdf_ocr.py");
     const { stdout } = await execFileAsync(python, [script, input], {
       timeout: 120000,

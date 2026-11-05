@@ -90,7 +90,7 @@ def main(argv=None):
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except (ImportError, ModuleNotFoundError) as exc:
-        print(f"Python dependencies missing: {exc}. Install with cd packages/extract-resume && poetry install --no-root", file=sys.stderr)
+        print(f"Python PDF dependency missing: {exc}. Verify the selected Python environment or restart the application with npm run dev.", file=sys.stderr)
         return 2
     except Exception as exc:
         print(f"PDF extraction failed: {exc}", file=sys.stderr)

@@ -22,12 +22,18 @@ The Python OCR environment is managed with Poetry using `pyproject.toml` (packag
 
 ## Python setup
 
+**Recommended:** run `npm run dev` at the repository root. The Docker image installs and verifies `pypdfium2`, `rapidocr`, ONNX Runtime and Pillow during its build. You do **not** need to install these packages on your host computer.
+
+When running the Node API directly on the host, PDF extraction discovers a usable Poetry virtualenv or system Python. If no interpreter contains the PDF/OCR dependencies, it attempts `poetry install --only main --no-root` in this package automatically (Poetry must be installed). DOCX and imported résumé JSON do not require Python.
+
+To install the optional Python test dependencies manually:
+
 ```sh
 cd packages/extract-resume
 poetry install --with test --no-root
-cd ../..
-PYTHON_EXECUTABLE="$(cd packages/extract-resume && poetry env info --executable)" npm run dev:server
 ```
+
+If you explicitly set `PYTHON_EXECUTABLE`, it **must** point to an interpreter containing `pypdfium2`, `rapidocr`, `onnxruntime` and `Pillow`. Invalid overrides now fail with an actionable configuration error rather than accidentally invoking a different Python.
 
 ## Tests
 
