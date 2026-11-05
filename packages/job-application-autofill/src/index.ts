@@ -46,7 +46,7 @@ export function validateCandidate(profile: CandidateProfile): string[] {
   const errors: string[] = [];
   if (!profile.contact.firstName.trim()) errors.push("First name is required");
   if (!profile.contact.lastName.trim()) errors.push("Last name is required");
-  if (!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(profile.contact.email.trim())) errors.push("Valid email is required");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.contact.email.trim())) errors.push("Valid email is required");
   return errors;
 }
 export function parseCandidateJson(text: string): CandidateProfile {
