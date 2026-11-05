@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MOYA_VNC_PASSWORD: "testpass123"
+      WEB_VNC_PASSWORD: "testpass123"
     steps:
       - uses: actions/checkout@v4
       - name: Validate Compose definition

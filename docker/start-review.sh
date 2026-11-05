@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ -z "${MOYA_VNC_PASSWORD:-}" ]]; then
-  echo "MOYA_VNC_PASSWORD must be configured to expose the interactive browser." >&2
+if [[ -z "${WEB_VNC_PASSWORD:-}" ]]; then
+  echo "WEB_VNC_PASSWORD must be configured to expose the interactive browser." >&2
   exit 1
 fi
-if [[ "${#MOYA_VNC_PASSWORD}" -lt 8 ]]; then
-  echo "MOYA_VNC_PASSWORD must contain at least 8 characters." >&2
+if [[ "${#WEB_VNC_PASSWORD}" -lt 8 ]]; then
+  echo "WEB_VNC_PASSWORD must contain at least 8 characters." >&2
   exit 1
 fi
 
@@ -31,8 +31,8 @@ fluxbox >/tmp/moya-fluxbox.log 2>&1 &
 
 # RFB auth stays inside the container. The only published port is
 # the localhost-bound noVNC websocket endpoint (defined in Compose).
-x11vnc -storepasswd "$MOYA_VNC_PASSWORD" "$VNC_AUTH_FILE" >/dev/null 2>&1
-unset MOYA_VNC_PASSWORD
+x11vnc -storepasswd "$WEB_VNC_PASSWORD" "$VNC_AUTH_FILE" >/dev/null 2>&1
+unset WEB_VNC_PASSWORD
 x11vnc -display "$DISPLAY" -localhost -rfbauth "$VNC_AUTH_FILE" \
   -forever -shared -noxdamage -quiet >/tmp/moya-x11vnc.log 2>&1 &
 websockify --web=/usr/share/novnc 0.0.0.0:6080 localhost:5900 \
