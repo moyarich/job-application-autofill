@@ -171,10 +171,20 @@ function App() {
     if (!job.url) { setMessage("Add a job URL before applying."); return; }
     if (errors.length) { setMessage("Complete first name, last name and email in Candidate profile before applying."); setTab("profile"); return; }
     setApplyBusy(true);
-    setMessage("Launching Playwright browser and filling supported fields...");
+    setMessage("Preparing structured résumé JSON and PDF attachment for browser review...");
     try {
-      const upload = resume ? await filePayload(resume) : null;
-      const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, jobId: job.id, profile, resume: upload });
+      // The JSON drives autofill. The application also needs a PDF attachment.
+      // Reuse the user's uploaded PDF when available; otherwise create one from JSON.
+      const validProfile = parseCandidateJson(JSON.stringify(profile));
+      const uploadedPdf = resume && /\\.pdf$/i.test(resume.name) ? resume : null;
+      const attachment = uploadedPdf || new File(
+        [new Uint8Array(renderResumePdf(validProfile))],
+        ([validProfile.contact.firstName, validProfile.contact.lastName].filter(Boolean).join("-") || "resume")
+          .replace(/[^a-z0-9-]/gi, "_") + ".pdf",
+        { type: "application/pdf" }
+      );
+      const upload = await filePayload(attachment);
+      const result = await requestApi<ApplySession>("/api/apply/prepare", { jobUrl: job.url, jobId: job.id, profile: validProfile, resume: upload });
       setSession(result);
       setReviewed(false);
       setQuestionAnswers({});
