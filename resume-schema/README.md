@@ -1,4 +1,4 @@
-# MoyaApply resume data contract
+# job-application-autofill resume data contract
 
 This directory defines the **canonical résumé JSON format**, independent of PDF/DOCX extraction.
 Import any JSON file conforming to [resume.schema.json](resume.schema.json) in the dashboard under **Candidate profile → Import JSON**.

@@ -1,6 +1,6 @@
 # @moyarich/extract-resume
 
-Local Node.js resume extraction package used by MoyaApply. Supports PDF and DOCX uploads and structured profile heuristics. No cloud services.
+Local Node.js resume extraction package used by job-application-autofill. Supports PDF and DOCX uploads and structured profile heuristics. No cloud services.
 
 The parser produces the [standalone résumé data contract](../../resume-schema/resume.schema.json), shared with the application but **owned separately from this optional extractor**. See the [example JSON](../../resume-schema/resume.example.json).
 

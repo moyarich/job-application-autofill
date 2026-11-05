@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: moyaapply:local
+    image: job-application-autofill:local
     entrypoint: ["/app/docker/start-review.sh"]
     command: ["node", "server/index.mjs"]
     environment:
@@ -37,7 +37,7 @@ services:
       - moya_data:/app/data
 
   web:
-    image: moyaapply:local
+    image: job-application-autofill:local
     build:
       context: .
       dockerfile: docker/Dockerfile

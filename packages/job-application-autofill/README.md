@@ -1,6 +1,6 @@
 # @moyarich/job-application-autofill
 
-Typed, framework-agnostic candidate profile and application models for MoyaApply.
+Typed, framework-agnostic candidate profile and application models for job-application-autofill.
 
 ## Exports
 

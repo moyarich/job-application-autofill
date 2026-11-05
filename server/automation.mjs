@@ -133,7 +133,7 @@ export async function continueApplication(id) {
   if (detected !== "ready_for_review") {
     session.state = detected;
     session.message = detected === "login_required"
-      ? "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by MoyaApply."
+      ? "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
       : "Complete the security challenge manually in the browser viewer.";
     return status(session);
   }
