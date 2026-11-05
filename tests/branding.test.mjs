@@ -16,6 +16,10 @@ describe("job-application-autofill application naming", () => {
     expect(pkg.name).toBe("job-application-autofill");
     expect(lock.name).toBe(pkg.name);
     expect(lock.packages[""].name).toBe(pkg.name);
+    const playground = JSON.parse(source("apps/playground/package.json"));
+    expect(playground.name).toBe("@job-application-autofill/playground");
+    expect(lock.packages["apps/playground"].name).toBe(playground.name);
+    expect(lock.packages["node_modules/@job-application-autofill/playground"]).toBeDefined();
   });
   it("preserves existing SQLite and Docker volume identifiers", () => {
     expect(source("docker-compose.yml")).toContain("name: moyaapply");
