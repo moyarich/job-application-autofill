@@ -32,6 +32,9 @@ RUN cd packages/extract-resume \
     && mkdir -p /opt/venv/bin \
     && ln -s "$(cat /tmp/moya-python-path)" /opt/venv/bin/python
 
+# Fail the image build if the interpreter used by the API lacks PDF/OCR dependencies.
+RUN /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
+
 COPY . .
 RUN chmod +x docker/start-review.sh
 
