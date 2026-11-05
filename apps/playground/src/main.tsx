@@ -33,24 +33,22 @@ async function filePayload(file: File): Promise<{ fileName: string; base64: stri
   });
 }
 
-const PROFILE_KEY = "moya-job-autofill:resume:v2";
-const JOBS_KEY = "moya-job-autofill:jobs:v1";
-
-function loadProfile(): CandidateProfile {
-  try {
-    const saved = localStorage.getItem(PROFILE_KEY);
-    return saved ? parseCandidateJson(saved) : { ...emptyCandidate };
-  } catch { return { ...emptyCandidate }; }
+type StoredState = { revision: number; profile: CandidateProfile | null; jobs: JobApplication[] };
+async function readState(): Promise<StoredState> {
+  const response = await fetch("/api/state", { headers: { "X-Moya-Client": "dashboard" }, cache: "no-store" });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Could not load SQLite data.");
+  return result as StoredState;
 }
-function loadJobs(): JobApplication[] {
-  try {
-    const data: unknown = JSON.parse(localStorage.getItem(JOBS_KEY) || "[]");
-    if (!Array.isArray(data)) return [];
-    return data.filter((job): job is JobApplication =>
-      typeof job === "object" && job !== null &&
-      typeof job.id === "string" && typeof job.company === "string" &&
-      typeof job.role === "string" && statuses.includes(job.status));
-  } catch { return []; }
+async function saveState(payload: { revision: number; profile: CandidateProfile; jobs: JobApplication[] }): Promise<{ revision: number }> {
+  const response = await fetch("/api/state", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Moya-Client": "dashboard" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Could not save SQLite data.");
+  return result as { revision: number };
 }
 function downloadJson(filename: string, value: unknown) {
   const blob = new Blob([JSON.stringify(value, null, 2) + "\n"], { type: "application/json" });
@@ -72,8 +70,13 @@ const statusLabels: Record<ApplicationStatus, string> = {
 
 function App() {
   const [tab, setTab] = useState<"applications" | "profile" | "parser">("applications");
-  const [profile, setProfile] = useState(loadProfile);
-  const [jobs, setJobs] = useState(loadJobs);
+  const [profile, setProfile] = useState<CandidateProfile>(() => structuredClone(emptyCandidate));
+  const [jobs, setJobs] = useState<JobApplication[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  const revisionRef = useRef(0);
+  const savedRef = useRef("");
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const blockedRef = useRef(false);
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
@@ -95,8 +98,37 @@ function App() {
       .catch(() => { /* Local API might not be running. */ });
     return () => { cancelled = true; };
   }, []);
-  useEffect(() => { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }, [profile]);
-  useEffect(() => { localStorage.setItem(JOBS_KEY, JSON.stringify(jobs)); }, [jobs]);
+  useEffect(() => {
+    let cancelled = false;
+    readState().then(state => {
+      if (cancelled) return;
+      const value = state.profile ? parseCandidateJson(JSON.stringify(state.profile)) : structuredClone(emptyCandidate);
+      setProfile(value);
+      setJobs(state.jobs);
+      revisionRef.current = state.revision;
+      savedRef.current = JSON.stringify({ profile: value, jobs: state.jobs });
+      setHydrated(true);
+    }).catch(error => { if (!cancelled) setMessage("SQLite unavailable: " + String(error)); });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    if (!hydrated || blockedRef.current) return;
+    const state = { profile, jobs };
+    const signature = JSON.stringify(state);
+    if (signature === savedRef.current) return;
+    const timer = setTimeout(() => {
+      saveQueueRef.current = saveQueueRef.current.then(async () => {
+        if (blockedRef.current) return;
+        const saved = await saveState({ ...state, revision: revisionRef.current });
+        revisionRef.current = saved.revision;
+        savedRef.current = signature;
+      }).catch(error => {
+        blockedRef.current = true;
+        setMessage("SQLite save failed: " + String(error) + " Refresh to reload saved data.");
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [hydrated, profile, jobs]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter(job =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()));
@@ -263,6 +295,7 @@ function App() {
     {parsePreview && <details className="text-preview"><summary>View extracted text preview</summary><pre>{parsePreview}</pre></details>}
   </section>;
 
+  if (!hydrated) return <div className="app"><main className="main"><h1>Loading SQLite data</h1><p>{message || "Connecting to the local API..."}</p></main></div>;
   return <div className="app">
     <aside className="sidebar">
       <div className="brand"><span className="brand-symbol">M</span><span>Moya<span className="brand-light">Apply</span></span></div>
@@ -275,7 +308,7 @@ function App() {
     <main className="main">
       <header><div><div className="eyebrow">JOB APPLICATION WORKSPACE</div><h1>{tab === "profile" ? "Candidate profile" : tab === "parser" ? "Resume parser" : "Application tracker"}</h1>
         <p>{tab === "profile" ? "Maintain your structured candidate information." : tab === "parser" ? "Extract profile data from a resume file." : "Organize opportunities and apply to supported job boards."}</p></div>
-        <div className="actions"><span className="header-chip">● &nbsp; Saved in this browser</span>
+        <div className="actions"><span className="header-chip">● &nbsp; SQLite storage</span>
         <button className="secondary" onClick={()=>setTab("parser")}>Parse resume</button>
         <button className="primary" onClick={()=>{setTab("applications");document.getElementById("applications-list")?.scrollIntoView({behavior:"smooth"});}}>Apply to job</button></div>
       </header>
@@ -359,7 +392,7 @@ function App() {
             </label>}
           </article>)}</div></section>
       </> : tab === "parser" ? parserPanel : <>
-        <section className="panel"><div className="panel-title horizontal"><div><h2>Personal information</h2><p>Stored locally in your browser. Import or export as JSON.</p></div>
+        <section className="panel"><div className="panel-title horizontal"><div><h2>Personal information</h2><p>Stored in local SQLite. Import or export as JSON.</p></div>
           <div className="actions"><input ref={importRef} hidden type="file" accept=".json,application/json" onChange={importProfile}/>
             <button className="secondary" onClick={()=>importRef.current?.click()}>Import JSON</button>
             <button className="primary" onClick={()=>downloadJson("candidate-profile.json",profile)}>Export JSON</button>
