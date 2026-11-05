@@ -25,7 +25,7 @@ function wrap(text,size,maxWidth){
     for(let word of row.trim().split(/\s+/).filter(Boolean)){
       const combined=active?active+" "+word:word;
       if(approximateWidth(combined,size)<=maxWidth){active=combined;continue;}
-      if(active){lines.push(active);active="";}
+      if(active)lines.push(active);
       while(word&&approximateWidth(word,size)>maxWidth){
         let i=1;while(i<word.length&&approximateWidth(word.slice(0,i+1),size)<=maxWidth)i++;
         lines.push(word.slice(0,i));word=word.slice(i);
