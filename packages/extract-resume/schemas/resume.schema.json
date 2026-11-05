@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/moyarich/job-application-autofill/blob/main/packages/extract-resume/schemas/resume.schema.json",
+  "title": "MoyaApply Resume Profile",
+  "description": "Structured resume JSON for parsing and ATS adapters. Empty strings mean unknown, not inferred; optional extended sections may be populated later.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "location",
+    "linkedIn",
+    "github",
+    "website",
+    "summary",
+    "skills",
+    "resumeFileName",
+    "experience"
+  ],
+  "properties": {
+    "firstName": {
+      "type": "string"
+    },
+    "lastName": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "linkedIn": {
+      "type": "string"
+    },
+    "github": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "skills": {
+      "type": "string"
+    },
+    "resumeFileName": {
+      "type": "string"
+    },
+    "experience": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "$ref": "#/$defs/experience"
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/education"
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/project"
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/certification"
+      }
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "awards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skillCategories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "items"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "company",
+        "jobTitle",
+        "location",
+        "startDate",
+        "endDate",
+        "isCurrent",
+        "description"
+      ],
+      "properties": {
+        "company": {
+          "type": "string",
+          "default": ""
+        },
+        "jobTitle": {
+          "type": "string",
+          "default": ""
+        },
+        "location": {
+          "type": "string",
+          "default": ""
+        },
+        "startDate": {
+          "type": "string",
+          "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+          "description": "YYYY, YYYY-MM, or empty if unknown"
+        },
+        "endDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+              "description": "YYYY, YYYY-MM, or empty if unknown"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isCurrent": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "education": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "institution",
+        "degree",
+        "fieldOfStudy",
+        "location",
+        "startDate",
+        "endDate",
+        "description"
+      ],
+      "properties": {
+        "institution": {
+          "type": "string",
+          "default": ""
+        },
+        "degree": {
+          "type": "string",
+          "default": ""
+        },
+        "fieldOfStudy": {
+          "type": "string",
+          "default": ""
+        },
+        "location": {
+          "type": "string",
+          "default": ""
+        },
+        "startDate": {
+          "type": "string",
+          "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+          "description": "YYYY, YYYY-MM, or empty if unknown"
+        },
+        "endDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+              "description": "YYYY, YYYY-MM, or empty if unknown"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "url",
+        "technologies"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": ""
+        },
+        "description": {
+          "type": "string",
+          "default": ""
+        },
+        "url": {
+          "type": "string",
+          "default": ""
+        },
+        "technologies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "issuer",
+        "issuedDate",
+        "expirationDate",
+        "credentialId",
+        "url"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": ""
+        },
+        "issuer": {
+          "type": "string",
+          "default": ""
+        },
+        "issuedDate": {
+          "type": "string",
+          "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+          "description": "YYYY, YYYY-MM, or empty if unknown"
+        },
+        "expirationDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
+              "description": "YYYY, YYYY-MM, or empty if unknown"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "credentialId": {
+          "type": "string",
+          "default": ""
+        },
+        "url": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    }
+  }
+}
