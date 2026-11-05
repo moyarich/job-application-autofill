@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
+import { fillWorkdayExperience } from "../playwright-adapters/workday/experience.mjs";
 
 const sessions = new Map();
 let launching = false;
@@ -88,10 +89,15 @@ async function populateSession(session) {
     const results = await fillKnownFields(page, session.profile);
     session.filled = results.filled;
     session.missing = results.missing;
-    // Structured work history is passed to the session, but repeating ATS
-    // employment forms are not safely autofilled without site-specific mapping.
-    if (Array.isArray(session.profile.experience) && session.profile.experience.length)
-      session.missing.push("work experience (" + session.profile.experience.length + " entries; review in employer browser)");
+    if (Array.isArray(session.profile.experience) && session.profile.experience.length) {
+      if (adapterForUrl(page.url())?.id === "workday") {
+        const work = await fillWorkdayExperience(page, session.profile.experience);
+        session.filled.push(...work.filled);
+        session.missing.push(...work.unresolved);
+      } else {
+        session.missing.push("work experience (" + session.profile.experience.length + " entries; review in employer browser)");
+      }
+    }
 
     if (session.pendingResume?.buffer?.length) {
       const filename = join(session.directory, session.pendingResume.fileName);
