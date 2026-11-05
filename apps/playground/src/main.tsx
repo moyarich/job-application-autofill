@@ -222,9 +222,13 @@ function App() {
         {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
           <p><strong>Session:</strong> {session.state} · {session.url}</p>
           {session.reviewUrl && <div className="browser-review">
-            <a className="browser-open" href={session.reviewUrl} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open interactive browser viewer ↗</a>
-            <p>The browser is accessible on this computer only. Enter the VNC password from your Docker Compose configuration. Review every field, complete missing questions, and return here to submit.</p>
-            <label className="review-checkbox"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> I reviewed the application in the browser viewer.</label>
+            <div className="browser-review-header">
+              <strong>Live employer application</strong>
+              <a className="browser-open" href={session.reviewUrl} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open in full window ↗</a>
+            </div>
+            <p>Enter the VNC password from your Docker Compose configuration to interact with Chromium. Review every field and complete any missing questions before submitting.</p>
+            <iframe className="browser-viewer" title="Interactive Playwright application browser" src={session.reviewUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
+            <label className="review-checkbox"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> I inspected the live application and reviewed all fields.</label>
           </div>}
           <div className="actions"><button disabled={applyBusy || session.state !== "ready_for_review" || Boolean(session.reviewUrl && !reviewed)} className="primary" onClick={()=>finalizeApplication(true)}>Confirm & submit</button>
           <button disabled={applyBusy} className="secondary" onClick={()=>finalizeApplication(false)}>Close browser session</button></div>
