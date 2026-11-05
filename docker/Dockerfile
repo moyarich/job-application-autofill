@@ -8,22 +8,18 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
 
-# ARM64 Ubuntu mirrors occasionally serve inconsistent indices during publication.
-# Retry with a fresh index each time; never ignore invalid hashes or reuse stale lists.
+# All app dependencies are in Ubuntu main/universe. Do not fetch the restricted
+# and multiverse indices: the ARM64 noble-security/restricted index caused a
+# mirror publication mismatch even though the app installs nothing from it.
+# Keep the signed Ubuntu repositories and all security/update pockets intact.
 RUN set -eu; \
-    for attempt in 1 2 3 4 5; do \
-      rm -rf /var/lib/apt/lists/*; \
-      if apt-get -o APT::Update::Error-Mode=any -o Acquire::Retries=3 update; then \
-        break; \
-      fi; \
-      if [ "$attempt" -eq 5 ]; then \
-        echo "APT indexes remain inconsistent after 5 attempts" >&2; \
-        exit 1; \
-      fi; \
-      echo "APT mirror update failed (attempt $attempt/5); retrying with fresh indexes" >&2; \
-      sleep "$((attempt * 10))"; \
-    done; \
-    apt-get -o Acquire::Retries=3 install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji; \
+    sources=/etc/apt/sources.list.d/ubuntu.sources; \
+    test -f "$sources"; \
+    sed -i -E 's/^Components: .*/Components: main universe/' "$sources"; \
+    grep -q '^Components: main universe$' "$sources"; \
+    ! grep -Eq '^Components: .*\b(restricted|multiverse)\b' "$sources"; \
+    apt-get -o APT::Update::Error-Mode=any update; \
+    apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji; \
     rm -rf /var/lib/apt/lists/*
 
 # Extend Xlib's keysym-name lookup with newer XF86 names used by xkb-data.
