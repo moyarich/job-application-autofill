@@ -28,10 +28,10 @@ COPY packages/extract-resume/README.md packages/extract-resume/README.md
 RUN cd packages/extract-resume \
     && poetry config virtualenvs.create true \
     && poetry install --only main --no-root \
-    && poetry run python -c "import sys; print(sys.executable)" > /tmp/moya-python-path \
-    && mkdir -p /opt/venv/bin \
-    && ln -s "$(cat /tmp/moya-python-path)" /opt/venv/bin/python \
-    && echo "PDF Python interpreter: $(readlink -f /opt/venv/bin/python)" \
+    && poetry env info --path > /tmp/moya-venv-path \
+    && test -f "$(cat /tmp/moya-venv-path)/pyvenv.cfg" \
+    && ln -s "$(cat /tmp/moya-venv-path)" /opt/venv \
+    && /opt/venv/bin/python -c "import sys; assert sys.prefix == '/opt/venv', (sys.prefix, sys.executable)" \
     && /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
 
 # Dependency import check runs with the same interpreter used by the API above.
