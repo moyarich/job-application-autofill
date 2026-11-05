@@ -28,6 +28,19 @@ permissions:
   contents: read
 
 jobs:
+  arm64-image-build:
+    name: ARM64 Docker image build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      WEB_VNC_PASSWORD: "testpass123"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose definition
+        run: docker compose config --quiet
+      - name: Build native ARM64 application image
+        run: docker compose build
+
   docker-compose:
     runs-on: ubuntu-latest
     timeout-minutes: 30
