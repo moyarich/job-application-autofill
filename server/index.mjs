@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume-schema/validate.mjs";
+import { renderResumePdf } from "../resume-schema/pdf.mjs";
 import { openStore } from "./store.mjs";
 import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
@@ -38,6 +39,13 @@ const server = createServer(async (req, res) => {
         if (error.code === "STALE_STATE") return send(res, 409, { error: error.message });
         throw error;
       }
+    }
+    if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
+      const profile = validateResume(await readJson(req));
+      const bytes = await renderResumePdf(profile);
+      if (bytes.length > 10 * 1024 * 1024)
+        return send(res, 413, { error: "Generated PDF exceeds the 10 MB attachment limit." });
+      return send(res, 200, { base64: Buffer.from(bytes).toString("base64") });
     }
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
       // Resume extraction is optional; JSON-only applicants never load its dependencies.
