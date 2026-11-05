@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync, chmodSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, chmodSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -58,6 +58,7 @@ export function main() {
   try {
     preflight("docker", ["compose", "version"], "Docker Compose");
     preflight("docker", ["info", "--format", "{{.ServerVersion}}"], "Docker Engine");
+    mkdirSync(resolve(root, "sqlite-data"), { recursive: true, mode: 0o700 });
     const { generated } = setupEnv();
     if (generated) {
       console.log("Created .env with a random viewer password (private file).");

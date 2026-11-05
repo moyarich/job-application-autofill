@@ -8,9 +8,19 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji \
-    && rm -rf /var/lib/apt/lists/*
+# All app dependencies are in Ubuntu main/universe. Do not fetch the restricted
+# and multiverse indices: the ARM64 noble-security/restricted index caused a
+# mirror publication mismatch even though the app installs nothing from it.
+# Keep the signed Ubuntu repositories and all security/update pockets intact.
+RUN set -eu; \
+    sources=/etc/apt/sources.list.d/ubuntu.sources; \
+    test -f "$sources"; \
+    sed -i -E 's/^Components: .*/Components: main universe/' "$sources"; \
+    grep -q '^Components: main universe$' "$sources"; \
+    ! grep -Eq '^Components: .*\b(restricted|multiverse)\b' "$sources"; \
+    apt-get -o APT::Update::Error-Mode=any update; \
+    apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji; \
+    rm -rf /var/lib/apt/lists/*
 
 # Extend Xlib's keysym-name lookup with newer XF86 names used by xkb-data.
 # xkbcomp inherits XKEYSYMDB from Xvfb at runtime; this does not change key layouts.

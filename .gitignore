@@ -52,3 +52,16 @@ data/
 *.sqlite-shm
 *.sqlite-wal
 *.sqlite-journal
+
+# Local SQLite database files (including alternate .db and .sqlite3 names)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+
+# Persistent private SQLite bind mount on the host
+/sqlite-data/
