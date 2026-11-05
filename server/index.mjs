@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { decodeUpload, extractProfile, extractResumeText } from "@moyarich/extract-resume";
+import { validateResume } from "../resume-schema/validate.mjs";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
@@ -27,6 +27,8 @@ const server = createServer(async (req, res) => {
     if ((req.headers.origin && req.headers.origin !== ORIGIN) || req.headers["x-moya-client"] !== "dashboard")
       return send(res, 403, { error: "Only the local dashboard may access this API." });
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
+      // Resume extraction is optional; JSON-only applicants never load its dependencies.
+      const { decodeUpload, extractProfile, extractResumeText } = await import("@moyarich/extract-resume");
       const upload = decodeUpload(await readJson(req));
       const text = await extractResumeText(upload.buffer, upload.extension);
       return send(res, 200, { profile: { ...extractProfile(text), source: { fileName: upload.fileName } },
@@ -36,10 +38,11 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { session: getActiveApplication() });
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = await readJson(req);
-      const profile = payload.profile;
-      if (!profile || typeof profile !== "object" || !profile.contact || !profile.contact.firstName || !profile.contact.lastName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(profile.contact.email || ""))
-        return send(res, 400, { error: "Complete the candidate profile before applying." });
-      const resume = payload.resume ? decodeUpload(payload.resume) : null;
+      const profile = validateResume(payload.profile);
+      const contact = profile.contact;
+      if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
+        return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
+      const resume = payload.resume ? (await import("@moyarich/extract-resume")).decodeUpload(payload.resume) : null;
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers))?$/);
