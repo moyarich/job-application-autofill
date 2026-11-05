@@ -46,7 +46,7 @@ export function validateCandidate(profile: CandidateProfile): string[] {
   const errors: string[] = [];
   if (!profile.contact.firstName.trim()) errors.push("First name is required");
   if (!profile.contact.lastName.trim()) errors.push("Last name is required");
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(profile.contact.email.trim())) errors.push("Valid email is required");
+  if (!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(profile.contact.email.trim())) errors.push("Valid email is required");
   return errors;
 }
 export function parseCandidateJson(text: string): CandidateProfile {
@@ -72,7 +72,7 @@ export function parseCandidateJson(text: string): CandidateProfile {
     projects:["name","description","url"],
     certifications:["name","issuer","issuedDate","credentialId","url"],
   };
-  const date = (value: unknown) => typeof value === "string" && (!value || /^\\d{4}(?:-(?:0[1-9]|1[0-2]))?$/.test(value));
+  const date = (value: unknown) => typeof value === "string" && (!value || /^\d{4}(?:-(?:0[1-9]|1[0-2]))?$/.test(value));
   for (const [section,keys] of Object.entries(stringFields)) {
     for (const value of data[section] as unknown[]) {
       if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid " + section + " entry");
