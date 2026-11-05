@@ -53,3 +53,4 @@ jobs:
     with:
       checkout-sha: ${{ inputs.checkout-sha }}
       setup-python-poetry: true
+      setup-playwright-chromium: true
