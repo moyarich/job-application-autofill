@@ -107,8 +107,17 @@ export function extractProfile(text) {
   const heading = lines.find(line => line.length <= 65 && /^[\p{L}][\p{L} .'-]+$/u.test(line) && line.split(/\s+/).length >= 2 && line.split(/\s+/).length <= 4 && !/resume|experience|skills|education|summary|curriculum/i.test(line)) || "";
   const parts = heading.split(/\s+/).filter(Boolean);
   const skills = skillWords.filter(word => new RegExp("(^|[^a-z0-9])" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^a-z0-9])", "i").test(text));
-  return { firstName: parts[0] || "", lastName: parts.slice(1).join(" "),
-    email, phone, location: "", linkedIn, github, website,
-    skills: skills.join(", "), summary: "", resumeFileName: "", experience: extractEmploymentHistory(text) };
+  return {
+    contact: { firstName: parts[0] || "", lastName: parts.slice(1).join(" "), email, phone, location: "", linkedIn, github, website },
+    summary: "",
+    experience: extractEmploymentHistory(text),
+    skills,
+    education: [],
+    projects: [],
+    certifications: [],
+    languages: [],
+    awards: [],
+    source: { fileName: "" },
+  };
 }
 export { MAX_RESUME, extractEmploymentHistory };
