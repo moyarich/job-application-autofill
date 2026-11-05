@@ -96,7 +96,8 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
   profile.contact.firstName = "Ada";
   profile.contact.lastName = "Lovelace";
   profile.contact.email = "ada@example.com";
-  const pdf = renderResumePdf(profile);
+  const pdf = await renderResumePdf(profile);
+  assert.equal(Buffer.from(pdf).subarray(0, 5).toString(), "%PDF-");
   const attachment = decodePdfAttachment({
     fileName: "Ada-Lovelace.pdf",
     base64: Buffer.from(pdf).toString("base64"),
