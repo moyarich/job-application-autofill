@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:js && npm run build:python",
+    "build": "npm run build:js",
     "test:python": "poetry run python -m unittest discover -s python -p 'test_*.py' -v",
     "build:js": "vite build && tsc -p tsconfig.build.json",
     "build:python": "poetry install --only main --no-root",
