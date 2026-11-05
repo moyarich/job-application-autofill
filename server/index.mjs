@@ -42,7 +42,10 @@ const server = createServer(async (req, res) => {
       const contact = profile.contact;
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
         return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
-      const resume = payload.resume ? (await import("@moyarich/extract-resume")).decodeUpload(payload.resume) : null;
+      if (!payload.resume) return send(res, 400, { error: "A PDF resume attachment is required alongside the structured resume JSON." });
+      const resume = (await import("@moyarich/extract-resume")).decodeUpload(payload.resume);
+      if (resume.extension !== "pdf")
+        return send(res, 400, { error: "Application attachments must be PDF files." });
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers))?$/);
