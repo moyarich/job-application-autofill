@@ -1,15 +1,15 @@
 {
-  "firstName": "Ada",
-  "lastName": "Lovelace",
-  "email": "ada@example.com",
-  "phone": "",
-  "location": "Chicago, IL",
-  "linkedIn": "",
-  "github": "",
-  "website": "",
+  "contact": {
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "email": "ada@example.com",
+    "phone": "",
+    "location": "Chicago, IL",
+    "linkedIn": "",
+    "github": "",
+    "website": ""
+  },
   "summary": "Software engineer",
-  "skills": "TypeScript, AWS",
-  "resumeFileName": "resume.pdf",
   "experience": [
     {
       "company": "Example Technologies",
@@ -20,6 +20,10 @@
       "isCurrent": true,
       "description": "Built cloud applications."
     }
+  ],
+  "skills": [
+    "TypeScript",
+    "AWS"
   ],
   "education": [
     {
@@ -36,12 +40,7 @@
   "certifications": [],
   "languages": [],
   "awards": [],
-  "skillCategories": [
-    {
-      "category": "Cloud",
-      "items": [
-        "AWS"
-      ]
-    }
-  ]
+  "source": {
+    "fileName": "resume.pdf"
+  }
 }

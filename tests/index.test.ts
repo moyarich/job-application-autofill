@@ -6,15 +6,17 @@ import {
 describe("candidate profile", () => {
   it("requires a first name, last name and valid email", () => {
     expect(validateCandidate(emptyCandidate)).toHaveLength(3);
-    expect(validateCandidate({ ...emptyCandidate, firstName: "A", lastName: "B", email: "a@example.com" })).toEqual([]);
+    expect(validateCandidate({ ...emptyCandidate, contact: { ...emptyCandidate.contact, firstName: "A", lastName: "B", email: "a@example.com" } })).toEqual([]);
   });
-  it("accepts known string fields and ignores unknown fields", () => {
-    expect(parseCandidateJson('{"firstName":"Ada","email":"ada@example.com","extra":1}').firstName).toBe("Ada");
+  it("accepts the canonical nested resume object", () => {
+    const profile = { ...emptyCandidate, contact:{...emptyCandidate.contact,firstName:"Ada"} };
+    expect(parseCandidateJson(JSON.stringify(profile)).contact.firstName).toBe("Ada");
   });
   it("rejects non-string profile values", () => {
-    expect(() => parseCandidateJson('{"firstName":123}')).toThrow();
+    expect(() => parseCandidateJson(JSON.stringify({...emptyCandidate,contact:{...emptyCandidate.contact,firstName:123}}))).toThrow();
   });
 });
+  
 describe("application tracking", () => {
   it("creates a saved application", () => {
     expect(createApplication("Example", "Engineer", "https://example.com").status).toBe("saved");

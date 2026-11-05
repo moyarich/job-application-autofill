@@ -4,9 +4,9 @@ import { extractProfile, decodeUpload } from "@moyarich/extract-resume";
 describe("resume parser", () => {
   it("extracts common profile data from text", () => {
     const result = extractProfile("Ada Lovelace\nada@example.com\nExperience with TypeScript, React, Node.js and AWS.");
-    expect(result.firstName).toBe("Ada");
-    expect(result.lastName).toBe("Lovelace");
-    expect(result.email).toBe("ada@example.com");
+    expect(result.contact.firstName).toBe("Ada");
+    expect(result.contact.lastName).toBe("Lovelace");
+    expect(result.contact.email).toBe("ada@example.com");
     expect(result.skills).toContain("TypeScript");
     expect(result.skills).toContain("React");
   });
