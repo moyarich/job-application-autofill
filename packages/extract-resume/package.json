@@ -1,0 +1,18 @@
+{
+  "name": "@moyarich/extract-resume",
+  "version": "0.1.0",
+  "description": "Local PDF/DOCX resume extraction with PDFium and OCR fallback",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src",
+    "python"
+  ],
+  "scripts": {
+    "test:python": "python -m unittest discover -s python -p 'test_*.py' -v"
+  }
+}

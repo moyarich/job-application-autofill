@@ -47,5 +47,8 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "dependencies": {
+    "@moyarich/extract-resume": "0.1.0"
+  }
 }

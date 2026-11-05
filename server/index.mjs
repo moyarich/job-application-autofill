@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { decodeUpload, extractProfile, extractResumeText } from "./resume.mjs";
+import { decodeUpload, extractProfile, extractResumeText } from "@moyarich/extract-resume";
 import { prepareApplication, getApplication, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);

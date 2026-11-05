@@ -11,7 +11,7 @@ npm ci
 npx playwright install chromium
 # macOS/Linux:
 python3 -m venv .venv
-.venv/bin/python -m pip install -r server/requirements-ocr.txt
+.venv/bin/python -m pip install -r packages/extract-resume/python/requirements-ocr.txt
 # Windows: use .venv\\Scripts\\python.exe instead
 ```
 
@@ -46,7 +46,8 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 
 - `apps/playground`: React + Vite application
 - `packages/job-application-autofill`: typed candidate and job models
-- `server/resume.mjs`: Node bridge to the local Python extractor and profile heuristics\n- `server/pdf_ocr.py`: PDFium extraction with lazy RapidOCR fallback for scanned pages\n- `server/requirements-ocr.txt`: Python OCR dependencies
+- `packages/extract-resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
+- `server/resume.mjs`: Node bridge to the local Python extractor and profile heuristics\n- `server/pdf_ocr.py`: PDFium extraction with lazy RapidOCR fallback for scanned pages\n- `packages/extract-resume/python/requirements-ocr.txt`: Python OCR dependencies
 - `server/automation.mjs`: Playwright review-before-submit sessions
 - `server/index.mjs`: local JSON HTTP API
 
@@ -61,7 +62,7 @@ npm run checks
 ```sh
 # Installs the optional fixture library for Python tests.
 .venv/bin/python -m pip install reportlab
-.venv/bin/python -m unittest server.test_pdf_ocr -v
+.venv/bin/python -m unittest discover -s packages/extract-resume/python -p 'test_*.py' -v
 ```
 
 To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend invokes `python3`. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.

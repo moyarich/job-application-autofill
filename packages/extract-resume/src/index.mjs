@@ -69,7 +69,7 @@ export async function extractResumeText(buffer, extension) {
     const input = join(dir, "resume.pdf");
     await writeFile(input, buffer, { mode: 0o600 });
     const python = process.env.PYTHON_EXECUTABLE || "python3";
-    const script = resolve(import.meta.dirname, "pdf_ocr.py");
+    const script = resolve(import.meta.dirname, "../python/pdf_ocr.py");
     const { stdout } = await execFileAsync(python, [script, input], {
       timeout: 120000,
       maxBuffer: 15 * 1024 * 1024,
