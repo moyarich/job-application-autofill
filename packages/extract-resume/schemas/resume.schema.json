@@ -1,58 +1,64 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/moyarich/job-application-autofill/blob/main/packages/extract-resume/schemas/resume.schema.json",
-  "title": "MoyaApply Resume Profile",
-  "description": "Structured resume JSON for parsing and ATS adapters. Empty strings mean unknown, not inferred; optional extended sections may be populated later.",
+  "title": "MoyaApply Structured Resume",
+  "description": "Canonical ATS-oriented résumé content. Rendering rules are metadata, not automatic PDF/DOCX validation.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "firstName",
-    "lastName",
-    "email",
-    "phone",
-    "location",
-    "linkedIn",
-    "github",
-    "website",
+    "contact",
     "summary",
+    "experience",
     "skills",
-    "resumeFileName",
-    "experience"
+    "education",
+    "projects",
+    "certifications",
+    "languages",
+    "awards",
+    "source"
   ],
   "properties": {
-    "firstName": {
-      "type": "string"
-    },
-    "lastName": {
-      "type": "string"
-    },
-    "email": {
-      "type": "string"
-    },
-    "phone": {
-      "type": "string"
-    },
-    "location": {
-      "type": "string"
-    },
-    "linkedIn": {
-      "type": "string"
-    },
-    "github": {
-      "type": "string"
-    },
-    "website": {
-      "type": "string"
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "location",
+        "linkedIn",
+        "github",
+        "website"
+      ],
+      "properties": {
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "linkedIn": {
+          "type": "string"
+        },
+        "github": {
+          "type": "string"
+        },
+        "website": {
+          "type": "string"
+        }
+      }
     },
     "summary": {
-      "type": "string",
-      "description": "Professional Summary section, after contact information in the rendered document."
-    },
-    "skills": {
-      "type": "string",
-      "description": "Dedicated Skills section after Work Experience. Preserve relevant and accurate terms from the source; do not automatically insert job-description keywords."
-    },
-    "resumeFileName": {
       "type": "string"
     },
     "experience": {
@@ -62,6 +68,12 @@
         "$ref": "#/$defs/experience"
       },
       "description": "Employment history. For export, present most recent role first under the Work Experience heading."
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "education": {
       "type": "array",
@@ -94,25 +106,15 @@
         "type": "string"
       }
     },
-    "skillCategories": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "category",
-          "items"
-        ],
-        "properties": {
-          "category": {
-            "type": "string"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fileName"
+      ],
+      "properties": {
+        "fileName": {
+          "type": "string"
         }
       }
     }
@@ -301,7 +303,6 @@
       }
     }
   },
-  "$comment": "This schema validates structured resume data; document formatting (columns, font, tables, headers/footers, actual embedded text, and file format) must be validated separately at export time. Guidance: https://resume.io/resume-templates/ats",
   "x-atsExportGuidance": {
     "reference": "https://resume.io/resume-templates/ats",
     "sectionOrder": [
