@@ -8,7 +8,7 @@ export const ADAPTERS = Object.freeze({
   greenhouse, lever, workday, ashby, "smart-recruiters": smartRecruiters,
 });
 const UNSAFE_QUESTIONS = /(?:password|passcode|verification code|otp|one.time code|social security|ssn|date of birth|birth date|credit card|bank account|passport|driver.?s license|tax id|national id)/i;
-const VOLUNTARY_QUESTIONS = /(?:race|ethnic|gender identity|disab|veteran|sexual orientation|pronouns|demographic|self.identif)/i;
+const VOLUNTARY_QUESTIONS = /(?:race|ethnic|gender|transgender|hispanic|latino|disab|veteran|sexual orientation|pronouns|demographic|self.identif)/i;
 
 export function adapterForUrl(url) {
   let host;
