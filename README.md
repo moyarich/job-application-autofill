@@ -40,6 +40,14 @@ npm run dev --workspace apps/playground
 
 Open http://localhost:5173.
 
+## Use résumé JSON without a parser
+
+**Résumé parsing is optional.** The canonical data format lives in [`resume-schema/resume.schema.json`](resume-schema/resume.schema.json), independent of `packages/extract-resume`. Download [an example JSON résumé](resume-schema/resume.example.json), replace the sample information with your own, and open **Candidate profile → Import JSON** (or **Resume parser → Import résumé JSON**).
+
+Importing does **not** call the OCR/PDF parser or require a résumé file. You can edit the profile, then select **Apply** on a saved job. ATS adapters read `profile.contact`, `profile.experience`, and other structured sections directly; a PDF/DOCX attachment is optional and separate. The backend validates the same JSON contract before launching Playwright. Unsupported form fields remain for interactive browser review.
+
+The JSON contains `contact`, `summary`, `experience`, `skills`, `education`, `projects`, `certifications`, `languages`, `awards`, and `source`. `source.fileName` may be empty. There is no legacy flat-profile format or migration layer.
+
 ## Features
 
 - Add, search, and track job applications (persisted in browser localStorage).

@@ -2,7 +2,7 @@
 
 Local Node.js resume extraction package used by MoyaApply. Supports PDF and DOCX uploads and structured profile heuristics. No cloud services.
 
-See [the structured resume JSON Schema](schemas/resume.schema.json) and [example JSON](schemas/resume.example.json) for the parsed profile contract and optional future résumé sections.
+The parser produces the [standalone résumé data contract](../../resume-schema/resume.schema.json), shared with the application but **owned separately from this optional extractor**. See the [example JSON](../../resume-schema/resume.example.json).
 
 ## API
 
@@ -11,12 +11,12 @@ import { decodeUpload, extractResumeText, extractProfile } from "@moyarich/extra
 
 const upload = decodeUpload({ fileName: "resume.pdf", base64: pdfBase64 });
 const text = await extractResumeText(upload.buffer, upload.extension);
-const profile = { ...extractProfile(text), resumeFileName: upload.fileName };
+const profile = { ...extractProfile(text), source: { fileName: upload.fileName } };
 ```
 
 - PDF: Python `pypdfium2` extracts embedded text; `RapidOCR` + ONNX Runtime extracts scanned pages lazily.
 - DOCX: built-in Node ZIP decompression and document XML extraction.
-- Profile: heuristic extraction of contact details and known skills; results should be reviewed.
+- Profile: heuristic extraction of contact, skills and dated employment history into standalone schema fields; results should be reviewed.
 
 The Python OCR environment is managed with Poetry using `pyproject.toml` (package mode disabled because the reusable Node.js workspace owns distribution).
 
