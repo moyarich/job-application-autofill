@@ -2,12 +2,14 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume-schema/validate.mjs";
+import { openStore } from "./store.mjs";
 import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
 const ORIGIN = process.env.AUTOFILL_ORIGIN || "http://localhost:5173";
 const MAX_BODY = 15 * 1024 * 1024;
+const store = openStore();
 function send(res, code, data, contentType = "application/json") {
   res.writeHead(code, { "Content-Type": contentType, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
   res.end(contentType === "application/json" ? JSON.stringify(data) : data);
@@ -27,6 +29,16 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/health") return send(res, 200, { ok: true });
     if ((req.headers.origin && req.headers.origin !== ORIGIN) || req.headers["x-moya-client"] !== "dashboard")
       return send(res, 403, { error: "Only the local dashboard may access this API." });
+    if (req.method === "GET" && url.pathname === "/api/state")
+      return send(res, 200, store.getSnapshot());
+    if (req.method === "PUT" && url.pathname === "/api/state") {
+      const payload = await readJson(req);
+      try { return send(res, 200, store.saveSnapshot(payload)); }
+      catch (error) {
+        if (error.code === "STALE_STATE") return send(res, 409, { error: error.message });
+        throw error;
+      }
+    }
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
       // Resume extraction is optional; JSON-only applicants never load its dependencies.
       const { decodeUpload, extractProfile, extractResumeText } = await import("@moyarich/extract-resume");

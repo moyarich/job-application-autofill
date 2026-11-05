@@ -19,6 +19,7 @@ services:
       BROWSER_REVIEW_URL: "http://localhost:${MOYA_REVIEW_PORT:-6080}/vnc.html"
       WEB_VNC_PASSWORD: "${WEB_VNC_PASSWORD:?Set WEB_VNC_PASSWORD in .env before starting Docker Compose}"
       CONTAINER_MODE: "true"
+      MOYA_DB_PATH: /app/data/moyaapply.sqlite
     expose:
       - "4177"
     ports:
@@ -33,6 +34,7 @@ services:
       start_period: 20s
     volumes:
       - screenshots:/app/screenshots
+      - moya_data:/app/data
 
   web:
     image: moyaapply:local
@@ -50,4 +52,5 @@ services:
     init: true
 
 volumes:
+  moya_data:
   screenshots:

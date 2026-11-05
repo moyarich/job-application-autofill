@@ -2,9 +2,33 @@
 
 Standalone **React + TypeScript** job application dashboard with a local **Node.js + Playwright** runner. Not a browser extension.
 
+## Persistent local SQLite storage
+
+MoyaApply stores your **structured résumé JSON**, application records, statuses and notes in a SQLite database rather than browser localStorage. The local API owns the database, not the PDF extractor. The app loads saved records on startup and automatically saves edits. Writes are atomic and revision-checked to avoid silently overwriting another tab's updates; if a conflict occurs, reload to pick up the saved state.
+
+- **Docker Compose:** database at `/app/data/moyaapply.sqlite`, persisted in the named `moya_data` volume. Ordinary `docker compose down` does not remove the data. **`docker compose down -v` deletes the database volume**, so back up before using it.
+- **Without Docker:** database at `./data/moyaapply.sqlite` relative to the API process working directory. Override with `MOYA_DB_PATH=/absolute/path/moyaapply.sqlite`.
+- **Backups:** stop the API and copy the SQLite file (and any WAL file), or use SQLite's online backup command while it is running. The database contains personal résumé information; keep backups private.
+- **Scope:** structured résumé and tracked job data persist. Uploaded PDF bytes, live Playwright sessions and screenshots are not stored in SQLite; a PDF can be regenerated from JSON when preparing an application. No browser-localStorage migration is provided because this is a new application.
+
+SQLite uses the built-in Node.js `node:sqlite` module (Node.js 22.13+); no native npm packages or external database server are required.
+
+## Start the complete app with npm
+
+```sh
+npm ci
+npm run dev
+```
+
+Run this from the repository root with **Docker Engine/Desktop and Docker Compose v2 installed and running**. It starts the entire stack: React/Vite, the Node API, SQLite storage, Playwright Chromium, and the interactive noVNC browser viewer. The first start creates a private `.env` with a randomly generated VNC password (printed once and saved in the file), unless `WEB_VNC_PASSWORD` is already configured. Custom passwords are preserved. To change ports, edit `.env`.
+
+Open the dashboard at **http://localhost:5173** and the browser viewer at **http://localhost:6080/vnc.html**. Use the password in `.env` when prompted for the viewer. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the Docker volume after a normal stop.
+
+`npm run dev:web` runs **only Vite**; it is useful when the API is already running separately and does not start the full application.
+
 ## Run with Docker Compose
 
-From the repository root, configure a private VNC password in an untracked `.env` file, then start the stack:
+For manual Docker Compose usage, configure a private VNC password in an untracked `.env` file, then start the stack:
 
 ```sh
 cp .env.example .env
@@ -20,7 +44,7 @@ Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node
 
 ## Run without Docker
 
-Requires Node.js 20+, Chromium for Playwright, Python 3.10–3.13 and Poetry for the local PDF OCR environment.
+Requires Node.js 22.13+ (for built-in node:sqlite), Chromium for Playwright, Python 3.10–3.13 and Poetry for the local PDF OCR environment.
 
 ```sh
 npm ci
@@ -31,7 +55,7 @@ poetry install --with test --no-root
 cd ../..
 ```
 
-Run these in two terminals:
+For advanced host-only development without the Docker noVNC viewer, run these in two terminals:
 
 ```sh
 PYTHON_EXECUTABLE="$(cd packages/extract-resume && poetry env info --executable)" npm run dev:server
@@ -64,7 +88,7 @@ The built-in font supports Latin text; unsupported Unicode characters produce an
 
 ## Features
 
-- Add, search, and track job applications (persisted in browser localStorage).
+- Add, search, and track job applications (persisted in local SQLite).
 - PDF/DOCX resume import via the local API, with contact + skills extraction. PDF uses pypdfium2 for embedded text and RapidOCR/ONNX Runtime for scanned-page OCR; DOCX is extracted with Node's built-in ZIP inflater. OCR is only run for pages with insufficient selectable text.
 - Preview and correct parsed candidate details; import/export JSON.
 - Select a resume and click Apply on a saved job URL to launch a local Playwright browser session.
