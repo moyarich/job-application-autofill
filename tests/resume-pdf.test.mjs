@@ -36,6 +36,19 @@ describe("schema-driven PDF export", () => {
   it("rejects invalid objects rather than exporting misleading resume data", () => {
     expect(()=>renderResumePdf({firstName:"Ada"})).toThrow();
   });
+  it("exports common resume bullets and symbols without Latin font encoding errors", () => {
+    const decorated = structuredClone(resume);
+    decorated.summary = "● Delivered APIs • Improved reliability ▪ Automated deployments";
+    decorated.experience[0].description = "● Shipped AWS services\\n• Improved observability\\n✓ Production ready";
+    decorated.awards = ["◆ Team recognition", "✔ Excellent delivery"];
+    const text = pdfText(renderResumePdf(decorated));
+    expect(text).toContain("- Delivered APIs - Improved reliability - Automated deployments");
+    expect(text).toContain("- Shipped AWS services");
+    expect(text).toContain("- Improved observability");
+    expect(text).toContain("[x] Production ready");
+    expect(text).toContain("- Team recognition");
+    expect(text).toContain("[x] Excellent delivery");
+  });
   it("does not silently corrupt unsupported Unicode characters", () => {
     expect(()=>renderResumePdf({...resume,contact:{...resume.contact,firstName:"\u4e2d\u6587"}})).toThrow(/Unicode fonts/);
   });
