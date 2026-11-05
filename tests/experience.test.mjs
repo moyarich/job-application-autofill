@@ -13,5 +13,24 @@ describe("employment history",()=>{
     expect(extractEmploymentHistory("Employment History\nSoftware Engineer | Acme Inc | 01/2022 to Current\n- Built APIs")).toEqual([
       {company:"Acme Inc",jobTitle:"Software Engineer",location:"",startDate:"2022-01",endDate:null,isCurrent:true,description:"Built APIs"}]);
   });
+  it("retains every job and complete descriptions beyond former caps",()=>{
+    const text=["Career History",...Array.from({length:45},(_,i)=>[
+      "Company "+i+" Technologies",
+      "Software Engineer",
+      "January "+(2025-i)+" - December "+(2025-i),
+      "● "+("Built and deployed reliable services ".repeat(150))+"END-"+i
+    ]).flat(),"Education"].join("\\n");
+    const jobs=extractEmploymentHistory(text);
+    expect(jobs).toHaveLength(45);
+    expect(jobs.at(-1).company).toBe("Company 44 Technologies");
+    expect(jobs[0].description.length).toBeGreaterThan(4000);
+    expect(jobs[0].description).toContain("END-0");
+    expect(jobs.at(-1).description).toContain("END-44");
+  });
+  it("recognizes more history headings and expanded date separators",()=>{
+    const jobs=extractEmploymentHistory("Professional Background\\nExample Technologies\\nPrincipal Engineer\\n2020-01—2024-02\\n• Led platform engineering\\nEducation");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].description).toBe("Led platform engineering");
+  });
   it("does not guess undated jobs",()=>expect(extractEmploymentHistory("Skills\nAWS\nEducation\nUniversity")).toEqual([]));
 });
