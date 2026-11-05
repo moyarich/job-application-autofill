@@ -75,6 +75,20 @@ jobs:
           fi
       - name: ATS browser adapter integration fixtures
         run: docker compose exec -T api node --test tests/ats-browser.test.mjs
+      - name: Verify SQLite persists after Compose shutdown and restart
+        run: |
+          docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && printf "persistent" > /app/data/.ci-volume-marker'
+          docker compose down
+          docker compose up -d --no-build
+          docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && test "$(cat /app/data/.ci-volume-marker)" = persistent'
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5173/api/health | grep -q '"ok":true'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::API did not recover after Docker Compose restart"
+          exit 1
       - name: Container logs
         if: failure()
         run: docker compose logs --no-color --tail=200
