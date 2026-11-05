@@ -21,9 +21,9 @@ describe("job-application-autofill application naming", () => {
     expect(lock.packages["apps/playground"].name).toBe(playground.name);
     expect(lock.packages["node_modules/@job-application-autofill/playground"]).toBeDefined();
   });
-  it("preserves existing SQLite and Docker volume identifiers", () => {
+  it("persists SQLite in the host bind mount and retains its database filename", () => {
     expect(source("docker-compose.yml")).toContain("name: moyaapply");
-    expect(source("docker-compose.yml")).toContain("moya_data:/app/data");
+    expect(source("docker-compose.yml")).toContain("./sqlite-data:/app/data");
     expect(source("server/store.mjs")).toContain("data/moyaapply.sqlite");
   });
   it("does not display the old product name in user-facing entry points", () => {

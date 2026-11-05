@@ -7,10 +7,10 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
+python = ">=3.12,<3.15"
 pypdfium2 = ">=4.30,<6"
 rapidocr = ">=3.10,<4"
-onnxruntime = ">=1.18,<2"
+onnxruntime = ">=1.31,<2"
 pillow = ">=10,<13"
 
 [tool.poetry.group.test]

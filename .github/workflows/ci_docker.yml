@@ -76,7 +76,7 @@ jobs:
             exit 1
           fi
       - name: ATS browser adapter integration fixtures
-        run: docker compose exec -T api node --test tests/ats-browser.test.mjs
+        run: docker compose exec -T api npx --no-install vitest run tests/ats-browser.test.mjs tests/workday-experience.test.mjs
       - name: Verify SQLite persists after Compose shutdown and restart
         run: |
           docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && printf "persistent" > /app/data/.ci-volume-marker'

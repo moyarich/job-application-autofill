@@ -20,7 +20,7 @@ describe("application safety", () => {
       getByLabel: vi.fn((pattern) => ({ first:() => pattern.test("First Name") ? target : missing })),
       getByPlaceholder: vi.fn(() => ({ first:() => missing })),
     };
-    const results = await fillKnownFields(page, { firstName:"Ada", email:"ada@example.com" });
+    const results = await fillKnownFields(page, { contact: { firstName:"Ada", email:"ada@example.com" } });
     expect(results.filled).toEqual(["firstName"]);
     expect(results.missing).toEqual(["email"]);
     expect(target.fill).toHaveBeenCalledWith("Ada", { timeout:2500 });
