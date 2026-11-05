@@ -23,6 +23,17 @@ describe("extractor-independent resume JSON contract", () => {
     expect(() => validateResume({...example,experience:[{...example.experience[0],startDate:"June 2021"}]})).toThrow();
     expect(() => validateResume({...example,experience:[{...example.experience[0],isCurrent:"yes"}]})).toThrow();
   });
+  it("validates all employment entries without a 40-role cutoff or description truncation", () => {
+    const expanded = structuredClone(example);
+    expanded.experience = Array.from({length: 45}, (_, i) => ({
+      ...example.experience[0],
+      company: "Company " + i,
+      description: "Experience-" + i + ": " + "AWS and TypeScript ".repeat(300)
+    }));
+    const validated = validateResume(expanded);
+    expect(validated.experience).toHaveLength(45);
+    expect(validated.experience.at(-1).description).toBe(expanded.experience.at(-1).description);
+  });
   it("allows empty optional-content sections without a resume file", () => {
     const empty = {...example,experience:[],education:[],projects:[],certifications:[],skills:[],languages:[],awards:[],source:{fileName:""}};
     expect(validateResume(empty)).toEqual(empty);
