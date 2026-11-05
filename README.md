@@ -50,6 +50,26 @@ Open http://localhost:5173.
 - Explicit confirm-and-submit action; no automatic submissions. Only HTTPS URLs for Greenhouse, Lever, Ashby, Workday, and SmartRecruiters are allowed.
 - Session state and screenshot proof retained locally until browser session is closed.
 
+## ATS adapters, login flows and employer-specific questions
+
+The Playwright runner recognizes **Greenhouse, Lever, Ashby, Workday and SmartRecruiters**. Each supported domain has an adapter with common candidate-field mappings, including full-name-only forms. The runner detects sign-in, registration, SSO redirects and security challenges and pauses for manual completion in the noVNC browser. Passwords, verification codes and CAPTCHA solutions are never collected in the dashboard.
+
+Once login has finished, use **I've finished — continue**. On multi-step forms, advance via the live employer browser and click **Refresh form after next step** to inspect newly visible questions. The dashboard can fill *only answers you provide explicitly*. Dropdowns, text areas and checkboxes are supported where their accessible labels and options match; complex autocomplete widgets and unknown controls remain manual. Voluntary demographic questions and sensitive identifiers are not filled automatically.
+
+A browser-fixture suite covers all five ATS adapters without contacting employers:
+
+```sh
+node --test tests/ats-browser.test.mjs
+```
+
+For **opt-in, read-only live job-page diagnostics**, provide public application URLs for the ATS systems you want to inspect, then run:
+
+```sh
+ATS_LIVE_URLS='{"greenhouse":"https://boards.greenhouse.io/YOUR-COMPANY/jobs/JOB-ID"}' node tests/live-ats-smoke.mjs
+```
+
+Replace the example URL with a real, publicly accessible job posting. This check only navigates and discovers fields; it does not authenticate, provide candidate data, or submit applications. Login-gated and employer-customized flows require manual end-to-end testing.
+
 ## Security & limitations
 
 In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction and browser automation run locally without a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
