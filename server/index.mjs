@@ -29,7 +29,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/resume/parse") {
       const upload = decodeUpload(await readJson(req));
       const text = await extractResumeText(upload.buffer, upload.extension);
-      return send(res, 200, { profile: { ...extractProfile(text), resumeFileName: upload.fileName },
+      return send(res, 200, { profile: { ...extractProfile(text), source: { fileName: upload.fileName } },
         preview: text.slice(0, 3500), warnings: ["Review parsed fields before applying."] });
     }
     if (req.method === "GET" && url.pathname === "/api/apply/active")
@@ -37,7 +37,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = await readJson(req);
       const profile = payload.profile;
-      if (!profile || typeof profile !== "object" || !profile.firstName || !profile.lastName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(profile.email || ""))
+      if (!profile || typeof profile !== "object" || !profile.contact || !profile.contact.firstName || !profile.contact.lastName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(profile.contact.email || ""))
         return send(res, 400, { error: "Complete the candidate profile before applying." });
       const resume = payload.resume ? decodeUpload(payload.resume) : null;
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
