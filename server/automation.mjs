@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./ats.mjs";
 
 const sessions = new Map();
 let launching = false;
@@ -67,6 +68,8 @@ function status(session) {
     reviewUrl: process.env.BROWSER_REVIEW_URL || null,
     filled: session.filled,
     missing: session.missing,
+    ats: session.ats,
+    questions: session.questions || [],
   };
 }
 
@@ -99,25 +102,52 @@ async function populateSession(session) {
     }
 
   session.pendingResume = null;
+  session.questions = await discoverQuestions(page).catch(() => []);
 }
 
 export async function continueApplication(id) {
   const session = sessions.get(id);
-  if (!session || session.state !== "manual_intervention")
-    throw new Error("Only sessions awaiting manual intervention can continue.");
-  validateUrl(session.page.url());
+  if (!session || !["manual_intervention", "login_required", "ready_for_review"].includes(session.state))
+    throw new Error("This session cannot be resumed.");
+  if (!adapterForUrl(session.page.url())) {
+    session.state = "login_required";
+    session.message = "Complete login in the browser viewer and return to the employer application before continuing.";
+    return status(session);
+  }
   const text = (await session.page.locator("body").innerText().catch(() => "")).slice(0, 20000);
-  if (/captcha|verify you are human|security challenge|cloudflare check/i.test(text))
-    throw new Error("Security challenge still detected. Complete it in the browser viewer.");
+  const detected = formState(text, session.page.url());
+  if (detected !== "ready_for_review") {
+    session.state = detected;
+    session.message = detected === "login_required"
+      ? "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by MoyaApply."
+      : "Complete the security challenge manually in the browser viewer.";
+    return status(session);
+  }
   await populateSession(session);
   session.state = "ready_for_review";
-  session.message = "Security challenge cleared. Review the completed form and missing fields before submission.";
+  session.message = "Application controls inspected. Review all fields and questions, then explicitly confirm submission.";
   await refreshScreenshot(id);
   return status(session);
 }
 
+export async function answerApplicationQuestions(id, answers) {
+  const session = sessions.get(id);
+  if (!session || session.state !== "ready_for_review")
+    throw new Error("Finish sign-in and prepare the application before answering questions.");
+  validateUrl(session.page.url());
+  session.questions = await discoverQuestions(session.page);
+  const result = await fillQuestionAnswers(session.page, session.questions, answers);
+  session.questions = await discoverQuestions(session.page);
+  session.message = result.unresolved.length
+    ? "Some answers need manual attention in the browser viewer."
+    : "Supplied answers were filled. Review their exact selections in the browser viewer.";
+  await refreshScreenshot(id).catch(() => {});
+  return { ...status(session), answerResult: result };
+}
+
 export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
   const url = validateUrl(jobUrl);
+  const adapter = adapterForUrl(url);
   if (typeof jobId !== "string" || !jobId.trim()) throw new Error("A job identifier is required.");
   if (launching || sessions.size > 0) throw new Error("Close the existing application browser session before starting another.");
   launching = true;
@@ -133,17 +163,26 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
     const session = {
       id, jobId, url, browser, context, page, directory, state: "preparing",
       message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume,
+      ats: adapter?.id || "unknown", questions: [],
     };
     sessions.set(id, session);
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
-    // A supported job listing may redirect. Never autofill a different, untrusted website.
-    validateUrl(page.url());
+    // Account sign-in/SSO may redirect to an identity provider. Do not
+    // autofill anything outside the supported ATS domain.
     await page.waitForTimeout(1000);
+    if (!adapterForUrl(page.url())) {
+      session.state = "login_required";
+      session.message = "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
+      return status(session);
+    }
     const text = (await page.locator("body").innerText().catch(() => "")).slice(0, 20000);
-    if (/captcha|verify you are human|security challenge|cloudflare check/i.test(text)) {
-      session.state = "manual_intervention";
-      session.message = "Security challenge detected. Complete it in the interactive browser before continuing.";
+    const state = formState(text, page.url());
+    if (state !== "ready_for_review") {
+      session.state = state;
+      session.message = state === "login_required"
+        ? "Complete employer account sign-in or verification manually in the interactive browser viewer."
+        : "Complete the security challenge manually in the interactive browser viewer.";
       return status(session);
     }
 
@@ -188,6 +227,9 @@ export async function submitApplication(id) {
   if (!session || session.state !== "ready_for_review")
     throw new Error("Application is not ready for submission.");
   const page = session.page;
+  const pageText = (await page.locator("body").innerText().catch(() => "")).slice(0, 16000);
+  if (formState(pageText, page.url()) !== "ready_for_review")
+    throw new Error("Sign-in or security verification is still pending.");
   // VNC allows manual navigation. Never click Submit on an unrelated page.
   validateUrl(page.url());
   const button = page.getByRole("button", { name: /^(submit application|submit|send application|apply)$/i }).first();
