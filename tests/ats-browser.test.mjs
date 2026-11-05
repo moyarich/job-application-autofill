@@ -1,14 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../server/ats.mjs";
+import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
 
 const samples = {
   greenhouse: ["https://boards.greenhouse.io/acme/jobs/123", "First Name", "Last Name"],
   lever: ["https://jobs.lever.co/acme/123", "Full name", "Email"],
   ashby: ["https://jobs.ashbyhq.com/acme/123", "Full Name", "Email"],
   workday: ["https://acme.wd5.myworkdayjobs.com/Careers/job/123", "First Name", "Last Name"],
-  smartrecruiters: ["https://jobs.smartrecruiters.com/acme/123", "Full Name", "Email"],
+  "smart-recruiters": ["https://jobs.smartrecruiters.com/acme/123", "Full Name", "Email"],
 };
 
 for (const [id, [url]] of Object.entries(samples)) {

@@ -8,6 +8,7 @@ on:
       - "docker/**"
       - "apps/playground/vite.config.ts"
       - "server/**"
+      - "playwright-adapters/**"
       - "packages/extract-resume/**"
       - "package.json"
       - "package-lock.json"

@@ -3,7 +3,7 @@ import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./ats.mjs";
+import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
 
 const sessions = new Map();
 let launching = false;

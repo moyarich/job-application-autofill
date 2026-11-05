@@ -86,6 +86,7 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 - `packages/extract-resume/src/index.mjs`: Node.js resume extraction and profile heuristics
 - `packages/extract-resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
 - `packages/extract-resume/pyproject.toml`: Poetry dependency groups and OCR environment
+- `playwright-adapters/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
 - `server/automation.mjs`: Playwright review-before-submit sessions
 - `server/index.mjs`: local JSON HTTP API
 
