@@ -23,4 +23,4 @@ writeFileSync("resume.pdf", renderResumePdf(resume));
 
 The PDF is US Letter, one column, left aligned, with standard ATS headings, reverse-chronological employment, simple text bullets and automatic page breaks. It is **selectable text**, not an image or browser print screenshot.
 
-**Limitations:** This minimal dependency-free exporter uses built-in PDF Latin fonts. For names or content requiring non-Latin Unicode, it reports an error rather than silently corrupting characters. Visual formatting and employer-specific ATS import behavior still need review.
+**Limitations:** This minimal dependency-free exporter uses built-in PDF Latin fonts. Common résumé bullets (including ●, •, ▪ and ◆), smart punctuation and check marks are normalized to ATS-readable ASCII equivalents before encoding. For names or content requiring other non-Latin Unicode, it reports an error rather than silently corrupting characters. Visual formatting and employer-specific ATS import behavior still need review.
