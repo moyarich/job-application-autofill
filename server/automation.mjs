@@ -82,7 +82,7 @@ async function populateSession(session) {
     session.missing = results.missing;
 
     if (session.pendingResume?.buffer?.length) {
-      const filename = join(directory, session.pendingResume.fileName);
+      const filename = join(session.directory, session.pendingResume.fileName);
       await writeFile(filename, session.pendingResume.buffer, { mode: 0o600 });
       try {
         const fileInput = page.locator('input[type="file"]').first();
