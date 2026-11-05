@@ -20,7 +20,7 @@ const inline = parts => parts.filter(Boolean).map(escapeHtml).join(" <span class
 const section = (heading, contents) => contents ? '<section><h2>' + escapeHtml(heading) + '</h2>' + contents + '</section>' : "";
 function paragraphs(value, bullets = false) {
   return String(value ?? "").split(/\r?\n/).filter(line => line.trim()).map(line =>
-    bullets ? el("li", line.trim()) : el("p", line.trim())
+    bullets ? el("li", line.trim().replace(/^(?:[•●▪◦‣⁃*-]|\d+[.)])\s+/, "")) : el("p", line.trim())
   ).join("");
 }
 function entry(title, metadata, when, description) {
@@ -67,11 +67,12 @@ export function renderResumeHtml(input) {
       margin: 14pt 0 6pt; padding-bottom: 4pt; break-after: avoid; }
     h3 { font-size: 10.5pt; margin: 0 0 2pt; break-after: avoid; }
     p { margin: 0 0 5pt; white-space: pre-wrap; overflow-wrap: anywhere; }
-    article { margin-bottom: 9pt; break-inside: avoid; }
+    article { margin-bottom: 9pt; break-inside: auto; }
     .contact, .links, .meta, .period { font-size: 9.5pt; overflow-wrap: anywhere; }
+    .meta, .period { break-after: avoid; }
     .divider { color: #666; margin: 0 3pt; }
     ul { margin: 4pt 0 5pt; padding-left: 16pt; }
-    li { margin: 2pt 0; overflow-wrap: anywhere; }
+    li { margin: 2pt 0; overflow-wrap: anywhere; break-inside: avoid; }
     section { break-inside: auto; }
   </style></head><body>${html}</body></html>`;
 }

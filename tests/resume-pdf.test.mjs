@@ -24,7 +24,7 @@ describe("Unicode resume PDF export", () => {
     const html = renderResumeHtml(multilingual);
     expect(html).toContain("李 小龍");
     expect(html).toContain(multilingual.summary);
-    expect(html).toContain("• Built distributed systems");
+    expect(html).toContain("<li>Built distributed systems</li>");
     expect(html).toContain("✓ Déployé sur AWS");
     expect(html).toContain('charset="UTF-8"');
     expect(html).not.toContain("built-in Latin font");
@@ -76,5 +76,14 @@ describe("Unicode resume PDF export", () => {
     page.pdf.mockRejectedValue(new Error("Print failed"));
     await expect(renderResumePdf(resume, { launchBrowser: async () => browser })).rejects.toThrow("Print failed");
     expect(state.closed).toBe(true);
+  });
+});
+
+describe("PDF pagination", () => {
+  it("allows long roles to flow across pages while keeping individual bullets together", () => {
+    const html = renderResumeHtml(resume);
+    expect(html).toContain("article { margin-bottom: 9pt; break-inside: auto; }");
+    expect(html).toContain("overflow-wrap: anywhere; break-inside: avoid;");
+    expect(html).toContain(".meta, .period { break-after: avoid; }");
   });
 });
