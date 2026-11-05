@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji \
+    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip pipx xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox novnc websockify fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pipx install poetry && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
