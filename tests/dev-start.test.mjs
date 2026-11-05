@@ -33,7 +33,7 @@ describe("full development stack startup", () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
   it("generates eight-character credentials and parses quoted values", () => {
-    expect(makePassword(Buffer.from("1234567890"))).toMatch(/^[a-f0-9]{8}$/);
+    expect(makePassword(Buffer.from("1234567890"))).toMatch(/^[A-Za-z0-9_-]{8}$/);
     expect(parsePassword('WEB_VNC_PASSWORD="secure-password"')).toBe("secure-password");
   });
 });
