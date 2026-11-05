@@ -28,12 +28,13 @@ COPY packages/extract-resume/README.md packages/extract-resume/README.md
 RUN cd packages/extract-resume \
     && poetry config virtualenvs.create true \
     && poetry install --only main --no-root \
-    && poetry env info --executable > /tmp/moya-python-path \
+    && poetry run python -c "import sys; print(sys.executable)" > /tmp/moya-python-path \
     && mkdir -p /opt/venv/bin \
-    && ln -s "$(cat /tmp/moya-python-path)" /opt/venv/bin/python
+    && ln -s "$(cat /tmp/moya-python-path)" /opt/venv/bin/python \
+    && echo "PDF Python interpreter: $(readlink -f /opt/venv/bin/python)" \
+    && /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
 
-# Fail the image build if the interpreter used by the API lacks PDF/OCR dependencies.
-RUN /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
+# Dependency import check runs with the same interpreter used by the API above.
 
 COPY . .
 RUN chmod +x docker/start-review.sh
