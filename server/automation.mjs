@@ -71,8 +71,48 @@ function status(session) {
 }
 
 export function getActiveApplication() {
-  const session = [...sessions.values()].find(item => item.state !== "submitted" && item.state !== "submission_unverified");
+  const session = sessions.values().next().value;
   return session ? status(session) : null;
+}
+
+async function populateSession(session) {
+  const page = session.page;
+    const results = await fillKnownFields(page, session.profile);
+    session.filled = results.filled;
+    session.missing = results.missing;
+
+    if (session.pendingResume?.buffer?.length) {
+      const filename = join(directory, session.pendingResume.fileName);
+      await writeFile(filename, session.pendingResume.buffer, { mode: 0o600 });
+      try {
+        const fileInput = page.locator('input[type="file"]').first();
+        if (await fileInput.count()) {
+          await fileInput.setInputFiles(filename, { timeout: 3000 });
+          session.filled.push("resume");
+        } else {
+          session.missing.push("resume");
+        }
+      } catch {
+        session.missing.push("resume");
+      }
+    }
+
+  session.pendingResume = null;
+}
+
+export async function continueApplication(id) {
+  const session = sessions.get(id);
+  if (!session || session.state !== "manual_intervention")
+    throw new Error("Only sessions awaiting manual intervention can continue.");
+  validateUrl(session.page.url());
+  const text = (await session.page.locator("body").innerText().catch(() => "")).slice(0, 20000);
+  if (/captcha|verify you are human|security challenge|cloudflare check/i.test(text))
+    throw new Error("Security challenge still detected. Complete it in the browser viewer.");
+  await populateSession(session);
+  session.state = "ready_for_review";
+  session.message = "Security challenge cleared. Review the completed form and missing fields before submission.";
+  await refreshScreenshot(id);
+  return status(session);
 }
 
 export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
@@ -91,7 +131,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
     const page = await context.newPage();
     const session = {
       id, jobId, url, browser, context, page, directory, state: "preparing",
-      message: "", screenshot: null, filled: [], missing: [],
+      message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume,
     };
     sessions.set(id, session);
 
@@ -106,26 +146,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
       return status(session);
     }
 
-    const results = await fillKnownFields(page, profile);
-    session.filled = results.filled;
-    session.missing = results.missing;
-
-    if (resume?.buffer?.length) {
-      const filename = join(directory, resume.fileName);
-      await writeFile(filename, resume.buffer, { mode: 0o600 });
-      try {
-        const fileInput = page.locator('input[type="file"]').first();
-        if (await fileInput.count()) {
-          await fileInput.setInputFiles(filename, { timeout: 3000 });
-          session.filled.push("resume");
-        } else {
-          session.missing.push("resume");
-        }
-      } catch {
-        session.missing.push("resume");
-      }
-    }
-
+    await populateSession(session);
     session.state = "ready_for_review";
     session.message = "Fields prepared. Inspect the real employer form, complete missing questions and verify the destination before submitting.";
     await mkdir(resolve("screenshots"), { recursive: true });
