@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build --workspaces --if-present",
     "build:packages": "npm run build --workspaces --if-present",
     "build:playground": "npm run build --workspace apps/playground",
