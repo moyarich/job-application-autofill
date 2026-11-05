@@ -4,7 +4,17 @@ import { validateResume } from "./validate.mjs";
 const PAGE_W=612,PAGE_H=792,LEFT=54,TOP=744,BOTTOM=54,CONTENT=504;
 function encode(value) {
   let out="";
-  const mapped=String(value??"").replace(/[‐‑‒–—−]/g,"-").replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/…/g,"...").replace(/\u00a0/g," ");
+  // Preserve ATS-readable text using WinAnsi-compatible punctuation. PDF's
+  // built-in Helvetica fonts cannot represent arbitrary Unicode code points.
+  const mapped=String(value??"")
+    .replace(/[‐‑‒–—−]/g,"-")
+    .replace(/[‘’]/g,"'")
+    .replace(/[“”]/g,'"')
+    .replace(/…/g,"...")
+    .replace(/[●•◦▪■◆♦►▸‣⁃]/g,"-")
+    .replace(/[✓✔☑]/g,"[x]")
+    .replace(/[✗✘☒]/g,"[ ]")
+    .replace(/\u00a0/g," ");
   for(const ch of mapped) {
     const n=ch.codePointAt(0);
     if(n===9){out+=" ";continue;}
