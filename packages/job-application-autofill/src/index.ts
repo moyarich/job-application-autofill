@@ -11,18 +11,16 @@ export interface EmploymentEntry {
 }
 
 export interface CandidateProfile {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedIn: string;
-  github: string;
-  website: string;
+  contact: { firstName: string; lastName: string; email: string; phone: string; location: string; linkedIn: string; github: string; website: string };
   summary: string;
-  skills: string;
-  resumeFileName: string;
   experience: EmploymentEntry[];
+  skills: string[];
+  education: { institution: string; degree: string; fieldOfStudy: string; location: string; startDate: string; endDate: string | null; description: string }[];
+  projects: { name: string; description: string; url: string; technologies: string[] }[];
+  certifications: { name: string; issuer: string; issuedDate: string; expirationDate: string | null; credentialId: string; url: string }[];
+  languages: string[];
+  awards: string[];
+  source: { fileName: string };
 }
 
 export interface JobApplication {
@@ -36,61 +34,61 @@ export interface JobApplication {
 }
 
 export const emptyCandidate: CandidateProfile = {
-  firstName: "", lastName: "", email: "", phone: "", location: "",
-  linkedIn: "", github: "", website: "", summary: "", skills: "",
-  resumeFileName: "", experience: [],
+  contact: { firstName:"",lastName:"",email:"",phone:"",location:"",linkedIn:"",github:"",website:"" },
+  summary:"", experience:[], skills:[], education:[], projects:[], certifications:[], languages:[], awards:[], source:{fileName:""},
 };
 
 export const statuses: readonly ApplicationStatus[] = [
   "saved", "in_progress", "ready_for_review", "submitted", "interview", "rejected",
 ];
 
-export function validateCandidate(value: CandidateProfile): string[] {
+export function validateCandidate(profile: CandidateProfile): string[] {
   const errors: string[] = [];
-  if (!value.firstName.trim()) errors.push("First name is required");
-  if (!value.lastName.trim()) errors.push("Last name is required");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email.trim())) errors.push("Valid email is required");
+  if (!profile.contact.firstName.trim()) errors.push("First name is required");
+  if (!profile.contact.lastName.trim()) errors.push("Last name is required");
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(profile.contact.email.trim())) errors.push("Valid email is required");
   return errors;
 }
-
 export function parseCandidateJson(text: string): CandidateProfile {
-  const parsed: unknown = JSON.parse(text);
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
-    throw new Error("Profile must be a JSON object");
-  const object = parsed as Record<string, unknown>;
-  const profile = { ...emptyCandidate };
-  for (const key of Object.keys(profile) as (keyof CandidateProfile)[]) {
-    if (key === "experience") continue;
-    if (object[key] != null) {
-      if (typeof object[key] !== "string") throw new Error(`Field "${key}" must be a string`);
-      (profile as unknown as Record<string, unknown>)[key] = object[key];
+  const raw: unknown = JSON.parse(text);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Resume must be a JSON object");
+  const data = raw as Record<string, unknown>;
+  if (!data.contact || typeof data.contact !== "object" || Array.isArray(data.contact)) throw new Error("Resume contact is required");
+  const contact = data.contact as Record<string, unknown>;
+  for (const key of Object.keys(emptyCandidate.contact))
+    if (typeof contact[key] !== "string") throw new Error("Invalid contact field: " + key);
+  if (typeof data.summary !== "string") throw new Error("Summary must be a string");
+  for (const key of ["experience","skills","education","projects","certifications","languages","awards"])
+    if (!Array.isArray(data[key])) throw new Error("Resume " + key + " must be an array");
+  if (!data.source || typeof data.source !== "object" || Array.isArray(data.source)
+      || typeof (data.source as Record<string, unknown>).fileName !== "string")
+    throw new Error("Resume source.fileName is required");
+  for (const key of ["skills","languages","awards"])
+    if (!(data[key] as unknown[]).every(value => typeof value === "string"))
+      throw new Error(key + " must contain strings");
+  const stringFields: Record<string,string[]> = {
+    experience:["company","jobTitle","location","startDate","description"],
+    education:["institution","degree","fieldOfStudy","location","startDate","description"],
+    projects:["name","description","url"],
+    certifications:["name","issuer","issuedDate","credentialId","url"],
+  };
+  const date = (value: unknown) => typeof value === "string" && (!value || /^\\d{4}(?:-(?:0[1-9]|1[0-2]))?$/.test(value));
+  for (const [section,keys] of Object.entries(stringFields)) {
+    for (const value of data[section] as unknown[]) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid " + section + " entry");
+      const entry = value as Record<string, unknown>;
+      for (const key of keys) if (typeof entry[key] !== "string") throw new Error(section + "." + key + " must be a string");
+      if ((section === "experience" || section === "education") && (!date(entry.startDate) || (entry.endDate !== null && !date(entry.endDate))))
+        throw new Error("Invalid employment or education dates");
+      if (section === "experience" && typeof entry.isCurrent !== "boolean") throw new Error("isCurrent must be boolean");
+      if (section === "certifications" && (!date(entry.issuedDate) || (entry.expirationDate !== null && !date(entry.expirationDate))))
+        throw new Error("Invalid certification dates");
+      if (section === "projects" && (!Array.isArray(entry.technologies) || !entry.technologies.every(x=>typeof x==="string")))
+        throw new Error("Invalid project technologies");
     }
   }
-  if (object.experience !== undefined) {
-    if (!Array.isArray(object.experience) || object.experience.length > 40)
-      throw new Error("Employment history must be an array of at most 40 entries.");
-    profile.experience = object.experience.map((raw: unknown) => {
-      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid employment entry.");
-      const entry = raw as Record<string, unknown>;
-      for (const key of ["company", "jobTitle", "location", "startDate", "description"])
-        if (typeof entry[key] !== "string") throw new Error("Employment " + key + " must be a string.");
-      if (entry.endDate !== null && typeof entry.endDate !== "string")
-        throw new Error("Employment endDate must be a string or null.");
-      if (typeof entry.isCurrent !== "boolean") throw new Error("Employment isCurrent must be a boolean.");
-      const validDate = (value: string) => !value || /^\d{4}(?:-(?:0[1-9]|1[0-2]))?$/.test(value);
-      if (!validDate(entry.startDate as string) || (entry.endDate !== null && !validDate(entry.endDate as string)))
-        throw new Error("Employment date must use YYYY or YYYY-MM.");
-      return {
-        company:entry.company as string, jobTitle:entry.jobTitle as string,
-        location:entry.location as string, startDate:entry.startDate as string,
-        endDate:entry.endDate as string | null, isCurrent:entry.isCurrent as boolean,
-        description:entry.description as string,
-      };
-    });
-  }
-  return profile;
+  return raw as CandidateProfile;
 }
-
 export function createApplication(company: string, role: string, url: string): JobApplication {
   const trimmedUrl = url.trim();
   if (!company.trim() || !role.trim()) throw new Error("Company and role are required");
