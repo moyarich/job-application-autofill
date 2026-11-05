@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { decodeUpload, extractProfile, extractResumeText } from "@moyarich/extract-resume";
-import { prepareApplication, getApplication, submitApplication, closeApplication } from "./automation.mjs";
+import { prepareApplication, getApplication, getActiveApplication, refreshScreenshot, submitApplication, closeApplication } from "./automation.mjs";
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
 const ORIGIN = process.env.AUTOFILL_ORIGIN || "http://localhost:5173";
@@ -32,18 +32,22 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { profile: { ...extractProfile(text), resumeFileName: upload.fileName },
         preview: text.slice(0, 3500), warnings: ["Review parsed fields before applying."] });
     }
+    if (req.method === "GET" && url.pathname === "/api/apply/active")
+      return send(res, 200, { session: getActiveApplication() });
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = await readJson(req);
       const profile = payload.profile;
       if (!profile || typeof profile !== "object" || !profile.firstName || !profile.lastName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(profile.email || ""))
         return send(res, 400, { error: "Complete the candidate profile before applying." });
       const resume = payload.resume ? decodeUpload(payload.resume) : null;
-      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, profile, resume }));
+      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
-    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot))?$/);
+    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot))?$/);
     if (match) {
       const [, id, action] = match;
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
+      if (req.method === "POST" && action === "snapshot")
+        return send(res, 200, await refreshScreenshot(id));
       if (req.method === "POST" && action === "submit") {
         const payload = await readJson(req);
         if (payload.confirm !== true || (process.env.CONTAINER_MODE === "true" && payload.reviewed !== true))
