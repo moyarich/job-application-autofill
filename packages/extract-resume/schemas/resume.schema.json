@@ -45,10 +45,12 @@
       "type": "string"
     },
     "summary": {
-      "type": "string"
+      "type": "string",
+      "description": "Professional Summary section, after contact information in the rendered document."
     },
     "skills": {
-      "type": "string"
+      "type": "string",
+      "description": "Dedicated Skills section after Work Experience. Preserve relevant and accurate terms from the source; do not automatically insert job-description keywords."
     },
     "resumeFileName": {
       "type": "string"
@@ -58,13 +60,15 @@
       "maxItems": 40,
       "items": {
         "$ref": "#/$defs/experience"
-      }
+      },
+      "description": "Employment history. For export, present most recent role first under the Work Experience heading."
     },
     "education": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/education"
-      }
+      },
+      "description": "Education section appears after Skills in the rendered document. Optional in extraction because the parser may not yet identify it."
     },
     "projects": {
       "type": "array",
@@ -142,7 +146,7 @@
         "startDate": {
           "type": "string",
           "pattern": "^(?:|[0-9]{4}(?:-(?:0[1-9]|1[0-2]))?)$",
-          "description": "YYYY, YYYY-MM, or empty if unknown"
+          "description": "Machine-readable year or year-month; consistently render in human-readable month/year format."
         },
         "endDate": {
           "anyOf": [
@@ -154,14 +158,16 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Machine-readable year or year-month, or null for a current role. Do not invent end dates."
         },
         "isCurrent": {
           "type": "boolean"
         },
         "description": {
           "type": "string",
-          "default": ""
+          "default": "",
+          "description": "Plain-text responsibilities and accomplishments; render as ordinary round or dash bullets, never custom icons."
         }
       }
     },
@@ -294,5 +300,54 @@
         }
       }
     }
+  },
+  "$comment": "This schema validates structured resume data; document formatting (columns, font, tables, headers/footers, actual embedded text, and file format) must be validated separately at export time. Guidance: https://resume.io/resume-templates/ats",
+  "x-atsExportGuidance": {
+    "reference": "https://resume.io/resume-templates/ats",
+    "sectionOrder": [
+      "contact",
+      "summary",
+      "experience",
+      "skills",
+      "education"
+    ],
+    "headings": {
+      "summary": "Professional Summary",
+      "experience": "Work Experience",
+      "skills": "Skills",
+      "education": "Education"
+    },
+    "layout": "single-column",
+    "contactPlacement": "main-document-body",
+    "bodyFontFamilies": [
+      "Arial",
+      "Calibri",
+      "Times New Roman",
+      "Georgia"
+    ],
+    "bodyFontSizePt": {
+      "minimum": 10,
+      "maximum": 12
+    },
+    "avoid": [
+      "tables",
+      "sidebars",
+      "text boxes",
+      "graphics",
+      "images",
+      "icons",
+      "decorative lines",
+      "skill bars"
+    ],
+    "bullets": [
+      "round",
+      "dash"
+    ],
+    "dates": "consistent year-and-month display, e.g. May 2023 to Present",
+    "experienceOrder": "reverse-chronological",
+    "defaultFileType": "docx",
+    "pdf": "selectable text (not scanned image)",
+    "fileTypeOverride": "follow job posting instructions",
+    "keywords": "use accurate role-specific wording; do not fabricate skills or keyword-stuff"
   }
 }
