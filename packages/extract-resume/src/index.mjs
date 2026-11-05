@@ -1,3 +1,4 @@
+import { extractEmploymentHistory } from "./experience.mjs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -108,6 +109,6 @@ export function extractProfile(text) {
   const skills = skillWords.filter(word => new RegExp("(^|[^a-z0-9])" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^a-z0-9])", "i").test(text));
   return { firstName: parts[0] || "", lastName: parts.slice(1).join(" "),
     email, phone, location: "", linkedIn, github, website,
-    skills: skills.join(", "), summary: "", resumeFileName: "" };
+    skills: skills.join(", "), summary: "", resumeFileName: "", experience: extractEmploymentHistory(text) };
 }
-export { MAX_RESUME };
+export { MAX_RESUME, extractEmploymentHistory };
