@@ -41,8 +41,8 @@ export function validateResume(value) {
   }
   for (const [section, definition] of Object.entries(ENTRIES)) {
     const entries = resume[section];
-    if (!Array.isArray(entries) || entries.length > 40)
-      throw new Error(section + " must be an array of up to 40 entries");
+    if (!Array.isArray(entries))
+      throw new Error(section + " must be an array");
     for (const [index, raw] of entries.entries()) {
       const field = section + "[" + index + "]";
       const entry = object(raw, field);
