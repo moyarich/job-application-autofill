@@ -28,10 +28,16 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: packages/extract-resume/pyproject.toml
-      - name: Install Python OCR dependencies
-        run: python -m pip install -e 'packages/extract-resume[test]'
+      - name: Install Poetry
+        run: pipx install poetry
+      - name: Resolve and install PDF/OCR dependencies
+        working-directory: packages/extract-resume
+        run: |
+          poetry lock
+          poetry install --with test --no-root
       - name: Python syntax check
-        run: python -m compileall -q packages/extract-resume/python/pdf_ocr.py packages/extract-resume/python/test_pdf_ocr.py
+        working-directory: packages/extract-resume
+        run: poetry run python -m compileall -q python/pdf_ocr.py python/test_pdf_ocr.py
       - name: PDF parsing and scanned-page fallback tests
-        run: python -m unittest discover -s packages/extract-resume/python -p 'test_*.py' -v
+        working-directory: packages/extract-resume
+        run: poetry run python -m unittest discover -s python -p 'test_*.py' -v

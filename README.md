@@ -4,21 +4,21 @@ Standalone **React + TypeScript** job application dashboard with a local **Node.
 
 ## Run
 
-Requires Node.js 20+, Chromium for Playwright, Python 3.10+ and the Python OCR requirements for PDF extraction.
+Requires Node.js 20+, Chromium for Playwright, Python 3.10–3.13 and Poetry for the local PDF OCR environment.
 
 ```sh
 npm ci
 npx playwright install chromium
-# macOS/Linux:
-python3 -m venv .venv
-.venv/bin/python -m pip install -e packages/extract-resume
-# Windows: use .venv\\Scripts\\python.exe instead
+# Install Poetry first (e.g. pipx install poetry)
+cd packages/extract-resume
+poetry install --with test --no-root
+cd ../..
 ```
 
 Run these in two terminals:
 
 ```sh
-PYTHON_EXECUTABLE=.venv/bin/python npm run dev:server
+PYTHON_EXECUTABLE="$(cd packages/extract-resume && poetry env info --executable)" npm run dev:server
 npm run dev --workspace apps/playground
 ```
 
@@ -49,7 +49,7 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 - `packages/extract-resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
 - `packages/extract-resume/src/index.mjs`: Node.js resume extraction and profile heuristics
 - `packages/extract-resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
-- `packages/extract-resume/pyproject.toml`: Python package metadata and OCR dependencies
+- `packages/extract-resume/pyproject.toml`: Poetry dependency groups and OCR environment
 - `server/automation.mjs`: Playwright review-before-submit sessions
 - `server/index.mjs`: local JSON HTTP API
 
@@ -62,9 +62,9 @@ npm run checks
 ## PDF OCR tests
 
 ```sh
-# Installs the optional fixture library for Python tests.
-.venv/bin/python -m pip install -e 'packages/extract-resume[test]'
-.venv/bin/python -m unittest discover -s packages/extract-resume/python -p 'test_*.py' -v
+cd packages/extract-resume
+poetry install --with test --no-root
+poetry run python -m unittest discover -s python -p 'test_*.py' -v
 ```
 
 To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend invokes `python3`. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.

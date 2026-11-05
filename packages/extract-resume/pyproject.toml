@@ -1,24 +1,24 @@
-[build-system]
-requires = ["setuptools>=69"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "moya-extract-resume-ocr"
 version = "0.1.0"
 description = "Local PDF text extraction with scanned-page OCR fallback for MoyaApply"
+authors = ["MoyaApply contributors"]
 readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "MIT" }
-dependencies = [
-  "pypdfium2>=4.30,<6",
-  "rapidocr>=3.10,<4",
-  "onnxruntime>=1.18,<2",
-  "Pillow>=10,<13",
-]
+package-mode = false
 
-[project.optional-dependencies]
-test = ["reportlab>=4,<5"]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+pypdfium2 = ">=4.30,<6"
+rapidocr = ">=3.10,<4"
+onnxruntime = ">=1.18,<2"
+pillow = ">=10,<13"
 
-[tool.setuptools]
-py-modules = ["pdf_ocr"]
-package-dir = { "" = "python" }
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+reportlab = ">=4,<5"
+
+[build-system]
+requires = ["poetry-core>=2.0,<3.0"]
+build-backend = "poetry.core.masonry.api"
