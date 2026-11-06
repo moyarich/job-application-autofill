@@ -1,13 +1,12 @@
-.review-panel { border-color:#97b5f2;background:#f8fbff }
-.review-note { font-size:12px;color:#697a9a }
-.browser-review { border:1px solid #d8e4fb;border-radius:10px;padding:16px;margin-bottom:14px;background:white }
-.browser-review p { font-size:13px;color:#5e6e86;line-height:1.5 }
-.browser-open { display:inline-block;font-weight:700;color:#3356be }
-.review-checkbox { display:flex;flex-direction:row;align-items:center;gap:9px;font-size:13px }
-.review-checkbox input { width:auto;accent-color:#4f63df }
-.browser-review-header { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap }
-.browser-review-header strong { font-size:14px }
-.browser-viewer { display:block;width:100%;height:min(65vh,700px);min-height:380px;background:#141c2e;border:1px solid #cbd5e8;border-radius:10px;margin:12px 0 18px }
-.review-checkbox { margin-top:12px }
-@media(max-width:700px) { .browser-viewer { height:460px;min-height:300px } }
-.review-panel .validation button { margin-left:9px }
+.review-panel { border-color: #c8d7f0; background: #f9fbff; }
+.review-note { font-size: 12px; color: var(--muted); }
+.browser-review { border: 1px solid #d8e4f8; border-radius: 13px; padding: 18px; margin-bottom: 14px; background: white; }
+.browser-review p { color: #5e6e86; font-size: 13px; line-height: 1.6; }
+.browser-open { display: inline-block; font-weight: 720; color: var(--accent); }
+.review-checkbox { display: flex; align-items: center; flex-direction: row; gap: 9px; margin-top: 12px; font-size: 13px; }
+.review-checkbox input { width: auto; accent-color: var(--accent); }
+.browser-review-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.browser-review-header strong { font-size: 14px; }
+.browser-viewer { display: block; width: 100%; height: min(65vh,700px); min-height: 380px; margin: 12px 0 18px; border: 1px solid #cbd5e8; border-radius: 12px; background: #141c2e; }
+.review-panel .validation button { margin-left: 9px; }
+@media(max-width: 700px) { .browser-viewer { height: 460px; min-height: 300px; } }

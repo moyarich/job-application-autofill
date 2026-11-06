@@ -1,9 +1,11 @@
-.local-profiles { display:flex;flex-direction:column;gap:9px;margin:24px 0;padding:23px 7px 19px;border-top:1px solid #293951 }
-.local-profiles label { color:#9eaecc;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase }
-.local-profiles select { width:100%;padding:10px 12px;background:#202e47;color:#f5f7ff;border:1px solid #405371;border-radius:10px;font-size:13px }
-.local-profile-actions { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px }
-.local-profile-actions button { padding:7px 9px;background:transparent;color:#c2cee3;border:1px solid #3b4d69;border-radius:8px;font-size:12px;font-weight:550;cursor:pointer;transition:background .15s }
-.local-profile-actions button:hover:not(:disabled) { background:#2c3f60;color:white }
-.local-profile-actions button:disabled { opacity:.4;cursor:not-allowed }
-.local-profiles p { font-size:11px;color:#99a8c5;margin:0 }
-@media(max-width:760px) { .local-profiles { margin:18px 0 12px } }
+.local-profiles { display: flex; flex-direction: column; gap: 11px; padding: 23px 8px 20px; margin: 23px 0 0; border-top: 1px solid #30405b; }
+.local-profiles label { font-size: 10px; font-weight: 750; color: #9caed0; text-transform: uppercase; letter-spacing: .1em; }
+.local-profiles select { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #455773; border-radius: 10px; color: #eef3ff; background: #20304d; font-size: 12px; }
+.local-profiles select option { background: #20304d; }
+.local-profile-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+.local-profile-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; min-height: 29px; border: 1px solid #40516e; border-radius: 8px; background: #1c2a43; color: #becbe3; font-size: 11px; font-weight: 650; transition: background .15s; }
+.local-profile-actions button:hover:not(:disabled) { background: #304565; color: white; }
+.local-profile-actions button:disabled { opacity: .35; }
+.local-profile-actions .action-danger:hover:not(:disabled) { background: #4b2940; color: #ffcfda; }
+.local-profiles .resume-context { margin: -4px 0 0; color: #9fb0cc; font-size: 11px; line-height: 1.55; }
+@media(max-width: 760px) { .local-profiles { margin-top: 20px; } }
