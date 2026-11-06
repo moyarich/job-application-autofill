@@ -45,7 +45,7 @@ it("prefills only email on account creation and never sets a new password",async
   const heading={isVisible:async()=>true};
   const page={url:()=>"https://workday.wd5.myworkdayjobs.com/create-account",
     getByRole:(role: string)=>({first:()=>role==="heading"?heading:hidden,last:()=>hidden}),
-    getByLabel:pattern=>({first:()=>pattern.test("Email Address")?email:password}),
+    getByLabel:(pattern: RegExp)=>({first:()=>pattern.test("Email Address")?email:password}),
     locator:()=>({innerText:async()=>"Create Account. Confirm password."})};
   await helpWorkdaySignIn({page: page as unknown as Page},env);
   expect(email.fill).toHaveBeenCalledWith(env.RESUME_SITE_EMAIL);
