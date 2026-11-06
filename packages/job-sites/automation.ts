@@ -297,7 +297,8 @@ export async function continueApplication(
     session.state = detected;
     session.message =
       detected === "login_required"
-        ? /wrong email address or password|account (?:may|might) be locked/i.test(
+        ? adapterForUrl(session.page.url())?.id === "workday" &&
+          /wrong email address or password|account (?:may|might) be locked/i.test(
             text,
           )
           ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
