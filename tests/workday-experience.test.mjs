@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { fillWorkdayExperience } from "../playwright-adapters/workday/experience.mjs";
+import { fillWorkdayExperience } from "../packages/job-sites/workday/experience.mjs";
 
 const jobs=[
   {company:"Example Technologies",jobTitle:"Senior Software Engineer",location:"Chicago, IL",startDate:"2021-06",endDate:null,isCurrent:true,description:"Built cloud apps."},

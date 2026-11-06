@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-const cli = new URL("../packages/extract-resume/dist/cli.js", import.meta.url).pathname;
+const cli = new URL("../packages/resume/dist/extract-resume.js", import.meta.url).pathname;
 
 describe("extract-resume CLI", () => {
   it("offers help and rejects missing or unknown arguments", () => {

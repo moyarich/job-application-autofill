@@ -4,8 +4,14 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": false,
-    "rootDir": "src"
+    "rootDir": "src",
+    "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["tests/**"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "tests/**"
+  ]
 }

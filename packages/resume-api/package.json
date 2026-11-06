@@ -1,0 +1,12 @@
+{
+  "name": "@moyarich/resume-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@moyarich/resume": "0.1.0",
+    "@moyarich/job-sites": "0.1.0",
+    "@moyarich/job-application-autofill": "0.1.0",
+    "playwright": "^1.56.0"
+  }
+}

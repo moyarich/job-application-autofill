@@ -2,10 +2,10 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
-import { fillKnownFields } from "../server/automation.mjs";
-import { renderResumePdf } from "../resume-schema/pdf.mjs";
-import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
-import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
+import { fillKnownFields } from "../packages/job-sites/automation.mjs";
+import { renderResumePdf } from "../packages/resume/src/resume-schema/create-pdf.ts";
+import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.mjs";
+import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../packages/job-sites/index.mjs";
 
 const samples = {
   greenhouse: ["https://boards.greenhouse.io/acme/jobs/123", "First Name", "Last Name"],
@@ -92,7 +92,7 @@ test("five ATS-style browser fixtures: discover and fill employer questions", as
 });
 
 test("Playwright uses structured resume JSON for autofill and the matching PDF for upload", async () => {
-  const profile = JSON.parse(readFileSync(new URL("../resume-schema/resume.example.json", import.meta.url), "utf8"));
+  const profile = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
   profile.contact.firstName = "Ada";
   profile.contact.lastName = "Lovelace";
   profile.contact.email = "ada@example.com";

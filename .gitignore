@@ -15,7 +15,7 @@ coverage/
 .nyc_output/
 playwright-report/
 test-results/
-
+Moya Richards - Resume.pdf
 # Generated output
 dist/
 build/
@@ -65,3 +65,6 @@ data/
 
 # Persistent private SQLite bind mount on the host
 /sqlite-data/
+
+# Standalone application build
+**/dist-app/

@@ -1,0 +1,108 @@
+import type { Page, Locator } from "playwright";
+import { helpWorkdaySignUp } from "./workday-sign-up.ts";
+// Credentials are scoped to one employer tenant and never returned to the dashboard.
+export function workdayCredentials(
+  url: string,
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const destination = new URL(url);
+  const host = (env.RESUME_SITE_HOST || "workday.wd5.myworkdayjobs.com")
+    .trim()
+    .toLowerCase();
+  if (
+    destination.protocol !== "https:" ||
+    destination.hostname !== host ||
+    !host.endsWith(".myworkdayjobs.com") ||
+    destination.username ||
+    destination.password
+  )
+    return null;
+  if (!env.RESUME_SITE_EMAIL || !env.RESUME_SITE_PASSWORD) return null;
+  return { email: env.RESUME_SITE_EMAIL, password: env.RESUME_SITE_PASSWORD };
+}
+
+export async function openWorkdayApplication(page: Page) {
+  if (!new URL(page.url()).hostname.endsWith(".myworkdayjobs.com")) return;
+  const apply = page
+    .getByRole("button", { name: "Apply", exact: true })
+    .first();
+  await apply.waitFor({ state: "visible", timeout: 12000 }).catch(() => {});
+  if (!(await apply.isVisible().catch(() => false))) return;
+  await apply.click();
+  const autofill = page
+    .getByRole("button", { name: "Autofill with Resume", exact: true })
+    .first();
+  await autofill.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+  if (await autofill.isVisible().catch(() => false)) {
+    await autofill.click();
+    await page
+      .getByRole("button", { name: "Sign in with email", exact: true })
+      .waitFor({ state: "visible", timeout: 10000 })
+      .catch(() => {});
+  }
+}
+
+export async function helpWorkdaySignIn(
+  session: { page: Page; loginAttempted?: boolean },
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  if (session.loginAttempted) return;
+  const page = session.page;
+  if ((await helpWorkdaySignUp(page, env)).state === "manual_required") return;
+  if (session.loginAttempted || !workdayCredentials(page.url(), env)) return;
+  const visible = async (locator: Locator) =>
+    await locator.isVisible().catch(() => false);
+  // Enter the application flow without creating an account or accepting terms.
+  const apply = page
+    .getByRole("button", { name: "Apply", exact: true })
+    .first();
+  if (await visible(apply)) {
+    await apply.click();
+    const autofill = page
+      .getByRole("button", { name: "Autofill with Resume", exact: true })
+      .first();
+    if (await visible(autofill)) await autofill.click();
+  }
+  const emailSignIn = page
+    .getByRole("button", { name: "Sign in with email", exact: true })
+    .first();
+  await emailSignIn
+    .waitFor({ state: "visible", timeout: 5000 })
+    .catch(() => {});
+  if (await visible(emailSignIn)) await emailSignIn.click();
+  const email = page.getByLabel(/email(?: address)?/i).first();
+  const password = page.getByLabel(/^password\s*\*?$/i).first();
+  await password.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+  const credentials = workdayCredentials(page.url(), env);
+  const text = await page.locator("body").innerText();
+  if (
+    await visible(
+      page.getByRole("heading", { name: /^create (?:an? )?account$/i }).first(),
+    )
+  ) {
+    if (credentials && (await visible(email)))
+      await email.fill(credentials.email);
+    return; // New passwords, terms and account creation remain in the user's control.
+  }
+  if (
+    !credentials ||
+    /captcha|verify you are human|verification code|confirm password/i.test(
+      text,
+    )
+  )
+    return;
+  const submit = page.getByRole("button", { name: /^sign in$/i }).last();
+  if (
+    !(await visible(email)) ||
+    !(await visible(password)) ||
+    !(await visible(submit))
+  )
+    return;
+  session.loginAttempted = true;
+  await email.fill(credentials.email);
+  await password.fill(credentials.password);
+  // Recheck the tenant immediately before submitting existing-account credentials.
+  if (!workdayCredentials(page.url(), env)) return;
+  await submit.click();
+  await password.waitFor({ state: "hidden", timeout: 10000 }).catch(() => {});
+}

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { renderResumePdf } from "../resume-schema/pdf.mjs";
-import { decodePdfAttachment } from "../resume-schema/attachment.mjs";
-import { validateResume } from "../resume-schema/validate.mjs";
+import { renderResumePdf } from "../packages/resume/src/resume-schema/create-pdf.ts";
+import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.mjs";
+import { validateResume } from "../packages/resume/src/resume-schema/validate.mjs";
 
-const example = JSON.parse(readFileSync(new URL("../resume-schema/resume.example.json",import.meta.url),"utf8"));
+const example = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json",import.meta.url),"utf8"));
 
 describe("application needs structured resume JSON and a PDF attachment",()=>{
   it("accepts JSON-only profile data and decodes generated Unicode PDF attachments",async()=>{

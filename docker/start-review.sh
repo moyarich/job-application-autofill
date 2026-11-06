@@ -32,7 +32,7 @@ fluxbox >/tmp/moya-fluxbox.log 2>&1 &
 # RFB auth stays inside the container. The only published port is
 # the localhost-bound noVNC websocket endpoint (defined in Compose).
 x11vnc -storepasswd "$WEB_VNC_PASSWORD" "$VNC_AUTH_FILE" >/dev/null 2>&1
-unset WEB_VNC_PASSWORD
+# The local API provides viewer authentication to the authorized dashboard.
 x11vnc -display "$DISPLAY" -localhost -rfbauth "$VNC_AUTH_FILE" \
   -forever -shared -noxdamage -quiet >/tmp/moya-x11vnc.log 2>&1 &
 websockify --web=/usr/share/novnc 0.0.0.0:6080 localhost:5900 \
