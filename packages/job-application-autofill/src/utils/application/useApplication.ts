@@ -402,6 +402,43 @@ export function useApplication() {
       setApplyBusy(false);
     }
   }
+  async function prepareAccountSignUp(password?: string) {
+    if (!session) return;
+    setApplyBusy(true);
+    try {
+      const updated = await requestApi<ApplySession>(
+        "/api/apply/" + session.id + "/account-signup",
+        { ...(password ? { password } : {}) },
+        activeProfileId, activeResumeId ?? undefined,
+      );
+      setSession(updated);
+      setReviewed(false);
+      setMessage(updated.message);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to prepare employer account.");
+    } finally {
+      setApplyBusy(false);
+    }
+  }
+  async function setEmployerAccountStatus(status: "ready" | "setup_required") {
+    if (!session?.employerAccount) return;
+    setApplyBusy(true);
+    try {
+      const account = await requestApi<NonNullable<ApplySession["employerAccount"]>>(
+        "/api/employer-accounts/status",
+        { jobId: session.jobId, status },
+        activeProfileId, activeResumeId ?? undefined,
+      );
+      setSession(current => current ? { ...current, employerAccount: account } : current);
+      setMessage(status === "ready"
+        ? "Account marked ready for this employer and local profile."
+        : "Account signup required for this employer.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not update employer account status.");
+    } finally {
+      setApplyBusy(false);
+    }
+  }
   async function continueAfterChallenge() {
     if (!session) return;
     setApplyBusy(true);
@@ -410,7 +447,11 @@ export function useApplication() {
         "/api/apply/" + session.id + "/continue",
         {}, activeProfileId, activeResumeId ?? undefined,
       );
-      setSession(updated);
+      setSession(current => ({
+        ...updated,
+        employerAccount: updated.employerAccount ?? current?.employerAccount,
+        signupPrepared: updated.signupPrepared ?? current?.signupPrepared,
+      }));
       setReviewed(false);
       changeJob(
         updated.jobId,
@@ -614,6 +655,8 @@ export function useApplication() {
     prepareJob,
     fillCustomQuestions,
     continueAfterChallenge,
+    prepareAccountSignUp,
+    setEmployerAccountStatus,
     finalizeApplication,
   };
 }
