@@ -7,7 +7,7 @@ it("runs only matching site-defined operations without a predefined section list
   const page = { url: () => "https://jobs.lever.co/acme/123", locator: () => ({ innerText: async () => "Application" }) } as unknown as Page;
   const events: string[] = [];
   const adapter: JobSiteAdapter = {
-    id: "lever", label: "Custom", hosts: ["lever.co"], fields: {},
+    id: "lever", label: "Custom", hosts: ["lever.co"],
     employerTenant: () => "acme",
     steps: [
       { id: "custom.portfolio", matches: async () => true,
