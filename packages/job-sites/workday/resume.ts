@@ -1,11 +1,12 @@
 import type { Page } from "playwright";
+import type { AutofillResult } from "../types.ts";
 
 /** Restore an already-saved resume on a subsequent Workday upload step. */
 export async function retryWorkdayResumeUpload(
   page: Page,
   resumeFile: string,
   resumeUploadUrls: string[],
-): Promise<AutofillResults & { uploaded: boolean }> {
+): Promise<AutofillResult & { uploaded: boolean }> {
   if (resumeUploadUrls.includes(page.url())) {
     return { filled: [], missing: [], uploaded: false };
   }
