@@ -5,7 +5,8 @@
 <script type="module">
 const status = document.getElementById('status');
 const session = new URLSearchParams(location.search).get('session');
-const headers = {'X-Moya-Client':'dashboard'};
+const profile = new URLSearchParams(location.search).get('profile') || '00000000-0000-4000-8000-000000000001';
+const headers = {'X-Moya-Client':'dashboard', 'X-Profile-Id':profile};
 let rfb;
 let connected = false;
 let copyRequested = false;
