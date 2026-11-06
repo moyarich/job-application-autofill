@@ -126,13 +126,13 @@ Once login has finished, use **I've finished — continue**. On multi-step forms
 A browser-fixture suite covers all five ATS adapters without contacting employers:
 
 ```sh
-node --test tests/ats-browser.test.ts
+npx --no-install vitest run tests/ats
 ```
 
 For **opt-in, read-only live job-page diagnostics**, provide public application URLs for the ATS systems you want to inspect, then run:
 
 ```sh
-ATS_LIVE_URLS='{"greenhouse":"https://boards.greenhouse.io/YOUR-COMPANY/jobs/JOB-ID"}' node tests/live-ats-smoke.ts
+ATS_LIVE_URLS='{"greenhouse":"https://boards.greenhouse.io/YOUR-COMPANY/jobs/JOB-ID"}' node tests/ats/live-ats-smoke.ts
 ```
 
 Replace the example URL with a real, publicly accessible job posting. This check only navigates and discovers fields; it does not authenticate, provide candidate data, or submit applications. Login-gated and employer-customized flows require manual end-to-end testing.

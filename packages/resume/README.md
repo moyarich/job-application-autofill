@@ -97,8 +97,12 @@ npm exec -- extract-resume "Moya Richards - Resume.pdf" -o resume.json
 
 PDF extraction first checks `PYTHON_EXECUTABLE` if set, then an existing Poetry
 virtual environment, then `python3` and `python`. The selected interpreter must
-contain `pypdfium2`, `rapidocr`, `onnxruntime`, and Pillow. If none is ready, the
-package attempts `poetry install --only main --no-root` automatically.
+contain `pypdfium2`, `rapidocr`, `onnxruntime`, and Pillow. Runtime discovery
+never installs Python packages or invokes Poetry installation. If no interpreter
+has the required dependencies, run `npm run build:python --workspace packages/resume`
+from the repository root, or run the app in Docker. The build script provisions
+Poetry and the PDF/OCR dependencies; it requires a compatible Python interpreter
+to already be installed.
 
 To select an interpreter explicitly:
 
@@ -185,7 +189,8 @@ const profile = {
 
 Uploads are limited to 10 MB. PDF extraction supports up to 30 pages, renders OCR
 pages at 250 DPI, and gives the Python extraction worker a 120-second timeout.
-Python environment discovery or installation may take additional time.
+Python interpreter discovery verifies dependencies without installing anything.
+Environment provisioning runs only during the explicit Python build step.
 
 The parser is heuristic. Known cases needing correction include consecutive
 promotions with inline dates, date ranges mistaken for missing phone numbers,
@@ -201,7 +206,7 @@ Run the CLI and parser tests from the repository root:
 
 ```sh
 npm run build:js --workspace packages/resume
-npx vitest run tests/extract-resume-cli.test.ts tests/resume.test.ts tests/experience.test.ts tests/pdf-python-runtime.test.ts
+npx vitest run tests/resume tests/python
 ```
 
 Run the Python tests with their optional dependencies:
@@ -217,7 +222,8 @@ disabled because the Node.js workspace owns this package.
 
 ## Package layout
 
-- `src/extract-resume/`: PDF/DOCX extraction and the `extract-resume` CLI.
+- `src/extract-resume/`: PDF/DOCX extraction, read-only Python environment discovery, and the `extract-resume` CLI.
+- `scripts/build-python.ts`: explicit Python/Poetry dependency provisioning.
 - `src/create-resume/`: the `create-resume` JSON-to-PDF CLI.
 - `src/resume-schema/`: schema, validation, PDF generation, and examples.
 - `python/`: PDFium/OCR worker.

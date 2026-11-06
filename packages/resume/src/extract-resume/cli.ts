@@ -1,4 +1,4 @@
-import { resumePackageDir } from "../../scripts/python-runtime.js";
+import { resumePackageDir } from "./python-runtime.js";
 import { realpathSync } from "node:fs";
 import { Command } from "commander";
 import { readFile, stat, writeFile } from "node:fs/promises";
