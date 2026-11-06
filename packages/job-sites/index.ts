@@ -24,7 +24,7 @@ export function adapterForUrl(url: string) {
   try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
   for (const [id, adapter] of Object.entries(ADAPTERS))
     if (adapter.hosts.some(domain => host === domain || host.endsWith("." + domain)))
-      return { id, ...adapter };
+      return { ...adapter, id };
   return null;
 }
 
