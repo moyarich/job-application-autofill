@@ -41,3 +41,7 @@ Browser fixtures: `npx vitest run tests/workday`. The fixtures are simulated Wor
 ## Site-defined operations
 
 Adapters declare their own `steps` array of `{ id, matches(context), run(context) }`. There is no shared list of application sections: Workday may declare work history, education or resume steps, while another ATS can define entirely different operations. The orchestrator executes only matching steps in the site's declared order and validates the employer destination before and after every step. Unknown or absent sections are not labeled unsupported and no arbitrary HTML autofill fallback is applied. Screening answers require an adapter-owned handler and explicitly supplied values.
+
+## Floating menu actions
+
+Each site declares only the actions it supports with `menuItems: [{ id, label, stepId }]`. The referenced `stepId` must be a site-owned `steps` entry; no section names or menu actions are enforced by shared code. The browser viewer loads the current session's menu from `GET /api/apply/:id/menu`, checks each action's `matches()` guard, and executes only explicitly selected actions via `POST /api/apply/:id/menu`. Missing steps are never auto-generated. Workday defines its own menu; other providers display no menu until they declare one. The floating pill is draggable by its handle and never submits an application.
