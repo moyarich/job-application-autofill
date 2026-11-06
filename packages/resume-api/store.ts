@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS applications (
     // Shared updates also flow into newly created contact records unless a
     // resume-specific choice explicitly overrides that field.
     for (const key of CONTACT_KEYS)
-      if (decisions[key] !== "resume") tailored[key] = shared[key];
+      if ((decisions[key] ?? "resume") !== "resume") tailored[key] = shared[key];
     db.exec("BEGIN IMMEDIATE");
     try {
       if (current && CONTACT_KEYS.some(key => shared[key] !== current[key]))
