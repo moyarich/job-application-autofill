@@ -1,3 +1,4 @@
+import { generateAccountPassword, accountPasswordValid } from "../../utils/profile/password";
 import { useState } from "react";
 import type { ApplicationController } from "../../utils/application/useApplication";
 import "./EmployerAccountSetup.css";
@@ -8,24 +9,23 @@ export function EmployerAccountSetup({ controller }: { controller: ApplicationCo
   const [generated, setGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [copyError,setCopyError] = useState("");
   if (!session?.employerAccount) return null;
   const account = session.employerAccount;
   const signup = session.signupPrepared;
   function generatePassword() {
-    const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_";
-    const random = new Uint8Array(24);
-    crypto.getRandomValues(random);
-    setPassword(Array.from(random, n => charset[n % charset.length]).join(""));
+    setPassword(generateAccountPassword());
     setGenerated(true);
     setCopied(false);
   }
   async function copyPassword() {
     if (!password) return;
-    await navigator.clipboard.writeText(password);
-    setCopied(true);
+    setCopyError("");
+    try { await navigator.clipboard.writeText(password); setCopied(true); }
+    catch { setCopied(false); setCopyError("Copy was blocked. Select Show, select the password, and copy it with your keyboard."); }
   }
   async function prepare() {
-    if (generated && !copied) return;
+    if ((generated && !copied) || (password && !accountPasswordValid(password))) return;
     await prepareAccountSignUp(password || undefined);
     // A one-time credential is never retained in the app's persistent state.
     setPassword("");
@@ -50,8 +50,10 @@ export function EmployerAccountSetup({ controller }: { controller: ApplicationCo
             <button type="button" disabled={!password || applyBusy} onClick={() => setVisible(v => !v)}>{visible ? "Hide" : "Show"}</button>
             <button type="button" disabled={!password || applyBusy} onClick={() => void copyPassword()}>{copied ? "Copied" : "Copy"}</button>
           </div>
+          {password && !accountPasswordValid(password) && <p className="validation warning">Use 12–128 characters including an uppercase letter, lowercase letter, number, and symbol, without spaces.</p>}
+          {copyError && <p role="alert" className="validation warning">{copyError}</p>}
           {generated && !copied && <p className="validation warning">Copy and save the generated password in your password manager before preparing signup.</p>}
-          <button className="secondary" type="button" disabled={applyBusy || (generated && !copied) || (password.length > 0 && password.length < 12)}
+          <button className="secondary" type="button" disabled={applyBusy || (generated && !copied) || (password.length > 0 && !accountPasswordValid(password))}
             onClick={() => void prepare()}>Fill signup form</button>
           {signup?.state === "manual_required" && (
             <p>Prepared: {signup.filled.length ? signup.filled.join(", ") : "registration page opened"}. Finish any terms, verification, and final Create Account action in the employer browser.</p>

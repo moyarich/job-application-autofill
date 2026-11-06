@@ -7,7 +7,7 @@ import { renderResumePdf } from "../resume/src/resume-schema/create-pdf.ts";
 import { openStore, DEFAULT_PROFILE_ID } from "./store.ts";
 import { employerAccountIdentity } from "../job-sites/employer-account.ts";
 import { decodePdfAttachment } from "../resume/src/resume-schema/attachment.ts";
-import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, prepareApplicationAccount, closeApplication } from "../job-sites/automation.ts";
+import { prepareApplication, pasteApplicationText, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, prepareApplicationAccount, closeApplication } from "../job-sites/automation.ts";
 
 // Local host development loads .env; Compose supplies the same keys as server environment.
 try { process.loadEnvFile(resolve(import.meta.dirname, "../../.env")); }
@@ -181,7 +181,7 @@ const server = createServer(async (req, res) => {
       const prepared = await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profileId, profile, resume, company: savedJob.company, accountSetupRequired: employerAccount?.status === "setup_required" });
       return send(res, 200, { ...prepared, employerAccount });
     }
-    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus))?$/);
+    const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste))?$/);
     if (match) {
       const [, id, action] = match;
       if (getApplication(id).profileId !== profileId) throw new Error("Application session belongs to another local profile.");
@@ -203,6 +203,10 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === "POST" && action === "continue")
         return send(res, 200, await continueApplication(id));
+      if (req.method === "POST" && action === "paste") {
+        const body=record(await readJson(req));
+        return send(res,200,await pasteApplicationText(id,body.text));
+      }
       if (req.method === "POST" && action === "focus")
         return send(res, 200, await refreshScreenshot(id, { focus: true }));
       if (req.method === "POST" && action === "snapshot")

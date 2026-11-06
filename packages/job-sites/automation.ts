@@ -149,6 +149,7 @@ async function populateSession(session: ApplicationSession) {
         if (await fileInput.count()) {
           await fileInput.setInputFiles(filename, { timeout: 3000 });
           session.filled.push("resume");
+          session.pendingResume = null;
         } else {
           session.missing.push("resume");
         }
@@ -157,7 +158,6 @@ async function populateSession(session: ApplicationSession) {
       }
     }
 
-  session.pendingResume = null;
   session.questions = await discoverQuestions(page).catch(() => []);
 }
 
@@ -170,12 +170,15 @@ export async function continueApplication(id: string) {
     session.message = "Complete login in the browser viewer and return to the employer application before continuing.";
     return status(session);
   }
+  if (adapterForUrl(session.page.url())?.id === "workday") await helpWorkdaySignIn(session).catch(() => {});
   const text = (await session.page.locator("body").innerText().catch(() => "")).slice(0, 20000);
   const detected = formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
     session.message = detected === "login_required"
-      ? "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
+      ? (/wrong email address or password|account (?:may|might) be locked/i.test(text)
+        ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
+        : "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill.")
       : "Complete the security challenge manually in the browser viewer.";
     return status(session);
   }
@@ -260,10 +263,10 @@ export async function prepareApplication({ jobUrl, jobId, profileId = "00000000-
     }
     if (adapter?.id === "workday") {
       await openWorkdayApplication(page).catch(() => {});
-      if (!accountSetupRequired) await helpWorkdaySignIn(session).catch(() => {});
+      await helpWorkdaySignIn(session).catch(() => {});
     }
     if (accountSetupRequired && company) {
-      session.signupPrepared = await prepareEmployerSignUp(page, url, company, profile).catch(() => ({
+      session.signupPrepared = await prepareEmployerSignUp(page, url, company, profile, {openRegistration:false}).catch(() => ({
         state: "not_required" as const, filled: [], missing: [],
       }));
     }
@@ -301,6 +304,28 @@ export function getApplication(id: string) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
   return status(session);
+}
+
+/** User-triggered clipboard insertion; text is neither persisted nor included in status. */
+export async function pasteApplicationText(id:string, text:unknown) {
+  const session=sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (typeof text !== "string" || text.length > 100000) throw new Error("Invalid clipboard text.");
+  if (!adapterForUrl(session.page.url()) || new URL(session.page.url()).hostname !== new URL(session.url).hostname)
+    throw new Error("Return to the employer application before pasting.");
+  await session.page.bringToFront();
+  const editable=await session.page.evaluate(() => {
+    const field=document.activeElement;
+    if (!(field instanceof HTMLElement)) return false;
+    if (field.isContentEditable) return true;
+    if (field instanceof HTMLTextAreaElement) return !field.disabled && !field.readOnly;
+    if (field instanceof HTMLInputElement) return !field.disabled && !field.readOnly &&
+      ["text","email","password","search","tel","url","number"].includes(field.type);
+    return false;
+  });
+  if (!editable) throw new Error("Select an editable field in the employer page, then paste again.");
+  await session.page.keyboard.insertText(text);
+  return {pasted:true};
 }
 
 export async function refreshScreenshot(id: string, { focus = false }: { focus?: boolean } = {}) {

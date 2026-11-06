@@ -29,9 +29,16 @@ function controlKey(letter) {
 async function pasteText(text) {
   if(!connected) throw new Error('Connect to the application browser before pasting.');
   await focusApplication();
-  rfb.clipboardPasteFrom(text);
-  await new Promise(resolve=>setTimeout(resolve,150));
-  controlKey('v');
+  // Insert as text in the selected employer field. This does not depend on
+  // X11 clipboard ownership or send Enter keystrokes that could submit a form.
+  for (const [key,code] of [[0xffeb,'MetaLeft'],[0xffec,'MetaRight'],[0xffe3,'ControlLeft'],[0xffe4,'ControlRight']]) rfb.sendKey(key,code,false);
+  const response=await fetch('/api/apply/'+encodeURIComponent(session)+'/paste',{
+    method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({text})
+  });
+  if (!response.ok) {
+    const result=await response.json().catch(()=>({}));
+    throw new Error(result.error || 'Paste failed. Select an employer field and try again.');
+  }
   pasteInput.value='';
   focusRemoteKeyboard(true);
   status.textContent='Connected to application browser';
@@ -46,6 +53,9 @@ document.addEventListener('paste',event=>{
 screen.addEventListener('keydown',event=>{
   if(!(event.metaKey||event.ctrlKey)||!connected) return;
   const key=event.key.toLowerCase();
+  if(event.metaKey && ['a','x','z','y'].includes(key)) {
+    event.preventDefault();event.stopImmediatePropagation();controlKey(key);return;
+  }
   if(key!=='v'&&key!=='c') return;
   event.stopImmediatePropagation();
   if(key==='c') {event.preventDefault();copyRequested=true;controlKey('c');return;}

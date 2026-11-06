@@ -13,7 +13,7 @@ it("signs in once with configured credentials without creating an account", asyn
   const page={
     url:()=>"https://workday.wd5.myworkdayjobs.com/apply",
     getByRole:(role: string,{name}:{name?: string | RegExp})=>({first:()=>hidden,last:()=>role==="button"&&name instanceof RegExp&&name.test("Sign In")?submit:hidden}),
-    getByLabel:(pattern: RegExp)=>({first:()=>pattern.test("Email Address")?email:password}),
+    getByLabel:(pattern: RegExp)=>({first:()=>pattern.test("Email Address")?email:password,last:()=>pattern.test("Email Address")?email:password}),
     locator:()=>({innerText:async()=>"Sign In. Welcome! Create an account to manage applications."})
   };
   const session={page: page as unknown as Page};

@@ -17,6 +17,7 @@ export const ADAPTERS = Object.freeze({
   greenhouse, lever, workday, ashby, "smart-recruiters": smartRecruiters,
 });
 const UNSAFE_QUESTIONS = /(?:password|passcode|verification code|otp|one.time code|social security|ssn|date of birth|birth date|credit card|bank account|passport|driver.?s license|tax id|national id)/i;
+const HONEYPOT_QUESTIONS = /(?:for robots only|do not (?:enter|fill)|leave (?:this )?(?:field )?(?:empty|blank)|honeypot)/i;
 const VOLUNTARY_QUESTIONS = /(?:race|ethnic|gender|transgender|hispanic|latino|disab|veteran|sexual orientation|pronouns|demographic|self.identif)/i;
 
 export function adapterForUrl(url: string) {
@@ -32,14 +33,16 @@ export function formState(text: string, url = "") {
   if (/captcha|verify you are human|security challenge|cloudflare check/i.test(text))
     return "manual_intervention";
   const path = new URL(url, "https://example.com").pathname;
-  if (/(?:\/login|\/signin|\/sign-in|\/create-account|\/register|\/auth(?:\/|$))/i.test(path)
+  if (/(?:^|\n)\s*(?:sign in|log in|create account|create an account)\s*(?:\n|$)/i.test(text)
+      || /wrong email address or password|account (?:may|might) be locked|invalid (?:username|email|password|credentials)/i.test(text)
+      || /(?:\/login|\/signin|\/sign-in|\/create-account|\/register|\/auth(?:\/|$))/i.test(path)
       || /(?:sign in to (?:your|continue)|create (?:an?|your) account|log in to (?:apply|continue)|enter your password|check your email for a (?:code|link))/i.test(text))
     return "login_required";
   return "ready_for_review";
 }
 
 export function classifyQuestion(label: string) {
-  if (UNSAFE_QUESTIONS.test(label)) return "sensitive";
+  if (HONEYPOT_QUESTIONS.test(label) || UNSAFE_QUESTIONS.test(label)) return "sensitive";
   if (VOLUNTARY_QUESTIONS.test(label)) return "voluntary";
   return "general";
 }
@@ -61,7 +64,7 @@ export async function discoverQuestions(page: Page): Promise<ApplicationQuestion
       const idLabel = el.id ? document.querySelector('label[for="' + CSS.escape(el.id) + '"]') : null;
       const label = (legends?.textContent || idLabel?.textContent || el.closest("label")?.textContent
         || el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.getAttribute("name") || "").trim().replace(/\s+/g, " ").slice(0, 300);
-      if (!label || seen.has(label.toLowerCase())) continue;
+      if (!label || /for robots only|do not (?:enter|fill)|leave (?:this )?(?:field )?(?:empty|blank)|honeypot/i.test(label) || seen.has(label.toLowerCase())) continue;
       seen.add(label.toLowerCase());
       const required = el.hasAttribute("required") || el.getAttribute("aria-required") === "true" ||
         Boolean(el.closest("[aria-required=true]"));

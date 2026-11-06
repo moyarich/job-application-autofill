@@ -65,13 +65,13 @@ export async function helpWorkdaySignIn(
   }
   const emailSignIn = page
     .getByRole("button", { name: "Sign in with email", exact: true })
-    .first();
+    .last();
   await emailSignIn
     .waitFor({ state: "visible", timeout: 5000 })
     .catch(() => {});
   if (await visible(emailSignIn)) await emailSignIn.click();
-  const email = page.getByLabel(/email(?: address)?/i).first();
-  const password = page.getByLabel(/^password\s*\*?$/i).first();
+  const email = page.getByLabel(/email(?: address)?/i).last();
+  const password = page.getByLabel(/^password\s*\*?$/i).last();
   await password.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
   const credentials = workdayCredentials(page.url(), env);
   const text = await page.locator("body").innerText();
@@ -91,7 +91,15 @@ export async function helpWorkdaySignIn(
     )
   )
     return;
-  const submit = page.getByRole("button", { name: /^sign in$/i }).last();
+  let submit = page.getByRole("button", { name: /^sign in$/i }).last();
+  // Workday also has a global Sign In button. Prefer the actual form submit.
+  if (typeof password.locator === "function") {
+    const form = password.locator("xpath=ancestor::form[1]");
+    const workdaySubmit = page.locator('[data-automation-id="signInSubmitButton"]').last();
+    if (await visible(workdaySubmit)) submit = workdaySubmit;
+    else if (await form.count()) submit = form.getByRole("button", {name:/^sign in$/i}).first();
+    else submit = page.getByRole("button",{name:/^sign in$/i}).first();
+  }
   if (
     !(await visible(email)) ||
     !(await visible(password)) ||

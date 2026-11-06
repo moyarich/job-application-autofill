@@ -30,7 +30,7 @@ export function App() {
     <div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
-        <WorkspaceHeader controller={controller} />
+        {!applicationId && <WorkspaceHeader controller={controller} />}
         {message && (
           <div className="notice" role="status">
             {message}
@@ -42,8 +42,8 @@ export function App() {
             </button>
           </div>
         )}
-        <ContactImportReview controller={controller} />
-        {tab === "applications" ? (
+        {!applicationId && <ContactImportReview controller={controller} />}
+        {applicationId ? <ApplicationReview controller={controller} /> : tab === "applications" ? (
           <>
             <section className="stats" aria-label="Application overview">
               <div className="stat"><span><ListChecks size={15} aria-hidden="true" /> Total applications</span><strong>{jobs.length}</strong></div>
