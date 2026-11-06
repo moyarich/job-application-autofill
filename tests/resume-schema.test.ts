@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { validateResume, parseResumeJson } from "../packages/resume/src/resume-schema/validate.ts";
@@ -34,7 +32,7 @@ describe("extractor-independent resume JSON contract", () => {
     }));
     const validated = validateResume(expanded);
     expect(validated.experience).toHaveLength(45);
-    expect(validated.experience.at(-1).description).toBe(expanded.experience.at(-1).description);
+    expect(validated.experience.at(-1)?.description).toBe(expanded.experience.at(-1)?.description);
   });
   it("allows empty optional-content sections without a resume file", () => {
     const empty = {...example,experience:[],education:[],projects:[],certifications:[],skills:[],languages:[],awards:[],source:{fileName:""}};
