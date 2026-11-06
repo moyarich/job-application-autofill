@@ -50,6 +50,7 @@ on:
         options:
           - all
           - ci_actionlint.yml
+          - ci_application-viewer.yml
           - ci_cli.yml
           - ci_docker.yml
           - ci_npm-package-lint.yml
