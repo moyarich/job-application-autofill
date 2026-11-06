@@ -332,7 +332,7 @@ export function useApplication() {
       setMessage("Review contact differences before importing this resume.");
     } else applyImportedContent(incoming,contactId,incoming.contact);
   }
-  function applyImportedContent(incoming: CandidateProfile, selectedId: string, resolved: Contact) {
+  function applyImportedContent(incoming: CandidateProfile, selectedId: string | null, resolved: Contact) {
     setContactId(selectedId);
     setProfile({...incoming,contact:resolved});
     setPendingImport(null);
