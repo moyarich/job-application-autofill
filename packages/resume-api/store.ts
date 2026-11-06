@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS applications (
   function createContact(profileId: string, contact: unknown, label: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     const valid = validateContact(contact);
+    if (!isUsableContact(valid)) throw new Error("Contact requires first name, last name, and a valid email.");
     const id = addContact(owner,valid,name(label),!getDefaultContact.get(owner));
     return selectContact.get(owner,id) as unknown as ProfileContact;
   }
@@ -286,7 +287,7 @@ CREATE TABLE IF NOT EXISTS applications (
     const source = copyId ? requireResume(owner,copyId) : null;
     const defaultId = (getDefaultContact.get(owner) as {id:string}|undefined)?.id;
     const row: ResumeVersion = { id: randomUUID(), name: name(value),
-      contactId: source?.contactId ?? defaultId, createdAt: now(), updatedAt: now() };
+      contactId: source?.contactId ?? defaultId ?? null, createdAt: now(), updatedAt: now() };
     insertResume.run(row.id,owner,row.contactId,row.name,source?.json ?? null,row.createdAt,row.updatedAt);
     return row;
   }
