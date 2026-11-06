@@ -131,8 +131,17 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { profile: { ...extractProfile(text), source: { fileName: upload.fileName } },
         preview: text, warnings: ["Review parsed fields before applying."] });
     }
-    if (req.method === "GET" && url.pathname === "/api/apply/active")
-      return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId"), profileId) });
+    function accountForJob(jobId: string) {
+      const job = store.getSnapshot(profileId).jobs.find(item => item.id === jobId);
+      if (!job) return null;
+      const identity = employerAccountIdentity(job.url, job.company);
+      return identity ? store.listAccounts(profileId).find(account => account.provider === identity.provider &&
+        account.employerKey === identity.employerKey) ?? null : null;
+    }
+    if (req.method === "GET" && url.pathname === "/api/apply/active") {
+      const active = getActiveApplication(url.searchParams.get("jobId"), profileId);
+      return send(res, 200, { session: active ? { ...active, employerAccount: accountForJob(active.jobId) } : null });
+    }
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = record(await readJson(req));
       const savedJob = store.getSnapshot(profileId, resumeIdHeader).jobs.find(job => job.id === payload.jobId);
@@ -155,7 +164,7 @@ const server = createServer(async (req, res) => {
     if (match) {
       const [, id, action] = match;
       if (getApplication(id).profileId !== profileId) throw new Error("Application session belongs to another local profile.");
-      if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
+      if (req.method === "GET" && !action) return send(res, 200, { ...getApplication(id), employerAccount: accountForJob(getApplication(id).jobId) });
       if (req.method === "POST" && action === "account-signup") {
         const body = record(await readJson(req));
         if (body.password != null && typeof body.password !== "string")
