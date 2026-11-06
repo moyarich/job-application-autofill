@@ -116,9 +116,11 @@ const server = createServer(async (req, res) => {
         preview: text, warnings: ["Review parsed fields before applying."] });
     }
     if (req.method === "GET" && url.pathname === "/api/apply/active")
-      return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId")) });
+      return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId"), profileId) });
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = record(await readJson(req));
+      const savedJob = store.getSnapshot(profileId, resumeIdHeader).jobs.find(job => job.id === payload.jobId);
+      if (!savedJob || savedJob.url !== payload.jobUrl) throw new Error("Application does not belong to the selected profile.");
       const profile = validateResume(payload.profile);
       const contact = profile.contact;
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
@@ -128,11 +130,12 @@ const server = createServer(async (req, res) => {
       if (typeof attachment.fileName !== "string" || typeof attachment.base64 !== "string") throw new Error("Invalid resume attachment.");
       const resume = decodePdfAttachment({ fileName: attachment.fileName, base64: attachment.base64 });
       if (typeof payload.jobUrl !== "string" || typeof payload.jobId !== "string") throw new Error("Invalid application identifiers.");
-      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
+      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profileId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|focus))?$/);
     if (match) {
       const [, id, action] = match;
+      if (getApplication(id).profileId !== profileId) throw new Error("Application session belongs to another local profile.");
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
       if (req.method === "POST" && action === "answers") {
         const payload = record(await readJson(req));
