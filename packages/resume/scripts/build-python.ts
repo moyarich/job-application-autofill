@@ -83,6 +83,6 @@ try {
   if (!Array.isArray(python)) execute(poetry, ["env", "use", python]);
   execute(poetry, ["install", "--only", "main", "--no-root", "--no-interaction"]);
 } catch (error) {
-  console.error(`Python/OCR build failed: ${${error instanceof Error ? error.message : String(error)}`);
+  console.error(`Python/OCR build failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 }
