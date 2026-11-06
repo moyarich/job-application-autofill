@@ -1,7 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck — migration: follow up with typed Playwright interface annotations.
 import { helpWorkdaySignIn, openWorkdayApplication } from "./workday/workday-login.ts";
 import { chromium } from "playwright";
+import type { Browser, BrowserContext, Page } from "playwright";
+import type { CandidateProfile } from "../resume/src/types.ts";
+import type { ApplicationQuestion } from "./index.ts";
 import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -9,23 +10,51 @@ import { randomUUID } from "node:crypto";
 import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./index.ts";
 import { fillWorkdayExperience } from "./workday/experience.ts";
 
-const sessions = new Map();
-const launchingJobs = new Set();
+type ResumeAttachment = { fileName: string; buffer: Buffer };
+type ApplicationSession = {
+  id: string;
+  jobId: string;
+  url: string;
+  browser: Browser;
+  context: BrowserContext;
+  page: Page;
+  directory: string;
+  state: string;
+  message: string;
+  screenshot: string | null;
+  filled: string[];
+  missing: string[];
+  profile: CandidateProfile;
+  pendingResume: ResumeAttachment | null;
+  ats: string;
+  questions: ApplicationQuestion[];
+  loginAttempted?: boolean;
+};
+type ApplicationPreparation = {
+  jobUrl: string;
+  jobId: string;
+  profile: CandidateProfile;
+  resume: ResumeAttachment;
+  launchBrowser?: () => Promise<Browser>;
+};
+
+const sessions = new Map<string, ApplicationSession>();
+const launchingJobs = new Set<string>();
 const ALLOWED = /(^|\.)(greenhouse\.io|lever\.co|ashbyhq\.com|myworkdayjobs\.com|workday\.com|smartrecruiters\.com)$/i;
 const SUCCESS = /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
 
-export function validateUrl(input) {
+export function validateUrl(input: string) {
   const url = new URL(input);
   if (url.protocol !== "https:" || !ALLOWED.test(url.hostname) || url.username || url.password)
     throw new Error("Apply supports HTTPS Greenhouse, Lever, Ashby, Workday, and SmartRecruiters pages only.");
   return url.toString();
 }
 
-export function isSubmissionConfirmed(text) {
+export function isSubmissionConfirmed(text: string) {
   return SUCCESS.test(text);
 }
 
-async function fill(page, names, value) {
+async function fill(page: Page, names: RegExp[], value: string) {
   if (!value || !String(value).trim()) return false;
   for (const name of names) {
     for (const locator of [page.getByLabel(name, { exact: false }), page.getByPlaceholder(name, { exact: false })]) {
@@ -41,8 +70,8 @@ async function fill(page, names, value) {
   return false;
 }
 
-export async function fillKnownFields(page, profile) {
-  const fields = [
+export async function fillKnownFields(page: Page, profile: CandidateProfile) {
+  const fields: Array<[keyof CandidateProfile['contact'] | 'fullName', RegExp[]]> = [
     ["firstName", [/first.?name/i]],
     ["lastName", [/last.?name/i]],
     ["email", [/e.?mail/i]],
@@ -52,20 +81,21 @@ export async function fillKnownFields(page, profile) {
     ["github", [/github/i]],
     ["website", [/website|portfolio/i]],
   ];
-  const filled = [];
-  const missing = [];
+  const filled: string[] = [];
+  const missing: string[] = [];
   const adapter = adapterForUrl(page.url?.() || "");
-  if (adapter?.fields?.fullName && profile.contact.firstName && profile.contact.lastName)
-    fields.push(["fullName", adapter.fields.fullName]);
+  const adapterFields: Partial<Record<string, RegExp[]>> = adapter?.fields ?? {};
+  if (adapterFields.fullName && profile.contact.firstName && profile.contact.lastName)
+    fields.push(["fullName", adapterFields.fullName]);
   for (const [key, locators] of fields) {
     const value = key === "fullName" ? [profile.contact.firstName, profile.contact.lastName].join(" ") : profile.contact[key];
     if (!value) continue;
-    (await fill(page, adapter?.fields?.[key] || locators, value) ? filled : missing).push(key);
+    (await fill(page, adapterFields[key] || locators, value) ? filled : missing).push(key);
   }
   return { filled, missing };
 }
 
-function status(session) {
+function status(session: ApplicationSession) {
   return {
     id: session.id,
     jobId: session.jobId,
@@ -81,12 +111,12 @@ function status(session) {
   };
 }
 
-export function getActiveApplication(jobId) {
+export function getActiveApplication(jobId?: string | null) {
   const session = jobId ? [...sessions.values()].find(item => item.jobId === jobId) : sessions.values().next().value;
   return session ? status(session) : null;
 }
 
-async function populateSession(session) {
+async function populateSession(session: ApplicationSession) {
   const page = session.page;
   validateUrl(page.url());
     const results = await fillKnownFields(page, session.profile);
@@ -122,7 +152,7 @@ async function populateSession(session) {
   session.questions = await discoverQuestions(page).catch(() => []);
 }
 
-export async function continueApplication(id) {
+export async function continueApplication(id: string) {
   const session = sessions.get(id);
   if (!session || !["manual_intervention", "login_required", "ready_for_review"].includes(session.state))
     throw new Error("This session cannot be resumed.");
@@ -147,7 +177,7 @@ export async function continueApplication(id) {
   return status(session);
 }
 
-export async function answerApplicationQuestions(id, answers) {
+export async function answerApplicationQuestions(id: string, answers: Record<string, string>) {
   const session = sessions.get(id);
   if (!session || session.state !== "ready_for_review")
     throw new Error("Finish sign-in and prepare the application before answering questions.");
@@ -163,23 +193,23 @@ export async function answerApplicationQuestions(id, answers) {
 }
 
 export async function prepareApplication({ jobUrl, jobId, profile, resume,
-  launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }) }) {
+  launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }) }: ApplicationPreparation) {
   const url = validateUrl(jobUrl);
   const adapter = adapterForUrl(url);
   if (typeof jobId !== "string" || !jobId.trim()) throw new Error("A job identifier is required.");
   if (launchingJobs.has(jobId) || [...sessions.values()].some(item => item.jobId === jobId))
     throw new Error("This application already has an open browser session.");
   launchingJobs.add(jobId);
-  let browser;
-  let directory;
-  let id;
+  let browser: Browser | undefined;
+  let directory: string | undefined;
+  let id: string | undefined;
   try {
     id = randomUUID();
     directory = await mkdtemp(join(tmpdir(), "moya-apply-"));
     browser = await launchBrowser();
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: false });
     const page = await context.newPage();
-    const session = {
+    const session: ApplicationSession = {
       id, jobId, url, browser, context, page, directory, state: "preparing",
       message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume,
       ats: adapter?.id || "unknown", questions: [],
@@ -227,13 +257,13 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume,
   }
 }
 
-export function getApplication(id) {
+export function getApplication(id: string) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
   return status(session);
 }
 
-export async function refreshScreenshot(id, { focus = false } = {}) {
+export async function refreshScreenshot(id: string, { focus = false }: { focus?: boolean } = {}) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
   if (focus) await session.page.bringToFront();
@@ -244,7 +274,7 @@ export async function refreshScreenshot(id, { focus = false } = {}) {
   return status(session);
 }
 
-export async function submitApplication(id) {
+export async function submitApplication(id: string) {
   if (process.env.CONTAINER_MODE === "true" && (!process.env.BROWSER_REVIEW_URL || process.env.HEADLESS === "true"))
     throw new Error("Final submission requires an interactive browser viewer.");
   const session = sessions.get(id);
@@ -270,7 +300,7 @@ export async function submitApplication(id) {
   return status(session);
 }
 
-export async function closeApplication(id) {
+export async function closeApplication(id: string) {
   const session = sessions.get(id);
   if (!session) return;
   sessions.delete(id);
