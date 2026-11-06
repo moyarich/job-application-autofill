@@ -16,6 +16,22 @@ export async function resolveImportedContact(profileId: string, resumeId: string
 export async function addProfileContact(profileId: string, name: string, contact: CandidateProfile["contact"]): Promise<ProfileContact> {
   return requestApi("/api/profile-contacts",{name,contact},profileId);
 }
+export async function updateProfileContact(profileId: string, contactId: string,
+  name: string, contact: CandidateProfile["contact"]): Promise<ProfileContact> {
+  const response = await fetch("/api/profile-contacts/" + encodeURIComponent(contactId), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
+    body: JSON.stringify({ name, contact }),
+  });
+  return decodeResponse<ProfileContact>(response,"Could not update contact.");
+}
+export async function deleteProfileContact(profileId: string, contactId: string): Promise<void> {
+  const response = await fetch("/api/profile-contacts/" + encodeURIComponent(contactId), {
+    method: "DELETE",
+    headers: profileHeaders(profileId),
+  });
+  await decodeResponse(response,"Could not delete contact.");
+}
 export async function chooseDefaultContact(profileId: string, contactId: string): Promise<ProfileContact> {
   return requestApi("/api/profile-contacts/"+encodeURIComponent(contactId)+"/default",{},profileId);
 }
