@@ -80,6 +80,7 @@ test("normal paste forwards native clipboard text without a fallback panel", asy
   await expect(page.locator("#screen")).toHaveText("Remote paste: Pasted text\nwith another line");
   await expect(page.getByRole("button")).toHaveCount(0);
   await expect(page.locator("#paste-input")).toHaveValue("");
+  expect(await page.locator("#paste-input").evaluate(element => document.activeElement === element)).toBe(false);
 });
 
 test("viewer restores keyboard input after connecting and after returning focus", async ({ page }) => {
