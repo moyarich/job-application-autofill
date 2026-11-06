@@ -10,8 +10,9 @@ let rfb;
 let connected = false;
 let copyRequested = false;
 let focusRequest = null;
-function focusRemoteKeyboard() {
+function focusRemoteKeyboard(force = false) {
   if (!rfb || !connected || document.hidden) return;
+  if (force && document.activeElement === pasteInput) pasteInput.blur();
   rfb.viewOnly = false;
   if (document.activeElement !== pasteInput && typeof rfb.focus === 'function') rfb.focus();
 }
@@ -31,7 +32,7 @@ async function pasteText(text) {
   await new Promise(resolve=>setTimeout(resolve,150));
   controlKey('v');
   pasteInput.value='';
-  focusRemoteKeyboard();
+  focusRemoteKeyboard(true);
   status.textContent='Connected to application browser';
 }
 document.addEventListener('paste',event=>{
@@ -76,7 +77,7 @@ try {
   rfb.scaleViewport = true;
   rfb.resizeSession = false;
   rfb.addEventListener('connect',()=>{connected=true;status.textContent='Connected to application browser';void focusApplication().catch(error=>{status.textContent=error.message;});});
-  screen.addEventListener('pointerdown',()=>{focusRemoteKeyboard();void focusApplication().catch(error=>{status.textContent=error.message;});});
+  screen.addEventListener('pointerdown',()=>{focusRemoteKeyboard(true);void focusApplication().catch(error=>{status.textContent=error.message;});});
   rfb.addEventListener('disconnect',()=>{connected=false;status.textContent='Browser disconnected. Reopen this viewer to reconnect.';});
   rfb.addEventListener('clipboard',event=>{
     if(copyRequested) {
