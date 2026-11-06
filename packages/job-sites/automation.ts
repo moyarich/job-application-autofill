@@ -64,8 +64,7 @@ type ApplicationPreparation = {
 
 const sessions = new Map<string, ApplicationSession>();
 const launchingJobs = new Set<string>();
-const ALLOWED =
-  /(^|\.)(greenhouse\.io|lever\.co|ashbyhq\.com|myworkdayjobs\.com|workday\.com|smartrecruiters\.com)$/i;
+
 const SUCCESS =
   /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
 
@@ -73,7 +72,7 @@ export function validateUrl(input: string) {
   const url = new URL(input);
   if (
     url.protocol !== "https:" ||
-    !ALLOWED.test(url.hostname) ||
+    !adapterForUrl(url.toString()) ||
     url.username ||
     url.password
   )
