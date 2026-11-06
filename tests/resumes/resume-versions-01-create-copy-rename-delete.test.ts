@@ -19,3 +19,17 @@ test("resume versions can be copied, named and deleted without changing the sour
     expect(() => db.deleteResume(DEFAULT_PROFILE_ID, primary.id)).toThrow(/at least one/i);
   } finally { db.close(); }
 });
+
+test("copying an unlinked draft keeps it unlinked even when a default contact exists", () => {
+  const db = openStore(":memory:");
+  try {
+    const draft = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    db.saveSnapshot({revision:0,profile:candidate,jobs:[]},DEFAULT_PROFILE_ID,draft.id);
+    const saved = db.createContact(DEFAULT_PROFILE_ID,candidate.contact,"Default");
+    expect(saved.isDefault).toBeTruthy();
+    const duplicate = db.createResume(DEFAULT_PROFILE_ID,"Copied draft",draft.id);
+    expect(duplicate.contactId).toBeNull();
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID,duplicate.id).profile).toEqual(candidate);
+    expect(db.createResume(DEFAULT_PROFILE_ID,"New resume").contactId).toBe(saved.id);
+  } finally { db.close(); }
+});
