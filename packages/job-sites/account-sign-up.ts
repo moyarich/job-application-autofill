@@ -35,9 +35,9 @@ export async function prepareEmployerSignUp(
   const signupPage = async () => {
     if (!safe()) return false;
     const url = new URL(page.url());
-    const body = (await page.locator("body").innerText().catch(() => "")).slice(0, 6000);
+    const heading = page.getByRole("heading", { name: /^(?:create (?:an? |your )?account|sign up|register(?: an account)?)$/i }).first();
     return /(?:create[ -]?account|sign[ -]?up|register|registration)/i.test(url.pathname) ||
-      /(?:create (?:an? |your )?account|sign up|register for an account)/i.test(body);
+      await visible(heading);
   };
   if (openRegistration && !(await signupPage())) {
     const choices = [
