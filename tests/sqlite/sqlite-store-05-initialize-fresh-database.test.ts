@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/store.ts";
@@ -20,6 +20,10 @@ test("fresh database creates a profile and unlinked draft resume without placeho
     expect(snapshot.defaultContactId).toBeNull();
     expect(snapshot.resumes[0].contactId).toBeNull();
     expect(snapshot.contact).toBeNull();
+    const draft = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json",import.meta.url),"utf8"));
+    draft.contact.email = "";
+    db.saveSnapshot({revision:0,profile:draft,jobs:[]},DEFAULT_PROFILE_ID,snapshot.resumeId);
+    expect(db.listContacts(DEFAULT_PROFILE_ID)).toHaveLength(0);
     db.close();
 
     db = openStore(file);
@@ -27,6 +31,8 @@ test("fresh database creates a profile and unlinked draft resume without placeho
     expect(snapshot.resumes).toHaveLength(1);
     expect(snapshot.contacts).toHaveLength(0);
     expect(snapshot.contactId).toBeNull();
+    expect(snapshot.profile!.contact.email).toBe("");
+    expect(snapshot.profile!.contact.firstName).toBe(draft.contact.firstName);
     expect(db.createResume(DEFAULT_PROFILE_ID,"Second").contactId).toBeNull();
     db.close();
   } finally { rmSync(dir,{recursive:true,force:true}); }
