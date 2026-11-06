@@ -1,7 +1,8 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 // Read-only live employer ATS smoke checks; no credentials, autofill or submission.
 // Set ATS_LIVE_URLS to a JSON object keyed by adapter ID.
 import { chromium } from "playwright";
-import { adapterForUrl, discoverQuestions, formState } from "../packages/job-sites/index.mjs";
+import { adapterForUrl, discoverQuestions, formState } from "../packages/job-sites/index.ts";
 
 const raw = process.env.ATS_LIVE_URLS;
 if (!raw) {

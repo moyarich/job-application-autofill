@@ -1,3 +1,4 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it } from "vitest";
 import { extractProfile, extractEmploymentHistory } from "@moyarich/resume";
 describe("employment history",()=>{

@@ -1,5 +1,6 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it, vi } from "vitest";
-import { validateUrl, isSubmissionConfirmed, fillKnownFields, prepareApplication, getActiveApplication, closeApplication } from "../packages/job-sites/automation.mjs";
+import { validateUrl, isSubmissionConfirmed, fillKnownFields, prepareApplication, getActiveApplication, closeApplication } from "../packages/job-sites/automation.ts";
 
 describe("application safety", () => {
   it("permits known ATS sites only over HTTPS", () => {

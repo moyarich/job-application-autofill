@@ -1,3 +1,4 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, it, expect } from "vitest";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";

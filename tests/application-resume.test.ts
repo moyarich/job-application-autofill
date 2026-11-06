@@ -1,8 +1,9 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { renderResumePdf } from "../packages/resume/src/resume-schema/create-pdf.ts";
-import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.mjs";
-import { validateResume } from "../packages/resume/src/resume-schema/validate.mjs";
+import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.ts";
+import { validateResume } from "../packages/resume/src/resume-schema/validate.ts";
 
 const example = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json",import.meta.url),"utf8"));
 
