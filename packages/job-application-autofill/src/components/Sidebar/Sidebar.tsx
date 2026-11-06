@@ -1,5 +1,6 @@
 import "./Sidebar.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
+import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 export function Sidebar({ controller }: { controller: ApplicationController }) {
   const { tab, setTab } = controller;
   return (
@@ -10,6 +11,7 @@ export function Sidebar({ controller }: { controller: ApplicationController }) {
           job-application-<span className="brand-light">autofill</span>
         </span>
       </div>
+      <LocalProfiles controller={controller} />
       <div className="nav-label">WORKSPACE</div>
       <button
         className={tab === "applications" ? "nav active" : "nav"}
