@@ -1,3 +1,4 @@
+import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
 import type { CandidateProfile } from "../../index";
 import type { ApplicationController } from "../../utils/application/useApplication";
@@ -16,6 +17,8 @@ function Entries<T extends object>({
   blank,
   fields,
   onChange,
+  richTextSection,
+  controller,
 }: {
   title: string;
   singular: string;
@@ -23,11 +26,24 @@ function Entries<T extends object>({
   blank: T;
   fields: Field<T>[];
   onChange: (items: T[]) => void;
+  richTextSection?: string;
+  controller?: ApplicationController;
 }) {
   return (
-    <section className="employment-editor" aria-label={title}>
+    <section
+      className="panel resume-section-card employment-editor"
+      id={"resume-" + title.toLowerCase().replace(/ /g, "-")}
+      aria-label={title}
+    >
       <div className="panel-title horizontal">
-        <h2>{title}</h2>
+        <div>
+          <span className="resume-eyebrow">RESUME CONTENT</span>
+          <h2>{title}</h2>
+          <p>
+            {items.length} {items.length === 1 ? singular : "entries"} on this
+            resume
+          </p>
+        </div>
         <button
           type="button"
           className="secondary"
@@ -36,7 +52,15 @@ function Entries<T extends object>({
           <Plus size={15} /> Add {singular}
         </button>
       </div>
-      {!items.length && <p>No {title.toLowerCase()} added yet.</p>}
+      {!items.length && (
+        <div className="resume-empty-state">
+          <Plus size={21} />
+          <div>
+            <strong>Add your {title.toLowerCase()}</strong>
+            <p>Use “Add {singular}” to include this section on your resume.</p>
+          </div>
+        </div>
+      )}
       {items.map((item, index) => (
         <div className="employment-entry" key={index}>
           <div className="profile-grid">
@@ -63,13 +87,34 @@ function Entries<T extends object>({
                       : entry,
                   ),
                 );
+              const Wrapper =
+                field.multiline && richTextSection ? "div" : "label";
               return (
-                <label
+                <Wrapper
                   key={String(field.key)}
-                  className={field.multiline ? "resume-full-width" : undefined}
+                  className={
+                    field.multiline
+                      ? "resume-full-width rich-text-field"
+                      : undefined
+                  }
                 >
-                  {field.label}
-                  {field.multiline ? (
+                  <span>{field.label}</span>
+                  {field.multiline && richTextSection && controller ? (
+                    <RichTextEditor
+                      key={
+                        controller.activeResumeId +
+                        "." +
+                        richTextSection +
+                        "." +
+                        index +
+                        "." +
+                        String(field.key)
+                      }
+                      label={field.label}
+                      value={value}
+                      onChange={change}
+                    />
+                  ) : field.multiline ? (
                     <textarea
                       rows={4}
                       value={value}
@@ -81,14 +126,16 @@ function Entries<T extends object>({
                       onChange={(event) => change(event.target.value)}
                     />
                   )}
-                </label>
+                </Wrapper>
               );
             })}
           </div>
           <button
             type="button"
             className="remove"
-            onClick={() => onChange(items.filter((_, i) => i !== index))}
+            onClick={() => {
+              onChange(items.filter((_, i) => i !== index));
+            }}
           >
             <Trash2 size={14} /> Remove {singular}
           </button>
@@ -171,6 +218,8 @@ export function ResumeSections({
       />
       <Entries
         title="Education"
+        richTextSection="education"
+        controller={controller}
         singular="education entry"
         items={profile.education}
         fields={educationFields}
@@ -204,6 +253,8 @@ export function ResumeSections({
       />
       <Entries
         title="Projects"
+        richTextSection="projects"
+        controller={controller}
         singular="project"
         items={profile.projects}
         fields={projectFields}
@@ -211,7 +262,11 @@ export function ResumeSections({
         onChange={(projects) => setProfile((p) => ({ ...p, projects }))}
       />
       {(["languages", "awards"] as const).map((key) => (
-        <section className="employment-editor" key={key}>
+        <section
+          className="panel resume-section-card employment-editor"
+          id={"resume-" + key}
+          key={key}
+        >
           <h2>{key === "languages" ? "Languages" : "Awards"}</h2>
           <label>
             {key === "languages"
@@ -230,6 +285,8 @@ export function ResumeSections({
       ))}
       <Entries
         title="Additional sections"
+        richTextSection="additionalSections"
+        controller={controller}
         singular="section"
         items={profile.additionalSections || []}
         fields={sectionFields}

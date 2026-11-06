@@ -1,0 +1,118 @@
+.rich-text-editor {
+  width: 100%;
+  border: 1px solid #dbe3ee;
+  border-radius: 11px;
+  background: #fff;
+  overflow: hidden;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.rich-text-editor:focus-within {
+  border-color: #8297ed;
+  box-shadow: 0 0 0 3px rgb(95 116 226 / 12%);
+}
+.rich-text-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #edf0f6;
+  background: #fafbfe;
+}
+.rich-text-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 29px;
+  border: 0;
+  border-radius: 5px;
+  color: #62718b;
+  background: transparent;
+}
+.rich-text-toolbar button:hover,
+.rich-text-toolbar button[aria-pressed="true"] {
+  color: #4159d7;
+  background: #e9edff;
+}
+.rich-text-separator {
+  height: 17px;
+  width: 1px;
+  background: #e1e6ef;
+  margin: 0 5px;
+}
+.rich-text-content {
+  min-height: 115px;
+  padding: 13px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.rich-text-paragraph {
+  margin-bottom: 5px;
+}
+.rich-text-bullet {
+  padding-left: 19px;
+  position: relative;
+  margin-bottom: 5px;
+}
+.rich-text-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 3px;
+  color: #6d7da0;
+}
+.rich-text-content strong {
+  font-weight: 750;
+}
+.rich-text-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: #44526b;
+  font-size: 12px;
+  font-weight: 650;
+}
+.rich-text-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+.rich-text-content {
+  min-width: 0;
+  max-width: 100%;
+  word-break: break-word;
+}
+.rich-text-toolbar {
+  flex-wrap: wrap;
+}
+.rich-text-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #edf0f6;
+  background: #fafbfe;
+}
+.rich-text-controls .rich-text-toolbar {
+  border-bottom: 0;
+}
+.rich-text-source-toggle {
+  margin: 6px 10px;
+  padding: 5px 8px;
+  background: #fff;
+  border: 1px solid #dbe3ee;
+  border-radius: 5px;
+  color: #65748c;
+  font-size: 10px;
+}
+.rich-text-editor .rich-text-source {
+  border: 0;
+  border-radius: 0;
+  font-family: ui-monospace, monospace;
+  line-height: 1.7;
+  font-size: 12px;
+  box-shadow: none;
+}

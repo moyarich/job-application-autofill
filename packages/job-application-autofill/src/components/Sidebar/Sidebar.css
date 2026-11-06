@@ -25,3 +25,7 @@
   .sidebar-open .sidebar-content { display: flex; }
   .sidebar-bottom { margin-top: 14px; }
 }
+
+.sidebar-menu-group { display: flex; flex-direction: column; gap: 5px; }
+.sidebar-menu-group + .sidebar-menu-group { margin-top: 22px; }
+.sidebar-menu-group .nav-label { display: block; margin-bottom: 5px; }

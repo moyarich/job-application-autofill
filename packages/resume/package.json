@@ -17,6 +17,10 @@
     "./validate": {
       "types": "./dist/resume-schema/validate.d.ts",
       "import": "./dist/validate.js"
+    },
+    "./render-html": {
+      "types": "./dist/resume-schema/render-html.d.ts",
+      "import": "./dist/render-html.js"
     }
   },
   "files": [
@@ -33,6 +37,7 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
+    "markdown-it": "^15.0.3",
     "playwright": "^1.56.0"
   },
   "bin": {
@@ -40,9 +45,10 @@
     "create-resume": "./dist/create-resume.js"
   },
   "devDependencies": {
-    "vite": "^7.3.7",
+    "@types/markdown-it": "^14.2.0",
+    "@types/node": "^24.3.1",
     "typescript": "^5.9.2",
-    "@types/node": "^24.3.1"
+    "vite": "^7.3.7"
   },
   "types": "./dist/index.d.ts"
 }

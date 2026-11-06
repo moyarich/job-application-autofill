@@ -59,7 +59,8 @@
       }
     },
     "summary": {
-      "type": "string"
+      "type": "string",
+      "description": "Markdown professional summary. Plain text is valid Markdown."
     },
     "experience": {
       "type": "array",
@@ -108,7 +109,9 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["fileName"],
+      "required": [
+        "fileName"
+      ],
       "properties": {
         "fileName": {
           "type": "string"
@@ -120,13 +123,17 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["heading", "content"],
+        "required": [
+          "heading",
+          "content"
+        ],
         "properties": {
           "heading": {
             "type": "string"
           },
           "content": {
-            "type": "string"
+            "type": "string",
+            "description": "Markdown section content."
           }
         }
       }
@@ -136,7 +143,10 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["heading", "content"],
+        "required": [
+          "heading",
+          "content"
+        ],
         "properties": {
           "heading": {
             "type": "string"
@@ -198,7 +208,7 @@
         "description": {
           "type": "string",
           "default": "",
-          "description": "Plain-text responsibilities and accomplishments; render as ordinary round or dash bullets, never custom icons."
+          "description": "Markdown content, converted to plain text for autofill and formatted content for document exports."
         }
       }
     },
@@ -250,14 +260,20 @@
         },
         "description": {
           "type": "string",
-          "default": ""
+          "default": "",
+          "description": "Markdown content, converted to plain text for autofill and formatted content for document exports."
         }
       }
     },
     "project": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "description", "url", "technologies"],
+      "required": [
+        "name",
+        "description",
+        "url",
+        "technologies"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -265,7 +281,8 @@
         },
         "description": {
           "type": "string",
-          "default": ""
+          "default": "",
+          "description": "Markdown content, converted to plain text for autofill and formatted content for document exports."
         },
         "url": {
           "type": "string",
@@ -329,7 +346,13 @@
   },
   "x-atsExportGuidance": {
     "reference": "https://resume.io/resume-templates/ats",
-    "sectionOrder": ["contact", "summary", "experience", "skills", "education"],
+    "sectionOrder": [
+      "contact",
+      "summary",
+      "experience",
+      "skills",
+      "education"
+    ],
     "headings": {
       "summary": "Professional Summary",
       "experience": "Work Experience",
@@ -338,7 +361,12 @@
     },
     "layout": "single-column",
     "contactPlacement": "main-document-body",
-    "bodyFontFamilies": ["Arial", "Calibri", "Times New Roman", "Georgia"],
+    "bodyFontFamilies": [
+      "Arial",
+      "Calibri",
+      "Times New Roman",
+      "Georgia"
+    ],
     "bodyFontSizePt": {
       "minimum": 10,
       "maximum": 12
@@ -353,7 +381,10 @@
       "decorative lines",
       "skill bars"
     ],
-    "bullets": ["round", "dash"],
+    "bullets": [
+      "round",
+      "dash"
+    ],
     "dates": "consistent year-and-month display, e.g. May 2023 to Present",
     "experienceOrder": "reverse-chronological",
     "defaultFileType": "docx",
