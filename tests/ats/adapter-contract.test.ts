@@ -19,13 +19,32 @@ describe("job-site adapter contract", () => {
     }
   });
 
-  it("only the Workday adapter owns Workday-specific browser hooks", () => {
-    expect(ADAPTERS.workday.fillProfile).toBeTypeOf("function");
-    expect(ADAPTERS.workday.retryResumeUpload).toBeTypeOf("function");
-    expect(ADAPTERS.workday.openApplication).toBeTypeOf("function");
-    expect(ADAPTERS.workday.helpSignIn).toBeTypeOf("function");
-    expect(ADAPTERS.workday.loginFailureMessage).toBeTypeOf("function");
-    expect(ADAPTERS.workday.loginFailureMessage?.("wrong email address or password")).toMatch(/Workday/);
+  it("Workday declares only its own site-specific steps and menu actions", () => {
+    const workday = ADAPTERS.workday;
+    const steps = workday.steps ?? [];
+    const stepIds = steps.map(step => step.id);
+    expect(stepIds).toEqual([
+      "workday.personal-information",
+      "workday.work-experience",
+      "workday.education",
+      "workday.skills",
+      "workday.resume",
+      "workday.screening",
+    ]);
+    for (const step of steps) {
+      expect(step.matches).toBeTypeOf("function");
+      expect(step.run).toBeTypeOf("function");
+    }
+    const menu = workday.menuItems ?? [];
+    expect(menu.map(item => item.stepId)).toEqual(stepIds);
+    expect(new Set(menu.map(item => item.id)).size).toBe(menu.length);
+
+    expect(workday.detectPage).toBeTypeOf("function");
+    expect(workday.openApplication).toBeTypeOf("function");
+    expect(workday.helpSignIn).toBeTypeOf("function");
+    expect(workday.loginFailureMessage).toBeTypeOf("function");
+    expect(workday.loginFailureMessage?.("wrong email address or password")).toMatch(/Workday/);
+    expect(ADAPTERS.lever.menuItems).toBeUndefined();
     expect(ADAPTERS.lever.loginFailureMessage).toBeUndefined();
   });
 
