@@ -2,6 +2,11 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { createApplication } from "../packages/job-application-autofill/src/index";
 
+type ViewerTestWindow = Window & {
+  __rfbForTest?: { focusCount: number; viewOnly: boolean };
+  __copiedText?: string;
+};
+
 test("application pages use separate UUIDs and restore only their own session", async ({ context, page }) => {
   const profile = JSON.parse(readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"));
   const jobs = [createApplication("Example A", "Engineer A", "https://jobs.lever.co/example/a"), createApplication("Example B", "Engineer B", "https://boards.greenhouse.io/example/jobs/123")];
@@ -102,21 +107,21 @@ test("viewer restores keyboard input after connecting and after returning focus"
   `}));
   await page.goto("/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa");
   await expect(page.getByRole("status")).toHaveText("Connected to application browser");
-  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest?.focusCount)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest?.focusCount)).toBeGreaterThan(0);
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-  expect(await page.evaluate(() => (window as any).__rfbForTest.viewOnly)).toBe(true);
+  expect(await page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.viewOnly)).toBe(true);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   // The API request is still pending; input must not become stuck in view-only mode.
   await page.locator("#screen").click();
-  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest.viewOnly)).toBe(false);
-  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest.focusCount)).toBeGreaterThan(1);
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.viewOnly)).toBe(false);
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.focusCount)).toBeGreaterThan(1);
 });
 
 test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
-      value: {writeText: async (text: string) => { (window as any).__copiedText = text; }},
+      value: {writeText: async (text: string) => { (window as ViewerTestWindow).__copiedText = text; }},
     });
   });
   await page.route("**/api/viewer/config", route => route.fulfill({json:{password:"test-password"}}));
@@ -134,5 +139,5 @@ test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
   await page.locator("#screen").evaluate(element => element.dispatchEvent(
     new KeyboardEvent("keydown",{key:"c",metaKey:true,bubbles:true})
   ));
-  await expect.poll(() => page.evaluate(() => (window as any).__copiedText)).toBe("Copied remote text");
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__copiedText)).toBe("Copied remote text");
 });
