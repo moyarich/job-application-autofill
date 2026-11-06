@@ -9,12 +9,22 @@ import {
   type ApplicationStatus,
 } from "../../index";
 import type { ApplySession } from "./types";
-import { requestApi, readState, saveState } from "../api/client";
+import {
+  requestApi, readState, saveState, readProfiles, createLocalProfile,
+  renameLocalProfile, deleteLocalProfile, createResumeVersion, renameResumeVersion,
+  deleteResumeVersion, DEFAULT_PROFILE_ID, ACTIVE_PROFILE_STORAGE_KEY,
+  type LocalProfile, type ResumeVersion,
+} from "../api/client";
 import { filePayload } from "../files/resume-files";
 export function useApplication() {
-  const applicationId = new URLSearchParams(window.location.search).get(
-    "application",
-  );
+  const query = new URLSearchParams(window.location.search);
+  const applicationId = query.get("application");
+  const activeProfileId = query.get("profile") || localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY) || DEFAULT_PROFILE_ID;
+  const requestedResumeId = query.get("resume") || undefined;
+  const [profiles, setProfiles] = useState<LocalProfile[]>([]);
+  const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(requestedResumeId ?? null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
   const [tab, setTab] = useState<"applications" | "profile" | "parser">(
@@ -49,7 +59,7 @@ export function useApplication() {
     let cancelled = false;
     if (!applicationId) return;
     fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {
-      headers: { "X-Moya-Client": "dashboard" },
+      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
@@ -68,8 +78,14 @@ export function useApplication() {
   }, []);
   useEffect(() => {
     let cancelled = false;
-    readState()
-      .then((state) => {
+    Promise.all([readProfiles(), readState(activeProfileId, requestedResumeId)])
+      .then(([available, state]) => {
+        if (!available.profiles.some(item => item.id === activeProfileId))
+          throw new Error("The selected local profile does not exist.");
+        setProfiles(available.profiles);
+        setResumeVersions(state.resumes);
+        setActiveResumeId(state.resumeId);
+        localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, activeProfileId);
         if (cancelled) return;
         const value = state.profile
           ? parseCandidateJson(JSON.stringify(state.profile))
@@ -99,7 +115,7 @@ export function useApplication() {
           const saved = await saveState({
             ...state,
             revision: revisionRef.current,
-          });
+          }, activeProfileId, activeResumeId!);
           revisionRef.current = saved.revision;
           savedRef.current = signature;
         })
@@ -112,8 +128,9 @@ export function useApplication() {
           );
         });
     }, 350);
+    saveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [hydrated, profile, jobs]);
+  }, [hydrated, profile, jobs, activeProfileId, activeResumeId]);
 
   useEffect(() => {
     if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
@@ -132,7 +149,7 @@ export function useApplication() {
     if (applicationId || !hydrated) return;
     const refresh = () => {
       if (JSON.stringify({ profile, jobs }) !== savedRef.current) return;
-      void readState()
+      void readState(activeProfileId, activeResumeId ?? undefined)
         .then((state) => {
           revisionRef.current = state.revision;
           const nextProfile = state.profile
@@ -149,7 +166,7 @@ export function useApplication() {
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [applicationId, hydrated, profile, jobs]);
+  }, [applicationId, hydrated, profile, jobs, activeProfileId, activeResumeId]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter((job) =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
@@ -182,7 +199,7 @@ export function useApplication() {
   }
   function changeJob(id: string, status: ApplicationStatus) {
     if (applicationId)
-      void requestApi("/api/jobs/" + id + "/status", { status }).catch(
+      void requestApi("/api/jobs/" + id + "/status", { status }, activeProfileId, activeResumeId ?? undefined).catch(
         (error) => setMessage(String(error)),
       );
     setJobs((items) =>
@@ -200,7 +217,7 @@ export function useApplication() {
       const valid = parseCandidateJson(JSON.stringify(profile));
       const { base64 } = await requestApi<{ base64: string }>(
         "/api/resume/pdf",
-        valid,
+        valid, activeProfileId, activeResumeId ?? undefined,
       );
       const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/pdf" });
@@ -268,7 +285,7 @@ export function useApplication() {
         profile: CandidateProfile;
         preview: string;
         warnings: string[];
-      }>("/api/resume/parse", upload);
+      }>("/api/resume/parse", upload, activeProfileId, activeResumeId ?? undefined);
       setProfile(result.profile);
       setParsePreview(result.preview);
       setMessage(
@@ -287,6 +304,8 @@ export function useApplication() {
       const url = new URL(window.location.href);
       url.search = "";
       url.searchParams.set("application", job.id);
+      url.searchParams.set("profile", activeProfileId);
+      if (activeResumeId) url.searchParams.set("resume", activeResumeId);
       window.open(url.href, "application-" + job.id);
       return;
     }
@@ -313,7 +332,7 @@ export function useApplication() {
       const uploadedPdf = resume && /\.pdf$/i.test(resume.name) ? resume : null;
       const generated = uploadedPdf
         ? null
-        : await requestApi<{ base64: string }>("/api/resume/pdf", validProfile);
+        : await requestApi<{ base64: string }>("/api/resume/pdf", validProfile, activeProfileId, activeResumeId ?? undefined);
       const attachment =
         uploadedPdf ||
         new File(
@@ -335,7 +354,7 @@ export function useApplication() {
         jobId: job.id,
         profile: validProfile,
         resume: upload,
-      });
+      }, activeProfileId, activeResumeId ?? undefined);
       setSession(result);
       setReviewed(false);
       setQuestionAnswers({});
@@ -362,7 +381,7 @@ export function useApplication() {
     try {
       const updated = await requestApi<ApplySession>(
         "/api/apply/" + session.id + "/answers",
-        { answers: questionAnswers },
+        { answers: questionAnswers }, activeProfileId, activeResumeId ?? undefined,
       );
       setSession(updated);
       setReviewed(false);
@@ -389,7 +408,7 @@ export function useApplication() {
     try {
       const updated = await requestApi<ApplySession>(
         "/api/apply/" + session.id + "/continue",
-        {},
+        {}, activeProfileId, activeResumeId ?? undefined,
       );
       setSession(updated);
       setReviewed(false);
@@ -429,7 +448,7 @@ export function useApplication() {
         "/api/apply/" + session.id + "/" + (submit ? "submit" : "close"),
         submit
           ? { confirm: true, reviewed: session.reviewUrl ? reviewed : true }
-          : {},
+          : {}, activeProfileId, activeResumeId ?? undefined,
       );
       if (submit) {
         const next = result as ApplySession;
@@ -452,7 +471,98 @@ export function useApplication() {
     }
   }
 
+
+  // Persist the source version before switching; pending debounce callbacks cannot
+  // write into the destination profile because they capture explicit IDs.
+  async function flushPending() {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    await saveQueueRef.current;
+    if (blockedRef.current) throw new Error("The current changes could not be saved. Resolve that error before switching.");
+    const current = { profile, jobs };
+    const signature = JSON.stringify(current);
+    if (signature !== savedRef.current) {
+      const saved = await saveState({ ...current, revision: revisionRef.current }, activeProfileId, activeResumeId!);
+      revisionRef.current = saved.revision;
+      savedRef.current = signature;
+    }
+  }
+  function navigateTo(nextPerson: string, nextResume?: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("profile", nextPerson);
+    if (nextResume) url.searchParams.set("resume", nextResume);
+    else url.searchParams.delete("resume");
+    url.searchParams.delete("application");
+    window.location.assign(url.href);
+  }
+  async function switchProfile(next: string) {
+    if (applicationId || applyBusy || session) return;
+    if (next === activeProfileId) return;
+    try {
+      await flushPending();
+      navigateTo(next);
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function switchResume(next: string) {
+    if (applicationId || applyBusy || session || next === activeResumeId) return;
+    try {
+      await flushPending();
+      navigateTo(activeProfileId, next);
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function createPerson() {
+    const value = window.prompt("Name for the new local profile");
+    if (!value) return;
+    try {
+      await flushPending();
+      const result = await createLocalProfile(value);
+      navigateTo(result.id);
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function renamePerson() {
+    const value = window.prompt("Rename local profile", profiles.find(item => item.id === activeProfileId)?.name);
+    if (!value) return;
+    try {
+      const result = await renameLocalProfile(activeProfileId, value);
+      setProfiles(items => items.map(item => item.id === result.id ? result : item));
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function removePerson() {
+    if (activeProfileId === DEFAULT_PROFILE_ID || !window.confirm("Permanently delete this person, all résumé versions, and all saved applications?")) return;
+    try {
+      await deleteLocalProfile(activeProfileId);
+      navigateTo(DEFAULT_PROFILE_ID);
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function createResume(copy = false) {
+    const value = window.prompt(copy ? "Name for the copied résumé" : "Name for the new résumé version");
+    if (!value) return;
+    try {
+      await flushPending();
+      const result = await createResumeVersion(activeProfileId, value, copy ? activeResumeId ?? undefined : undefined);
+      navigateTo(activeProfileId, result.id);
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function renameResume() {
+    if (!activeResumeId) return;
+    const value = window.prompt("Rename résumé version", resumeVersions.find(item => item.id === activeResumeId)?.name);
+    if (!value) return;
+    try {
+      const result = await renameResumeVersion(activeProfileId, activeResumeId, value);
+      setResumeVersions(items => items.map(item => item.id === result.id ? result : item));
+    } catch (error) { setMessage(String(error)); }
+  }
+  async function removeResume() {
+    if (!activeResumeId || resumeVersions.length <= 1 || !window.confirm("Permanently delete this résumé version?")) return;
+    try {
+      await deleteResumeVersion(activeProfileId, activeResumeId);
+      const remaining = resumeVersions.find(item => item.id !== activeResumeId);
+      navigateTo(activeProfileId, remaining?.id);
+    } catch (error) { setMessage(String(error)); }
+  }
   return {
+    profiles, activeProfileId, resumeVersions, activeResumeId,
+    switchProfile, switchResume, createPerson, renamePerson, removePerson,
+    createResume, renameResume, removeResume,
     applicationId,
     activeLoaded,
     setActiveLoaded,
