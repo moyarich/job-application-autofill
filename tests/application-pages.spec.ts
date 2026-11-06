@@ -81,3 +81,57 @@ test("normal paste forwards native clipboard text without a fallback panel", asy
   await expect(page.getByRole("button")).toHaveCount(0);
   await expect(page.locator("#paste-input")).toHaveValue("");
 });
+
+test("viewer restores keyboard input after connecting and after returning focus", async ({ page }) => {
+  await page.route("**/api/viewer/config", route => route.fulfill({json:{password:"test-password"}}));
+  await page.route("**/api/apply/*/focus", async route => {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await route.fulfill({json:{}});
+  });
+  await page.route("**/vnc/core/rfb.js", route => route.fulfill({contentType:"text/javascript",body:`
+    export default class RFB extends EventTarget {
+      constructor(target) {
+        super(); this.target=target; this.viewOnly=false; this.focusCount=0;
+        window.__rfbForTest=this;
+        setTimeout(()=>this.dispatchEvent(new Event('connect')),0);
+      }
+      focus() {this.focusCount++;}
+      disconnect() {}
+    }
+  `}));
+  await page.goto("/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa");
+  await expect(page.getByRole("status")).toHaveText("Connected to application browser");
+  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest?.focusCount)).toBeGreaterThan(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  expect(await page.evaluate(() => (window as any).__rfbForTest.viewOnly)).toBe(true);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // The API request is still pending; input must not become stuck in view-only mode.
+  await page.locator("#screen").click();
+  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest.viewOnly)).toBe(false);
+  await expect.poll(() => page.evaluate(() => (window as any).__rfbForTest.focusCount)).toBeGreaterThan(1);
+});
+
+test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {writeText: async (text: string) => { (window as any).__copiedText = text; }},
+    });
+  });
+  await page.route("**/api/viewer/config", route => route.fulfill({json:{password:"test-password"}}));
+  await page.route("**/api/apply/*/focus", route => route.fulfill({json:{}}));
+  await page.route("**/vnc/core/rfb.js", route => route.fulfill({contentType:"text/javascript",body:`
+    export default class RFB extends EventTarget {
+      constructor() {super();setTimeout(()=>this.dispatchEvent(new Event('connect')),0);}
+      sendKey(key) {if(key===99)this.dispatchEvent(new CustomEvent('clipboard',{detail:{text:'Copied remote text'}}));}
+      focus() {}
+      disconnect() {}
+    }
+  `}));
+  await page.goto("/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa");
+  await expect(page.getByRole("status")).toHaveText("Connected to application browser");
+  await page.locator("#screen").evaluate(element => element.dispatchEvent(
+    new KeyboardEvent("keydown",{key:"c",metaKey:true,bubbles:true})
+  ));
+  await expect.poll(() => page.evaluate(() => (window as any).__copiedText)).toBe("Copied remote text");
+});
