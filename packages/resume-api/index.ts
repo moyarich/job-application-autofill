@@ -95,7 +95,7 @@ const server = createServer(async (req, res) => {
     const contactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})$/i);
     if (contactRoute && req.method === "PATCH") {
       const payload = record(await readJson(req));
-      return send(res, 200, store.updateContactRecord(profileId,contactRoute[1],payload.contact));
+      return send(res, 200, store.updateContactRecord(profileId,contactRoute[1],payload.contact,payload.name));
     }
     if (contactRoute && req.method === "DELETE")
       return send(res, 200, store.deleteContactRecord(profileId,contactRoute[1]));
