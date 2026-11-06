@@ -276,21 +276,55 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
-  // Imported resumes own their content; existing shared identity fields are not overwritten.
-  // Missing shared fields may be filled from the imported document on first use.
-  function mergeImportedContact(incoming: CandidateProfile): CandidateProfile {
-    const contact = { ...incoming.contact };
-    for (const key of Object.keys(contact) as (keyof CandidateProfile["contact"])[]) {
-      if (profile.contact[key]?.trim()) contact[key] = profile.contact[key];
+  // Imported content is held in memory until contact conflicts are resolved.
+  function offerImport(incoming: CandidateProfile) {
+    const conflict = contactKeys.some(key => incoming.contact[key]?.trim() &&
+      sharedContact[key]?.trim() && incoming.contact[key].trim() !== sharedContact[key].trim());
+    setImportChoices({});
+    if (conflict) {
+      setPendingImport(incoming);
+      setMessage("Review contact differences before importing this resume.");
+    } else applyImport(incoming, {});
+  }
+  function applyImport(incoming: CandidateProfile, choices: Partial<Record<ContactKey,ContactChoice>>) {
+    const nextShared = { ...sharedContact };
+    const nextOverrides = { ...contactOverrides };
+    for (const key of contactKeys) {
+      const value = incoming.contact[key]?.trim() ?? "";
+      if (!value) continue;
+      if (!nextShared[key]) {
+        nextShared[key] = value;
+        delete nextOverrides[key];
+      } else if (value !== nextShared[key]) {
+        switch (choices[key] ?? "resume") {
+          case "shared": nextShared[key] = value; delete nextOverrides[key]; break;
+          case "resume": nextOverrides[key] = value; break;
+          case "keep": delete nextOverrides[key]; break;
+        }
+      } else delete nextOverrides[key];
     }
-    return { ...incoming, contact };
+    setSharedContact(nextShared);
+    setContactOverrides(nextOverrides);
+    setProfile({ ...incoming, contact: { ...nextShared, ...nextOverrides } });
+    setPendingImport(null);
+    setImportChoices({});
+    setResume(null);
+    setMessage("Resume imported. Contact choices saved for the selected resume.");
+  }
+  function confirmImport() {
+    if (pendingImport) applyImport(pendingImport, importChoices);
+  }
+  function cancelImport() {
+    setPendingImport(null);
+    setImportChoices({});
+    setMessage("Import cancelled. No information was changed.");
   }
   async function importProfile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      setProfile(mergeImportedContact(parseCandidateJson(await file.text())));
-      setMessage("Resume imported. Existing personal details were kept; missing details were filled from the file.");
+      offerImport(parseCandidateJson(await file.text()));
+
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Invalid JSON profile",
@@ -333,11 +367,9 @@ export function useApplication() {
         preview: string;
         warnings: string[];
       }>("/api/resume/parse", upload, activeProfileId, activeResumeId ?? undefined);
-      setProfile(mergeImportedContact(result.profile));
+      offerImport(result.profile);
       setParsePreview(result.preview);
-      setMessage(
-        "Resume parsed. Review the selected resume’s details; existing contact information was preserved.",
-      );
+
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Resume parse failed",
@@ -374,27 +406,15 @@ export function useApplication() {
     );
     try {
       // The JSON drives autofill. The application also needs a PDF attachment.
-      // Reuse the user's uploaded PDF when available; otherwise create one from JSON.
+      // Generate from resolved data, never attach an outdated imported PDF.
       const validProfile = parseCandidateJson(JSON.stringify(profile));
-      const uploadedPdf = resume && /\.pdf$/i.test(resume.name) ? resume : null;
-      const generated = uploadedPdf
-        ? null
-        : await requestApi<{ base64: string }>("/api/resume/pdf", validProfile, activeProfileId, activeResumeId ?? undefined);
-      const attachment =
-        uploadedPdf ||
-        new File(
-          [
-            Uint8Array.from(atob(generated!.base64), (char) =>
-              char.charCodeAt(0),
-            ),
-          ],
-          (
-            [validProfile.contact.firstName, validProfile.contact.lastName]
-              .filter(Boolean)
-              .join("-") || "resume"
-          ).replace(/[^a-z0-9-]/gi, "_") + ".pdf",
-          { type: "application/pdf" },
-        );
+      const generated = await requestApi<{ base64: string }>("/api/resume/pdf", validProfile, activeProfileId, activeResumeId ?? undefined);
+      const attachment = new File(
+        [Uint8Array.from(atob(generated.base64), char => char.charCodeAt(0))],
+        ([validProfile.contact.firstName, validProfile.contact.lastName].filter(Boolean).join("-") || "resume")
+          .replace(/[^a-z0-9-]/gi, "_") + ".pdf",
+        { type: "application/pdf" },
+      );
       const upload = await filePayload(attachment);
       const result = await requestApi<ApplySession>("/api/apply/prepare", {
         jobUrl: job.url,
