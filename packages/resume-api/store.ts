@@ -7,7 +7,7 @@ import type { CandidateProfile } from "../resume/src/types.ts";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export type LocalProfile = { id: string; name: string; createdAt: string };
-export type ResumeVersion = { id: string; name: string; contactId: string; createdAt: string; updatedAt: string };
+export type ResumeVersion = { id: string; name: string; contactId: string | null; createdAt: string; updatedAt: string };
 export type ProfileContact = CandidateProfile["contact"] & {
   id: string; profileId: string; name: string; isDefault: boolean;
 };
@@ -20,6 +20,9 @@ function validateContact(raw: unknown): CandidateProfile["contact"] {
     throw new Error("Invalid contact information.");
   return value as CandidateProfile["contact"];
 }
+const isUsableContact = (c: CandidateProfile["contact"]) =>
+  Boolean(c.firstName.trim() && c.lastName.trim() &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim()));
 const emptyContact = (): CandidateProfile["contact"] => ({
   firstName: "", lastName: "", email: "", phone: "", location: "",
   linkedIn: "", github: "", website: "",
@@ -94,7 +97,7 @@ CREATE TABLE IF NOT EXISTS profile_state (
 CREATE TABLE IF NOT EXISTS resumes (
  id TEXT PRIMARY KEY,
  profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
- contact_id TEXT NOT NULL,
+ contact_id TEXT,
  name TEXT NOT NULL,
  content_json TEXT,
  created_at TEXT NOT NULL,
@@ -152,17 +155,13 @@ CREATE TABLE IF NOT EXISTS applications (
     insertContact.run(id,profileId,name(label),isDefault ? 1 : 0,...contactValues(value));
     return id;
   }
-  function createFirstContact(profileId: string) {
-    return addContact(profileId,emptyContact(),"Primary contact",true);
-  }
   if (!selectProfile.get(DEFAULT_PROFILE_ID)) {
     db.exec("BEGIN IMMEDIATE");
     try {
       const createdAt = now();
       insertProfile.run(DEFAULT_PROFILE_ID, "Default profile", createdAt);
       insertState.run(DEFAULT_PROFILE_ID);
-      const contactId = createFirstContact(DEFAULT_PROFILE_ID);
-      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, contactId, "Primary resume", null, createdAt, createdAt);
+      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, null, "Primary resume", null, createdAt, createdAt);
       db.exec("COMMIT");
     } catch (error) { db.exec("ROLLBACK"); db.close(); throw error; }
   }
@@ -173,7 +172,7 @@ CREATE TABLE IF NOT EXISTS applications (
   }
   function requireResume(profileId: string, resumeId: string) {
     const row = selectResume.get(validId(resumeId), requireProfile(profileId)) as
-      { id: string; name: string; contactId: string; json: string | null; createdAt: string; updatedAt: string } | undefined;
+      { id: string; name: string; contactId: string | null; json: string | null; createdAt: string; updatedAt: string } | undefined;
     if (!row) throw new Error("Resume version not found for the selected local profile.");
     return row;
   }
@@ -187,8 +186,7 @@ CREATE TABLE IF NOT EXISTS applications (
     try {
       insertProfile.run(row.id, row.name, row.createdAt);
       insertState.run(row.id);
-      const contactId = createFirstContact(row.id);
-      insertResume.run(randomUUID(), row.id, contactId, "Primary resume", null, row.createdAt, row.createdAt);
+      insertResume.run(randomUUID(), row.id, null, "Primary resume", null, row.createdAt, row.createdAt);
       db.exec("COMMIT");
       return row;
     } catch (error) { db.exec("ROLLBACK"); throw error; }
@@ -209,7 +207,7 @@ CREATE TABLE IF NOT EXISTS applications (
   function createContact(profileId: string, contact: unknown, label: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     const valid = validateContact(contact);
-    const id = addContact(owner,valid,name(label));
+    const id = addContact(owner,valid,name(label),!getDefaultContact.get(owner));
     return selectContact.get(owner,id) as unknown as ProfileContact;
   }
   function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
@@ -221,6 +219,8 @@ CREATE TABLE IF NOT EXISTS applications (
   function setDefaultContact(profileId: string, contactId: string): ProfileContact {
     const owner = requireProfile(profileId);
     if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
+    const chosen = selectContact.get(owner,contactId) as unknown as ProfileContact;
+    if (!isUsableContact(chosen)) throw new Error("Default contact must have a first name, last name, and valid email.");
     db.exec("BEGIN IMMEDIATE");
     try {
       db.prepare("UPDATE profile_contact SET is_default=0 WHERE profile_id=?").run(owner);
@@ -245,8 +245,12 @@ CREATE TABLE IF NOT EXISTS applications (
       !CONTACT_KEYS.includes(key as typeof CONTACT_KEYS[number]) ||
       !["resume","shared","keep"].includes(String(value))))
       throw new Error("Invalid contact import choice.");
-    const current = selectContact.get(owner,resume.contactId) as unknown as ProfileContact;
-    const shared = Object.fromEntries(CONTACT_KEYS.map(key => [key,current[key]])) as CandidateProfile["contact"];
+    const current = resume.contactId
+      ? selectContact.get(owner,resume.contactId) as unknown as ProfileContact
+      : null;
+    const shared = current
+      ? Object.fromEntries(CONTACT_KEYS.map(key => [key,current[key]])) as CandidateProfile["contact"]
+      : emptyContact();
     const tailored = {...shared};
     let hasResumeDifference = false;
     for (const key of CONTACT_KEYS) {
@@ -262,15 +266,17 @@ CREATE TABLE IF NOT EXISTS applications (
       if (decisions[key] !== "resume") tailored[key] = shared[key];
     db.exec("BEGIN IMMEDIATE");
     try {
-      if (CONTACT_KEYS.some(key => shared[key] !== current[key]))
+      if (current && CONTACT_KEYS.some(key => shared[key] !== current[key]))
         updateContact.run(...contactValues(shared),owner,current.id);
-      let contactId = current.id;
-      if (hasResumeDifference) {
-        const duplicate = listContacts(owner).find(item => CONTACT_KEYS.every(key => item[key] === tailored[key]));
-        contactId = duplicate?.id ?? addContact(owner,tailored,"Imported contact");
-        db.prepare("UPDATE resumes SET contact_id=?,updated_at=? WHERE profile_id=? AND id=?")
-          .run(contactId,now(),owner,resume.id);
+      let contactId = current?.id ?? null;
+      if (hasResumeDifference || !current) {
+        if (isUsableContact(tailored)) {
+          const duplicate = listContacts(owner).find(item => CONTACT_KEYS.every(key => item[key] === tailored[key]));
+          contactId = duplicate?.id ?? addContact(owner,tailored,"Imported contact",!getDefaultContact.get(owner));
+        }
       }
+      db.prepare("UPDATE resumes SET contact_id=?,updated_at=? WHERE profile_id=? AND id=?")
+        .run(contactId,now(),owner,resume.id);
       db.exec("COMMIT");
       return {contactId,contact:tailored,contacts:listContacts(owner)};
     } catch (error) { db.exec("ROLLBACK"); throw error; }
@@ -279,7 +285,6 @@ CREATE TABLE IF NOT EXISTS applications (
     const owner = requireProfile(profileId);
     const source = copyId ? requireResume(owner,copyId) : null;
     const defaultId = (getDefaultContact.get(owner) as {id:string}|undefined)?.id;
-    if (!defaultId) throw new Error("Profile must have a default contact.");
     const row: ResumeVersion = { id: randomUUID(), name: name(value),
       contactId: source?.contactId ?? defaultId, createdAt: now(), updatedAt: now() };
     insertResume.run(row.id,owner,row.contactId,row.name,source?.json ?? null,row.createdAt,row.updatedAt);
@@ -328,16 +333,18 @@ CREATE TABLE IF NOT EXISTS applications (
     const contacts = listContacts(owner);
     const selectedContact = contacts.find(item => item.id === selected.contactId);
     const defaultContact = contacts.find(item => item.isDefault);
-    if (!selectedContact || !defaultContact) throw new Error("Missing contact for profile.");
-    const contact = Object.fromEntries(CONTACT_KEYS.map(key => [key,selectedContact[key]])) as CandidateProfile["contact"];
+    if (selected.contactId && !selectedContact) throw new Error("Selected resume contact not found.");
+    const contact = selectedContact
+      ? Object.fromEntries(CONTACT_KEYS.map(key => [key,selectedContact[key]])) as CandidateProfile["contact"]
+      : null;
     const document = selected.json ? JSON.parse(selected.json) as CandidateProfile : null;
     return {
       revision: (getRevision.get(owner) as {revision:number}).revision,
       contact,
       contactId: selected.contactId,
-      defaultContactId: defaultContact.id,
+      defaultContactId: defaultContact?.id ?? null,
       contacts,
-      profile: document ? { ...document, contact } : null,
+      profile: document ? { ...document, contact: contact ?? document.contact } : null,
       jobs: (getJobs.all(owner) as (JobRecord & {resumeId:string|null})[]).map(({resumeId,...job}) => resumeId ? {...job,resumeId} : job),
       resumeId: selected.id, resumes,
     };
@@ -351,8 +358,10 @@ CREATE TABLE IF NOT EXISTS applications (
     const state = snapshot as Record<string,unknown>;
     const candidate = state.profile == null ? null : validateResume(state.profile);
     const jobs = validateJobs(state.jobs);
-    const contactId = state.contactId == null ? selected.contactId : validId(String(state.contactId));
-    if (!selectContact.get(owner,contactId)) throw new Error("Contact does not belong to selected profile.");
+    const contactId = state.contactId == null || state.contactId === ""
+      ? null : validId(String(state.contactId));
+    if (contactId && !selectContact.get(owner,contactId))
+      throw new Error("Contact does not belong to selected profile.");
     const contact = state.contact == null ? candidate?.contact ?? null : validateContact(state.contact);
     if (contact && candidate && CONTACT_KEYS.some(key => contact[key] !== candidate.contact[key]))
       throw new Error("Resume contact must match its selected contact record.");
@@ -367,9 +376,13 @@ CREATE TABLE IF NOT EXISTS applications (
         error.code = "STALE_STATE";
         throw error;
       }
-      if (contact) updateContact.run(...contactValues(contact),owner,contactId);
+      if (contact && contactId) updateContact.run(...contactValues(contact),owner,contactId);
+      // Draft resumes retain their incomplete contact in their own content JSON.
+      // Linked resumes derive contact exclusively from their selected contact record.
+      const content = candidate ? JSON.stringify(contactId
+        ? {...candidate,contact:emptyContact()} : candidate) : null;
       db.prepare("UPDATE resumes SET contact_id=?,content_json=?,updated_at=? WHERE profile_id=? AND id=?")
-        .run(contactId,candidate ? JSON.stringify({ ...candidate, contact: emptyContact() }) : null,now(),owner,id);
+        .run(contactId,content,now(),owner,id);
       deleteJobs.run(owner);
       for (const job of jobs) {
         const resume = job as JobRecord & {resumeId?:string|null};
