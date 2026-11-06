@@ -4,7 +4,18 @@ export type AtsQuestion = {
   required: boolean;
   options: string[];
 };
+export type EmployerAccount = {
+  provider: string;
+  employerKey: string;
+  employerName: string;
+  host: string;
+  status: "setup_required" | "ready";
+  updatedAt: string;
+};
+export type SignupPrepared = { state: "unavailable" | "not_required" | "prepared" | "manual_required"; filled: string[]; missing: string[] };
 export type ApplySession = {
+  employerAccount?: EmployerAccount | null;
+  signupPrepared?: SignupPrepared | null;
   id: string;
   jobId: string;
   state: string;
