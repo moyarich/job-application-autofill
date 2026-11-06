@@ -97,6 +97,8 @@ const server = createServer(async (req, res) => {
       const payload = record(await readJson(req));
       return send(res, 200, store.updateContactRecord(profileId,contactRoute[1],payload.contact));
     }
+    if (contactRoute && req.method === "DELETE")
+      return send(res, 200, store.deleteContactRecord(profileId,contactRoute[1]));
     const defaultContactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})\/default$/i);
     if (defaultContactRoute && req.method === "POST")
       return send(res, 200, store.setDefaultContact(profileId,defaultContactRoute[1]));
