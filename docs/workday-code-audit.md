@@ -23,33 +23,3 @@ Audited on the `fix/workday-env-credentials` branch, November 6, 2026.
 | `workday/workday-login.ts` | Configured-host credentials, Workday sign-in and login diagnostics |
 | `workday/workday-sign-up.ts` | Prepopulate Workday registration email without submitting |
 
-## Remaining external references (expected)
-
-- `packages/job-sites/automation.ts`: Workday adapter dispatch and diagnostic routing, not provider DOM implementation.
-- `packages/job-sites/employer-account.ts`: dispatch to `workdayEmployerTenant()`.
-- `packages/job-sites/index.ts`: provider registry import.
-- `.env.example`, `docker-compose.yml`: Workday environment variable names and legacy aliases.
-- `README.md`, `packages/job-sites/README.md`: user-facing provider support and credentials documentation.
-- Workday Vitest tests run through the regular test workflow; Docker CI keeps its container smoke checks and ATS integration fixtures.
-- `tests/ats/`: cross-ATS host discovery, form fixture and employer identity tests.
-- `tests/workday/`: provider-specific regression tests.
-
-## Changes made
-
-1. Extracted Workday form logic to `workday/autofill.ts`.
-2. Extracted Workday employer-tenant identification to `workday/identity.ts`.
-3. Replaced the duplicate hostname regex in the shared URL validator with `adapterForUrl()`, preserving HTTPS and credential checks.
-4. Scoped Workday-specific login error messages to the Workday adapter and moved the diagnostic text to `workday/workday-login.ts`.
-5. Corrected the package README's stale Workday test command.
-
-## Validation
-
-Suggested checks:
-
-```bash
-npm run typecheck --if-present
-npx vitest run tests/workday tests/ats tests/automation
-npm run lint --if-present
-```
-
-These are suggested commands, not an assertion that the latest commit passed CI. The earlier successful CI runs predate this refactor.
