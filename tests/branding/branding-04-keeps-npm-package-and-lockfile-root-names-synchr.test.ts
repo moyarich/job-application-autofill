@@ -5,8 +5,6 @@ import { readFileSync } from "node:fs";
 const source = (path: string) => readFileSync(new URL("../../" + path, import.meta.url), "utf8");
 
 
-const ignoredDirs = new Set(["node_modules", ".git", "dist", "dist-app", "coverage", "sqlite-data", ".cache"]);
-
 describe("job-application-autofill application naming", () => {
   
   

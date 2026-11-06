@@ -1,11 +1,6 @@
 import { test, expect } from "@playwright/test";
 
 
-type ViewerTestWindow = Window & {
-  __rfbForTest?: { focusCount: number; viewOnly: boolean };
-  __copiedText?: string;
-};
-
 
 test("viewer uses the configured VNC password without putting it in the URL or storage", async ({ page }) => {
   await page.route("**/api/viewer/config", route => route.fulfill({json:{password:"test-viewer-password"}}));

@@ -1,11 +1,6 @@
 import { test, expect } from "@playwright/test";
 
 
-type ViewerTestWindow = Window & {
-  __rfbForTest?: { focusCount: number; viewOnly: boolean };
-  __copiedText?: string;
-};
-
 
 test("normal paste forwards native clipboard text without a fallback panel", async ({ page }) => {
   await page.route("**/api/viewer/config", route=>route.fulfill({json:{password:"test-password"}}));

@@ -2,11 +2,6 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { createApplication } from "../../packages/job-application-autofill/src/index";
 
-type ViewerTestWindow = Window & {
-  __rfbForTest?: { focusCount: number; viewOnly: boolean };
-  __copiedText?: string;
-};
-
 test("application pages use separate UUIDs and restore only their own session", async ({ context, page }) => {
   const profile = JSON.parse(readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"));
   const jobs = [createApplication("Example A", "Engineer A", "https://jobs.lever.co/example/a"), createApplication("Example B", "Engineer B", "https://boards.greenhouse.io/example/jobs/123")];
