@@ -214,7 +214,9 @@ CREATE TABLE IF NOT EXISTS applications (
   function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
-    updateContact.run(...contactValues(validateContact(contact)),owner,contactId);
+    const valid = validateContact(contact);
+    if (!isUsableContact(valid)) throw new Error("Contact requires first name, last name, and a valid email.");
+    updateContact.run(...contactValues(valid),owner,contactId);
     return selectContact.get(owner,contactId) as unknown as ProfileContact;
   }
   function setDefaultContact(profileId: string, contactId: string): ProfileContact {
@@ -377,7 +379,10 @@ CREATE TABLE IF NOT EXISTS applications (
         error.code = "STALE_STATE";
         throw error;
       }
-      if (contact && contactId) updateContact.run(...contactValues(contact),owner,contactId);
+      if (contact && contactId) {
+        if (!isUsableContact(contact)) throw new Error("Contact requires first name, last name, and a valid email.");
+        updateContact.run(...contactValues(contact),owner,contactId);
+      }
       // Draft resumes retain their incomplete contact in their own content JSON.
       // Linked resumes derive contact exclusively from their selected contact record.
       const content = candidate ? JSON.stringify(contactId
