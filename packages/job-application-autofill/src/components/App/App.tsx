@@ -10,6 +10,7 @@ import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 import { ContactManager } from "../ContactManager/ContactManager";
+import { ResumeManager } from "../ResumeManager/ResumeManager";
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -66,6 +67,7 @@ export function App() {
             </div>
             <LocalProfiles controller={controller} />
           </section>
+          <ResumeManager controller={controller} />
           <ContactManager controller={controller} />
           </>
         ) : (
