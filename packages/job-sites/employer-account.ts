@@ -1,4 +1,5 @@
 import { adapterForUrl } from "./index.ts";
+import { workdayEmployerTenant } from "./workday/identity.ts";
 
 export type EmployerAccountIdentity = {
   provider: string;
@@ -20,8 +21,7 @@ export function employerAccountIdentity(jobUrl: string, company: string): Employ
   const parts = url.pathname.split("/").filter(Boolean);
   let tenant: string | undefined;
   if (adapter.id === "workday") {
-    // Workday employer environments have dedicated hosts, e.g. acme.wd5.myworkdayjobs.com.
-    tenant = host.endsWith(".myworkdayjobs.com") ? host : undefined;
+    tenant = workdayEmployerTenant(host);
   } else if (adapter.id === "greenhouse") {
     tenant = parts[0]?.toLowerCase();
     // Greenhouse also uses custom board hosts; retain the host to avoid collisions.
