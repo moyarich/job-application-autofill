@@ -48,6 +48,8 @@ const server = createServer(async (req, res) => {
     const profileIdHeader = req.headers["x-profile-id"];
     if (Array.isArray(profileIdHeader)) throw new Error("Multiple profile IDs are not allowed.");
     const profileId = profileIdHeader ?? DEFAULT_PROFILE_ID;
+    const resumeIdHeader = req.headers["x-resume-id"];
+    if (Array.isArray(resumeIdHeader)) throw new Error("Multiple résumé IDs are not allowed.");
     if (req.method === "GET" && url.pathname === "/api/profiles")
       return send(res, 200, { profiles: store.listProfiles(), defaultProfileId: DEFAULT_PROFILE_ID });
     if (req.method === "POST" && url.pathname === "/api/profiles") {
@@ -63,11 +65,27 @@ const server = createServer(async (req, res) => {
       store.deleteProfile(profileRoute[1]);
       return send(res, 200, { deleted: true });
     }
+    if (req.method === "GET" && url.pathname === "/api/resumes")
+      return send(res, 200, { resumes: store.listResumes(profileId) });
+    if (req.method === "POST" && url.pathname === "/api/resumes") {
+      const payload = record(await readJson(req));
+      if (payload.copyId != null && typeof payload.copyId !== "string") throw new Error("Invalid source résumé ID.");
+      return send(res, 201, store.createResume(profileId, payload.name, payload.copyId as string | undefined));
+    }
+    const resumeRoute = url.pathname.match(/^\/api\/resumes\/([0-9a-f-]{36})$/i);
+    if (resumeRoute && req.method === "PATCH") {
+      const payload = record(await readJson(req));
+      return send(res, 200, store.renameResume(profileId, resumeRoute[1], payload.name));
+    }
+    if (resumeRoute && req.method === "DELETE") {
+      store.deleteResume(profileId, resumeRoute[1]);
+      return send(res, 200, { deleted: true });
+    }
     if (req.method === "GET" && url.pathname === "/api/state")
-      return send(res, 200, store.getSnapshot(profileId));
+      return send(res, 200, store.getSnapshot(profileId, resumeIdHeader));
     if (req.method === "PUT" && url.pathname === "/api/state") {
       const payload = await readJson(req);
-      try { return send(res, 200, store.saveSnapshot(payload, profileId)); }
+      try { return send(res, 200, store.saveSnapshot(payload, profileId, resumeIdHeader)); }
       catch (error) {
         if (error instanceof Error && "code" in error && error.code === "STALE_STATE") return send(res, 409, { error: error.message });
         throw error;
@@ -80,7 +98,7 @@ const server = createServer(async (req, res) => {
       const snapshot = store.getSnapshot(profileId);
       if (!snapshot.jobs.some(job => job.id === jobStatus[1])) throw new Error("Application not found.");
       snapshot.jobs = snapshot.jobs.map(job => job.id === jobStatus[1] ? {...job, status} : job);
-      return send(res, 200, store.saveSnapshot(snapshot, profileId));
+      return send(res, 200, store.saveSnapshot(snapshot, profileId, resumeIdHeader));
     }
     if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
       const profile = validateResume(await readJson(req));
