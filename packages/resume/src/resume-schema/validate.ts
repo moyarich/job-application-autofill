@@ -11,6 +11,16 @@ const STRING_FIELDS = [
   "github",
   "website",
 ];
+export const OPTIONAL_CONTACT_FIELDS = [
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "state",
+  "postalCode",
+  "country",
+  "phoneCountryCode",
+  "phoneType",
+] as const;
 const ROOT_FIELDS = [
   "contact",
   "summary",
@@ -102,8 +112,12 @@ export function validateResume(value: unknown): CandidateProfile {
     }
   }
   const contact = object(resume.contact, "contact");
-  exactKeys(contact, STRING_FIELDS, "contact");
-  strings(contact, STRING_FIELDS, "contact");
+  const contactFields = [
+    ...STRING_FIELDS,
+    ...OPTIONAL_CONTACT_FIELDS.filter((key) => key in contact),
+  ];
+  exactKeys(contact, contactFields, "contact");
+  strings(contact, contactFields, "contact");
   if (typeof resume.summary !== "string")
     throw new Error("summary must be a string");
   const source = object(resume.source, "source");

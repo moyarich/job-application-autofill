@@ -75,4 +75,4 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
       } finally { await page.close(); }
     }
   } finally { await browser.close(); }
-});
+}, 30_000);

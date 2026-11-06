@@ -18,6 +18,14 @@ export interface CandidateProfile {
     linkedIn: string;
     github: string;
     website: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    phoneCountryCode?: string;
+    phoneType?: string;
   };
   additionalSections?: { heading: string; content: string }[];
   skillGroups?: { heading: string; content: string }[];
