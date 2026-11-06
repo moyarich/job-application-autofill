@@ -2,9 +2,7 @@ import type { Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
 
-export type ContactField = keyof CandidateProfile["contact"] | "fullName";
 export type AutofillResult = { filled: string[]; missing: string[] };
-export type ResumeRetryResult = AutofillResult & { uploaded: boolean };
 export type BrowserSignInSession = { page: Page; loginAttempted?: boolean };
 export type PageKind = "application" | "registration" | "sign_in" | "challenge" | "external";
 export type PageDetection = { kind: PageKind; url: string };
@@ -49,7 +47,6 @@ export interface JobSiteAdapter {
   readonly id: string;
   readonly label: string;
   readonly hosts: readonly string[];
-  readonly fields: Partial<Record<ContactField, RegExp[]>>;
   employerTenant(url: URL): string | undefined;
   readonly steps?: readonly JobSiteStep[];
   readonly menuItems?: readonly JobSiteMenuItem[];
@@ -57,8 +54,6 @@ export interface JobSiteAdapter {
   openApplication?(page: Page): Promise<void>;
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
   loginFailureMessage?(text: string): string | null;
-  skipContactField?(page: Page, field: ContactField): Promise<boolean>;
-  retryResumeUpload?(page: Page, file: string, uploadedUrls: string[]): Promise<ResumeRetryResult>;
   discoverQuestions?(page: Page): Promise<ApplicationQuestion[]>;
   answerQuestions?(page: Page, answers: Record<string, string>): Promise<{ filled: string[]; unresolved: string[] }>;
 }

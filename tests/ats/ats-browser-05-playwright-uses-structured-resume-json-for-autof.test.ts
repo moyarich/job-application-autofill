@@ -2,7 +2,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
-import { fillKnownFields } from "../../packages/job-sites/automation.ts";
+import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
 import { renderResumePdf } from "../../packages/resume/src/resume-schema/create-pdf.ts";
 import { decodePdfAttachment } from "../../packages/resume/src/resume-schema/attachment.ts";
 import { adapterForUrl } from "../../packages/job-sites/index.ts";
@@ -24,7 +24,7 @@ for (const [id, [url]] of Object.entries(samples)) {
 }
 
 
-test("Playwright uses structured resume JSON for autofill and the matching PDF for upload", async () => {
+test("Workday contact handler uses structured resume JSON and the matching PDF for upload", async () => {
   const profile = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
   profile.contact.firstName = "Ada";
   profile.contact.lastName = "Lovelace";
@@ -38,7 +38,6 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
   const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
   try {
     for (const url of [
-      "https://job-boards.greenhouse.io/example/jobs/123",
       "https://example.wd1.myworkdayjobs.com/en-US/example/job/123",
     ]) {
       const page = await browser.newPage();
@@ -54,7 +53,7 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
             '</form></body></html>',
         }));
         await page.goto(url, { waitUntil: "domcontentloaded" });
-        const result = await fillKnownFields(page, profile);
+        const result = await fillWorkdayContact(page, profile);
         assert.ok(result.filled.includes("firstName"), url);
         assert.ok(result.filled.includes("lastName"), url);
         assert.ok(result.filled.includes("email"), url);

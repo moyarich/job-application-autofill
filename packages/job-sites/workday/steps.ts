@@ -6,7 +6,7 @@ import { fillWorkdayContact } from "./contact.ts";
 import { fillWorkdayExperience } from "./experience.ts";
 import { fillWorkdayEducation } from "./education.ts";
 import { fillWorkdaySkills } from "./skills.ts";
-import { retryWorkdayResumeUpload } from "./autofill.ts";
+import { retryWorkdayResumeUpload } from "./resume.ts";
 import { discoverQuestions, fillQuestionAnswers } from "../index.ts";
 
 async function has(page: Page, pattern: RegExp): Promise<boolean> {

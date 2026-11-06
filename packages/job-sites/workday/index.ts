@@ -25,14 +25,4 @@ export default {
   openApplication: openWorkdayApplication,
   helpSignIn: helpWorkdaySignIn,
   loginFailureMessage: workdayLoginFailureMessage,
-  fields: {
-    firstName: [/first.?name/i],
-    lastName: [/last.?name/i],
-    email: [/email/i],
-    phone: [/^phone number\s*\*?$/i],
-    location: [/^location\s*\*?$/i],
-    linkedIn: [/linkedin/i],
-    github: [/github/i],
-    website: [/website|portfolio/i],
-  },
 } satisfies JobSiteAdapter;

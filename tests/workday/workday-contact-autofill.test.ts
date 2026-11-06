@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { fillKnownFields } from "../../packages/job-sites/automation.ts";
+import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("fills structured contact data without confusing phone number with country code", async () => {
@@ -20,7 +20,7 @@ test("fills structured contact data without confusing phone number with country 
       }),
     );
     await page.goto("https://uchicago.wd5.myworkdayjobs.com/application");
-    await fillKnownFields(page, {
+    await fillWorkdayContact(page, {
       ...emptyCandidate,
       contact: {
         ...emptyCandidate.contact,

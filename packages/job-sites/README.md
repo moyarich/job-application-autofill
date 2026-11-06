@@ -1,6 +1,6 @@
 # Playwright ATS adapters
 
-Each provider has its own field-mapping module:
+Each provider owns its own adapter module:
 
 - `greenhouse/index.ts`
 - `lever/index.ts`
@@ -8,7 +8,7 @@ Each provider has its own field-mapping module:
 - `ashby/index.ts`
 - `smart-recruiters/index.ts`
 
-The shared `index.ts` selects adapters from the job URL and implements form-state detection, read-only question discovery, and autofill using only explicit candidate answers. Login, SSO, MFA, and CAPTCHA require manual browser interaction.
+The shared `index.ts` selects adapters by job URL and provides question utilities. Each job site is responsible for its own form detection and autofill steps. Login, SSO, MFA, and CAPTCHA require manual browser interaction.
 
 Run the five-provider fixture checks with `node --test tests/ats-browser.test.ts`.
 
@@ -32,7 +32,7 @@ The exact URL has a provider-regression test. Public page inspection is **not** 
 
 ## Workday structured work experience
 
-Workday-specific form logic is grouped in `workday/autofill.ts`, which calls the helpers for experience, education, skills, and follow-up résumé uploads. The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+Workday-specific operations are declared in `workday/steps.ts`, with resume re-upload behavior in `workday/resume.ts`. The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
 
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 

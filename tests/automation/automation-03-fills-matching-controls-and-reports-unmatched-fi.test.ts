@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Page } from "playwright";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
-import { fillKnownFields } from "../../packages/job-sites/automation.ts";
+import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
 
 describe("application safety", () => {
-  it("fills matching controls and reports unmatched fields", async () => {
+  it("Workday-owned contact handler fills matching fields and reports missing fields", async () => {
     const target = {
-      evaluate: vi.fn().mockResolvedValue(false),
+      evaluate: vi.fn().mockResolvedValue("INPUT"),
+      inputValue: vi.fn().mockResolvedValue(""),
       getAttribute: vi.fn().mockResolvedValue(null),
       isVisible: vi.fn().mockResolvedValue(true),
       isEnabled: vi.fn().mockResolvedValue(true),
@@ -31,7 +32,7 @@ describe("application safety", () => {
         email: "ada@example.com",
       },
     };
-    const results = await fillKnownFields(page as unknown as Page, profile);
+    const results = await fillWorkdayContact(page as unknown as Page, profile);
     expect(results.filled).toEqual(["firstName"]);
     expect(results.missing).toEqual(["email"]);
     expect(target.fill).toHaveBeenCalledWith("Ada", { timeout: 2500 });

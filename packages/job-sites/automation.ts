@@ -3,7 +3,6 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
-export { fillKnownFields } from "./handlers/contact.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
 import { automateCurrentStep, listJobSiteMenu, executeJobSiteMenuItem } from "./core/orchestrator.ts";
