@@ -34,7 +34,7 @@ type ApplicationPreparation = {
   jobUrl: string;
   jobId: string;
   profile: CandidateProfile;
-  resume: ResumeAttachment;
+  resume?: ResumeAttachment;
   launchBrowser?: () => Promise<Browser>;
 };
 
@@ -211,7 +211,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume,
     const page = await context.newPage();
     const session: ApplicationSession = {
       id, jobId, url, browser, context, page, directory, state: "preparing",
-      message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume,
+      message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume ?? null,
       ats: adapter?.id || "unknown", questions: [],
     };
     sessions.set(id, session);
