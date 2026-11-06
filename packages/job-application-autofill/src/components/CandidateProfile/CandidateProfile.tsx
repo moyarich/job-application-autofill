@@ -13,7 +13,7 @@ export function CandidateProfile({
     profile,
     exportResumePdf,
     setProfile,
-    contacts, contactId, defaultContactId, chooseContact, markDefaultContact, editContact,
+    contacts, contactId, defaultContactId, chooseContact, markDefaultContact, saveContactRecord, editContact,
     errors,
   } = controller;
   return (
@@ -51,13 +51,16 @@ export function CandidateProfile({
         </div>
         <div className="contact-record-selector">
           <label htmlFor="resume-contact-record">Contact record</label>
-          <select id="resume-contact-record" value={contactId}
+          <select id="resume-contact-record" value={contactId ?? ""}
             onChange={event => chooseContact(event.target.value)}>
+            <option value="">Draft — no saved contact</option>
             {contacts.map(item => <option key={item.id} value={item.id}>
               {item.name}{item.isDefault ? " (default)" : ""}
             </option>)}
           </select>
-          {contactId !== defaultContactId && <button type="button" className="secondary"
+          {!contactId && <button type="button" className="primary"
+            onClick={() => void saveContactRecord()}>Save contact for this resume</button>}
+          {contactId && contactId !== defaultContactId && <button type="button" className="secondary"
             onClick={() => void markDefaultContact()}>Make default for new resumes</button>}
         </div>
         <div className="profile-grid">

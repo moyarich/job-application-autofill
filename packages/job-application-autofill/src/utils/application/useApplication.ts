@@ -15,6 +15,7 @@ import {
   renameLocalProfile, deleteLocalProfile, createResumeVersion, renameResumeVersion,
   deleteResumeVersion, DEFAULT_PROFILE_ID, ACTIVE_PROFILE_STORAGE_KEY,
   resolveImportedContact, chooseDefaultContact,
+  addProfileContact,
   type LocalProfile, type ResumeVersion, type ProfileContact, type ContactChoice,
 } from "../api/client";
 import { filePayload } from "../files/resume-files";
@@ -44,8 +45,8 @@ export function useApplication() {
   type Contact = CandidateProfile["contact"];
   type ContactKey = keyof Contact;
   const [contacts, setContacts] = useState<ProfileContact[]>([]);
-  const [contactId, setContactId] = useState<string>("");
-  const [defaultContactId, setDefaultContactId] = useState<string>("");
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [defaultContactId, setDefaultContactId] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(null);
   const [importChoices, setImportChoices] = useState<Partial<Record<ContactKey,ContactChoice>>>({});
   const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
@@ -63,6 +64,22 @@ export function useApplication() {
     setContactId(id);
     const contact = Object.fromEntries(contactKeys.map(key => [key,selected[key]])) as Contact;
     setProfile(previous => ({ ...previous,contact }));
+  }
+  async function saveContactRecord() {
+    if (contactId) return;
+    const missing = validateCandidate(profile);
+    if (missing.length) {
+      setMessage("Complete the contact details before saving a contact record: " + missing.join(", "));
+      return;
+    }
+    try {
+      await flushPending();
+      const created = await addProfileContact(activeProfileId,"Primary contact",profile.contact);
+      setContacts(previous => [...previous,created]);
+      setContactId(created.id);
+      if (created.isDefault) setDefaultContactId(created.id);
+      setMessage("Contact saved and selected for this resume.");
+    } catch(error) { setMessage(String(error)); }
   }
   async function markDefaultContact() {
     try {
@@ -411,9 +428,9 @@ export function useApplication() {
       setMessage("Add a job URL before applying.");
       return;
     }
-    if (errors.length) {
+    if (!contactId || errors.length) {
       setMessage(
-        "Complete first name, last name and email in Candidate profile before applying.",
+        "Select a saved contact with first name, last name and email before applying.",
       );
       setTab("profile");
       return;
@@ -705,6 +722,7 @@ export function useApplication() {
     editContact,
     chooseContact,
     markDefaultContact,
+    saveContactRecord,
     pendingImport,
     importChoices,
     setImportChoices,
