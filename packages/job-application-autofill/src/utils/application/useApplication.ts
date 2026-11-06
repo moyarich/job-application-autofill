@@ -117,10 +117,31 @@ export function useApplication() {
   }, []);
   useEffect(() => {
     let cancelled = false;
-    Promise.all([readProfiles(), readState(activeProfileId, requestedResumeId)])
-      .then(([available, state]) => {
-        if (!available.profiles.some(item => item.id === activeProfileId))
-          throw new Error("The selected local profile does not exist.");
+    // The browser can retain a profile/resume ID after a fresh database is created.
+    // Resolve the profile against the database before requesting its resume.
+    readProfiles().then(async available => {
+      const selectedProfileId = available.profiles.some(item => item.id === activeProfileId)
+        ? activeProfileId : available.defaultProfileId;
+      const profileChanged = selectedProfileId !== activeProfileId;
+      const state = await readState(selectedProfileId,profileChanged ? undefined : requestedResumeId)
+        .catch(async error => {
+          if (profileChanged || !requestedResumeId) throw error;
+          return readState(selectedProfileId);
+        });
+      if (cancelled) return;
+      if (profileChanged || (requestedResumeId && state.resumeId !== requestedResumeId)) {
+        localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY,selectedProfileId);
+        const next = new URLSearchParams(location.search);
+        next.set("profile",selectedProfileId);
+        next.set("resume",state.resumeId);
+        navigate({pathname:location.pathname,search:next.toString()},{replace:true});
+        return;
+      }
+      return {available,state};
+    })
+      .then(result => {
+        if (!result || cancelled) return;
+        const {available,state} = result;
         setProfiles(available.profiles);
         setResumeVersions(state.resumes);
         setActiveResumeId(state.resumeId);
