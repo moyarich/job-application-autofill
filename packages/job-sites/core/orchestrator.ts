@@ -83,7 +83,7 @@ export async function executeJobSiteMenuItem(context: StepContext, adapter: JobS
   if (!item || !adapter.steps?.some(step => step.id === item.stepId))
     throw new Error("Unknown employer menu action.");
   const result = await automateCurrentStep(context, adapter, item.stepId);
-  if (!result.executed.includes(item.stepId))
-    throw new Error("This action is not available on the current employer page.");
+  if (!result.executed.includes(item.stepId) || result.detection.kind !== "application")
+    throw new Error("This action is unavailable or the employer page has changed. Review it manually.");
   return result;
 }
