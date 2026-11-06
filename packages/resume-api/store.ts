@@ -7,7 +7,23 @@ import type { CandidateProfile } from "../resume/src/types.ts";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export type LocalProfile = { id: string; name: string; createdAt: string };
-export type ResumeVersion = { id: string; name: string; createdAt: string };
+export type ResumeVersion = { id: string; name: string; contactId: string; createdAt: string; updatedAt: string };
+export type ProfileContact = CandidateProfile["contact"] & {
+  id: string; profileId: string; name: string; isDefault: boolean;
+};
+const CONTACT_KEYS = ["firstName","lastName","email","phone","location","linkedIn","github","website"] as const;
+function validateContact(raw: unknown): CandidateProfile["contact"] {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid contact information.");
+  const value = raw as Record<string,unknown>;
+  if (Object.keys(value).some(key => !CONTACT_KEYS.includes(key as typeof CONTACT_KEYS[number])) ||
+      CONTACT_KEYS.some(key => typeof value[key] !== "string"))
+    throw new Error("Invalid contact information.");
+  return value as CandidateProfile["contact"];
+}
+const emptyContact = (): CandidateProfile["contact"] => ({
+  firstName: "", lastName: "", email: "", phone: "", location: "",
+  linkedIn: "", github: "", website: "",
+});
 export type EmployerAccount = {
   provider: string;
   employerKey: string;
@@ -50,64 +66,103 @@ export function openStore(filePath = process.env.MOYA_DB_PATH || "data/moyaapply
   const db = new DatabaseSync(path);
   if (path !== ":memory:") { try { chmodSync(path, 0o600); } catch { /* Filesystems differ. */ } }
   db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON;");
-  db.exec(`CREATE TABLE IF NOT EXISTS local_profiles (
+  // Deliberately new schema: no legacy tables, migrations, or compatibility paths.
+  db.exec(`CREATE TABLE IF NOT EXISTS profiles (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS profile_identity (
- profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE,
- contact_json TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS profile_contact (
+ id TEXT PRIMARY KEY,
+ profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+ name TEXT NOT NULL,
+ is_default INTEGER NOT NULL DEFAULT 0 CHECK(is_default IN (0,1)),
+ first_name TEXT NOT NULL DEFAULT '',
+ last_name TEXT NOT NULL DEFAULT '',
+ email TEXT NOT NULL DEFAULT '',
+ phone TEXT NOT NULL DEFAULT '',
+ location TEXT NOT NULL DEFAULT '',
+ linkedin TEXT NOT NULL DEFAULT '',
+ github TEXT NOT NULL DEFAULT '',
+ website TEXT NOT NULL DEFAULT '',
+ UNIQUE(profile_id,id)
 );
-CREATE TABLE IF NOT EXISTS resume_contact_overrides (
- resume_id TEXT PRIMARY KEY REFERENCES profile_resumes(id) ON DELETE CASCADE,
- overrides_json TEXT NOT NULL
-);
+CREATE UNIQUE INDEX IF NOT EXISTS one_default_contact_per_profile
+ ON profile_contact(profile_id) WHERE is_default=1;
 CREATE TABLE IF NOT EXISTS profile_state (
- profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE, revision INTEGER NOT NULL DEFAULT 0
+ profile_id TEXT PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+ revision INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE IF NOT EXISTS profile_resumes (
- id TEXT PRIMARY KEY, profile_id TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
- name TEXT NOT NULL, json TEXT, created_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS profile_resumes_owner ON profile_resumes(profile_id,created_at,id);
-CREATE TABLE IF NOT EXISTS employer_accounts (
- profile_id TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
- provider TEXT NOT NULL,
- employer_key TEXT NOT NULL,
- employer_name TEXT NOT NULL,
- host TEXT NOT NULL,
- status TEXT NOT NULL CHECK (status IN ('setup_required','ready')),
+CREATE TABLE IF NOT EXISTS resumes (
+ id TEXT PRIMARY KEY,
+ profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+ contact_id TEXT NOT NULL,
+ name TEXT NOT NULL,
+ content_json TEXT,
+ created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL,
- PRIMARY KEY (profile_id, provider, employer_key)
+ FOREIGN KEY(profile_id, contact_id) REFERENCES profile_contact(profile_id,id)
 );
-CREATE TABLE IF NOT EXISTS profile_applications (
- profile_id TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
- id TEXT NOT NULL, company TEXT NOT NULL, role TEXT NOT NULL, url TEXT NOT NULL,
- status TEXT NOT NULL CHECK (status IN ('saved','in_progress','ready_for_review','submitted','interview','rejected')),
- created_at TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', PRIMARY KEY(profile_id,id)
-);`);
+CREATE INDEX IF NOT EXISTS resumes_owner ON resumes(profile_id,created_at,id);
+CREATE TABLE IF NOT EXISTS employer_accounts (
+ profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+ provider TEXT NOT NULL, employer_key TEXT NOT NULL,
+ employer_name TEXT NOT NULL, host TEXT NOT NULL,
+ status TEXT NOT NULL CHECK(status IN ('setup_required','ready')),
+ updated_at TEXT NOT NULL, PRIMARY KEY(profile_id,provider,employer_key)
+);
+CREATE TABLE IF NOT EXISTS applications (
+ profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+ id TEXT NOT NULL, resume_id TEXT,
+ company TEXT NOT NULL, role TEXT NOT NULL, url TEXT NOT NULL,
+ status TEXT NOT NULL CHECK(status IN ('saved','in_progress','ready_for_review','submitted','interview','rejected')),
+ created_at TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
+ PRIMARY KEY(profile_id,id),
+ FOREIGN KEY(resume_id) REFERENCES resumes(id) ON DELETE SET NULL
+);
+`);
   const now = () => new Date().toISOString();
-  const insertProfile = db.prepare("INSERT INTO local_profiles (id,name,created_at) VALUES (?,?,?)");
-  const insertState = db.prepare("INSERT INTO profile_state (profile_id,revision) VALUES (?,0)");
-  const insertResume = db.prepare("INSERT INTO profile_resumes (id,profile_id,name,json,created_at) VALUES (?,?,?,?,?)");
-  const selectProfile = db.prepare("SELECT id,name,created_at AS createdAt FROM local_profiles WHERE id=?");
-  const listProfileRows = db.prepare("SELECT id,name,created_at AS createdAt FROM local_profiles ORDER BY created_at,id");
-  const listResumeRows = db.prepare("SELECT id,name,created_at AS createdAt FROM profile_resumes WHERE profile_id=? ORDER BY created_at,id");
-  const selectResume = db.prepare("SELECT id,name,json,created_at AS createdAt FROM profile_resumes WHERE id=? AND profile_id=?");
+  const insertProfile = db.prepare("INSERT INTO profiles(id,name,created_at) VALUES (?,?,?)");
+  const insertState = db.prepare("INSERT INTO profile_state(profile_id,revision) VALUES (?,0)");
+  const selectProfile = db.prepare("SELECT id,name,created_at AS createdAt FROM profiles WHERE id=?");
+  const listProfileRows = db.prepare("SELECT id,name,created_at AS createdAt FROM profiles ORDER BY created_at,id");
+  const insertContact = db.prepare(`INSERT INTO profile_contact
+ (id,profile_id,name,is_default,first_name,last_name,email,phone,location,linkedin,github,website)
+ VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const updateContact = db.prepare(`UPDATE profile_contact
+ SET first_name=?,last_name=?,email=?,phone=?,location=?,linkedin=?,github=?,website=?
+ WHERE profile_id=? AND id=?`);
+  const selectContact = db.prepare(`SELECT id,profile_id AS profileId,name,is_default AS isDefault,
+ first_name AS firstName,last_name AS lastName,email,phone,location,linkedin AS linkedIn,github,website
+ FROM profile_contact WHERE profile_id=? AND id=?`);
+  const listContactRows = db.prepare(`SELECT id,profile_id AS profileId,name,is_default AS isDefault,
+ first_name AS firstName,last_name AS lastName,email,phone,location,linkedin AS linkedIn,github,website
+ FROM profile_contact WHERE profile_id=? ORDER BY is_default DESC,name,id`);
+  const getDefaultContact = db.prepare("SELECT id FROM profile_contact WHERE profile_id=? AND is_default=1");
+  const insertResume = db.prepare("INSERT INTO resumes(id,profile_id,contact_id,name,content_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?)");
+  const listResumeRows = db.prepare("SELECT id,name,contact_id AS contactId,created_at AS createdAt,updated_at AS updatedAt FROM resumes WHERE profile_id=? ORDER BY created_at,id");
+  const selectResume = db.prepare("SELECT id,name,contact_id AS contactId,content_json AS json,created_at AS createdAt,updated_at AS updatedAt FROM resumes WHERE id=? AND profile_id=?");
   const getRevision = db.prepare("SELECT revision FROM profile_state WHERE profile_id=?");
-  const getOverrides = db.prepare("SELECT overrides_json AS overridesJson FROM resume_contact_overrides WHERE resume_id=?");
-  const putOverrides = db.prepare("INSERT INTO resume_contact_overrides (resume_id,overrides_json) VALUES (?,?) ON CONFLICT(resume_id) DO UPDATE SET overrides_json=excluded.overrides_json");
-  const getIdentity = db.prepare("SELECT contact_json AS contactJson FROM profile_identity WHERE profile_id=?");
-  const putIdentity = db.prepare("INSERT INTO profile_identity (profile_id,contact_json) VALUES (?,?) ON CONFLICT(profile_id) DO UPDATE SET contact_json=excluded.contact_json");
-  const getJobs = db.prepare("SELECT id,company,role,url,status,created_at AS createdAt,notes FROM profile_applications WHERE profile_id=? ORDER BY created_at DESC,id");
-  const insertJob = db.prepare("INSERT INTO profile_applications (profile_id,id,company,role,url,status,created_at,notes) VALUES (?,?,?,?,?,?,?,?)");
-  const deleteJobs = db.prepare("DELETE FROM profile_applications WHERE profile_id=?");
+  const getJobs = db.prepare("SELECT id,company,role,url,status,created_at AS createdAt,notes,resume_id AS resumeId FROM applications WHERE profile_id=? ORDER BY created_at DESC,id");
+  const insertJob = db.prepare("INSERT INTO applications(profile_id,id,resume_id,company,role,url,status,created_at,notes) VALUES (?,?,?,?,?,?,?,?,?)");
+  const deleteJobs = db.prepare("DELETE FROM applications WHERE profile_id=?");
+  function contactValues(contact: CandidateProfile["contact"]) {
+    return [contact.firstName,contact.lastName,contact.email,contact.phone,contact.location,contact.linkedIn,contact.github,contact.website] as const;
+  }
+  function addContact(profileId: string, value: CandidateProfile["contact"], label: string, isDefault = false) {
+    const id = randomUUID();
+    insertContact.run(id,profileId,name(label),isDefault ? 1 : 0,...contactValues(value));
+    return id;
+  }
+  function createFirstContact(profileId: string) {
+    return addContact(profileId,emptyContact(),"Primary contact",true);
+  }
   if (!selectProfile.get(DEFAULT_PROFILE_ID)) {
     db.exec("BEGIN IMMEDIATE");
     try {
       const createdAt = now();
       insertProfile.run(DEFAULT_PROFILE_ID, "Default profile", createdAt);
       insertState.run(DEFAULT_PROFILE_ID);
-      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, "Primary resume", null, createdAt);
+      const contactId = createFirstContact(DEFAULT_PROFILE_ID);
+      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, contactId, "Primary resume", null, createdAt, createdAt);
       db.exec("COMMIT");
     } catch (error) { db.exec("ROLLBACK"); db.close(); throw error; }
   }
@@ -118,7 +173,7 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   }
   function requireResume(profileId: string, resumeId: string) {
     const row = selectResume.get(validId(resumeId), requireProfile(profileId)) as
-      { id: string; name: string; json: string | null; createdAt: string } | undefined;
+      { id: string; name: string; contactId: string; json: string | null; createdAt: string; updatedAt: string } | undefined;
     if (!row) throw new Error("Resume version not found for the selected local profile.");
     return row;
   }
@@ -132,47 +187,69 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     try {
       insertProfile.run(row.id, row.name, row.createdAt);
       insertState.run(row.id);
-      insertResume.run(randomUUID(), row.id, "Primary resume", null, row.createdAt);
+      const contactId = createFirstContact(row.id);
+      insertResume.run(randomUUID(), row.id, contactId, "Primary resume", null, row.createdAt, row.createdAt);
       db.exec("COMMIT");
       return row;
     } catch (error) { db.exec("ROLLBACK"); throw error; }
   }
   function renameProfile(profileId: string, value: unknown): LocalProfile {
     const id = requireProfile(profileId);
-    db.prepare("UPDATE local_profiles SET name=? WHERE id=?").run(name(value), id);
+    db.prepare("UPDATE profiles SET name=? WHERE id=?").run(name(value), id);
     return selectProfile.get(id) as LocalProfile;
   }
   function deleteProfile(profileId: string) {
     const id = requireProfile(profileId);
     if (id === DEFAULT_PROFILE_ID) throw new Error("Default profile cannot be deleted.");
-    db.prepare("DELETE FROM local_profiles WHERE id=?").run(id);
+    db.prepare("DELETE FROM profiles WHERE id=?").run(id);
+  }
+  function listContacts(profileId: string): ProfileContact[] {
+    return listContactRows.all(requireProfile(profileId)) as ProfileContact[];
+  }
+  function createContact(profileId: string, contact: unknown, label: unknown): ProfileContact {
+    const owner = requireProfile(profileId);
+    const valid = validateContact(contact);
+    const id = addContact(owner,valid,name(label));
+    return selectContact.get(owner,id) as ProfileContact;
+  }
+  function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
+    const owner = requireProfile(profileId);
+    if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
+    updateContact.run(...contactValues(validateContact(contact)),owner,contactId);
+    return selectContact.get(owner,contactId) as ProfileContact;
+  }
+  function setDefaultContact(profileId: string, contactId: string): ProfileContact {
+    const owner = requireProfile(profileId);
+    if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare("UPDATE profile_contact SET is_default=0 WHERE profile_id=?").run(owner);
+      db.prepare("UPDATE profile_contact SET is_default=1 WHERE profile_id=? AND id=?").run(owner,contactId);
+      db.exec("COMMIT");
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+    return selectContact.get(owner,contactId) as ProfileContact;
   }
   function createResume(profileId: string, value: unknown, copyId?: string): ResumeVersion {
     const owner = requireProfile(profileId);
-    const source = copyId ? requireResume(owner, copyId) : null;
-    const row: ResumeVersion = { id: randomUUID(), name: name(value), createdAt: now() };
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      insertResume.run(row.id, owner, row.name, source?.json ?? null, row.createdAt);
-      if (source) {
-        const overrides = getOverrides.get(source.id) as { overridesJson: string } | undefined;
-        if (overrides) putOverrides.run(row.id, overrides.overridesJson);
-      }
-      db.exec("COMMIT");
-    } catch (error) { db.exec("ROLLBACK"); throw error; }
+    const source = copyId ? requireResume(owner,copyId) : null;
+    const defaultId = (getDefaultContact.get(owner) as {id:string}|undefined)?.id;
+    if (!defaultId) throw new Error("Profile must have a default contact.");
+    const row: ResumeVersion = { id: randomUUID(), name: name(value),
+      contactId: source?.contactId ?? defaultId, createdAt: now(), updatedAt: now() };
+    insertResume.run(row.id,owner,row.contactId,row.name,source?.json ?? null,row.createdAt,row.updatedAt);
     return row;
   }
   function renameResume(profileId: string, resumeId: string, value: unknown): ResumeVersion {
-    const row = requireResume(profileId, resumeId);
-    const next = name(value);
-    db.prepare("UPDATE profile_resumes SET name=? WHERE id=? AND profile_id=?").run(next, row.id, profileId);
-    return { id: row.id, name: next, createdAt: row.createdAt };
+    const row = requireResume(profileId,resumeId);
+    const next = name(value), updatedAt = now();
+    db.prepare("UPDATE resumes SET name=?,updated_at=? WHERE profile_id=? AND id=?").run(next,updatedAt,profileId,row.id);
+    return { id: row.id, contactId: row.contactId, name: next, createdAt: row.createdAt, updatedAt };
   }
   function deleteResume(profileId: string, resumeId: string) {
     const owner = requireProfile(profileId);
-    requireResume(owner, resumeId);
-    if (listResumes(owner).length <= 1) throw new Error("Keep at least one resume version per local profile.");
-    db.prepare("DELETE FROM profile_resumes WHERE id=? AND profile_id=?").run(resumeId, owner);
+    requireResume(owner,resumeId);
+    if (listResumes(owner).length <= 1) throw new Error("Keep at least one resume per profile.");
+    db.prepare("DELETE FROM resumes WHERE id=? AND profile_id=?").run(resumeId,owner);
   }
   const getEmployerAccount = db.prepare("SELECT provider,employer_key AS employerKey,employer_name AS employerName,host,status,updated_at AS updatedAt FROM employer_accounts WHERE profile_id=? AND provider=? AND employer_key=?");
   const listEmployerAccounts = db.prepare("SELECT provider,employer_key AS employerKey,employer_name AS employerName,host,status,updated_at AS updatedAt FROM employer_accounts WHERE profile_id=? ORDER BY employer_name,provider,employer_key");
@@ -200,67 +277,64 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     const owner = requireProfile(profileId);
     const resumes = listResumes(owner);
     const selectedId = resumeId ?? resumes[0]?.id;
-    if (!selectedId) throw new Error("No resume versions exist for this profile.");
-    const selected = requireResume(owner, selectedId);
-    const identity = getIdentity.get(owner) as { contactJson: string } | undefined;
-    const contact = identity ? JSON.parse(identity.contactJson) as CandidateProfile["contact"] : null;
+    if (!selectedId) throw new Error("No resume exists for profile.");
+    const selected = requireResume(owner,selectedId);
+    const contacts = listContacts(owner);
+    const selectedContact = contacts.find(item => item.id === selected.contactId);
+    const defaultContact = contacts.find(item => item.isDefault);
+    if (!selectedContact || !defaultContact) throw new Error("Missing contact for profile.");
+    const { id: _id, profileId: _profileId, name: _name, isDefault: _isDefault, ...contact } = selectedContact;
     const document = selected.json ? JSON.parse(selected.json) as CandidateProfile : null;
-    const overridesRow = getOverrides.get(selected.id) as { overridesJson: string } | undefined;
-    const contactOverrides = overridesRow ? JSON.parse(overridesRow.overridesJson) as Partial<CandidateProfile["contact"]> : {};
-    const sharedContact = contact ?? document?.contact ?? null;
     return {
-      revision: (getRevision.get(owner) as { revision: number }).revision,
-      contact: sharedContact,
-      contactOverrides,
-      profile: document ? { ...document, contact: { ...sharedContact, ...contactOverrides } } : null,
-      jobs: getJobs.all(owner) as JobRecord[],
+      revision: (getRevision.get(owner) as {revision:number}).revision,
+      contact,
+      contactId: selected.contactId,
+      defaultContactId: defaultContact.id,
+      contacts,
+      profile: document ? { ...document, contact } : null,
+      jobs: (getJobs.all(owner) as (JobRecord & {resumeId:string|null})[]).map(({resumeId,...job}) => ({...job,resumeId})),
       resumeId: selected.id, resumes,
     };
   }
   function saveSnapshot(snapshot: unknown, profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
     const owner = requireProfile(profileId);
     const id = resumeId ?? listResumes(owner)[0]?.id;
-    if (!id) throw new Error("No resume version selected.");
-    requireResume(owner, id);
+    if (!id) throw new Error("No resume selected.");
+    const selected = requireResume(owner,id);
     if (!snapshot || typeof snapshot !== "object") throw new Error("Invalid state.");
-    const state = snapshot as Record<string, unknown>;
+    const state = snapshot as Record<string,unknown>;
     const candidate = state.profile == null ? null : validateResume(state.profile);
     const jobs = validateJobs(state.jobs);
-    const contactKeys = ["firstName","lastName","email","phone","location","linkedIn","github","website"];
-    const shared = state.contact ?? candidate?.contact ?? null;
-    if (shared !== null && (!shared || typeof shared !== "object" || Array.isArray(shared) ||
-        contactKeys.some(key => typeof (shared as Record<string,unknown>)[key] !== "string") ||
-        Object.keys(shared).some(key => !contactKeys.includes(key)))) throw new Error("Invalid shared contact.");
-    const rawOverrides = state.contactOverrides ?? {};
-    if (!rawOverrides || typeof rawOverrides !== "object" || Array.isArray(rawOverrides) ||
-        Object.entries(rawOverrides).some(([key,value]) => !contactKeys.includes(key) || typeof value !== "string"))
-      throw new Error("Invalid resume contact overrides.");
-    const overrides = rawOverrides as Record<string,string>;
-    const effectiveContact = { ...(shared as Record<string,string> | null), ...overrides };
-    if (candidate && JSON.stringify(effectiveContact) !== JSON.stringify(candidate.contact))
-      throw new Error("Resume contact does not match shared contact and overrides.");
+    const contactId = state.contactId == null ? selected.contactId : validId(String(state.contactId));
+    if (!selectContact.get(owner,contactId)) throw new Error("Contact does not belong to selected profile.");
+    const contact = state.contact == null ? candidate?.contact ?? null : validateContact(state.contact);
+    if (contact && candidate && CONTACT_KEYS.some(key => contact[key] !== candidate.contact[key]))
+      throw new Error("Resume contact must match its selected contact record.");
     const revision = state.revision;
     if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
       throw new Error("Expected a nonnegative revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
-      const current = (getRevision.get(owner) as { revision: number }).revision;
+      const current = (getRevision.get(owner) as {revision:number}).revision;
       if (current !== revision) {
-        const error = new Error("Data changed in another tab. Reload to avoid overwriting it.") as Error & { code?: string };
+        const error = new Error("Data changed in another tab. Reload to avoid overwriting it.") as Error & {code?:string};
         error.code = "STALE_STATE";
         throw error;
       }
+      if (contact) updateContact.run(...contactValues(contact),owner,contactId);
+      db.prepare("UPDATE resumes SET contact_id=?,content_json=?,updated_at=? WHERE profile_id=? AND id=?")
+        .run(contactId,candidate ? JSON.stringify({ ...candidate, contact: emptyContact() }) : null,now(),owner,id);
       deleteJobs.run(owner);
-      for (const job of jobs) insertJob.run(owner, job.id,job.company,job.role,job.url,job.status,job.createdAt,job.notes);
-      // Contact belongs to the person, while work history and tailored wording belong to each resume.
-      // Keep the complete resume JSON for schema validation/export, but overlay shared contact when reading.
-      if (shared) putIdentity.run(owner, JSON.stringify(shared));
-      putOverrides.run(id, JSON.stringify(overrides));
-      db.prepare("UPDATE profile_resumes SET json=? WHERE profile_id=? AND id=?").run(candidate ? JSON.stringify(candidate) : null, owner, id);
-      db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?").run(current + 1, owner);
+      for (const job of jobs) {
+        const resume = job as JobRecord & {resumeId?:string|null};
+        const jobResumeId = resume.resumeId ?? null;
+        if (jobResumeId) requireResume(owner,jobResumeId);
+        insertJob.run(owner,job.id,jobResumeId,job.company,job.role,job.url,job.status,job.createdAt,job.notes);
+      }
+      db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?").run(current+1,owner);
       db.exec("COMMIT");
-      return { revision: current + 1 };
-    } catch (error) { db.exec("ROLLBACK"); throw error; }
+      return { revision: current+1 };
+    } catch(error) { db.exec("ROLLBACK"); throw error; }
   }
-  return { listProfiles, createProfile, renameProfile, deleteProfile, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
+  return { listProfiles, createProfile, renameProfile, deleteProfile, listContacts, createContact, updateContactRecord, setDefaultContact, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
 }
