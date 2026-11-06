@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Browser } from "playwright";
 import { readFileSync } from "node:fs";
 import { renderResumeHtml, renderResumePdf } from "../packages/resume/src/resume-schema/create-pdf.ts";
 
 const resume = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 function fakeBrowser() {
-  const state = { html: "", pdfOptions: null, closed: false };
+  const state = { html: "", pdfOptions: null as Record<string, unknown> | null, closed: false };
   const page = {
-    setContent: vi.fn(async html => { state.html = html; }),
+    setContent: vi.fn(async (html: string) => { state.html = html; }),
     evaluate: vi.fn(async () => undefined),
-    pdf: vi.fn(async options => { state.pdfOptions = options; return Buffer.from("%PDF-1.4\n%%EOF"); })
+    pdf: vi.fn(async (options: Record<string, unknown>) => { state.pdfOptions = options; return Buffer.from("%PDF-1.4\n%%EOF"); })
   };
   const browser = { newPage: vi.fn(async () => page), close: vi.fn(async () => { state.closed = true; }) };
   return { state, browser, page };
@@ -42,7 +43,7 @@ describe("Unicode resume PDF export", () => {
 
   it("renders with Chromium and closes the browser", async () => {
     const { browser, page, state } = fakeBrowser();
-    const bytes = await renderResumePdf(resume, { launchBrowser: async () => browser });
+    const bytes = await renderResumePdf(resume, { launchBrowser: async () => browser as unknown as Browser });
     expect(Buffer.from(bytes).toString("utf8")).toContain("%PDF-1.4");
     expect(page.setContent).toHaveBeenCalledOnce();
     expect(page.evaluate).toHaveBeenCalledOnce();
@@ -60,11 +61,11 @@ describe("Unicode resume PDF export", () => {
       jobTitle: "Software Engineer " + i,
       startDate: String(2025 - i).padStart(4, "0")
     }));
-    const order = long.experience.map(e => e.company);
+    const order = long.experience.map((e: { company: string }) => e.company);
     const html = renderResumeHtml(long);
     expect(html).toContain("Employer 34");
     expect(html).toContain("Employer 0");
-    expect(long.experience.map(e => e.company)).toEqual(order);
+    expect(long.experience.map((e: { company: string }) => e.company)).toEqual(order);
   });
 
   it("rejects malformed structured input", () => {
@@ -74,7 +75,7 @@ describe("Unicode resume PDF export", () => {
   it("closes Chromium when printing fails", async () => {
     const { browser, page, state } = fakeBrowser();
     page.pdf.mockRejectedValue(new Error("Print failed"));
-    await expect(renderResumePdf(resume, { launchBrowser: async () => browser })).rejects.toThrow("Print failed");
+    await expect(renderResumePdf(resume, { launchBrowser: async () => browser as unknown as Browser })).rejects.toThrow("Print failed");
     expect(state.closed).toBe(true);
   });
 });

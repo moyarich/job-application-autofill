@@ -1,7 +1,7 @@
 // Read-only live employer ATS smoke checks; no credentials, autofill or submission.
 // Set ATS_LIVE_URLS to a JSON object keyed by adapter ID.
 import { chromium } from "playwright";
-import { adapterForUrl, discoverQuestions, formState } from "../packages/job-sites/index.mjs";
+import { adapterForUrl, discoverQuestions, formState } from "../packages/job-sites/index.ts";
 
 const raw = process.env.ATS_LIVE_URLS;
 if (!raw) {
@@ -32,7 +32,7 @@ try {
         result: "inspected",
       });
     } catch (error) {
-      report.push({ ats: id, result: "error", message: error.message });
+      report.push({ ats: id, result: "error", message: error instanceof Error ? error.message : String(error) });
     } finally { await page.close(); }
   }
 } finally { await browser.close(); }

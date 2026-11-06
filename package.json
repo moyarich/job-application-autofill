@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "npm run build --workspaces --if-present",
-    "build:packages": "npm run build --workspaces --if-present",
+    "dev": "node --experimental-strip-types docker/dev.ts",
+    "build": "npm run build --workspace packages/resume && npm run build --workspace packages/job-application-autofill && npm run build --workspace apps/playground && npm run build --workspace packages/resume-api --if-present && npm run build --workspace packages/job-sites --if-present",
+    "build:packages": "npm run build",
     "build:playground": "npm run build --workspace apps/playground",
     "test": "vitest run tests",
     "test:watch": "npm run test:watch --workspaces --if-present",
@@ -22,7 +22,7 @@
     "test:e2e:ui": "playwright test --ui",
     "storybook": "storybook dev",
     "build:storybook": "storybook build",
-    "dev:server": "node packages/resume-api/index.mjs",
+    "dev:server": "node --experimental-strip-types packages/resume-api/index.ts",
     "build:app": "npm run build:app --workspace packages/job-application-autofill"
   },
   "devDependencies": {
@@ -36,6 +36,7 @@
     "vitest": "^3.2.7",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
+    "jiti": "^2.6.1",
     "@vitejs/plugin-react": "^5.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

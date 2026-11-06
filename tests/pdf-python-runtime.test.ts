@@ -3,8 +3,8 @@ import { findPdfPython } from "../packages/resume/src/extract-resume/python-runt
 
 describe("PDF Python environment resolution", () => {
   it("uses an explicitly configured and verified interpreter", async () => {
-    const calls = [];
-    const run = async (command,args) => { calls.push([command,...args]); return {stdout:""}; };
+    const calls: string[][] = [];
+    const run = async (command: string,args: string[]) => { calls.push([command,...args]); return {stdout:""}; };
     expect(await findPdfPython({env:{PYTHON_EXECUTABLE:"/opt/venv/bin/python"},executeCommand:run})).toBe("/opt/venv/bin/python");
     expect(calls).toHaveLength(1);
   });
@@ -13,7 +13,7 @@ describe("PDF Python environment resolution", () => {
     await expect(findPdfPython({env:{PYTHON_EXECUTABLE:"/bad/python"},executeCommand:run})).rejects.toThrow(/Configured PYTHON_EXECUTABLE/);
   });
   it("prefers an existing Poetry virtualenv over system python", async () => {
-    const run = async (command,args) => {
+    const run = async (command: string,args: string[]) => {
       if(command==="poetry" && args[0]==="env")return {stdout:"/home/user/.cache/pypoetry/virtualenvs/moya/bin/python\n"};
       if(command.includes("virtualenvs"))return {stdout:""};
       throw new Error("system unavailable");
@@ -22,7 +22,7 @@ describe("PDF Python environment resolution", () => {
   });
   it("installs dependencies once via Poetry when no interpreter is ready", async () => {
     let installed=false,installs=0;
-    const run = async (command,args) => {
+    const run = async (command: string,args: string[]) => {
       if(command==="poetry"&&args[0]==="env")return {stdout:"/venv/python\n"};
       if(command==="poetry"&&args[0]==="install"){installed=true;installs++;return {stdout:""};}
       if(command==="/venv/python"&&installed)return {stdout:""};

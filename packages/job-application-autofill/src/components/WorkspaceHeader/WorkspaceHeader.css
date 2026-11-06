@@ -1,0 +1,6 @@
+.eyebrow { color:#68759b;font-size:11px;font-weight:800;letter-spacing:1.7px }
+h1 { font-size:34px;letter-spacing:-1.2px;margin:10px 0 7px }
+header p,.panel-title p { color:#748199;margin:0;line-height:1.5 }
+.header-chip { background:#ecfdf4;color:#13804a;border:1px solid #ccebdc;border-radius:20px;padding:10px 13px;font-size:12px;white-space:nowrap }
+@media(max-width:700px) { .header-chip { width:max-content } }
+.actions .header-chip { display:inline-block }

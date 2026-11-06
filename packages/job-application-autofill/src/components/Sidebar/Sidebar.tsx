@@ -1,3 +1,4 @@
+import "./Sidebar.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function Sidebar({ controller }: { controller: ApplicationController }) {
   const { tab, setTab } = controller;

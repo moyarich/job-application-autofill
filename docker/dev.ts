@@ -7,21 +7,21 @@ import { fileURLToPath } from "node:url";
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PORTS = "MOYA_WEB_PORT=5173\nMOYA_REVIEW_PORT=6080\n";
-export function makePassword(bytes = randomBytes(6)) {
+export function makePassword(bytes: Buffer = randomBytes(6)) {
   // VNC's classic password scheme only considers the first eight bytes.
   return bytes.toString("base64url").slice(0, 8);
 }
-export function parsePassword(text) {
+export function parsePassword(text: string) {
   const entries = [...text.matchAll(/^\s*(?:export\s+)?WEB_VNC_PASSWORD\s*=\s*(.*?)\s*$/gm)];
   if (!entries.length) return null;
-  const raw = entries.at(-1)[1].trim();
+  const raw = entries.at(-1)?.[1]?.trim() ?? "";
   const quoted = raw.match(/^(['"])(.*?)\1(?:\s*#.*)?$/);
-  return quoted ? quoted[2] : raw.split(/\s+#/)[0].trim();
+  return quoted ? quoted[2] : (raw.split(/\s+#/)[0] ?? "").trim();
 }
-function isPlaceholder(value) {
+function isPlaceholder(value: string | null) {
   return !value || /^(?:change-this-password|changeme|password|example|placeholder)$/i.test(value);
 }
-export function setupEnv(dir = root, env = process.env, random = makePassword) {
+export function setupEnv(dir = root, env: NodeJS.ProcessEnv = process.env, random: () => string = makePassword) {
   const filename = resolve(dir, ".env");
   const shellPassword = env.WEB_VNC_PASSWORD?.trim();
   if (shellPassword) {
@@ -47,7 +47,7 @@ export function setupEnv(dir = root, env = process.env, random = makePassword) {
   chmodSync(filename, 0o600);
   return { source: ".env", generated };
 }
-function preflight(cmd, args, name) {
+function preflight(cmd: string, args: string[], name: string) {
   const child = spawnSync(cmd, args, { cwd: root, stdio: "pipe", encoding: "utf8", timeout: 12000 });
   if (child.error || child.status !== 0) {
     const hint = (child.stderr || child.stdout || child.error?.message || "").trim();
@@ -68,11 +68,11 @@ export function main() {
     console.log("Dashboard: http://localhost:" + (process.env.MOYA_WEB_PORT || "5173"));
     console.log("Browser viewer: http://localhost:" + (process.env.MOYA_REVIEW_PORT || "6080") + "/vnc.html");
     const child = spawn("docker", ["compose", "up", "--build"], { cwd: root, stdio: "inherit", env: process.env });
-    for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => child.kill(signal));
-    child.on("error", error => { console.error("Could not launch Docker Compose:", error.message); process.exitCode = 1; });
+    for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => child.kill(signal));
+    child.on("error", (error: Error) => { console.error("Could not launch Docker Compose:", error.message); process.exitCode = 1; });
     child.on("exit", (code, signal) => { process.exitCode = code ?? (signal ? 130 : 1); });
   } catch (error) {
-    console.error("job-application-autofill startup failed:", error.message);
+    console.error("job-application-autofill startup failed:", error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   }
 }

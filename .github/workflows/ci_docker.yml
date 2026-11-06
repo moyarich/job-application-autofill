@@ -11,8 +11,8 @@ on:
       - "playwright-adapters/**"
       - "packages/extract-resume/**"
       - "resume-schema/**"
-      - "tests/ats-browser.test.mjs"
-      - "tests/workday-experience.test.mjs"
+      - "tests/ats-browser.test.ts"
+      - "tests/workday-experience.test.ts"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ci_docker.yml"
@@ -76,7 +76,7 @@ jobs:
             exit 1
           fi
       - name: ATS browser adapter integration fixtures
-        run: docker compose exec -T api npx --no-install vitest run tests/ats-browser.test.mjs tests/workday-experience.test.mjs
+        run: docker compose exec -T api npx --no-install vitest run tests/ats-browser.test.ts tests/workday-experience.test.ts
       - name: Verify SQLite persists after Compose shutdown and restart
         run: |
           docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && printf "persistent" > /app/data/.ci-volume-marker'

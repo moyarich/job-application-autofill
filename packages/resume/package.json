@@ -13,6 +13,10 @@
     "./create-pdf": {
       "types": "./dist/resume-schema/create-pdf.d.ts",
       "import": "./dist/create-pdf.js"
+    },
+    "./validate": {
+      "types": "./dist/resume-schema/validate.d.ts",
+      "import": "./dist/validate.js"
     }
   },
   "files": [
@@ -24,7 +28,7 @@
     "build": "npm run build:js && npm run build:python",
     "test:python": "poetry run python -m unittest discover -s python -p 'test_*.py' -v",
     "build:js": "vite build && tsc -p tsconfig.build.json",
-    "build:python": "node scripts/build-python.mjs",
+    "build:python": "node --experimental-strip-types scripts/build-python.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

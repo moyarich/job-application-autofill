@@ -49,7 +49,7 @@ jobs:
             echo "::error::_WORKFLOW_TOKEN must have read access to the owner's repositories, including private repositories."
             exit 1
           fi
-          node scripts/inventory-workflow-consumers.mjs
+          node scripts/inventory-workflow-consumers.ts
       - name: Commit updated inventory
         env:
           GH_TOKEN: ${{ secrets._WORKFLOW_TOKEN }}

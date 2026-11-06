@@ -2,10 +2,10 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
-import { fillKnownFields } from "../packages/job-sites/automation.mjs";
+import { fillKnownFields } from "../packages/job-sites/automation.ts";
 import { renderResumePdf } from "../packages/resume/src/resume-schema/create-pdf.ts";
-import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.mjs";
-import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../packages/job-sites/index.mjs";
+import { decodePdfAttachment } from "../packages/resume/src/resume-schema/attachment.ts";
+import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../packages/job-sites/index.ts";
 
 const samples = {
   greenhouse: ["https://boards.greenhouse.io/acme/jobs/123", "First Name", "Last Name"],
@@ -134,7 +134,7 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
           buffer: attachment.buffer,
         });
         const upload = await page.locator('input[type="file"]').evaluate(async input => {
-          const file = input.files?.[0];
+          const file = (input as HTMLInputElement).files?.[0];
           const bytes = file ? new Uint8Array(await file.arrayBuffer()) : null;
           return { name: file?.name, type: file?.type, prefix: bytes ? String.fromCharCode(...bytes.slice(0, 5)) : "" };
         });

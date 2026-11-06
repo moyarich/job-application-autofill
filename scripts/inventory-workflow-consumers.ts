@@ -1,11 +1,15 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 
+type Repository = { owner: { login: string }; name: string; full_name: string; default_branch: string; private: boolean; html_url: string };
+type RepositoryFile = { type: string; name: string; path: string; content?: string };
+type InventoryRow = { name: string; url: string; visibility: string; workflows: string[] };
+
 const token = process.env.GH_TOKEN;
 const owner = process.env.REPOSITORY_OWNER || "moyarich";
 const includePrivate = process.env.INCLUDE_PRIVATE === "true";
 if (!token) throw new Error("GH_TOKEN is required");
 
-async function api(path) {
+async function api<T>(path: string): Promise<T | null> {
   const response = await fetch("https://api.github.com/" + path, {
     headers: {
       Authorization: "Bearer " + token,
@@ -18,13 +22,13 @@ async function api(path) {
     throw new Error(
       path + ": HTTP " + response.status + " " + (await response.text()),
     );
-  return response.json();
+  return (await response.json()) as T;
 }
 
-async function repositories() {
-  const result = [];
+async function repositories(): Promise<Repository[]> {
+  const result: Repository[] = [];
   for (let page = 1; ; page++) {
-    const entries = await api(
+    const entries = await api<Repository[]>(
       "user/repos?affiliation=owner&visibility=all&per_page=100&page=" + page,
     );
     if (!entries?.length) break;
@@ -38,21 +42,21 @@ async function repositories() {
   return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-const rows = [];
+const rows: InventoryRow[] = [];
 for (const repo of await repositories()) {
   if (repo.private && !includePrivate) continue;
-  const directory = await api(
+  const directory = await api<RepositoryFile[]>(
     "repos/" +
       repo.full_name +
       "/contents/.github/workflows?ref=" +
       encodeURIComponent(repo.default_branch),
   );
   if (!Array.isArray(directory)) continue;
-  const matches = [];
+  const matches: string[] = [];
   for (const file of directory.filter(
     (entry) => entry.type === "file" && /\.ya?ml$/.test(entry.name),
   )) {
-    const blob = await api(
+    const blob = await api<{content?: string}>(
       "repos/" +
         repo.full_name +
         "/contents/" +

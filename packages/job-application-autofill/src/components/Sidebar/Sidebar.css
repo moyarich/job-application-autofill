@@ -1,0 +1,12 @@
+.sidebar { width:252px;background:#121d35;color:white;display:flex;flex-direction:column;padding:29px 18px;flex-shrink:0 }
+.brand { display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:-.35px;margin:0 0 55px;overflow-wrap:anywhere }
+.brand>span:last-child { min-width:0 }
+.brand-symbol { display:grid;place-items:center;background:#5b6ef5;width:34px;height:34px;border-radius:11px;font-size:19px }
+.brand-light { font-weight:400;color:#aab8db }
+.nav-label { font-size:11px;font-weight:800;color:#7685a9;letter-spacing:1.4px;margin:0 13px 16px }
+.sidebar-bottom { margin-top:auto;border-top:1px solid #31405b;padding:23px 10px 0;color:#99a8c5;font-size:13px;line-height:1.8 }
+.sidebar-bottom span { font-size:11px;color:#7080a4 }
+@media(max-width:700px) { .sidebar { width:100%;padding:15px;gap:5px } }
+@media(max-width:700px) { .brand { margin:0 0 10px } }
+@media(max-width:700px) { .nav-label,.sidebar-bottom { display:none } }
+.application-page .sidebar,.application-page .main>header,.application-page .stats,.application-page .main>.panel,.application-page .main>footer { display:none }

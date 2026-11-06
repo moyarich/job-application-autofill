@@ -22,6 +22,7 @@ export default defineConfig({
         "extract-resume": resolve(import.meta.dirname, "src/extract-resume/cli.ts"),
         "create-resume": resolve(import.meta.dirname, "src/create-resume/cli.ts"),
         "create-pdf": resolve(import.meta.dirname, "src/resume-schema/create-pdf.ts"),
+        validate: resolve(import.meta.dirname, "src/resume-schema/validate.ts"),
       },
       formats: ["es"],
       fileName: (_format, entryName) => `${entryName}.js`,

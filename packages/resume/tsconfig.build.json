@@ -5,8 +5,13 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["vite.config.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "vite.config.ts"
+  ]
 }

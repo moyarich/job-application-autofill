@@ -126,13 +126,13 @@ Once login has finished, use **I've finished — continue**. On multi-step forms
 A browser-fixture suite covers all five ATS adapters without contacting employers:
 
 ```sh
-node --test tests/ats-browser.test.mjs
+node --test tests/ats-browser.test.ts
 ```
 
 For **opt-in, read-only live job-page diagnostics**, provide public application URLs for the ATS systems you want to inspect, then run:
 
 ```sh
-ATS_LIVE_URLS='{"greenhouse":"https://boards.greenhouse.io/YOUR-COMPANY/jobs/JOB-ID"}' node tests/live-ats-smoke.mjs
+ATS_LIVE_URLS='{"greenhouse":"https://boards.greenhouse.io/YOUR-COMPANY/jobs/JOB-ID"}' node tests/live-ats-smoke.ts
 ```
 
 Replace the example URL with a real, publicly accessible job posting. This check only navigates and discovers fields; it does not authenticate, provide candidate data, or submit applications. Login-gated and employer-customized flows require manual end-to-end testing.
@@ -154,8 +154,8 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 - `packages/resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
 - `packages/resume/pyproject.toml`: Poetry dependency groups and OCR environment
 - `packages/job-sites/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
-- `packages/job-sites/automation.mjs`: Playwright review-before-submit sessions
-- `packages/resume-api/index.mjs`: local JSON HTTP API
+- `packages/job-sites/automation.ts`: Playwright review-before-submit sessions
+- `packages/resume-api/index.ts`: local JSON HTTP API
 
 ## Checks
 
@@ -199,7 +199,7 @@ action in the viewer. No account is created automatically.
 - `apps/playground`: separate documentation app.
 
 The server selects an adapter from the job URL. Shared orchestration is in
-`packages/job-sites/automation.mjs`; only Workday-specific actions live under
+`packages/job-sites/automation.ts`; only Workday-specific actions live under
 `packages/job-sites/workday/`. Greenhouse, Lever, Ashby and SmartRecruiters remain
 separate adapters. Environment-based authentication currently targets Workday.
 

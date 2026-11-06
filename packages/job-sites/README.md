@@ -2,15 +2,15 @@
 
 Each provider has its own field-mapping module:
 
-- `greenhouse/index.mjs`
-- `lever/index.mjs`
-- `workday/index.mjs`
-- `ashby/index.mjs`
-- `smart-recruiters/index.mjs`
+- `greenhouse/index.ts`
+- `lever/index.ts`
+- `workday/index.ts`
+- `ashby/index.ts`
+- `smart-recruiters/index.ts`
 
-The shared `index.mjs` selects adapters from the job URL and implements form-state detection, read-only question discovery, and autofill using only explicit candidate answers. Login, SSO, MFA, and CAPTCHA require manual browser interaction.
+The shared `index.ts` selects adapters from the job URL and implements form-state detection, read-only question discovery, and autofill using only explicit candidate answers. Login, SSO, MFA, and CAPTCHA require manual browser interaction.
 
-Run the five-provider fixture checks with `node --test tests/ats-browser.test.mjs`.
+Run the five-provider fixture checks with `node --test tests/ats-browser.test.ts`.
 
 These are adapter foundations; individual employers can customize their workflows and still require browser review.
 
@@ -32,8 +32,8 @@ The exact URL has a provider-regression test. Public page inspection is **not** 
 
 ## Workday structured work experience
 
-The Workday helper at `workday/experience.mjs` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
 
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 
-Browser fixtures: `node --test tests/workday-experience.test.mjs`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.
+Browser fixtures: `node --test tests/workday-experience.test.ts`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.

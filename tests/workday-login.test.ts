@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import type { Page } from "playwright";
 import {workdayCredentials,helpWorkdaySignIn} from "../packages/job-sites/workday/workday-login.ts";
 const env={RESUME_SITE_EMAIL:"test@example.com",RESUME_SITE_PASSWORD:"test-only"};
 describe("Workday environment credentials",()=>{
@@ -9,8 +10,8 @@ describe("Workday environment credentials",()=>{
   });
   it("does not touch a page without credentials or repeat an attempt",async()=>{
     const page={url:()=>"https://workday.wd5.myworkdayjobs.com/apply"};
-    await expect(helpWorkdaySignIn({page},{})).resolves.toBeUndefined();
-    await expect(helpWorkdaySignIn({page,loginAttempted:true},env)).resolves.toBeUndefined();
+    await expect(helpWorkdaySignIn({page: page as unknown as Page},{})).resolves.toBeUndefined();
+    await expect(helpWorkdaySignIn({page: page as unknown as Page,loginAttempted:true},env)).resolves.toBeUndefined();
   });
 });
 
@@ -23,11 +24,11 @@ it("signs in once with configured credentials without creating an account", asyn
   const submit={isVisible:async()=>true,click:vi.fn(async()=>{signedIn=true;})};
   const page={
     url:()=>"https://workday.wd5.myworkdayjobs.com/apply",
-    getByRole:(role,{name})=>({first:()=>hidden,last:()=>role==="button"&&name instanceof RegExp&&name.test("Sign In")?submit:hidden}),
-    getByLabel:pattern=>({first:()=>pattern.test("Email Address")?email:password}),
+    getByRole:(role: string,{name}:{name?: string | RegExp})=>({first:()=>hidden,last:()=>role==="button"&&name instanceof RegExp&&name.test("Sign In")?submit:hidden}),
+    getByLabel:(pattern: RegExp)=>({first:()=>pattern.test("Email Address")?email:password}),
     locator:()=>({innerText:async()=>"Sign In. Welcome! Create an account to manage applications."})
   };
-  const session={page};
+  const session={page: page as unknown as Page};
   await helpWorkdaySignIn(session,env);
   expect(signedIn).toBe(true);
   expect(email.fill).toHaveBeenCalledWith(env.RESUME_SITE_EMAIL);
@@ -43,10 +44,10 @@ it("prefills only email on account creation and never sets a new password",async
   const hidden={isVisible:async()=>false,waitFor:async()=>{},click:vi.fn()};
   const heading={isVisible:async()=>true};
   const page={url:()=>"https://workday.wd5.myworkdayjobs.com/create-account",
-    getByRole:role=>({first:()=>role==="heading"?heading:hidden,last:()=>hidden}),
-    getByLabel:pattern=>({first:()=>pattern.test("Email Address")?email:password}),
+    getByRole:(role: string)=>({first:()=>role==="heading"?heading:hidden,last:()=>hidden}),
+    getByLabel:(pattern: RegExp)=>({first:()=>pattern.test("Email Address")?email:password}),
     locator:()=>({innerText:async()=>"Create Account. Confirm password."})};
-  await helpWorkdaySignIn({page},env);
+  await helpWorkdaySignIn({page: page as unknown as Page},env);
   expect(email.fill).toHaveBeenCalledWith(env.RESUME_SITE_EMAIL);
   expect(password.fill).not.toHaveBeenCalled();
   expect(hidden.click).not.toHaveBeenCalled();

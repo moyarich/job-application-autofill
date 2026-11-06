@@ -1,3 +1,4 @@
+import "./App.css";
 import { useApplication } from "../../utils/application/useApplication";
 import { ResumeParser } from "../ResumeParser/ResumeParser";
 import { CandidateProfile } from "../CandidateProfile/CandidateProfile";

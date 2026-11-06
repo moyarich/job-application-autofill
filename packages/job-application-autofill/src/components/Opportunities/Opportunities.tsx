@@ -1,3 +1,4 @@
+import "./Opportunities.css";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";

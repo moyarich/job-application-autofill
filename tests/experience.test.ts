@@ -22,10 +22,10 @@ describe("employment history",()=>{
     ]).flat(),"Education"].join("\n");
     const jobs=extractEmploymentHistory(text);
     expect(jobs).toHaveLength(45);
-    expect(jobs.at(-1).company).toBe("Company 44 Technologies");
+    expect(jobs.at(-1)?.company).toBe("Company 44 Technologies");
     expect(jobs[0].description.length).toBeGreaterThan(4000);
     expect(jobs[0].description).toContain("END-0");
-    expect(jobs.at(-1).description).toContain("END-44");
+    expect(jobs.at(-1)?.description).toContain("END-44");
   });
   it("recognizes more history headings and expanded date separators",()=>{
     const jobs=extractEmploymentHistory("Professional Background\nExample Technologies\nPrincipal Engineer\n2020-01—2024-02\n• Led platform engineering\nEducation");

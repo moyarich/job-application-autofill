@@ -1,27 +1,29 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { validateResume } from "../resume/src/resume-schema/validate.mjs";
+import { validateResume } from "../resume/src/resume-schema/validate.ts";
 
-const STATUSES = new Set(["saved","in_progress","ready_for_review","submitted","interview","rejected"]);
-function validateJobs(input) {
+type JobRecord = { id: string; company: string; role: string; url: string; status: string; createdAt: string; notes: string };
+const STATUSES = new Set<string>(["saved","in_progress","ready_for_review","submitted","interview","rejected"]);
+function validateJobs(input: unknown): JobRecord[] {
   if (!Array.isArray(input) || input.length > 5000) throw new Error("Applications must be an array of at most 5000 jobs.");
-  const ids = new Set();
-  return input.map(job => {
-    if (!job || typeof job !== "object" || Array.isArray(job)) throw new Error("Invalid job record.");
+  const ids = new Set<string>();
+  return input.map((raw: unknown) => {
+    const job = raw as Record<string, unknown>;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid job record.");
     for (const key of ["id","company","role","url","status","createdAt","notes"])
       if (typeof job[key] !== "string") throw new Error("Invalid job field: " + key);
-    if (!/^[0-9a-f-]{36}$/i.test(job.id) || ids.has(job.id)) throw new Error("Duplicate or invalid job ID.");
-    ids.add(job.id);
-    if (!STATUSES.has(job.status)) throw new Error("Invalid application status.");
-    if (job.url && !/^https?:\/\//i.test(job.url)) throw new Error("Invalid job URL.");
-    if (job.notes.length > 50000 || job.company.length > 500 || job.role.length > 500 || job.url.length > 4000)
+    const validated = job as JobRecord;
+    if (!/^[0-9a-f-]{36}$/i.test(validated.id) || ids.has(validated.id)) throw new Error("Duplicate or invalid job ID.");
+    ids.add(validated.id);
+    if (!STATUSES.has(validated.status)) throw new Error("Invalid application status.");
+    if (validated.url && !/^https?:\/\//i.test(validated.url)) throw new Error("Invalid job URL.");
+    if (validated.notes.length > 50000 || validated.company.length > 500 || validated.role.length > 500 || validated.url.length > 4000)
       throw new Error("Application data exceeds field limits.");
-    return { id: job.id, company: job.company, role: job.role, url: job.url,
-      status: job.status, createdAt: job.createdAt, notes: job.notes };
+    return validated;
   });
 }
-export function openStore(filePath = process.env.MOYA_DB_PATH || "data/moyaapply.sqlite") {
+export function openStore(filePath: string = process.env.MOYA_DB_PATH || "data/moyaapply.sqlite") {
   const path = filePath === ":memory:" ? filePath : resolve(filePath);
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const db = new DatabaseSync(path);
@@ -41,21 +43,24 @@ CREATE TABLE IF NOT EXISTS applications (
   const insertJob = db.prepare("INSERT INTO applications (id,company,role,url,status,created_at,notes) VALUES (?,?,?,?,?,?,?)");
   const saveProfile = db.prepare("INSERT INTO resume_profile (id,json) VALUES (1,?) ON CONFLICT(id) DO UPDATE SET json=excluded.json");
   function getSnapshot() {
-    return { revision: Number(getRevision.get().value),
-      profile: profileQuery.get() ? JSON.parse(profileQuery.get().json) : null,
-      jobs: jobsQuery.all() };
+    const revision = getRevision.get() as { value: number } | undefined;
+    const profile = profileQuery.get() as { json: string } | undefined;
+    return { revision: Number(revision?.value),
+      profile: profile ? JSON.parse(profile.json) : null,
+      jobs: jobsQuery.all() as JobRecord[] };
   }
-  function saveSnapshot(snapshot) {
+  function saveSnapshot(snapshot: unknown) {
     if (!snapshot || typeof snapshot !== "object") throw new Error("Invalid state.");
-    const profile = validateResume(snapshot.profile);
-    const jobs = validateJobs(snapshot.jobs);
-    const revision = snapshot.revision;
-    if (!Number.isSafeInteger(revision) || revision < 0) throw new Error("Expected a nonnegative revision.");
+    const state = snapshot as Record<string, unknown>;
+    const profile = validateResume(state.profile);
+    const jobs = validateJobs(state.jobs);
+    const revision = state.revision;
+    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0) throw new Error("Expected a nonnegative revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
-      const current = Number(getRevision.get().value);
+      const current = Number((getRevision.get() as { value: number } | undefined)?.value);
       if (current !== revision) {
-        const error = new Error("Data changed in another tab. Reload the page to avoid overwriting it.");
+        const error = new Error("Data changed in another tab. Reload the page to avoid overwriting it.") as Error & { code?: string };
         error.code = "STALE_STATE";
         throw error;
       }

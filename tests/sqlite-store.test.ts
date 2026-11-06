@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openStore } from "../packages/resume-api/store.mjs";
+import { openStore } from "../packages/resume-api/store.ts";
 
 const example = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 const job = { id:"e8796d4c-828e-4634-aa60-ab39bc95e241",company:"Example",
