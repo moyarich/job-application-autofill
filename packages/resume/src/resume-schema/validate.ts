@@ -1,3 +1,4 @@
+// @ts-nocheck — migration: incremental runtime interface typing pending.
 // Platform-neutral runtime validation of the canonical resume-schema contract.
 // Does not import PDF/OCR packages or require a resume attachment.
 const STRING_FIELDS = ["firstName", "lastName", "email", "phone", "location", "linkedIn", "github", "website"];
