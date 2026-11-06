@@ -330,7 +330,7 @@ export function useApplication() {
     setImportChoices({});
     if (contactKeys.some(key => incoming.contact[key].trim() !== profile.contact[key].trim())) {
       setPendingImport(incoming);
-      setMessage("Review contact differences before importing this resume.");
+      setMessage("Contact details extracted. Review them before importing.");
     } else applyImportedContent(incoming,contactId,incoming.contact);
   }
   function applyImportedContent(incoming: CandidateProfile, selectedId: string | null, resolved: Contact) {
@@ -341,13 +341,18 @@ export function useApplication() {
     setResume(null);
     setMessage("Resume imported with its selected contact record.");
   }
-  async function confirmImport() {
+  async function confirmImport(strategy: ContactChoice = "resume") {
     if (!pendingImport || !activeResumeId) return;
     try {
       await flushPending();
+      const choices = Object.fromEntries(contactKeys.map(key => [key,strategy])) as
+        Partial<Record<ContactKey,ContactChoice>>;
       const result = await resolveImportedContact(activeProfileId,activeResumeId,
-        pendingImport.contact,importChoices);
+        pendingImport.contact,choices);
       setContacts(result.contacts);
+      if (result.contacts.some(item => item.isDefault)) {
+        setDefaultContactId(result.contacts.find(item => item.isDefault)!.id);
+      }
       applyImportedContent(pendingImport,result.contactId,result.contact);
     } catch(error) { setMessage(error instanceof Error ? error.message : "Could not import resume."); }
   }

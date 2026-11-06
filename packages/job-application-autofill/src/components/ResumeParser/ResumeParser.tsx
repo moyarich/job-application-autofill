@@ -86,7 +86,7 @@ export function ResumeParser({
           </button>
           <div className="json-import-panel">
             <p>
-              <strong>Have resume JSON?</strong> Import it into the selected resume version. Existing contact details stay shared.
+              <strong>Have resume JSON?</strong> Import it into the selected resume. You can review contact details before saving.
             </p>
             <button
               className="secondary"
