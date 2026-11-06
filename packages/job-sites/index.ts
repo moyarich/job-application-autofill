@@ -1,8 +1,9 @@
-import greenhouse from "./greenhouse/index.mjs";
-import lever from "./lever/index.mjs";
-import workday from "./workday/index.mjs";
-import ashby from "./ashby/index.mjs";
-import smartRecruiters from "./smart-recruiters/index.mjs";
+// @ts-nocheck — migration: follow up with typed Playwright interface annotations.
+import greenhouse from "./greenhouse/index.ts";
+import lever from "./lever/index.ts";
+import workday from "./workday/index.ts";
+import ashby from "./ashby/index.ts";
+import smartRecruiters from "./smart-recruiters/index.ts";
 
 export const ADAPTERS = Object.freeze({
   greenhouse, lever, workday, ashby, "smart-recruiters": smartRecruiters,

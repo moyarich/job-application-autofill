@@ -1,11 +1,12 @@
+// @ts-nocheck — migration: follow up with typed Playwright interface annotations.
 import { helpWorkdaySignIn, openWorkdayApplication } from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./index.mjs";
-import { fillWorkdayExperience } from "./workday/experience.mjs";
+import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./index.ts";
+import { fillWorkdayExperience } from "./workday/experience.ts";
 
 const sessions = new Map();
 const launchingJobs = new Set();

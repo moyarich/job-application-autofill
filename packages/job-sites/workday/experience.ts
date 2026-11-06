@@ -1,3 +1,4 @@
+// @ts-nocheck — migration: follow up with typed Playwright interface annotations.
 // Workday experience autofill: only visible, scoped and clearly labeled controls.
 const SECTION='[data-automation-id="workExperienceSection"], [data-automation-id="workExperience"], section:has(> h2:text-is("Work Experience")), fieldset:has(> legend:text-is("Work Experience"))';
 const ROW='[data-automation-id="workExperienceItem"], [data-automation-id="workExperienceCard"], [data-work-experience-entry]';
