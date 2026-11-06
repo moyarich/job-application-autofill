@@ -22,6 +22,9 @@
     "tests/**/*.ts",
     "vite.config.ts",
     "packages/resume/src/**/*.ts",
-    "packages/job-sites/**/*.ts"
+    "packages/job-sites/**/*.ts",
+    "packages/resume-api/**/*.ts",
+    "docker/**/*.ts",
+    "scripts/**/*.ts"
   ]
 }

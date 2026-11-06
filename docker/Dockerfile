@@ -61,4 +61,4 @@ RUN chmod +x docker/start-review.sh
 
 
 EXPOSE 4177 5173 6080
-CMD ["node", "packages/resume-api/index.mjs"]
+CMD ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]

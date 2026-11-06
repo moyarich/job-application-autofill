@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile
     image: job-application-autofill:local
     entrypoint: ["/app/docker/start-review.sh"]
-    command: ["node", "packages/resume-api/index.mjs"]
+    command: ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
       AUTOFILL_PORT: "4177"
