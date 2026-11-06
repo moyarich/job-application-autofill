@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fillKnownFields } from "../../packages/job-sites/automation.ts";
 import { renderResumePdf } from "../../packages/resume/src/resume-schema/create-pdf.ts";
 import { decodePdfAttachment } from "../../packages/resume/src/resume-schema/attachment.ts";
-import { adapterForUrl, formState, classifyQuestion, discoverQuestions, fillQuestionAnswers } from "../../packages/job-sites/index.ts";
+import { adapterForUrl } from "../../packages/job-sites/index.ts";
 
 const samples = {
   greenhouse: ["https://boards.greenhouse.io/acme/jobs/123", "First Name", "Last Name"],

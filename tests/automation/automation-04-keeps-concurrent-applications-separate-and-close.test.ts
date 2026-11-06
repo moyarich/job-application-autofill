@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import type { Browser, Page } from "playwright";
+import { describe, expect, it } from "vitest";
+import type { Browser } from "playwright";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
-import { validateUrl, isSubmissionConfirmed, fillKnownFields, prepareApplication, getActiveApplication, closeApplication } from "../../packages/job-sites/automation.ts";
+import { prepareApplication, getActiveApplication, closeApplication } from "../../packages/job-sites/automation.ts";
 
 describe("application safety", () => {
   
