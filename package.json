@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-strip-types docker/dev.ts",
-    "build": "npm run build --workspaces --if-present",
-    "build:packages": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace packages/resume && npm run build --workspace packages/job-application-autofill && npm run build --workspace apps/playground && npm run build --workspace packages/resume-api --if-present && npm run build --workspace packages/job-sites --if-present",
+    "build:packages": "npm run build",
     "build:playground": "npm run build --workspace apps/playground",
     "test": "vitest run tests",
     "test:watch": "npm run test:watch --workspaces --if-present",

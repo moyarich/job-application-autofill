@@ -13,6 +13,10 @@
     "./create-pdf": {
       "types": "./dist/resume-schema/create-pdf.d.ts",
       "import": "./dist/create-pdf.js"
+    },
+    "./validate": {
+      "types": "./dist/resume-schema/validate.d.ts",
+      "import": "./dist/validate.js"
     }
   },
   "files": [
