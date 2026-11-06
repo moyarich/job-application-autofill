@@ -6,7 +6,7 @@ import type { ApplicationQuestion } from "./index.ts";
 export { fillKnownFields } from "./handlers/contact.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
-import { automateCurrentStep } from "./core/orchestrator.ts";
+import { automateCurrentStep, listJobSiteMenu, executeJobSiteMenuItem } from "./core/orchestrator.ts";
 import { detectCurrentPage } from "./core/state-machine.ts";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -129,6 +129,44 @@ async function populateSession(session: ApplicationSession) {
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
   session.questions = outcome.questions;
+}
+
+/** Only actions explicitly declared by the current site's adapter are visible. */
+export async function getApplicationMenu(id: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) return [];
+  return listJobSiteMenu({
+    page: session.page, profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory, pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter);
+}
+
+/** A menu click invokes exactly one site-owned step; it never submits. */
+export async function runApplicationMenuItem(id: string, itemId: string) {
+  const session = sessions.get(id);
+  if (!session || !["ready_for_review", "login_required", "manual_intervention"].includes(session.state))
+    throw new Error("Application session is not ready for this action.");
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) throw new Error("Return to the employer application first.");
+  const outcome = await executeJobSiteMenuItem({
+    page: session.page, profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory, pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter, itemId);
+  session.filled = [...new Set([...session.filled, ...outcome.filled])];
+  session.missing = [...new Set([...session.missing, ...outcome.missing])];
+  session.questions = outcome.questions.length ? outcome.questions : session.questions;
+  session.pendingResume = outcome.pendingResume;
+  session.resumeFile = outcome.resumeFile;
+  session.resumeUploadUrls = outcome.resumeUploadUrls;
+  session.state = "ready_for_review";
+  session.message = "Selected employer step processed. Review the fields before submitting.";
+  return status(session);
 }
 
 export async function continueApplication(
