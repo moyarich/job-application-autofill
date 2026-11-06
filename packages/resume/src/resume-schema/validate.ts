@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck — migration: incremental runtime interface typing pending.
+import type { CandidateProfile } from "../types.ts";
 // Platform-neutral runtime validation of the canonical resume-schema contract.
 // Does not import PDF/OCR packages or require a resume attachment.
 const STRING_FIELDS = ["firstName", "lastName", "email", "phone", "location", "linkedIn", "github", "website"];
@@ -10,24 +9,24 @@ const ENTRIES = {
   projects: { strings: ["name", "description", "url"], other: ["technologies"] },
   certifications: { strings: ["name", "issuer", "issuedDate", "credentialId", "url"], other: ["expirationDate"] },
 };
-function object(value, field) {
+function object(value: unknown, field: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error(field + " must be an object");
-  return value;
+  return value as Record<string, unknown>;
 }
-function exactKeys(value, expected, field) {
+function exactKeys(value: Record<string, unknown>, expected: readonly string[], field: string) {
   for (const name of expected) if (!(name in value)) throw new Error(field + "." + name + " is required");
   for (const name of Object.keys(value)) if (!expected.includes(name)) throw new Error(field + "." + name + " is not allowed");
 }
-function strings(value, fields, field) {
+function strings(value: Record<string, unknown>, fields: readonly string[], field: string) {
   for (const name of fields)
     if (typeof value[name] !== "string") throw new Error(field + "." + name + " must be a string");
 }
-function date(value) {
+function date(value: unknown) {
   return typeof value === "string" && (value === "" || /^\d{4}(?:-(?:0[1-9]|1[0-2]))?$/.test(value));
 }
-function dateOrNull(value) { return value === null || date(value); }
-export function validateResume(value) {
+function dateOrNull(value: unknown) { return value === null || date(value); }
+export function validateResume(value: unknown): CandidateProfile {
   const resume = object(value, "resume");
   exactKeys(resume, ROOT_FIELDS, "resume");
   const contact = object(resume.contact, "contact");
@@ -62,8 +61,8 @@ export function validateResume(value) {
         throw new Error(field + " has invalid certification dates");
     }
   }
-  return resume;
+  return resume as unknown as CandidateProfile;
 }
-export function parseResumeJson(text) {
+export function parseResumeJson(text: string): CandidateProfile {
   return validateResume(JSON.parse(text));
 }
