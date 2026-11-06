@@ -165,7 +165,7 @@ export function useApplication() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeProfileId, requestedResumeId]);
   useEffect(() => {
     if (!hydrated || blockedRef.current || applicationId) return;
     const state = { profile, contact: profile.contact, contactId, jobs };
