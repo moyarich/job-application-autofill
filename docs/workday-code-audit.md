@@ -27,3 +27,7 @@ Audited on the `fix/workday-env-credentials` branch, November 6, 2026.
 ## Typed provider contract
 
 `packages/job-sites/types.ts` defines `JobSiteAdapter`. Every provider uses `satisfies JobSiteAdapter` and implements `employerTenant()`. Optional hooks cover field skipping, profile filling, repeat resume uploads, entering the application flow, account sign-in, and provider-specific login messages. The registry preserves provider methods and shared automation calls them without Workday ID checks. `tests/ats/adapter-contract.test.ts` covers adapter identity and hooks.
+
+## Site-defined step dispatch (latest)
+
+There is deliberately **no fixed section enum** in the job-site adapter contract. Each provider owns a `steps` array with arbitrary step IDs and `matches(context)` / `run(context)` functions. The shared orchestrator does not identify contact, employment, education, or other sections. It evaluates only the current adapter's declared steps and checks the destination host before and after each action. If an employer page has no matching step, no form action is attempted. Workday's steps live in `packages/job-sites/workday/steps.ts`; Workday's contact selector implementation lives in `workday/contact.ts`. Other providers have no automatic section steps until their own implementations are added and verified. Shared form utilities remain available to explicitly opt into, but never run as an automatic fallback.
