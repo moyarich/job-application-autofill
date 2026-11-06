@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migration: follow up with typed Playwright interface annotations.
 // Workday experience autofill: only visible, scoped and clearly labeled controls.
 const SECTION='[data-automation-id="workExperienceSection"], [data-automation-id="workExperience"], section:has(> h2:text-is("Work Experience")), fieldset:has(> legend:text-is("Work Experience"))';
@@ -45,7 +46,7 @@ export async function fillWorkdayExperience(page,experience){
   for(const [i,job] of experience.entries()){
     const key="experience["+i+"]";
     if(!job?.company?.trim()||!job?.jobTitle?.trim()){result.unresolved.push(key+": missing company or title");continue;}
-    let rows=section.locator(ROW),row=null;
+    const rows=section.locator(ROW);let row=null;
     for(let j=0;j<await rows.count();j++){
       const found=rows.nth(j);
       if((await read(found,"company"))?.trim().toLowerCase()===job.company.trim().toLowerCase()

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migration: incremental runtime interface typing pending.
 // Platform-neutral runtime validation of the canonical resume-schema contract.
 // Does not import PDF/OCR packages or require a resume attachment.

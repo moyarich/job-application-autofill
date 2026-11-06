@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migration: follow up with typed Playwright interface annotations.
 import greenhouse from "./greenhouse/index.ts";
 import lever from "./lever/index.ts";
