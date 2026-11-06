@@ -276,7 +276,8 @@ export async function continueApplication(
       "Complete login in the browser viewer and return to the employer application before continuing.";
     return status(session);
   }
-  await adapterForUrl(session.page.url())?.helpSignIn?.(session).catch(() => {});
+  const adapter = adapterForUrl(session.page.url());
+  if (adapter?.helpSignIn) await adapter.helpSignIn(session).catch(() => {});
   const text = (
     await session.page
       .locator("body")
@@ -286,7 +287,7 @@ export async function continueApplication(
   const detected = formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
-    const providerError = adapterForUrl(session.page.url())?.loginFailureMessage?.(text);
+    const providerError = adapter?.loginFailureMessage?.(text);
     session.message =
       detected === "login_required"
         ? providerError ??
@@ -433,8 +434,10 @@ export async function prepareApplication({
         "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
       return status(session);
     }
-    await adapter?.openApplication?.(page).catch(() => {});
-    await adapter?.helpSignIn?.(session).catch(() => {});
+    if (adapter?.openApplication)
+      await adapter.openApplication(page).catch(() => {});
+    if (adapter?.helpSignIn)
+      await adapter.helpSignIn(session).catch(() => {});
     if (accountSetupRequired && company) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,
