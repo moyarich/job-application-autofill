@@ -11,6 +11,8 @@ import {
   prepareApplication,
   pasteApplicationText,
   getApplication,
+  getApplicationMenu,
+  runApplicationMenuItem,
   getActiveApplication,
   continueApplication,
   answerApplicationQuestions,
@@ -377,7 +379,7 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { ...prepared, employerAccount });
     }
     const match = url.pathname.match(
-      /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste))?$/,
+      /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste|menu))?$/,
     );
     if (match) {
       const [, id, action] = match;
@@ -390,6 +392,14 @@ const server = createServer(async (req, res) => {
           ...getApplication(id),
           employerAccount: accountForJob(getApplication(id).jobId),
         });
+      if (req.method === "GET" && action === "menu")
+        return send(res, 200, { items: await getApplicationMenu(id) });
+      if (req.method === "POST" && action === "menu") {
+        const payload = record(await readJson(req));
+        if (typeof payload.itemId !== "string")
+          throw new Error("Invalid job-site menu item.");
+        return send(res, 200, await runApplicationMenuItem(id, payload.itemId));
+      }
       if (req.method === "POST" && action === "account-signup") {
         const body = record(await readJson(req));
         if (body.password != null && typeof body.password !== "string")
