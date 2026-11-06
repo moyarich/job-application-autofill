@@ -6,8 +6,8 @@ import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 
 const navigation = [
   { id: "applications", label: "Applications", icon: BriefcaseBusiness },
-  { id: "profile", label: "My profile", icon: UserRound },
-  { id: "parser", label: "Resume import", icon: FileText },
+  { id: "profile", label: "Resume editor", icon: UserRound },
+  { id: "parser", label: "Import resume", icon: FileText },
 ] as const;
 
 export function Sidebar({ controller }: { controller: ApplicationController }) {
@@ -33,7 +33,7 @@ export function Sidebar({ controller }: { controller: ApplicationController }) {
       </div>
       <div id="sidebar-content" className="sidebar-content">
         <nav className="sidebar-navigation" aria-label="Main navigation">
-          <span className="nav-label">Menu</span>
+          <span className="nav-label">Navigation</span>
           {navigation.map(({ id, label, icon: Icon }) => (
             <button
               key={id}

@@ -17,3 +17,8 @@
 .opportunity-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media(max-width: 1180px) { .add-form { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width: 700px) { .add-form { grid-template-columns: 1fr; } .job select { max-width: 100%; } .job-notes { margin-left: 0; } .opportunity-controls { align-items: stretch; flex-direction: column; } .search { width: 100%; } }
+
+.search-control { display: flex; position: relative; align-items: center; }
+.search-control > svg { position: absolute; left: 12px; color: #8795ab; pointer-events: none; }
+.search-control .search { padding-left: 36px !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }

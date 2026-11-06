@@ -1,46 +1,38 @@
+import { ArrowRight, FileUp } from "lucide-react";
 import "./WorkspaceHeader.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
-export function WorkspaceHeader({
-  controller,
-}: {
-  controller: ApplicationController;
-}) {
+
+export function WorkspaceHeader({ controller }: { controller: ApplicationController }) {
   const { tab, setTab } = controller;
+  const content = {
+    applications: { title: "Applications", description: "Organize your job search and keep every application on track." },
+    profile: { title: "Resume editor", description: "Manage your contact details, experience, and resume versions." },
+    parser: { title: "Import a resume", description: "Bring in a PDF, Word document, or resume JSON to get started." },
+  } as const;
+  const current = content[tab];
   return (
-    <header>
+    <header className="workspace-header">
       <div>
-        <div className="eyebrow">YOUR WORKSPACE</div>
-        <h1>
-          {tab === "profile"
-            ? "My profile"
-            : tab === "parser"
-              ? "Resume import"
-              : "Applications"}
-        </h1>
-        <p>
-          {tab === "profile"
-            ? "Keep your details and work history up to date."
-            : tab === "parser"
-              ? "Import a resume and review the information we find."
-              : "Manage your opportunities and track each application."}
-        </p>
+        <div className="eyebrow">Workspace / {current.title}</div>
+        <h1>{current.title}</h1>
+        <p>{current.description}</p>
       </div>
       <div className="actions">
-        
-        <button className="secondary" onClick={() => setTab("parser")}>
-          Import resume
-        </button>
-        <button
-          className="primary"
-          onClick={() => {
-            setTab("applications");
-            document
-              .getElementById("applications-list")
-              ?.scrollIntoView({ behavior: "smooth" });
-          }}
-        >
-          View applications
-        </button>
+        {tab !== "parser" && (
+          <button type="button" className="secondary" onClick={() => setTab("parser")}>
+            <FileUp size={16} /> Import resume
+          </button>
+        )}
+        {tab !== "applications" && (
+          <button type="button" className="primary" onClick={() => setTab("applications")}>
+            View applications <ArrowRight size={16} />
+          </button>
+        )}
+        {tab === "applications" && (
+          <button type="button" className="primary" onClick={() => document.getElementById("add-application")?.scrollIntoView({behavior:"smooth"})}>
+            Add application <ArrowRight size={16} />
+          </button>
+        )}
       </div>
     </header>
   );

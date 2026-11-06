@@ -1,4 +1,5 @@
 import "./App.css";
+import { ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { useApplication } from "../../utils/application/useApplication";
 import { ResumeParser } from "../ResumeParser/ResumeParser";
 import { CandidateProfile } from "../CandidateProfile/CandidateProfile";
@@ -40,35 +41,14 @@ export function App() {
         <ContactImportReview controller={controller} />
         {tab === "applications" ? (
           <>
-            <section className="stats">
-              <div className="stat">
-                <span>Total applications</span>
-                <strong>{jobs.length}</strong>
-              </div>
-              <div className="stat">
-                <span>In progress</span>
-                <strong>
-                  {
-                    jobs.filter(
-                      (x) =>
-                        x.status === "in_progress" ||
-                        x.status === "ready_for_review",
-                    ).length
-                  }
-                </strong>
-              </div>
-              <div className="stat">
-                <span>Submitted</span>
-                <strong>
-                  {jobs.filter((x) => x.status === "submitted").length}
-                </strong>
-              </div>
-              <div className="stat">
-                <span>Interviews</span>
-                <strong>
-                  {jobs.filter((x) => x.status === "interview").length}
-                </strong>
-              </div>
+            <section className="stats" aria-label="Application overview">
+              <div className="stat"><span><ListChecks size={15} aria-hidden="true" /> Total applications</span><strong>{jobs.length}</strong></div>
+              <div className="stat"><span><Clock3 size={15} aria-hidden="true" /> In progress</span>
+                <strong>{jobs.filter(job => job.status === "in_progress" || job.status === "ready_for_review").length}</strong></div>
+              <div className="stat"><span><CheckCircle2 size={15} aria-hidden="true" /> Submitted</span>
+                <strong>{jobs.filter(job => job.status === "submitted").length}</strong></div>
+              <div className="stat"><span><MessageCircle size={15} aria-hidden="true" /> Interviews</span>
+                <strong>{jobs.filter(job => job.status === "interview").length}</strong></div>
             </section>
             <ApplicationReview controller={controller} />
             <Opportunities controller={controller} />
@@ -78,7 +58,7 @@ export function App() {
         ) : (
           <CandidateProfile controller={controller} />
         )}
-        <footer>Applications stay under your control. Always review before submitting.</footer>
+        <footer>Review all application details before submitting. <ArrowUpRight size={13} aria-hidden="true" /></footer>
       </main>
     </div>
   );
