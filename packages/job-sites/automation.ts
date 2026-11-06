@@ -1,3 +1,4 @@
+import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
 import { helpWorkdaySignIn, openWorkdayApplication } from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -243,7 +244,7 @@ export async function prepareApplication({ jobUrl, jobId, profileId = "00000000-
     const page = await context.newPage();
     const session: ApplicationSession = {
       id, jobId, profileId, url, browser, context, page, directory, state: "preparing",
-      message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume ?? null,
+      message: "", screenshot: null, filled: [], missing: [], profile: resumeToPlainText(profile), pendingResume: resume ?? null,
       ats: adapter?.id || "unknown", questions: [],
     };
     sessions.set(id, session);

@@ -1,3 +1,4 @@
+import { exportResume, type ResumeExportFormat } from "../files/export-resume";
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
@@ -33,12 +34,14 @@ export function useApplication() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
-  const tab = location.pathname === "/resume" ? "profile" :
+  const tab = location.pathname === "/resumes/edit" ? "profile" :
+    location.pathname === "/resumes/view" ? "view" :
+    location.pathname === "/resumes" ? "resumes" :
     location.pathname === "/profile" ? "personal" :
-    location.pathname === "/import" ? "parser" :
+    location.pathname === "/resumes/import" ? "parser" :
     location.pathname === "/workspace" ? "workspace" : "applications";
-  function setTab(next: "applications" | "profile" | "personal" | "parser" | "workspace") {
-    navigate({ pathname: next === "parser" ? "/import" : next === "profile" ? "/resume" : next === "personal" ? "/profile" : "/" + next, search: location.search });
+  function setTab(next: "applications" | "profile" | "personal" | "parser" | "workspace" | "resumes") {
+    navigate({ pathname: next === "parser" ? "/resumes/import" : next === "profile" ? "/resumes/edit" : next === "resumes" ? "/resumes" : next === "personal" ? "/profile" : "/" + next, search: location.search });
   }
   const [profile, setProfile] = useState<CandidateProfile>(() =>
     structuredClone(emptyCandidate),
@@ -689,11 +692,22 @@ export function useApplication() {
       navigateTo(DEFAULT_PROFILE_ID);
     } catch (error) { setMessage(String(error)); }
   }
-  async function openResume(resumeId: string) {
+  async function exportResumeVersion(resumeId:string, format:ResumeExportFormat) {
+    try {
+      await flushPending();
+      const selected = resumeVersions.find(item => item.id === resumeId);
+      if (!selected) throw new Error("Resume no longer exists.");
+      const state = resumeId === activeResumeId ? null : await readState(activeProfileId,resumeId);
+      const value = state ? state.profile : profile;
+      if (!value) throw new Error("This resume has no content to export.");
+      await exportResume(value,selected.name,format,activeProfileId,resumeId);
+    } catch(error) { setMessage(error instanceof Error ? error.message : String(error)); }
+  }
+  async function openResume(resumeId: string, mode: "view" | "edit" = "edit") {
     if (applicationId || applyBusy || session) return;
     try {
       await flushPending();
-      navigateTo(activeProfileId,resumeId,"/profile");
+      navigateTo(activeProfileId,resumeId,"/resumes/" + mode);
     } catch (error) { setMessage(String(error)); }
   }
   async function createResume(name: string, copyId?: string) {
@@ -701,7 +715,7 @@ export function useApplication() {
     try {
       await flushPending();
       const created = await createResumeVersion(activeProfileId,name,copyId);
-      navigateTo(activeProfileId,created.id,"/profile");
+      navigateTo(activeProfileId,created.id,"/resumes/edit");
     } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); throw error; }
   }
   async function renameResume(resumeId: string, name: string) {
@@ -719,7 +733,7 @@ export function useApplication() {
       await deleteResumeVersion(activeProfileId,resumeId);
       if (resumeId === activeResumeId) {
         const remaining = resumeVersions.find(item => item.id !== resumeId);
-        navigateTo(activeProfileId,remaining?.id,"/workspace");
+        navigateTo(activeProfileId,remaining?.id,"/resumes");
       } else {
         setResumeVersions(items => items.filter(item => item.id !== resumeId));
       }
@@ -728,7 +742,7 @@ export function useApplication() {
   return {
     profiles, activeProfileId, resumeVersions, activeResumeId,
     switchProfile, switchResume, createPerson, renamePerson, removePerson,
-    createResume, renameResume, removeResume, openResume,
+    createResume, renameResume, removeResume, openResume, exportResumeVersion,
     flushPending,
     applicationId,
     activeLoaded,

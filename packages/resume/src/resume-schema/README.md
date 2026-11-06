@@ -39,3 +39,9 @@ The command uses `create-pdf.ts` to generate a PDF from validated structured JSO
 Without `--output`, it uses the input file's directory and basename with a `.pdf`
 extension. Existing files are never overwritten. Chromium must be installed for
 Playwright (`npx playwright install chromium`). Errors exit with a nonzero status.
+
+## Markdown content and downloads
+
+Summary, experience descriptions, education/project descriptions, and additional-section content use a single Markdown string per field. Slate is the editing interface; no separate editor document is persisted. `markdownToPlainText` and `resumeToPlainText` strip formatting for application autofill, while HTML/PDF rendering preserves formatting with raw HTML disabled.
+
+The Resumes listing provides View, Edit, Copy, Rename, Export, and Delete. Export supports Text, YAML, JSON, PDF, Word (`.docx`), and Markdown. JSON/YAML retain the structured resume contract and Markdown fields; document formats are generated from those same fields.

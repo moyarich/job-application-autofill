@@ -5,6 +5,8 @@ import type { ApplicationController } from "../../utils/application/useApplicati
 export function WorkspaceHeader({ controller }: { controller: ApplicationController }) {
   const { tab, setTab } = controller;
   const content = {
+    view: { title: "View resume", description: "Review your resume and export it in the format you need." },
+    resumes: { title: "Resumes", description: "Your experience, tailored for every opportunity. Manage all your resume versions here." },
     applications: { title: "Applications", description: "Organize your job search and keep every application on track." },
     personal: { title: "Profile", description: "Manage your saved contact details and the profile you are working with." },
     profile: { title: "Resume editor", description: "Manage your contact details, experience, and resume versions." },

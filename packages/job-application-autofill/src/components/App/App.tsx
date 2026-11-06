@@ -1,3 +1,4 @@
+import { ResumeView } from "../ResumeView/ResumeView";
 import "./App.css";
 import { ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { useApplication } from "../../utils/application/useApplication";
@@ -58,10 +59,14 @@ export function App() {
           </>
         ) : tab === "parser" ? (
           <ResumeParser controller={controller} />
+        ) : tab === "view" ? (
+          <ResumeView controller={controller} />
+        ) : tab === "resumes" ? (
+          <ResumeManager controller={controller} />
         ) : tab === "personal" ? (
           <>
             <section className="panel">
-              <div className="panel-title"><h2>Your profile</h2><p>Choose your profile and manage its resume versions.</p></div>
+              <div className="panel-title"><h2>Your profile</h2><p>Choose a profile and manage its saved contact details.</p></div>
               <LocalProfiles controller={controller} />
             </section>
             <ContactManager controller={controller} />

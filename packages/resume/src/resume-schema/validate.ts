@@ -148,3 +148,17 @@ export function validateResume(value: unknown): CandidateProfile {
 export function parseResumeJson(text: string): CandidateProfile {
   return validateResume(JSON.parse(text));
 }
+
+export {
+  markdownToHtml,
+  markdownToPlainText,
+  resumeToPlainText,
+  resumeToMarkdown,
+  markdownToEditor,
+  editorToMarkdown,
+} from "./markdown.ts";
+export type {
+  RichTextBlock,
+  RichTextLeaf,
+  RichTextDocument,
+} from "./markdown.ts";
