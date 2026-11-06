@@ -1,9 +1,4 @@
 import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
-import {
-  helpWorkdaySignIn,
-  openWorkdayApplication,
-  workdayLoginFailureMessage,
-} from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
@@ -18,11 +13,6 @@ import {
   discoverQuestions,
   fillQuestionAnswers,
 } from "./index.ts";
-import {
-  fillWorkdayProfile,
-  retryWorkdayResumeUpload,
-  skipWorkdayLocation,
-} from "./workday/autofill.ts";
 import {
   prepareEmployerSignUp,
   type AccountSetupResult,
@@ -163,7 +153,7 @@ export async function fillKnownFields(page: Page, profile: CandidateProfile) {
         ? [profile.contact.firstName, profile.contact.lastName].join(" ")
         : profile.contact[key];
     if (!value) continue;
-    if (key === "location" && adapter?.id === "workday" && await skipWorkdayLocation(page))
+    if (adapter?.skipContactField && await adapter.skipContactField(page, key))
       continue;
     ((await fill(page, adapterFields[key] || locators, value))
       ? filled
@@ -207,10 +197,11 @@ async function populateSession(session: ApplicationSession) {
   const results = await fillKnownFields(page, session.profile);
   session.filled = results.filled;
   session.missing = results.missing;
-  if (adapterForUrl(page.url())?.id === "workday") {
-    const workday = await fillWorkdayProfile(page, session.profile);
-    session.filled.push(...workday.filled);
-    session.missing.push(...workday.missing);
+  const adapter = adapterForUrl(page.url());
+  if (adapter?.fillProfile) {
+    const result = await adapter.fillProfile(page, session.profile);
+    session.filled.push(...result.filled);
+    session.missing.push(...result.missing);
   } else if (
     Array.isArray(session.profile.experience) &&
     session.profile.experience.length
@@ -247,9 +238,9 @@ async function populateSession(session: ApplicationSession) {
   if (
     !session.pendingResume &&
     session.resumeFile &&
-    adapterForUrl(page.url())?.id === "workday"
+    adapter?.retryResumeUpload
   ) {
-    const upload = await retryWorkdayResumeUpload(
+    const upload = await adapter.retryResumeUpload(
       page,
       session.resumeFile,
       session.resumeUploadUrls || [],
@@ -285,8 +276,7 @@ export async function continueApplication(
       "Complete login in the browser viewer and return to the employer application before continuing.";
     return status(session);
   }
-  if (adapterForUrl(session.page.url())?.id === "workday")
-    await helpWorkdaySignIn(session).catch(() => {});
+  await adapterForUrl(session.page.url())?.helpSignIn?.(session).catch(() => {});
   const text = (
     await session.page
       .locator("body")
@@ -296,13 +286,10 @@ export async function continueApplication(
   const detected = formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
-    const workdayError =
-      adapterForUrl(session.page.url())?.id === "workday"
-        ? workdayLoginFailureMessage(text)
-        : null;
+    const providerError = adapterForUrl(session.page.url())?.loginFailureMessage?.(text);
     session.message =
       detected === "login_required"
-        ? workdayError ??
+        ? providerError ??
           "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
         : "Complete the security challenge manually in the browser viewer.";
     return status(session);
@@ -446,10 +433,8 @@ export async function prepareApplication({
         "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
       return status(session);
     }
-    if (adapter?.id === "workday") {
-      await openWorkdayApplication(page).catch(() => {});
-      await helpWorkdaySignIn(session).catch(() => {});
-    }
+    await adapter?.openApplication?.(page).catch(() => {});
+    await adapter?.helpSignIn?.(session).catch(() => {});
     if (accountSetupRequired && company) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,
