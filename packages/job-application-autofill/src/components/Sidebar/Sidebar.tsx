@@ -16,7 +16,7 @@ export function Sidebar() {
   return (
     <aside className={menuOpen ? "sidebar sidebar-open" : "sidebar"}>
       <div className="sidebar-header">
-        <div className="brand" aria-label="Job Application Autofill">
+        <div className="brand" aria-label="job-application-autofill">
           <span className="brand-symbol" aria-hidden="true"><BriefcaseBusiness size={19} strokeWidth={2.2} /></span>
           <span className="brand-name">Job Application<span className="brand-light"> Autofill</span></span>
         </div>
