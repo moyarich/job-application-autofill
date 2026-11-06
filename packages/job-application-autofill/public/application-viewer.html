@@ -9,6 +9,12 @@ const headers = {'X-Moya-Client':'dashboard'};
 let rfb;
 let connected = false;
 let copyRequested = false;
+let focusRequest = null;
+function focusRemoteKeyboard() {
+  if (!rfb || !connected || document.hidden) return;
+  rfb.viewOnly = false;
+  if (document.activeElement !== pasteInput && typeof rfb.focus === 'function') rfb.focus();
+}
 const screen = document.getElementById('screen');
 const pasteInput = document.getElementById('paste-input');
 function controlKey(letter) {
@@ -25,7 +31,7 @@ async function pasteText(text) {
   await new Promise(resolve=>setTimeout(resolve,150));
   controlKey('v');
   pasteInput.value='';
-  rfb.focus();
+  focusRemoteKeyboard();
   status.textContent='Connected to application browser';
 }
 document.addEventListener('paste',event=>{
@@ -47,12 +53,16 @@ screen.addEventListener('keydown',event=>{
   pasteInput.focus({preventScroll:true});
 },true);
 async function focusApplication() {
-  if(rfb) rfb.viewOnly = true;
-  if(session) {
-    const response = await fetch('/api/apply/'+encodeURIComponent(session)+'/focus',{method:'POST',headers});
-    if(!response.ok) throw new Error('This application browser session has ended.');
+  if (!focusRequest) {
+    focusRequest = (async () => {
+      const response = await fetch('/api/apply/'+encodeURIComponent(session)+'/focus',{method:'POST',headers});
+      if (!response.ok) throw new Error('This application browser session has ended.');
+    })().finally(() => { focusRequest = null; });
   }
-  if(rfb && !document.hidden) rfb.viewOnly = false;
+  // Never disable RFB while awaiting a screenshot or network response:
+  // doing so drops keystrokes and can leave the viewer read-only on errors.
+  await focusRequest;
+  focusRemoteKeyboard();
 }
 try {
   if(!session) throw new Error('Open the browser from an application page.');
@@ -60,13 +70,13 @@ try {
   const config = await response.json();
   if(!response.ok) throw new Error(config.error || 'Viewer configuration unavailable.');
   const {default:RFB} = await import('/vnc/core/rfb.js');
-  await focusApplication();
   const socket = new URL('/vnc/websockify',location.href);
   socket.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   rfb = new RFB(document.getElementById('screen'),socket.href,{credentials:{password:config.password}});
   rfb.scaleViewport = true;
   rfb.resizeSession = false;
-  rfb.addEventListener('connect',()=>{connected=true;status.textContent='Connected to application browser';});
+  rfb.addEventListener('connect',()=>{connected=true;status.textContent='Connected to application browser';void focusApplication().catch(error=>{status.textContent=error.message;});});
+  screen.addEventListener('pointerdown',()=>{focusRemoteKeyboard();void focusApplication().catch(error=>{status.textContent=error.message;});});
   rfb.addEventListener('disconnect',()=>{connected=false;status.textContent='Browser disconnected. Reopen this viewer to reconnect.';});
   rfb.addEventListener('clipboard',event=>{
     if(copyRequested) {
@@ -76,8 +86,8 @@ try {
   });
   rfb.addEventListener('securityfailure' ,()=>{status.textContent='Browser authentication failed. Check WEB_VNC_PASSWORD and restart the app.';});
   window.addEventListener('focus',()=>{void focusApplication().catch(error=>{status.textContent=error.message;});});
-  window.addEventListener('blur',()=>{rfb.viewOnly=true;});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden) rfb.viewOnly=true; else void focusApplication().catch(error=>{status.textContent=error.message;});});
+  window.addEventListener('blur',()=>{if(rfb)rfb.viewOnly=true;});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) { if(rfb) rfb.viewOnly=true; } else void focusApplication().catch(error=>{status.textContent=error.message;});});
   window.addEventListener('pagehide',()=>rfb.disconnect());
 } catch(error) {status.textContent=error.message || 'Could not connect to application browser.';}
 </script></body></html>
