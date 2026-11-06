@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migrated test fixtures retain runtime assertions.
 import {describe,it,expect} from "vitest";
 import {workdayCredentials,helpWorkdaySignIn} from "../packages/job-sites/workday/workday-login.ts";

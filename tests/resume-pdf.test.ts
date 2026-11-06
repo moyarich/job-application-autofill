@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
