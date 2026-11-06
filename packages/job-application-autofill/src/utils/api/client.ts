@@ -30,6 +30,7 @@ export type StoredState = {
   resumes: ResumeVersion[];
   revision: number;
   profile: CandidateProfile | null;
+  contact: CandidateProfile["contact"] | null;
   jobs: JobApplication[];
 };
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {

@@ -20,8 +20,8 @@ export function CandidateProfile({
       <section className="panel">
         <div className="panel-title horizontal">
           <div>
-            <h2>Personal information</h2>
-            <p>Review and update the details used in your applications.</p>
+            <h2>Shared contact information</h2>
+            <p>These details belong to this person and are used across their resumes. Changes to work history below affect only the selected resume.</p>
           </div>
           <div className="actions">
             <input
@@ -67,7 +67,7 @@ export function CandidateProfile({
           ))}
         </div>
         <label className="wide-label">
-          Professional summary
+          Resume-specific professional summary
           <textarea
             rows={4}
             value={profile.summary}
@@ -96,7 +96,7 @@ export function CandidateProfile({
         </label>
         <section className="employment-editor">
           <div className="panel-title horizontal">
-            <h2>Work experience</h2>
+            <div><h2>Work experience for this resume</h2><p>Titles, dates, and descriptions can differ between resume versions.</p></div>
             <button
               className="secondary"
               onClick={() =>
@@ -224,7 +224,7 @@ export function CandidateProfile({
         <div className={errors.length ? "validation warning" : "validation"}>
           {errors.length
             ? "Please complete: " + errors.join(", ")
-            : "Profile ready to use."}
+            : "Selected resume ready to use."}
         </div>
       </section>
     </>

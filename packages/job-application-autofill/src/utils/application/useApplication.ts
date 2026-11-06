@@ -89,7 +89,7 @@ export function useApplication() {
         if (cancelled) return;
         const value = state.profile
           ? parseCandidateJson(JSON.stringify(state.profile))
-          : structuredClone(emptyCandidate);
+          : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
         setProfile(value);
         setJobs(state.jobs);
         revisionRef.current = state.revision;
@@ -154,7 +154,7 @@ export function useApplication() {
           revisionRef.current = state.revision;
           const nextProfile = state.profile
             ? parseCandidateJson(JSON.stringify(state.profile))
-            : structuredClone(emptyCandidate);
+            : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
           savedRef.current = JSON.stringify({
             profile: nextProfile,
             jobs: state.jobs,
@@ -238,12 +238,21 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
+  // Imported resumes own their content; existing shared identity fields are not overwritten.
+  // Missing shared fields may be filled from the imported document on first use.
+  function mergeImportedContact(incoming: CandidateProfile): CandidateProfile {
+    const contact = { ...incoming.contact };
+    for (const key of Object.keys(contact) as (keyof CandidateProfile["contact"])[]) {
+      if (profile.contact[key]?.trim()) contact[key] = profile.contact[key];
+    }
+    return { ...incoming, contact };
+  }
   async function importProfile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      setProfile(parseCandidateJson(await file.text()));
-      setMessage("Profile imported successfully.");
+      setProfile(mergeImportedContact(parseCandidateJson(await file.text())));
+      setMessage("Resume imported. Existing personal details were kept; missing details were filled from the file.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Invalid JSON profile",
@@ -286,10 +295,10 @@ export function useApplication() {
         preview: string;
         warnings: string[];
       }>("/api/resume/parse", upload, activeProfileId, activeResumeId ?? undefined);
-      setProfile(result.profile);
+      setProfile(mergeImportedContact(result.profile));
       setParsePreview(result.preview);
       setMessage(
-        "Resume parsed. Review and correct extracted information in Candidate profile.",
+        "Resume parsed. Review the selected resume’s details; existing contact information was preserved.",
       );
     } catch (error) {
       setMessage(

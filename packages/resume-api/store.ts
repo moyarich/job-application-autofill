@@ -52,6 +52,10 @@ export function openStore(filePath = process.env.MOYA_DB_PATH || "data/moyaapply
   db.exec(`CREATE TABLE IF NOT EXISTS local_profiles (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS profile_identity (
+ profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE,
+ contact_json TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS profile_state (
  profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE, revision INTEGER NOT NULL DEFAULT 0
 );
@@ -85,6 +89,8 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   const listResumeRows = db.prepare("SELECT id,name,created_at AS createdAt FROM profile_resumes WHERE profile_id=? ORDER BY created_at,id");
   const selectResume = db.prepare("SELECT id,name,json,created_at AS createdAt FROM profile_resumes WHERE id=? AND profile_id=?");
   const getRevision = db.prepare("SELECT revision FROM profile_state WHERE profile_id=?");
+  const getIdentity = db.prepare("SELECT contact_json AS contactJson FROM profile_identity WHERE profile_id=?");
+  const putIdentity = db.prepare("INSERT INTO profile_identity (profile_id,contact_json) VALUES (?,?) ON CONFLICT(profile_id) DO UPDATE SET contact_json=excluded.contact_json");
   const getJobs = db.prepare("SELECT id,company,role,url,status,created_at AS createdAt,notes FROM profile_applications WHERE profile_id=? ORDER BY created_at DESC,id");
   const insertJob = db.prepare("INSERT INTO profile_applications (profile_id,id,company,role,url,status,created_at,notes) VALUES (?,?,?,?,?,?,?,?)");
   const deleteJobs = db.prepare("DELETE FROM profile_applications WHERE profile_id=?");
@@ -181,9 +187,13 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     const selectedId = resumeId ?? resumes[0]?.id;
     if (!selectedId) throw new Error("No resume versions exist for this profile.");
     const selected = requireResume(owner, selectedId);
+    const identity = getIdentity.get(owner) as { contactJson: string } | undefined;
+    const contact = identity ? JSON.parse(identity.contactJson) as Record<string,string> : null;
+    const document = selected.json ? JSON.parse(selected.json) as Record<string,unknown> : null;
     return {
       revision: (getRevision.get(owner) as { revision: number }).revision,
-      profile: selected.json ? JSON.parse(selected.json) : null,
+      contact,
+      profile: document ? { ...document, contact: contact ?? document.contact } : null,
       jobs: getJobs.all(owner) as JobRecord[],
       resumeId: selected.id, resumes,
     };
@@ -210,6 +220,9 @@ CREATE TABLE IF NOT EXISTS profile_applications (
       }
       deleteJobs.run(owner);
       for (const job of jobs) insertJob.run(owner, job.id,job.company,job.role,job.url,job.status,job.createdAt,job.notes);
+      // Contact belongs to the person, while work history and tailored wording belong to each resume.
+      // Keep the complete resume JSON for schema validation/export, but overlay shared contact when reading.
+      if (candidate) putIdentity.run(owner, JSON.stringify(candidate.contact));
       db.prepare("UPDATE profile_resumes SET json=? WHERE profile_id=? AND id=?").run(candidate ? JSON.stringify(candidate) : null, owner, id);
       db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?").run(current + 1, owner);
       db.exec("COMMIT");
