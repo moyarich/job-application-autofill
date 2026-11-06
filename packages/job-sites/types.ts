@@ -5,10 +5,13 @@ export type ContactField = keyof CandidateProfile["contact"] | "fullName";
 export type AutofillResult = { filled: string[]; missing: string[] };
 export type ResumeRetryResult = AutofillResult & { uploaded: boolean };
 export type BrowserSignInSession = { page: Page; loginAttempted?: boolean };
+export type ApplicationStep = "contact" | "employment" | "education" | "skills" | "resume" | "screening";
+export type PageKind = "application" | "registration" | "sign_in" | "challenge" | "external";
+export type PageDetection = { kind: PageKind; url: string };
 
 /**
- * A job-site adapter owns provider-specific selectors, account identity and
- * optional browser behaviors. Shared automation owns session lifecycle.
+ * A provider strategy translates an ATS's pages and controls into common
+ * application operations. The orchestrator owns ordering and safety gates.
  */
 export interface JobSiteAdapter {
   readonly id: string;
@@ -16,10 +19,22 @@ export interface JobSiteAdapter {
   readonly hosts: readonly string[];
   readonly fields: Partial<Record<ContactField, RegExp[]>>;
   employerTenant(url: URL): string | undefined;
-  skipContactField?(page: Page, field: ContactField): Promise<boolean>;
-  fillProfile?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
-  retryResumeUpload?(page: Page, file: string, uploadedUrls: string[]): Promise<ResumeRetryResult>;
+
+  // Page recognition and account capabilities.
+  detectPage?(page: Page, text: string): Promise<PageKind | null>;
   openApplication?(page: Page): Promise<void>;
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
   loginFailureMessage?(text: string): string | null;
+
+  // Form capabilities. Unsupported operations remain visible for manual review.
+  skipContactField?(page: Page, field: ContactField): Promise<boolean>;
+  fillContact?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
+  fillEmployment?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
+  fillEducation?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
+  fillSkills?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
+  retryResumeUpload?(page: Page, file: string, uploadedUrls: string[]): Promise<ResumeRetryResult>;
+
+  // Backwards-compatible grouped provider hook (new integrations should use
+  // the individual employment/education/skills strategies instead).
+  fillProfile?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
 }

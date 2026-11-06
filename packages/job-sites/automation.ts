@@ -3,15 +3,20 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
-import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
+import { fillKnownFields } from "./handlers/contact.ts";
+export { fillKnownFields } from "./handlers/contact.ts";
+import { prepareRegistration } from "./handlers/registration.ts";
+import { prepareSignIn } from "./handlers/sign-in.ts";
+import { detectScreeningQuestions, fillScreeningAnswers } from "./handlers/screening.ts";
+import { automateCurrentStep } from "./core/orchestrator.ts";
+import { detectCurrentPage } from "./core/state-machine.ts";
+import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import {
   adapterForUrl,
   formState,
-  discoverQuestions,
-  fillQuestionAnswers,
 } from "./index.ts";
 import {
   prepareEmployerSignUp,
@@ -77,92 +82,6 @@ export function isSubmissionConfirmed(text: string) {
   return SUCCESS.test(text);
 }
 
-async function fill(page: Page, names: RegExp[], value: string) {
-  if (!value || !String(value).trim()) return false;
-  for (const name of names) {
-    for (const locator of [
-      page.getByLabel(name, { exact: false }),
-      page.getByPlaceholder(name, { exact: false }),
-    ]) {
-      try {
-        const target = locator.first();
-        if (
-          (await target.isVisible({ timeout: 350 })) &&
-          (await target.isEnabled())
-        ) {
-          if (await target.evaluate((element) => element.tagName === "SELECT"))
-            await target.selectOption(
-              { label: String(value) },
-              { timeout: 2500 },
-            );
-          else if (
-            (await target.getAttribute("role")) === "combobox" ||
-            (await target.getAttribute("aria-haspopup")) === "listbox"
-          ) {
-            await target.click({ timeout: 2500 });
-            await target.fill(String(value), { timeout: 1000 }).catch(() => {});
-            await page
-              .getByRole("option", { name: String(value), exact: true })
-              .click({ timeout: 2500 });
-          } else await target.fill(String(value), { timeout: 2500 });
-          return true;
-        }
-      } catch {
-        /* Unsupported or hidden control: manual review required. */
-      }
-    }
-  }
-  return false;
-}
-
-export async function fillKnownFields(page: Page, profile: CandidateProfile) {
-  const fields: Array<
-    [keyof CandidateProfile["contact"] | "fullName", RegExp[]]
-  > = [
-    ["firstName", [/first.?name/i]],
-    ["lastName", [/last.?name/i]],
-    ["email", [/e.?mail/i]],
-    ["phone", [/^phone number\s*\*?$/i, /^mobile(?: number)?\s*\*?$/i]],
-    ["location", [/^location\s*\*?$/i]],
-    ["addressLine1", [/^address line 1\s*\*?$/i, /^street address\s*\*?$/i]],
-    ["addressLine2", [/^address line 2\s*\*?$/i]],
-    ["city", [/^city\s*\*?$/i]],
-    ["state", [/^(?:state|province|state or province)\s*\*?$/i]],
-    ["postalCode", [/^(?:postal code|zip(?: code)?)\s*\*?$/i]],
-    ["country", [/^country\s*\*?$/i]],
-    ["phoneCountryCode", [/^country phone code\s*\*?$/i]],
-    ["phoneType", [/^phone device type\s*\*?$/i]],
-    ["linkedIn", [/linkedin/i]],
-    ["github", [/github/i]],
-    ["website", [/website|portfolio/i]],
-  ];
-  const filled: string[] = [];
-  const missing: string[] = [];
-  const adapter = adapterForUrl(page.url?.() || "");
-  const adapterFields: Partial<Record<string, RegExp[]>> =
-    adapter?.fields ?? {};
-  if (
-    adapterFields.fullName &&
-    profile.contact.firstName &&
-    profile.contact.lastName
-  )
-    fields.push(["fullName", adapterFields.fullName]);
-  for (const [key, locators] of fields) {
-    const value =
-      key === "fullName"
-        ? [profile.contact.firstName, profile.contact.lastName].join(" ")
-        : profile.contact[key];
-    if (!value) continue;
-    if (adapter?.skipContactField && await adapter.skipContactField(page, key))
-      continue;
-    ((await fill(page, adapterFields[key] || locators, value))
-      ? filled
-      : missing
-    ).push(key);
-  }
-  return { filled, missing };
-}
-
 function status(session: ApplicationSession) {
   return {
     id: session.id,
@@ -192,69 +111,26 @@ export function getActiveApplication(
 }
 
 async function populateSession(session: ApplicationSession) {
-  const page = session.page;
-  validateUrl(page.url());
-  const results = await fillKnownFields(page, session.profile);
-  session.filled = results.filled;
-  session.missing = results.missing;
-  const adapter = adapterForUrl(page.url());
-  if (adapter?.fillProfile) {
-    const result = await adapter.fillProfile(page, session.profile);
-    session.filled.push(...result.filled);
-    session.missing.push(...result.missing);
-  } else if (
-    Array.isArray(session.profile.experience) &&
-    session.profile.experience.length
-  ) {
-    session.missing.push(
-      "work experience (" +
-        session.profile.experience.length +
-        " entries; review in employer browser)",
-    );
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) throw new Error("Return to the supported employer application.");
+  const outcome = await automateCurrentStep({
+    page: session.page,
+    profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory,
+    pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile,
+    resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter);
+  if (outcome.detection.kind !== "application") {
+    throw new Error("The employer application is not ready for autofill.");
   }
-
-  if (session.pendingResume?.buffer?.length) {
-    const filename = join(session.directory, session.pendingResume.fileName);
-    await writeFile(filename, session.pendingResume.buffer, { mode: 0o600 });
-    session.resumeFile = filename;
-    try {
-      const fileInput = page.locator('input[type="file"]').first();
-      if (await fileInput.count()) {
-        await fileInput.setInputFiles(filename, { timeout: 3000 });
-        session.filled.push("resume");
-        session.pendingResume = null;
-        session.resumeUploadUrls = [
-          ...(session.resumeUploadUrls || []),
-          page.url(),
-        ];
-      } else {
-        session.missing.push("resume");
-      }
-    } catch {
-      session.missing.push("resume");
-    }
-  }
-
-  if (
-    !session.pendingResume &&
-    session.resumeFile &&
-    adapter?.retryResumeUpload
-  ) {
-    const upload = await adapter.retryResumeUpload(
-      page,
-      session.resumeFile,
-      session.resumeUploadUrls || [],
-    );
-    session.filled.push(...upload.filled);
-    session.missing.push(...upload.missing);
-    if (upload.uploaded) {
-      session.resumeUploadUrls = [
-        ...(session.resumeUploadUrls || []),
-        page.url(),
-      ];
-    }
-  }
-  session.questions = await discoverQuestions(page).catch(() => []);
+  session.filled = outcome.filled;
+  session.missing = outcome.missing;
+  session.pendingResume = outcome.pendingResume;
+  session.resumeFile = outcome.resumeFile;
+  session.resumeUploadUrls = outcome.resumeUploadUrls;
+  session.questions = outcome.questions;
 }
 
 export async function continueApplication(
@@ -277,14 +153,15 @@ export async function continueApplication(
     return status(session);
   }
   const adapter = adapterForUrl(session.page.url());
-  if (adapter?.helpSignIn) await adapter.helpSignIn(session).catch(() => {});
+  if (adapter) await prepareSignIn(adapter, session).catch(() => {});
   const text = (
     await session.page
       .locator("body")
       .innerText()
       .catch(() => "")
   ).slice(0, 20000);
-  const detected = formState(text, session.page.url());
+  const pageDetection = adapter ? await detectCurrentPage(session.page, adapter, new URL(session.url).hostname) : null;
+  const detected = pageDetection?.kind === "challenge" ? "manual_intervention" : pageDetection?.kind === "external" || pageDetection?.kind === "registration" || pageDetection?.kind === "sign_in" ? "login_required" : formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
     const providerError = adapter?.loginFailureMessage?.(text);
@@ -320,7 +197,7 @@ export async function prepareApplicationAccount(
   )
     throw new Error("Account password must contain 12–128 characters.");
   // The destination is compared to the original employer's exact tenant host.
-  const result = await prepareEmployerSignUp(
+  const result = await prepareRegistration(
     session.page,
     session.url,
     company,
@@ -353,12 +230,8 @@ export async function answerApplicationQuestions(
       "Finish sign-in and prepare the application before answering questions.",
     );
   validateUrl(session.page.url());
-  session.questions = await discoverQuestions(session.page);
-  const result = await fillQuestionAnswers(
-    session.page,
-    session.questions,
-    answers,
-  );
+  session.questions = await detectScreeningQuestions(session.page);
+  const result = await fillScreeningAnswers(session.page, answers);
   session.questions = await discoverQuestions(session.page);
   session.message = result.unresolved.length
     ? "Some answers need manual attention in the browser viewer."
@@ -437,7 +310,7 @@ export async function prepareApplication({
     if (adapter?.openApplication)
       await adapter.openApplication(page).catch(() => {});
     if (adapter?.helpSignIn)
-      await adapter.helpSignIn(session).catch(() => {});
+      await prepareSignIn(adapter, session).catch(() => {});
     if (accountSetupRequired && company) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,
