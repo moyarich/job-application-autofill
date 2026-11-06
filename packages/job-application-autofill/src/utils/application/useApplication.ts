@@ -123,6 +123,17 @@ export function useApplication() {
   >({});
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
   useEffect(() => {
+    if (!applicationId || session?.state !== "preparing") return;
+    let cancelled = false;
+    const timer = setInterval(() => {
+      fetch("/api/apply/" + session.id, {headers:{"X-Moya-Client":"dashboard","X-Profile-Id":activeProfileId}})
+        .then(response => {if (!response.ok) throw new Error("Application session is unavailable. Reload to retry."); return response.json();})
+        .then(updated => {if (!cancelled) setSession(updated);})
+        .catch(error => {if (!cancelled) setMessage(String(error));});
+    },1000);
+    return () => {cancelled=true;clearInterval(timer);};
+  },[applicationId,session?.id,session?.state,activeProfileId]);
+  useEffect(() => {
     let cancelled = false;
     if (!applicationId) return;
     fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {

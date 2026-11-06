@@ -9,6 +9,7 @@ export function ApplicationReview({
   const {
     applicationId,
     activeProfileId,
+    activeResumeId,
     jobs,
     session,
     applyBusy,
@@ -24,13 +25,23 @@ export function ApplicationReview({
     <>
       {applicationId && (
         <div className="application-page-heading">
-          <a href="/">← Back to applications</a>
+          <a href={"/applications?profile=" + encodeURIComponent(activeProfileId) + (activeResumeId ? "&resume=" + encodeURIComponent(activeResumeId) : "")}>← Back to applications</a>
           <h2>
             {jobs.find((job) => job.id === applicationId)?.role ||
               "Application"}
           </h2>
           <p>{jobs.find((job) => job.id === applicationId)?.company}</p>
         </div>
+      )}
+      {applicationId && !session && !applyBusy && (
+        <section className="panel">
+          <h3>Start this application</h3>
+          <p>Open the employer form with the selected resume and contact details.</p>
+          <button className="primary" onClick={() => {
+            const job = jobs.find(item => item.id === applicationId);
+            if (job) void controller.prepareJob(job);
+          }}>Open employer application</button>
+        </section>
       )}
       {applicationId && (session || applyBusy) && (
         <div className="application-workspace">
@@ -60,7 +71,7 @@ export function ApplicationReview({
                     </button>
                   </div>
                 )}
-                <EmployerAccountSetup controller={controller} />
+                {session.state !== "preparing" && <EmployerAccountSetup controller={controller} />}
                 {session.state === "submission_unverified" && (
                   <p className="validation warning">
                     Submission was attempted but the employer did not show a
@@ -78,7 +89,7 @@ export function ApplicationReview({
                     <div className="panel-title">
                       <h3>Application questions</h3>
                       <p>
-                        Review these questions and enter your answers. Sensitive questions remain on the employer’s site.
+                        Use Autofill this step after moving to another page in the employer form. Review these questions and enter your answers. Sensitive questions remain on the employer’s site.
                       </p>
                     </div>
                     {(session.questions || [])
@@ -166,7 +177,7 @@ export function ApplicationReview({
                         disabled={applyBusy}
                         onClick={continueAfterChallenge}
                       >
-                        Refresh questions
+                        Autofill this step
                       </button>
                     </div>
                   </div>
