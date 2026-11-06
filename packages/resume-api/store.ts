@@ -204,19 +204,19 @@ CREATE TABLE IF NOT EXISTS applications (
     db.prepare("DELETE FROM profiles WHERE id=?").run(id);
   }
   function listContacts(profileId: string): ProfileContact[] {
-    return listContactRows.all(requireProfile(profileId)) as ProfileContact[];
+    return listContactRows.all(requireProfile(profileId)) as unknown as ProfileContact[];
   }
   function createContact(profileId: string, contact: unknown, label: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     const valid = validateContact(contact);
     const id = addContact(owner,valid,name(label));
-    return selectContact.get(owner,id) as ProfileContact;
+    return selectContact.get(owner,id) as unknown as ProfileContact;
   }
   function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
     updateContact.run(...contactValues(validateContact(contact)),owner,contactId);
-    return selectContact.get(owner,contactId) as ProfileContact;
+    return selectContact.get(owner,contactId) as unknown as ProfileContact;
   }
   function setDefaultContact(profileId: string, contactId: string): ProfileContact {
     const owner = requireProfile(profileId);
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS applications (
       db.prepare("UPDATE profile_contact SET is_default=1 WHERE profile_id=? AND id=?").run(owner,contactId);
       db.exec("COMMIT");
     } catch (error) { db.exec("ROLLBACK"); throw error; }
-    return selectContact.get(owner,contactId) as ProfileContact;
+    return selectContact.get(owner,contactId) as unknown as ProfileContact;
   }
   function resolveImportContact(
     profileId: string,
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS applications (
       !CONTACT_KEYS.includes(key as typeof CONTACT_KEYS[number]) ||
       !["resume","shared","keep"].includes(String(value))))
       throw new Error("Invalid contact import choice.");
-    const current = selectContact.get(owner,resume.contactId) as ProfileContact;
+    const current = selectContact.get(owner,resume.contactId) as unknown as ProfileContact;
     const shared = Object.fromEntries(CONTACT_KEYS.map(key => [key,current[key]])) as CandidateProfile["contact"];
     const tailored = {...shared};
     let hasResumeDifference = false;
