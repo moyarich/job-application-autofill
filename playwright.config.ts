@@ -29,7 +29,7 @@ process.env.PLAYWRIGHT_PORT = String(port);
 const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
-  testDir: ".",
+  testDir: "./tests",
   testMatch: "**/*.spec.{ts,tsx,js,jsx}",
   testIgnore: ["**/node_modules/**", "**/dist/**"],
   forbidOnly: Boolean(process.env.CI),

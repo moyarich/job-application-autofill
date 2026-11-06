@@ -6,7 +6,7 @@ on:
       - "packages/job-application-autofill/public/application-viewer.html"
       - "packages/job-application-autofill/src/**"
       - "packages/job-application-autofill/vite.app.config.ts"
-      - "tests/application-pages.spec.ts"
+      - "tests/viewer/**"
       - "playwright.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -17,7 +17,7 @@ on:
       - "packages/job-application-autofill/public/application-viewer.html"
       - "packages/job-application-autofill/src/**"
       - "packages/job-application-autofill/vite.app.config.ts"
-      - "tests/application-pages.spec.ts"
+      - "tests/viewer/**"
       - "playwright.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -43,4 +43,4 @@ jobs:
       - name: Install browser
         run: npx --no-install playwright install --with-deps chromium
       - name: Viewer and application-page regression tests
-        run: npx --no-install playwright test tests/application-pages.spec.ts
+        run: npx --no-install playwright test tests/viewer
