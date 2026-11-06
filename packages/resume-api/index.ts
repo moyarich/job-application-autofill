@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume/src/resume-schema/validate.ts";
 import { renderResumePdf } from "../resume/src/resume-schema/create-pdf.ts";
-import { openStore } from "./store.ts";
+import { openStore, DEFAULT_PROFILE_ID } from "./store.ts";
 import { decodePdfAttachment } from "../resume/src/resume-schema/attachment.ts";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "../job-sites/automation.ts";
 
@@ -45,11 +45,47 @@ const server = createServer(async (req, res) => {
       if (!process.env.WEB_VNC_PASSWORD) throw new Error("WEB_VNC_PASSWORD is not configured.");
       return send(res, 200, { password: process.env.WEB_VNC_PASSWORD });
     }
+    const profileIdHeader = req.headers["x-profile-id"];
+    if (Array.isArray(profileIdHeader)) throw new Error("Multiple profile IDs are not allowed.");
+    const profileId = profileIdHeader ?? DEFAULT_PROFILE_ID;
+    const resumeIdHeader = req.headers["x-resume-id"];
+    if (Array.isArray(resumeIdHeader)) throw new Error("Multiple resume IDs are not allowed.");
+    if (req.method === "GET" && url.pathname === "/api/profiles")
+      return send(res, 200, { profiles: store.listProfiles(), defaultProfileId: DEFAULT_PROFILE_ID });
+    if (req.method === "POST" && url.pathname === "/api/profiles") {
+      const payload = record(await readJson(req));
+      return send(res, 201, store.createProfile(payload.name));
+    }
+    const profileRoute = url.pathname.match(/^\/api\/profiles\/([0-9a-f-]{36})$/i);
+    if (profileRoute && req.method === "PATCH") {
+      const payload = record(await readJson(req));
+      return send(res, 200, store.renameProfile(profileRoute[1], payload.name));
+    }
+    if (profileRoute && req.method === "DELETE") {
+      store.deleteProfile(profileRoute[1]);
+      return send(res, 200, { deleted: true });
+    }
+    if (req.method === "GET" && url.pathname === "/api/resumes")
+      return send(res, 200, { resumes: store.listResumes(profileId) });
+    if (req.method === "POST" && url.pathname === "/api/resumes") {
+      const payload = record(await readJson(req));
+      if (payload.copyId != null && typeof payload.copyId !== "string") throw new Error("Invalid source resume ID.");
+      return send(res, 201, store.createResume(profileId, payload.name, payload.copyId as string | undefined));
+    }
+    const resumeRoute = url.pathname.match(/^\/api\/resumes\/([0-9a-f-]{36})$/i);
+    if (resumeRoute && req.method === "PATCH") {
+      const payload = record(await readJson(req));
+      return send(res, 200, store.renameResume(profileId, resumeRoute[1], payload.name));
+    }
+    if (resumeRoute && req.method === "DELETE") {
+      store.deleteResume(profileId, resumeRoute[1]);
+      return send(res, 200, { deleted: true });
+    }
     if (req.method === "GET" && url.pathname === "/api/state")
-      return send(res, 200, store.getSnapshot());
+      return send(res, 200, store.getSnapshot(profileId, resumeIdHeader));
     if (req.method === "PUT" && url.pathname === "/api/state") {
       const payload = await readJson(req);
-      try { return send(res, 200, store.saveSnapshot(payload)); }
+      try { return send(res, 200, store.saveSnapshot(payload, profileId, resumeIdHeader)); }
       catch (error) {
         if (error instanceof Error && "code" in error && error.code === "STALE_STATE") return send(res, 409, { error: error.message });
         throw error;
@@ -59,10 +95,10 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && jobStatus) {
       const { status } = record(await readJson(req));
       if (typeof status !== "string") throw new Error("Application status must be a string.");
-      const snapshot = store.getSnapshot();
+      const snapshot = store.getSnapshot(profileId);
       if (!snapshot.jobs.some(job => job.id === jobStatus[1])) throw new Error("Application not found.");
       snapshot.jobs = snapshot.jobs.map(job => job.id === jobStatus[1] ? {...job, status} : job);
-      return send(res, 200, store.saveSnapshot(snapshot));
+      return send(res, 200, store.saveSnapshot(snapshot, profileId, resumeIdHeader));
     }
     if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
       const profile = validateResume(await readJson(req));
@@ -80,23 +116,26 @@ const server = createServer(async (req, res) => {
         preview: text, warnings: ["Review parsed fields before applying."] });
     }
     if (req.method === "GET" && url.pathname === "/api/apply/active")
-      return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId")) });
+      return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId"), profileId) });
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
       const payload = record(await readJson(req));
+      const savedJob = store.getSnapshot(profileId, resumeIdHeader).jobs.find(job => job.id === payload.jobId);
+      if (!savedJob || savedJob.url !== payload.jobUrl) throw new Error("Application does not belong to the selected profile.");
       const profile = validateResume(payload.profile);
       const contact = profile.contact;
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
-        return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
+        return send(res, 400, { error: "Complete first name, last name and valid email in the resume JSON." });
       if (!payload.resume) return send(res, 400, { error: "A PDF resume attachment is required alongside the structured resume JSON." });
       const attachment = record(payload.resume);
       if (typeof attachment.fileName !== "string" || typeof attachment.base64 !== "string") throw new Error("Invalid resume attachment.");
       const resume = decodePdfAttachment({ fileName: attachment.fileName, base64: attachment.base64 });
       if (typeof payload.jobUrl !== "string" || typeof payload.jobId !== "string") throw new Error("Invalid application identifiers.");
-      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
+      return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profileId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|focus))?$/);
     if (match) {
       const [, id, action] = match;
+      if (getApplication(id).profileId !== profileId) throw new Error("Application session belongs to another local profile.");
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
       if (req.method === "POST" && action === "answers") {
         const payload = record(await readJson(req));

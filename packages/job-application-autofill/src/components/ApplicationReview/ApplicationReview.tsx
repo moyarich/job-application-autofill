@@ -7,6 +7,7 @@ export function ApplicationReview({
 }) {
   const {
     applicationId,
+    activeProfileId,
     jobs,
     session,
     applyBusy,
@@ -176,7 +177,7 @@ export function ApplicationReview({
                       <strong>Live employer application</strong>
                       <a
                         className="browser-open"
-                        href={"/application-viewer.html?session=" + session.id}
+                        href={"/application-viewer.html?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setReviewed(false)}

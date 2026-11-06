@@ -18,7 +18,7 @@ describe("SQLite application data persistence", () => {
       db.saveSnapshot({revision:0,profile:example,jobs:[job]});
       expect(()=>db.saveSnapshot({revision:1,profile:example,jobs:[{...job,status:"invalid"}]})).toThrow(/status/);
       expect(()=>db.saveSnapshot({revision:1,profile:{bad:true},jobs:[]})).toThrow();
-      expect(db.getSnapshot()).toEqual({revision:1,profile:example,jobs:[job]});
+      expect(db.getSnapshot()).toMatchObject({revision:1,profile:example,jobs:[job]});
     } finally { db.close(); }
   });
   

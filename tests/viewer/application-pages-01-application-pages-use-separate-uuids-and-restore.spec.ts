@@ -6,10 +6,13 @@ test("application pages use separate UUIDs and restore only their own session", 
   const profile = JSON.parse(readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"));
   const jobs = [createApplication("Example A", "Engineer A", "https://jobs.lever.co/example/a"), createApplication("Example B", "Engineer B", "https://boards.greenhouse.io/example/jobs/123")];
   const sessions = new Map<string, object>();
+  const personId = "00000000-0000-4000-8000-000000000001";
+  const resumeId = "00000000-0000-4000-8000-000000000002";
   await context.route(url => url.pathname.startsWith("/api/"), async route => {
     const request = route.request(); const url = new URL(request.url());
     let body: unknown = {};
-    if (url.pathname === "/api/state") body = {revision: 1, profile, jobs};
+    if (url.pathname === "/api/profiles") body = {profiles:[{id: personId,name:"Default profile",createdAt:"2026-11-06T00:00:00Z"}],defaultProfileId:personId};
+    else if (url.pathname === "/api/state") body = {revision: 1, profile, jobs, resumeId, resumes:[{id:resumeId,name:"Primary résumé",createdAt:"2026-11-06T00:00:00Z"}]};
     else if (url.pathname === "/api/apply/active") body = {session: sessions.get(url.searchParams.get("jobId") || "") || null};
     else if (url.pathname === "/api/resume/pdf") body = {base64: Buffer.from("%PDF-1.4 test fixture").toString("base64")};
     else if (url.pathname === "/api/apply/prepare") {
