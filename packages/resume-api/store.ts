@@ -211,12 +211,14 @@ CREATE TABLE IF NOT EXISTS applications (
     const id = addContact(owner,valid,name(label),!getDefaultContact.get(owner));
     return selectContact.get(owner,id) as unknown as ProfileContact;
   }
-  function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
+  function updateContactRecord(profileId: string, contactId: string, contact: unknown, label?: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
     const valid = validateContact(contact);
     if (!isUsableContact(valid)) throw new Error("Contact requires first name, last name, and a valid email.");
     updateContact.run(...contactValues(valid),owner,contactId);
+    if (label !== undefined)
+      db.prepare("UPDATE profile_contact SET name=? WHERE profile_id=? AND id=?").run(name(label),owner,contactId);
     return selectContact.get(owner,contactId) as unknown as ProfileContact;
   }
   function deleteContactRecord(profileId: string, contactId: string) {
