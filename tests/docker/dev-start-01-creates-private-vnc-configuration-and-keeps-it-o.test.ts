@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { makePassword, parsePassword, setupEnv } from "../../docker/dev.ts";
+import { parsePassword, setupEnv } from "../../docker/dev.ts";
 
 describe("full development stack startup", () => {
   it("creates private VNC configuration and keeps it on subsequent runs", () => {

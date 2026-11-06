@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createApplication, emptyCandidate, parseCandidateJson, statuses, validateCandidate,
-} from "../../packages/job-application-autofill/src/index";
+import { emptyCandidate, parseCandidateJson } from "../../packages/job-application-autofill/src/index";
 
 describe("candidate profile", () => {
   

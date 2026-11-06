@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, statSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { makePassword, parsePassword, setupEnv } from "../../docker/dev.ts";
+import { setupEnv } from "../../docker/dev.ts";
 
 describe("full development stack startup", () => {
   
