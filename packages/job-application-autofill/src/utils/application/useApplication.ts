@@ -60,6 +60,11 @@ export function useApplication() {
     setContacts(previous => previous.map(item => item.id === contactId ? {...item,[key]:value} : item));
   }
   function chooseContact(id: string) {
+    if (!id) {
+      setContactId(null);
+      setMessage("Contact unlinked. This resume remains editable as a draft.");
+      return;
+    }
     const selected = contacts.find(item => item.id === id);
     if (!selected) return;
     setContactId(id);
@@ -713,6 +718,7 @@ export function useApplication() {
     profiles, activeProfileId, resumeVersions, activeResumeId,
     switchProfile, switchResume, createPerson, renamePerson, removePerson,
     createResume, renameResume, removeResume,
+    flushPending,
     applicationId,
     activeLoaded,
     setActiveLoaded,
