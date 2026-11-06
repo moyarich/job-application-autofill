@@ -7,7 +7,7 @@ describe("job-application-autofill application naming", () => {
     expect(source("packages/job-application-autofill/index.html")).toContain("<title>job-application-autofill");
     expect(source("packages/job-application-autofill/src/components/Sidebar/Sidebar.tsx")).toContain("job-application-");
     expect(source("packages/job-application-autofill/src/components/Sidebar/Sidebar.tsx")).toContain(">autofill</span>");
-    expect(source("scripts/dev.mjs")).toContain("Starting job-application-autofill");
+    expect(source("docker/dev.ts")).toContain("Starting job-application-autofill");
     expect(source("packages/resume-api/index.mjs")).toContain("job-application-autofill local API");
   });
   it("keeps npm package and lockfile root names synchronized", () => {
@@ -32,7 +32,7 @@ describe("job-application-autofill application naming", () => {
       "apps/playground/index.html",
       "apps/playground/src/main.tsx",
       "packages/resume-api/index.mjs",
-      "scripts/dev.mjs",
+      "docker/dev.ts",
       "packages/resume/README.md",
       "packages/job-application-autofill/README.md",
       "packages/resume/src/resume-schema/README.md",
