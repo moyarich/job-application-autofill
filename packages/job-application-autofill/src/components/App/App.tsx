@@ -58,6 +58,7 @@ export function App() {
         ) : tab === "parser" ? (
           <ResumeParser controller={controller} />
         ) : tab === "workspace" ? (
+          <>
           <section className="panel workspace-management">
             <div className="panel-title">
               <h2>Manage profiles and resumes</h2>
@@ -66,6 +67,7 @@ export function App() {
             <LocalProfiles controller={controller} />
           </section>
           <ContactManager controller={controller} />
+          </>
         ) : (
           <CandidateProfile controller={controller} />
         )}
