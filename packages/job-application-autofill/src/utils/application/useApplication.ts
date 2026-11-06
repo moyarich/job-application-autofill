@@ -135,7 +135,7 @@ export function useApplication() {
         setDefaultContactId(state.defaultContactId);
         setJobs(state.jobs);
         revisionRef.current = state.revision;
-        savedRef.current = JSON.stringify({ profile: value, contactId: state.contactId, jobs: state.jobs });
+        savedRef.current = JSON.stringify({ profile: value, contact: value.contact, contactId: state.contactId, jobs: state.jobs });
         setHydrated(true);
       })
       .catch((error) => {
@@ -190,7 +190,7 @@ export function useApplication() {
   useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
-      if (JSON.stringify({ profile, contactId, jobs }) !== savedRef.current) return;
+      if (JSON.stringify({ profile, contact: profile.contact, contactId, jobs }) !== savedRef.current) return;
       void readState(activeProfileId, activeResumeId ?? undefined)
         .then((state) => {
           revisionRef.current = state.revision;
@@ -199,6 +199,7 @@ export function useApplication() {
             : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
           savedRef.current = JSON.stringify({
             profile: nextProfile,
+            contact: nextProfile.contact,
             contactId: state.contactId,
             jobs: state.jobs,
           });
