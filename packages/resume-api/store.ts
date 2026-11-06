@@ -41,11 +41,6 @@ export function openStore(filePath = process.env.MOYA_DB_PATH || "data/moyaapply
   const db = new DatabaseSync(path);
   if (path !== ":memory:") { try { chmodSync(path, 0o600); } catch { /* Filesystems differ. */ } }
   db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON;");
-  const tableExists = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?");
-  if (["resume_profile","applications","app_meta"].some(table => tableExists.get(table))) {
-    db.close();
-    throw new Error("Legacy SQLite schema is unsupported. Back up the existing database and start with a new empty database.");
-  }
   db.exec(`CREATE TABLE IF NOT EXISTS local_profiles (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
 );
