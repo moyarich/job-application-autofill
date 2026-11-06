@@ -11,9 +11,15 @@ export async function helpWorkdaySignUp(
   env: NodeJS.ProcessEnv = process.env,
   { openCreateAccount = false }: { openCreateAccount?: boolean } = {},
 ): Promise<WorkdaySignUpResult> {
+  const emailAddress =
+    env.WORKDAY_USERNAME || env.WORKDAY_USER_EMAIL || env.RESUME_SITE_EMAIL;
   const allowed = () => {
     const url = new URL(page.url());
-    const host = (env.RESUME_SITE_HOST || "workday.wd5.myworkdayjobs.com")
+    const host = (
+      env.WORKDAY_HOST ||
+      env.RESUME_SITE_HOST ||
+      "workday.wd5.myworkdayjobs.com"
+    )
       .trim()
       .toLowerCase();
     return (
@@ -24,7 +30,8 @@ export async function helpWorkdaySignUp(
       !url.password
     );
   };
-  if (!env.RESUME_SITE_EMAIL || !allowed()) return { state: "unavailable", emailFilled: false };
+  if (!emailAddress || !allowed())
+    return { state: "unavailable", emailFilled: false };
   const heading = page
     .getByRole("heading", { name: /^create (?:an? )?account$/i })
     .first();
@@ -42,8 +49,8 @@ export async function helpWorkdaySignUp(
     return { state: "not_sign_up", emailFilled: false };
   const email = page.getByLabel(/email(?: address)?/i).first();
   let emailFilled = false;
-  if (env.RESUME_SITE_EMAIL && (await email.isVisible().catch(() => false))) {
-    await email.fill(env.RESUME_SITE_EMAIL);
+  if (emailAddress && (await email.isVisible().catch(() => false))) {
+    await email.fill(emailAddress);
     emailFilled = true;
   }
   return { state: "manual_required", emailFilled };
