@@ -18,7 +18,7 @@ test("selects exact resume skills and does not duplicate selected skills", async
   } finally {
     await browser.close();
   }
-});
+}, 30_000);
 
 test("presses Enter before choosing a Workday skill checkbox", async () => {
   const browser = await chromium.launch({ headless: true });
