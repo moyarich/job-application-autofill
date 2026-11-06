@@ -1,8 +1,5 @@
 import { extractEmploymentHistory } from "./experience.js";
-import {
-  getPdfPython,
-  resumePackageDir,
-} from "./python-runtime.js";
+import { getPdfPython, resumePackageDir } from "./python-runtime.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -208,12 +205,16 @@ const sectionNames = {
   education: /^(?:education|academic background)$/i,
   certifications:
     /^(?:certification|certifications|licenses and certifications)$/i,
+  projects: /^projects$/i,
+  languages: /^languages$/i,
+  awards: /^awards$/i,
   other:
-    /^(?:projects|languages|awards|community leadership(?: and technical writing)?|technical writing|creative technology and design|design portfolio)$/i,
+    /^(?:community leadership(?: and technical writing)?|technical writing|creative technology and design|design portfolio)$/i,
 };
 function resumeSections(lines: string[]) {
   const sections: Record<string, string[]> = {};
   let current = "";
+  const additionalSections: { heading: string; content: string }[] = [];
   for (const line of lines) {
     const heading = line.replace(/[:：]$/, "");
     const kind = Object.keys(sectionNames).find((key) =>
@@ -221,10 +222,20 @@ function resumeSections(lines: string[]) {
     );
     if (kind) {
       current = kind;
+      if (kind === "other") {
+        current = "extra" + additionalSections.length;
+        additionalSections.push({ heading, content: "" });
+      }
       sections[current] ??= [];
     } else if (current) sections[current].push(line);
   }
-  return sections;
+  return {
+    sections,
+    additionalSections: additionalSections.map((entry, i) => ({
+      ...entry,
+      content: (sections["extra" + i] || []).join("\n"),
+    })),
+  };
 }
 function extractEducation(lines: string[] = []) {
   if (!lines.length) return [];
@@ -269,6 +280,16 @@ export function extractProfile(text: string) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+  const contactText = lines
+    .slice(
+      0,
+      lines.findIndex((line) =>
+        Object.values(sectionNames).some((pattern) =>
+          pattern.test(line.replace(/[:：]$/, "")),
+        ),
+      ) >>> 0,
+    )
+    .join("\n");
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
   const phone = text.match(/(?:\+?\d[\d\s.()-]{8,}\d)/)?.[0]?.trim() || "";
   const linkedIn =
@@ -277,8 +298,9 @@ export function extractProfile(text: string) {
   const github =
     text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/i)?.[0] || "";
   const website =
-    text.match(/https?:\/\/(?!www\.(?:linkedin|github)\.com)[^\s)]+/i)?.[0] ||
-    "";
+    contactText.match(
+      /https?:\/\/(?!www\.(?:linkedin|github)\.com)[^\s)]+/i,
+    )?.[0] || "";
   const heading =
     lines.find(
       (line) =>
@@ -289,7 +311,13 @@ export function extractProfile(text: string) {
         !/resume|experience|skills|education|summary|curriculum/i.test(line),
     ) || "";
   const parts = heading.split(/\s+/).filter(Boolean);
-  const sections = resumeSections(lines);
+  const { sections, additionalSections } = resumeSections(lines);
+  const skillGroups: { heading: string; content: string }[] = [];
+  for (const line of sections.skills || []) {
+    const match = line.match(/^([^:]+):\s*(.*)$/);
+    if (match) skillGroups.push({ heading: match[1], content: match[2] });
+    else if (skillGroups.length) skillGroups.at(-1)!.content += " " + line;
+  }
   const skills = skillWords.filter((word) =>
     new RegExp(
       "(^|[^a-z0-9])" +
@@ -319,6 +347,8 @@ export function extractProfile(text: string) {
       github,
       website,
     },
+    additionalSections,
+    skillGroups,
     summary: (sections.summary || []).join(" "),
     experience: extractEmploymentHistory(text),
     skills: parsedSkills,
@@ -332,8 +362,8 @@ export function extractProfile(text: string) {
       credentialId: "",
       url: "",
     })),
-    languages: [],
-    awards: [],
+    languages: sections.languages || [],
+    awards: sections.awards || [],
     source: { fileName: "" },
   };
 }

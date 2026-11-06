@@ -13,6 +13,8 @@ export interface EmploymentEntry {
 }
 
 export interface CandidateProfile {
+  additionalSections?: { heading: string; content: string }[];
+  skillGroups?: { heading: string; content: string }[];
   contact: { firstName: string; lastName: string; email: string; phone: string; location: string; linkedIn: string; github: string; website: string };
   summary: string;
   experience: EmploymentEntry[];

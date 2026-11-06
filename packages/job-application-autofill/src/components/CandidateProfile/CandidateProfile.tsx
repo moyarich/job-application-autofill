@@ -101,6 +101,7 @@ export function CandidateProfile({
             onChange={(e) =>
               setProfile((x) => ({
                 ...x,
+                skillGroups: [],
                 skills: e.target.value
                   .split(",")
                   .map((v) => v.trim())
