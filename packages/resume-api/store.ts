@@ -7,6 +7,14 @@ import { validateResume } from "../resume/src/resume-schema/validate.ts";
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export type LocalProfile = { id: string; name: string; createdAt: string };
 export type ResumeVersion = { id: string; name: string; createdAt: string };
+export type EmployerAccount = {
+  provider: string;
+  employerKey: string;
+  employerName: string;
+  host: string;
+  status: "setup_required" | "ready";
+  updatedAt: string;
+};
 type JobRecord = { id: string; company: string; role: string; url: string; status: string; createdAt: string; notes: string };
 const statuses = new Set(["saved","in_progress","ready_for_review","submitted","interview","rejected"]);
 const validId = (id: string) => {
@@ -52,6 +60,16 @@ CREATE TABLE IF NOT EXISTS profile_resumes (
  name TEXT NOT NULL, json TEXT, created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS profile_resumes_owner ON profile_resumes(profile_id,created_at,id);
+CREATE TABLE IF NOT EXISTS employer_accounts (
+ profile_id TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+ provider TEXT NOT NULL,
+ employer_key TEXT NOT NULL,
+ employer_name TEXT NOT NULL,
+ host TEXT NOT NULL,
+ status TEXT NOT NULL CHECK (status IN ('setup_required','ready')),
+ updated_at TEXT NOT NULL,
+ PRIMARY KEY (profile_id, provider, employer_key)
+);
 CREATE TABLE IF NOT EXISTS profile_applications (
  profile_id TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
  id TEXT NOT NULL, company TEXT NOT NULL, role TEXT NOT NULL, url TEXT NOT NULL,
@@ -135,6 +153,28 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     if (listResumes(owner).length <= 1) throw new Error("Keep at least one resume version per local profile.");
     db.prepare("DELETE FROM profile_resumes WHERE id=? AND profile_id=?").run(resumeId, owner);
   }
+  const getEmployerAccount = db.prepare("SELECT provider,employer_key AS employerKey,employer_name AS employerName,host,status,updated_at AS updatedAt FROM employer_accounts WHERE profile_id=? AND provider=? AND employer_key=?");
+  const listEmployerAccounts = db.prepare("SELECT provider,employer_key AS employerKey,employer_name AS employerName,host,status,updated_at AS updatedAt FROM employer_accounts WHERE profile_id=? ORDER BY employer_name,provider,employer_key");
+  const insertEmployerAccount = db.prepare("INSERT INTO employer_accounts (profile_id,provider,employer_key,employer_name,host,status,updated_at) VALUES (?,?,?,?,?,'setup_required',?) ON CONFLICT(profile_id,provider,employer_key) DO UPDATE SET employer_name=excluded.employer_name");
+  const updateEmployerAccount = db.prepare("UPDATE employer_accounts SET status=?,updated_at=? WHERE profile_id=? AND provider=? AND employer_key=?");
+  function getOrCreateEmployerAccount(profileId: string, identity: { provider: string; employerKey: string; employerName: string; host: string }): EmployerAccount {
+    const owner = requireProfile(profileId);
+    if (!/^[a-z-]+$/.test(identity.provider) || !identity.employerKey || identity.employerKey.length > 250 ||
+        !identity.employerName?.trim() || identity.employerName.length > 200 || !identity.host)
+      throw new Error("Invalid employer account details.");
+    insertEmployerAccount.run(owner,identity.provider,identity.employerKey,identity.employerName,identity.host,now());
+    return getEmployerAccount.get(owner,identity.provider,identity.employerKey) as EmployerAccount;
+  }
+  function listAccounts(profileId: string): EmployerAccount[] {
+    return listEmployerAccounts.all(requireProfile(profileId)) as EmployerAccount[];
+  }
+  function setEmployerAccountStatus(profileId: string, provider: string, employerKey: string, status: "setup_required" | "ready"): EmployerAccount {
+    const owner = requireProfile(profileId);
+    if (!["setup_required","ready"].includes(status)) throw new Error("Invalid employer account status.");
+    if (!(getEmployerAccount.get(owner,provider,employerKey))) throw new Error("Employer account not found.");
+    updateEmployerAccount.run(status,now(),owner,provider,employerKey);
+    return getEmployerAccount.get(owner,provider,employerKey) as EmployerAccount;
+  }
   function getSnapshot(profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
     const owner = requireProfile(profileId);
     const resumes = listResumes(owner);
@@ -176,5 +216,5 @@ CREATE TABLE IF NOT EXISTS profile_applications (
       return { revision: current + 1 };
     } catch (error) { db.exec("ROLLBACK"); throw error; }
   }
-  return { listProfiles, createProfile, renameProfile, deleteProfile, listResumes, createResume, renameResume, deleteResume, getSnapshot, saveSnapshot, close: () => db.close() };
+  return { listProfiles, createProfile, renameProfile, deleteProfile, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
 }
