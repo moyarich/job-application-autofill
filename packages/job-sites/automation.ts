@@ -17,9 +17,11 @@ import {
   discoverQuestions,
   fillQuestionAnswers,
 } from "./index.ts";
-import { fillWorkdayEducation } from "./workday/education.ts";
-import { fillWorkdaySkills } from "./workday/skills.ts";
-import { fillWorkdayExperience } from "./workday/experience.ts";
+import {
+  fillWorkdayProfile,
+  retryWorkdayResumeUpload,
+  skipWorkdayLocation,
+} from "./workday/autofill.ts";
 import {
   prepareEmployerSignUp,
   type AccountSetupResult,
@@ -161,14 +163,7 @@ export async function fillKnownFields(page: Page, profile: CandidateProfile) {
         ? [profile.contact.firstName, profile.contact.lastName].join(" ")
         : profile.contact[key];
     if (!value) continue;
-    if (
-      key === "location" &&
-      (await page
-        .getByText(/^Work Experience$/i, { exact: true })
-        .first()
-        .isVisible()
-        .catch(() => false))
-    )
+    if (key === "location" && adapter?.id === "workday" && await skipWorkdayLocation(page))
       continue;
     ((await fill(page, adapterFields[key] || locators, value))
       ? filled
@@ -212,36 +207,19 @@ async function populateSession(session: ApplicationSession) {
   const results = await fillKnownFields(page, session.profile);
   session.filled = results.filled;
   session.missing = results.missing;
-  if (
+  if (adapterForUrl(page.url())?.id === "workday") {
+    const workday = await fillWorkdayProfile(page, session.profile);
+    session.filled.push(...workday.filled);
+    session.missing.push(...workday.missing);
+  } else if (
     Array.isArray(session.profile.experience) &&
     session.profile.experience.length
   ) {
-    if (adapterForUrl(page.url())?.id === "workday") {
-      const work = await fillWorkdayExperience(
-        page,
-        session.profile.experience,
-      );
-      session.filled.push(...work.filled);
-      session.missing.push(...work.unresolved);
-    } else {
-      session.missing.push(
-        "work experience (" +
-          session.profile.experience.length +
-          " entries; review in employer browser)",
-      );
-    }
-  }
-
-  if (adapterForUrl(page.url())?.id === "workday") {
-    const education = await fillWorkdayEducation(
-      page,
-      session.profile.education || [],
+    session.missing.push(
+      "work experience (" +
+        session.profile.experience.length +
+        " entries; review in employer browser)",
     );
-    session.filled.push(...education.filled);
-    session.missing.push(...education.unresolved);
-    const skills = await fillWorkdaySkills(page, session.profile.skills || []);
-    session.filled.push(...skills.filled);
-    session.missing.push(...skills.unresolved);
   }
 
   if (session.pendingResume?.buffer?.length) {
@@ -269,26 +247,20 @@ async function populateSession(session: ApplicationSession) {
   if (
     !session.pendingResume &&
     session.resumeFile &&
-    !session.resumeUploadUrls?.includes(page.url()) &&
     adapterForUrl(page.url())?.id === "workday"
   ) {
-    const upload = page.locator('input[type="file"]').first();
-    if (
-      (await upload.count()) &&
-      !(await upload.evaluate(
-        (node) => (node as HTMLInputElement).files?.length,
-      ))
-    ) {
-      await upload
-        .setInputFiles(session.resumeFile, { timeout: 3000 })
-        .then(() => {
-          session.filled.push("resume");
-          session.resumeUploadUrls = [
-            ...(session.resumeUploadUrls || []),
-            page.url(),
-          ];
-        })
-        .catch(() => session.missing.push("resume attachment"));
+    const upload = await retryWorkdayResumeUpload(
+      page,
+      session.resumeFile,
+      session.resumeUploadUrls || [],
+    );
+    session.filled.push(...upload.filled);
+    session.missing.push(...upload.missing);
+    if (upload.uploaded) {
+      session.resumeUploadUrls = [
+        ...(session.resumeUploadUrls || []),
+        page.url(),
+      ];
     }
   }
   session.questions = await discoverQuestions(page).catch(() => []);
