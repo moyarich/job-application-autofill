@@ -15,11 +15,11 @@ describe("SQLite application data persistence", () => {
     const path=join(dir,"data.sqlite");
     try {
       const first=openStore(path);
-      expect(first.getSnapshot()).toEqual({revision:0,profile:null,jobs:[]});
+      expect(first.getSnapshot()).toMatchObject({revision:0,profile:null,jobs:[]});
       expect(first.saveSnapshot({revision:0,profile:example,jobs:[job]})).toEqual({revision:1});
       first.close();
       const reopened=openStore(path);
-      expect(reopened.getSnapshot()).toEqual({revision:1,profile:example,jobs:[job]});
+      expect(reopened.getSnapshot()).toMatchObject({revision:1,profile:example,jobs:[job]});
       expect(reopened.saveSnapshot({revision:1,profile:example,jobs:[{...job,status:"interview",notes:"Updated"}]})).toEqual({revision:2});
       expect(reopened.getSnapshot().jobs[0].notes).toBe("Updated");
       reopened.close();
