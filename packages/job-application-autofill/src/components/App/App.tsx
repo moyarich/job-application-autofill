@@ -8,6 +8,7 @@ import { Opportunities } from "../Opportunities/Opportunities";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
+import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -24,7 +25,7 @@ export function App() {
     );
   return (
     <div className={applicationId ? "app application-page" : "app"}>
-      <Sidebar controller={controller} />
+      <Sidebar />
       <main className="main">
         <WorkspaceHeader controller={controller} />
         {message && (
@@ -55,6 +56,14 @@ export function App() {
           </>
         ) : tab === "parser" ? (
           <ResumeParser controller={controller} />
+        ) : tab === "workspace" ? (
+          <section className="panel workspace-management">
+            <div className="panel-title">
+              <h2>Manage profiles and resumes</h2>
+              <p>Switch between profiles, create resume versions, and manage saved records.</p>
+            </div>
+            <LocalProfiles controller={controller} />
+          </section>
         ) : (
           <CandidateProfile controller={controller} />
         )}

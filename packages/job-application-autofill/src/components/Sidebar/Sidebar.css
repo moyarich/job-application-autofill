@@ -9,7 +9,8 @@
 .sidebar-navigation { display: flex; flex-direction: column; gap: 5px; }
 .nav-label { padding: 0 12px; margin: 0 0 9px; color: #8fa1c0; text-transform: uppercase; font-size: 10px; font-weight: 750; letter-spacing: .12em; }
 .sidebar .nav { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 11px 13px; color: #bac7dc; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 11px; font-size: 13px; font-weight: 550; transition: background .15s,color .15s; }
-.sidebar .nav:hover { color: #fff; background: #22334f; }
+.sidebar .nav:hover { color: #fff; background: #22334f; text-decoration: none; }
+.sidebar .nav:focus-visible { outline: 2px solid #a7b9fc; outline-offset: 2px; }
 .sidebar .nav.active { color: #fff; border-color: #415679; background: #2c4063; font-weight: 670; box-shadow: inset 3px 0 #a5b9ff; }
 .sidebar :is(button,select):focus-visible { outline: 2px solid #a7b9fc; outline-offset: 2px; }
 .sidebar-bottom { display: flex; align-items: center; gap: 9px; margin-top: auto; padding: 18px 10px 2px; border-top: 1px solid #2c3b55; font-size: 11px; color: #9fafd0; line-height: 1.5; }

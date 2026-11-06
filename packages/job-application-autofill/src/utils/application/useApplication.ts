@@ -34,8 +34,9 @@ export function useApplication() {
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
   const tab = location.pathname === "/profile" ? "profile" :
-    location.pathname === "/import" ? "parser" : "applications";
-  function setTab(next: "applications" | "profile" | "parser") {
+    location.pathname === "/import" ? "parser" :
+    location.pathname === "/workspace" ? "workspace" : "applications";
+  function setTab(next: "applications" | "profile" | "parser" | "workspace") {
     navigate({ pathname: next === "parser" ? "/import" : "/" + next, search: location.search });
   }
   const [profile, setProfile] = useState<CandidateProfile>(() =>

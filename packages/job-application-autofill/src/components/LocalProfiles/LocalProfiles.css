@@ -1,11 +1,9 @@
-.local-profiles { display: flex; flex-direction: column; gap: 11px; padding: 23px 8px 20px; margin: 23px 0 0; border-top: 1px solid #30405b; }
-.local-profiles label { font-size: 10px; font-weight: 750; color: #9caed0; text-transform: uppercase; letter-spacing: .1em; }
-.local-profiles select { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #455773; border-radius: 10px; color: #eef3ff; background: #20304d; font-size: 12px; }
-.local-profiles select option { background: #20304d; }
-.local-profile-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
-.local-profile-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; min-height: 29px; border: 1px solid #40516e; border-radius: 8px; background: #1c2a43; color: #becbe3; font-size: 11px; font-weight: 650; transition: background .15s; }
-.local-profile-actions button:hover:not(:disabled) { background: #304565; color: white; }
-.local-profile-actions button:disabled { opacity: .35; }
-.local-profile-actions .action-danger:hover:not(:disabled) { background: #4b2940; color: #ffcfda; }
-.local-profiles .resume-context { margin: -4px 0 0; color: #9fb0cc; font-size: 11px; line-height: 1.55; }
-@media(max-width: 760px) { .local-profiles { margin-top: 20px; } }
+.local-profiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 660px; }
+.local-profiles label { color: #44526b; font-size: 12px; font-weight: 700; letter-spacing: .01em; text-transform: none; }
+.local-profiles select { width: 100%; min-height: 44px; border: 1px solid #dbe3ee; border-radius: 10px; padding: 10px 13px; background: white; color: #182338; }
+.local-profile-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 17px; }
+.local-profile-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 39px; padding: 9px 12px; background: #fff; color: #42516a; border: 1px solid #dbe3ee; border-radius: 9px; font-size: 12px; font-weight: 650; }
+.local-profile-actions button:hover:not(:disabled) { background: #f5f8ff; border-color: #bfcbe0; }
+.local-profile-actions button:disabled { opacity: .4; }
+.local-profile-actions .action-danger:hover:not(:disabled) { color: #ae3146; background: #fff4f5; border-color: #efcbd0; }
+.local-profiles .resume-context { margin: -7px 0 0; padding: 12px 14px; border: 1px solid #e2e7f2; border-radius: 10px; background: #f8faff; color: #67758a; font-size: 12px; line-height: 1.5; }
