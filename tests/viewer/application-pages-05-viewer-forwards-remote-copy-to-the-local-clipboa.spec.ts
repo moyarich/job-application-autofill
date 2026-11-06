@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { readFileSync } from "node:fs";
-import { createApplication } from "../../packages/job-application-autofill/src/index";
+
 
 type ViewerTestWindow = Window & {
   __rfbForTest?: { focusCount: number; viewOnly: boolean };
