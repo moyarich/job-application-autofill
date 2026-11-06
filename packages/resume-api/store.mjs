@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { validateResume } from "../resume-schema/validate.mjs";
+import { validateResume } from "../resume/src/resume-schema/validate.mjs";
 
 const STATUSES = new Set(["saved","in_progress","ready_for_review","submitted","interview","rejected"]);
 function validateJobs(input) {

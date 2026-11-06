@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/moyarich/job-application-autofill/blob/main/resume-schema/resume.schema.json",
+  "$id": "https://github.com/moyarich/job-application-autofill/blob/main/packages/resume/src/resume-schema/resume.schema.json",
   "title": "MoyaApply Structured Resume",
   "description": "Canonical ATS-oriented résumé content. Rendering rules are metadata, not automatic PDF/DOCX validation.",
   "type": "object",

@@ -68,6 +68,9 @@ const statusLabels: Record<ApplicationStatus, string> = {
 };
 
 function App() {
+  const applicationId = new URLSearchParams(window.location.search).get("application");
+  const [activeLoaded, setActiveLoaded] = useState(!applicationId);
+  const autoStarted = useRef(false);
   const [tab, setTab] = useState<"applications" | "profile" | "parser">("applications");
   const [profile, setProfile] = useState<CandidateProfile>(() => structuredClone(emptyCandidate));
   const [jobs, setJobs] = useState<JobApplication[]>([]);
@@ -84,6 +87,8 @@ function App() {
   const [resume, setResume] = useState<File | null>(null);
   const [parseBusy, setParseBusy] = useState(false);
   const [applyBusy, setApplyBusy] = useState(false);
+
+
   const [parsePreview, setParsePreview] = useState("");
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
@@ -91,10 +96,12 @@ function App() {
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/apply/active", { headers: { "X-Moya-Client": "dashboard" } })
+    if (!applicationId) return;
+    fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), { headers: { "X-Moya-Client": "dashboard" } })
       .then(response => response.ok ? response.json() : null)
       .then(result => { if (!cancelled && result?.session) setSession(result.session as ApplySession); })
-      .catch(() => { /* Local API might not be running. */ });
+      .catch(() => { /* Local API might not be running. */ })
+      .finally(() => { if (!cancelled) setActiveLoaded(true); });
     return () => { cancelled = true; };
   }, []);
   useEffect(() => {
@@ -111,7 +118,7 @@ function App() {
     return () => { cancelled = true; };
   }, []);
   useEffect(() => {
-    if (!hydrated || blockedRef.current) return;
+    if (!hydrated || blockedRef.current || applicationId) return;
     const state = { profile, jobs };
     const signature = JSON.stringify(state);
     if (signature === savedRef.current) return;
@@ -128,6 +135,30 @@ function App() {
     }, 350);
     return () => clearTimeout(timer);
   }, [hydrated, profile, jobs]);
+
+  useEffect(() => {
+    if (!applicationId || !hydrated || !activeLoaded || autoStarted.current) return;
+    autoStarted.current = true;
+    if (session) return;
+    const job = jobs.find(item => item.id === applicationId);
+    if (job) void prepareJob(job);
+    else setMessage("Application not found. Return to the tracker and open the job again.");
+  }, [applicationId, hydrated, activeLoaded, jobs, session]);
+
+  useEffect(() => {
+    if (applicationId || !hydrated) return;
+    const refresh = () => {
+      if (JSON.stringify({ profile, jobs }) !== savedRef.current) return;
+      void readState().then(state => {
+        revisionRef.current = state.revision;
+        const nextProfile = state.profile ? parseCandidateJson(JSON.stringify(state.profile)) : structuredClone(emptyCandidate);
+        savedRef.current = JSON.stringify({ profile: nextProfile, jobs: state.jobs });
+        setProfile(nextProfile); setJobs(state.jobs);
+      }).catch(() => {});
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [applicationId, hydrated, profile, jobs]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter(job =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()));
@@ -136,12 +167,16 @@ function App() {
     event.preventDefault();
     try {
       const job = createApplication(newJob.company, newJob.role, newJob.url);
+      if (jobs.some(item => item.id === job.id || (item.company === job.company && item.role === job.role && item.url === job.url))) {
+        setMessage("This opportunity is already in your tracker."); return;
+      }
       setJobs(items => [job, ...items]);
       setNewJob({ company: "", role: "", url: "" });
       setMessage("Job added. Select Apply on its row to start browser automation.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not add job"); }
   }
   function changeJob(id: string, status: ApplicationStatus) {
+    if (applicationId) void requestApi("/api/jobs/" + id + "/status", { status }).catch(error => setMessage(String(error)));
     setJobs(items => items.map(item => item.id === id ? { ...item, status } : item));
   }
   async function exportResumePdf() {
@@ -199,7 +234,13 @@ function App() {
     finally { setParseBusy(false); }
   }
   async function prepareJob(job: JobApplication) {
-    if (session) { setMessage("Close the current browser session before applying to another job."); return; }
+    if (!applicationId) {
+      const url = new URL(window.location.href); url.search = "";
+      url.searchParams.set("application", job.id);
+      window.open(url.href, "application-" + job.id);
+      return;
+    }
+    if (session) return;
     if (!job.url) { setMessage("Add a job URL before applying."); return; }
     if (errors.length) { setMessage("Complete first name, last name and email in Candidate profile before applying."); setTab("profile"); return; }
     setApplyBusy(true);
@@ -261,9 +302,7 @@ function App() {
       if (submit) {
         const next = result as ApplySession;
         setSession(next); setMessage(next.message);
-        setJobs(items => items.map(job => job.id === session.jobId
-          ? { ...job, status: (next.state === "submitted" ? "submitted" : "in_progress") as ApplicationStatus }
-          : job));
+        changeJob(session.jobId, next.state === "submitted" ? "submitted" : "in_progress");
       } else { setSession(null); setMessage("Browser session closed."); }
     } catch (error) { setMessage(error instanceof Error ? error.message : "Browser action failed"); }
     finally { setApplyBusy(false); }
@@ -296,8 +335,8 @@ function App() {
     {parsePreview && <details className="text-preview"><summary>View extracted text preview</summary><pre>{parsePreview}</pre></details>}
   </section>;
 
-  if (!hydrated) return <div className="app"><main className="main"><h1>Loading SQLite data</h1><p>{message || "Connecting to the local API..."}</p></main></div>;
-  return <div className="app">
+  if (!hydrated) return <div className={applicationId ? "app application-page" : "app"}><main className="main"><h1>Loading SQLite data</h1><p>{message || "Connecting to the local API..."}</p></main></div>;
+  return <div className={applicationId ? "app application-page" : "app"}>
     <aside className="sidebar">
       <div className="brand"><span className="brand-symbol">J</span><span>job-application-<span className="brand-light">autofill</span></span></div>
       <div className="nav-label">WORKSPACE</div>
@@ -322,7 +361,10 @@ function App() {
           <div className="stat"><span>Interviews</span><strong>{jobs.filter(x=>x.status==="interview").length}</strong></div>
         </section>
         {parserPanel}
-        {session && <section className="panel review-panel"><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
+        {applicationId && <div className="application-page-heading"><a href="/">← Application tracker</a><h2>{jobs.find(job => job.id === applicationId)?.role || "Application"}</h2><p>{jobs.find(job => job.id === applicationId)?.company}</p></div>}
+        {applicationId && (session || applyBusy) && <div className="application-workspace">
+          <section className="panel review-panel">
+          {session ? <><div className="panel-title"><h2>Application review</h2><p>{session.message}</p></div>
           <p><strong>Session:</strong> {session.state.replaceAll("_", " ")} · {session.url}</p>
           {(session.state === "manual_intervention" || session.state === "login_required") && <div className="validation warning">
             {session.state === "login_required"
@@ -356,18 +398,20 @@ function App() {
           {session.reviewUrl && <div className="browser-review">
             <div className="browser-review-header">
               <strong>Live employer application</strong>
-              <a className="browser-open" href={session.reviewUrl} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open in full window ↗</a>
+              <a className="browser-open" href={"/application-viewer.html?session=" + session.id} target="_blank" rel="noopener noreferrer" onClick={() => setReviewed(false)}>Open in full window ↗</a>
             </div>
-            <p>Enter the VNC password from your Docker Compose configuration to interact with Chromium. Review every field and complete any missing questions before submitting.</p>
+            <p>The browser connects using your local viewer configuration. Review every field and complete any missing questions before submitting.</p>
             {session.filled?.length > 0 && <p><strong>Prepared:</strong> {session.filled.join(", ")}</p>}
             {session.missing?.length > 0 && <p className="validation warning"><strong>Review manually:</strong> {session.missing.join(", ")}</p>}
-            <iframe className="browser-viewer" title="Interactive Playwright application browser" src={session.reviewUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
+            <iframe className="browser-viewer" title="Interactive Playwright application browser" src={"/application-viewer.html?session=" + session.id} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
             <label className="review-checkbox"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> I inspected the live application and reviewed all fields.</label>
           </div>}
           <div className="actions"><button disabled={applyBusy || session.state !== "ready_for_review" || Boolean(session.reviewUrl && !reviewed)} className="primary" onClick={()=>finalizeApplication(true)}>Confirm & submit</button>
           <button disabled={applyBusy} className="secondary" onClick={()=>finalizeApplication(false)}>Close browser session</button></div>
           <p className="review-note">Review the actual Playwright browser window and answer any required questions before submitting. Submission is never automatic.</p>
-        </section>}
+          </> : <div className="application-loading" role="status"><h3>Opening your application…</h3><p>Preparing your résumé and connecting to the employer.</p></div>}
+          </section>
+        </div>}
         <section className="panel"><div className="panel-title"><h2>Add an opportunity</h2><p>Save a job URL and track its progress.</p></div>
           <form className="add-form" onSubmit={addJob}>
             <label>Company<input required value={newJob.company} onChange={e=>setNewJob(x=>({...x,company:e.target.value}))} placeholder="Company name"/></label>

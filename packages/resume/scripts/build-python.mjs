@@ -77,6 +77,8 @@ function ensurePoetry() {
 
 try {
   const poetry = ensurePoetry();
+  const python = selectPython();
+  if (!Array.isArray(python)) execute(poetry, ["env", "use", python]);
   execute(poetry, ["install", "--only", "main", "--no-root", "--no-interaction"]);
 } catch (error) {
   console.error(`Python/OCR build failed: ${error.message}`);

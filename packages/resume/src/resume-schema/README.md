@@ -15,10 +15,27 @@ From the local dashboard choose **Export PDF**. The dashboard sends validated ca
 Server-side usage:
 
 ```js
-import { renderResumePdf } from "./resume-schema/pdf.mjs";
+import { renderResumePdf } from "./packages/resume/src/resume-schema/create-pdf.ts";
 import { readFileSync, writeFileSync } from "node:fs";
-const resume = JSON.parse(readFileSync("./resume-schema/resume.example.json", "utf8"));
+const resume = JSON.parse(
+  readFileSync("./packages/resume/src/resume-schema/resume.example.json", "utf8"),
+);
 writeFileSync("resume.pdf", await renderResumePdf(resume));
 ```
 
 The renderer is asynchronous because it launches a fresh headless Chromium instance and closes it after producing the PDF. It renders US Letter, one-column, selectable text with page breaks and ATS-friendly headings. A working Playwright Chromium installation is required.
+
+## Create a PDF from the command line
+
+With Node.js 24 or newer, run from the repository root:
+
+```sh
+npm install
+npm exec -- create-resume packages/resume/src/resume-schema/resume.example.json -o resume.pdf
+npm exec -- create-resume --help
+```
+
+The command uses `create-pdf.ts` to generate a PDF from validated structured JSON.
+Without `--output`, it uses the input file's directory and basename with a `.pdf`
+extension. Existing files are never overwritten. Chromium must be installed for
+Playwright (`npx playwright install chromium`). Errors exit with a nonzero status.

@@ -10,3 +10,5 @@
 .application-questions{border:1px solid #e1e7f2;border-radius:12px;background:white;margin:16px 0;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.application-questions .panel-title,.application-questions .actions{grid-column:1/-1}.application-questions h3{margin:0 0 5px;font-size:16px}.application-questions textarea{resize:vertical}
 
 .json-import-panel{margin-top:16px;border-top:1px solid #e1e7f2;padding-top:12px}.json-import-panel p{margin:0 0 10px;font-size:13px}
+
+.application-page .sidebar,.application-page .main>header,.application-page .stats,.application-page .main>.panel,.application-page .main>footer{display:none}.application-page .main{max-width:none;padding:24px}.application-page-heading h2{margin-bottom:4px}.application-page-heading p{color:#748199;margin-top:0}.application-workspace .review-panel{margin-top:20px}.application-workspace .browser-viewer{height:70vh;min-height:400px;resize:vertical}.application-page .parser-grid{display:none}

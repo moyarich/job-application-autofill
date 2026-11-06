@@ -1,10 +1,20 @@
 import { execFile, type ExecFileOptions } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const run = promisify(execFile);
-const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+export function resumePackageDir() {
+  let directory = dirname(fileURLToPath(import.meta.url));
+  while (!existsSync(resolve(directory, "pyproject.toml"))) {
+    const parent = dirname(directory);
+    if (parent === directory) throw new Error("Resume package Python configuration not found.");
+    directory = parent;
+  }
+  return directory;
+}
+const packageDir = resumePackageDir();
 const dependencyProbe =
   "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image";
 type ExecuteCommand = (

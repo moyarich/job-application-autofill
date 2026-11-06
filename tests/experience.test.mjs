@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractProfile, extractEmploymentHistory } from "@moyarich/extract-resume";
+import { extractProfile, extractEmploymentHistory } from "@moyarich/resume";
 describe("employment history",()=>{
   it("extracts distinct dated jobs and stops at education",()=>{
     const text=["Ada Lovelace","Professional Experience","Example Technologies","Senior Software Engineer","June 2021 – Present","• Built AWS tools","Example Solutions","Software Engineer","March 2018 - May 2021","• Developed APIs","Education","University","2014 - 2018"].join("\n");

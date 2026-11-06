@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateResume } from "../resume-schema/validate.mjs";
-import { extractProfile, decodeUpload } from "@moyarich/extract-resume";
+import { validateResume } from "../packages/resume/src/resume-schema/validate.mjs";
+import { extractProfile, decodeUpload } from "@moyarich/resume";
 
 describe("resume parser", () => {
   it("extracts common profile data from text", () => {

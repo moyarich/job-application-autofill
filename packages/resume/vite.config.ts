@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [
     {
       name: "executable-cli",
-      closeBundle() {
-        chmodSync(resolve(import.meta.dirname, "dist/cli.js"), 0o755);
+      writeBundle() {
+        for (const file of ["extract-resume", "create-resume"]) chmodSync(resolve(import.meta.dirname, `dist/${file}.js`), 0o755);
       },
     },
   ],
@@ -19,7 +19,9 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(import.meta.dirname, "src/index.ts"),
-        cli: resolve(import.meta.dirname, "src/cli.ts"),
+        "extract-resume": resolve(import.meta.dirname, "src/extract-resume/cli.ts"),
+        "create-resume": resolve(import.meta.dirname, "src/create-resume/cli.ts"),
+        "create-pdf": resolve(import.meta.dirname, "src/resume-schema/create-pdf.ts"),
       },
       formats: ["es"],
       fileName: (_format, entryName) => `${entryName}.js`,
@@ -28,10 +30,10 @@ export default defineConfig({
       external: [
         ...builtinModules,
         ...builtinModules.map((name) => `node:${name}`),
-        "commander",
+        "commander", "playwright",
       ],
       output: {
-        banner: (chunk) => (chunk.name === "cli" ? "#!/usr/bin/env node" : ""),
+        banner: (chunk) => (["extract-resume", "create-resume"].includes(chunk.name) ? "#!/usr/bin/env node" : ""),
       },
     },
   },

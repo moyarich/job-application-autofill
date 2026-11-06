@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { validateResume, parseResumeJson } from "../resume-schema/validate.mjs";
+import { validateResume, parseResumeJson } from "../packages/resume/src/resume-schema/validate.mjs";
 import { parseCandidateJson, validateCandidate } from "../packages/job-application-autofill/src/index";
 
-const example = JSON.parse(readFileSync(new URL("../resume-schema/resume.example.json", import.meta.url), "utf8"));
+const example = JSON.parse(readFileSync(new URL("../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 
 describe("extractor-independent resume JSON contract", () => {
   it("accepts a complete, externally generated resume without PDF/DOCX files", () => {

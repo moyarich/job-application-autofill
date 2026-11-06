@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Application browser</title>
+<style>html,body{height:100%;margin:0;background:#172033;color:white;font:14px system-ui}body{display:flex;flex-direction:column}#status{padding:9px 14px;background:#243149}#screen{flex:1;min-height:0;overflow:hidden}</style></head>
+<body><div id="status" role="status">Connecting to your application browser…</div><div id="screen"></div>
+<script type="module">
+const status = document.getElementById('status');
+const session = new URLSearchParams(location.search).get('session');
+const headers = {'X-Moya-Client':'dashboard'};
+let rfb;
+async function focusApplication() {
+  if(rfb) rfb.viewOnly = true;
+  if(session) {
+    const response = await fetch('/api/apply/'+encodeURIComponent(session)+'/focus',{method:'POST',headers});
+    if(!response.ok) throw new Error('This application browser session has ended.');
+  }
+  if(rfb && !document.hidden) rfb.viewOnly = false;
+}
+try {
+  if(!session) throw new Error('Open the browser from an application page.');
+  const response = await fetch('/api/viewer/config',{headers});
+  const config = await response.json();
+  if(!response.ok) throw new Error(config.error || 'Viewer configuration unavailable.');
+  const {default:RFB} = await import('/vnc/core/rfb.js');
+  await focusApplication();
+  const socket = new URL('/vnc/websockify',location.href);
+  socket.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  rfb = new RFB(document.getElementById('screen'),socket.href,{credentials:{password:config.password}});
+  rfb.scaleViewport = true;
+  rfb.resizeSession = false;
+  rfb.addEventListener('connect',()=>{status.textContent='Connected to application browser';});
+  rfb.addEventListener('disconnect',()=>{status.textContent='Browser disconnected. Reopen this viewer to reconnect.';});
+  rfb.addEventListener('securityfailure',()=>{status.textContent='Browser authentication failed. Check WEB_VNC_PASSWORD and restart the app.';});
+  window.addEventListener('focus',()=>{void focusApplication().catch(error=>{status.textContent=error.message;});});
+  window.addEventListener('blur',()=>{rfb.viewOnly=true;});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) rfb.viewOnly=true; else void focusApplication().catch(error=>{status.textContent=error.message;});});
+  window.addEventListener('pagehide',()=>rfb.disconnect());
+} catch(error) {status.textContent=error.message || 'Could not connect to application browser.';}
+</script></body></html>

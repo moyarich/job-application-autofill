@@ -1,7 +1,7 @@
 # extract-resume
 
 Local PDF and DOCX résumé extraction for the command line and Node.js. The
-`@moyarich/extract-resume` workspace package powers résumé parsing in
+`@moyarich/resume` workspace package powers résumé parsing in
 job-application-autofill. The CLI uses Commander.js and the same extraction code
 as the app. Document processing runs locally; résumé contents are not sent to a
 cloud parsing service.
@@ -13,7 +13,7 @@ From the repository root, install the workspace dependencies:
 
 ```sh
 npm install
-npm run build:js --workspace packages/extract-resume
+npm run build:js --workspace packages/resume
 npm exec -- extract-resume --help
 ```
 
@@ -26,13 +26,13 @@ Docker container.
 From the repository root:
 
 ```sh
-npm run build --workspace packages/extract-resume
+npm run build --workspace packages/resume
 ```
 
 This builds the JavaScript library and Commander CLI with Vite, emits TypeScript
 declarations, then installs the Python PDF/OCR dependencies. If Poetry is missing,
 the build installs it automatically into the project-local
-`packages/extract-resume/node_modules/.cache/poetry` virtual environment, then
+`packages/resume/node_modules/.cache/poetry` virtual environment, then
 runs `poetry install --only main --no-root --no-interaction`.
 A compatible Python (3.12 through 3.14) must already be installed. The bootstrap
 reuses Poetry when available and does not modify global Python packages.
@@ -41,9 +41,9 @@ Build output is written to `dist/` as Node.js ES modules.
 The Poetry project uses `package-mode = false`, so this step installs dependencies;
 it does not create a Python wheel with `poetry build`.
 
-Use `npm run build:js --workspace packages/extract-resume` for only the Vite and
-declaration build, `npm run build:python --workspace packages/extract-resume` for
-only Poetry setup, and `npm run typecheck --workspace packages/extract-resume`
+Use `npm run build:js --workspace packages/resume` for only the Vite and
+declaration build, `npm run build:python --workspace packages/resume` for
+only Poetry setup, and `npm run typecheck --workspace packages/resume`
 for TypeScript checks. All extraction modules and the CLI use TypeScript with strict checking.
 
 ## CLI
@@ -91,7 +91,7 @@ outside this package's supported range).
 The build automatically installs Poetry if needed, then prepares the Python environment:
 
 ```sh
-npm run build --workspace packages/extract-resume
+npm run build --workspace packages/resume
 npm exec -- extract-resume "Moya Richards - Resume.pdf" -o resume.json
 ```
 
@@ -126,7 +126,7 @@ In another terminal, from the repository root:
 docker compose cp "Moya Richards - Resume.pdf" api:/tmp/extract-resume-input.pdf
 
 # Save JSON on the host; choose an output filename that does not already exist.
-docker compose exec -T api node packages/extract-resume/dist/cli.js /tmp/extract-resume-input.pdf > resume.json
+docker compose exec -T api node packages/resume/dist/extract-resume.js /tmp/extract-resume-input.pdf > resume.json
 ```
 
 The Docker example uses shell redirection, which can overwrite an existing host
@@ -135,8 +135,8 @@ Rebuild the Docker image after changing package source code.
 
 ## JSON output and app use
 
-The parser returns the [standalone résumé contract](../../resume-schema/resume.schema.json).
-See the [example JSON](../../resume-schema/resume.example.json). The root fields are
+The parser returns the [standalone résumé contract](src/resume-schema/resume.schema.json).
+See the [example JSON](src/resume-schema/resume.example.json). The root fields are
 `contact`, `summary`, `experience`, `skills`, `education`, `projects`,
 `certifications`, `languages`, `awards`, and `source`.
 
@@ -158,7 +158,7 @@ import {
   decodeUpload,
   extractResumeText,
   extractProfile,
-} from "@moyarich/extract-resume";
+} from "@moyarich/resume";
 
 const buffer = await readFile("resume.pdf");
 const upload = decodeUpload({
@@ -200,17 +200,30 @@ that every extracted value is correct.
 Run the CLI and parser tests from the repository root:
 
 ```sh
-npm run build:js --workspace packages/extract-resume
+npm run build:js --workspace packages/resume
 npx vitest run tests/extract-resume-cli.test.mjs tests/resume.test.mjs tests/experience.test.mjs tests/pdf-python-runtime.test.mjs
 ```
 
 Run the Python tests with their optional dependencies:
 
 ```sh
-cd packages/extract-resume
+cd packages/resume
 poetry install --with test --no-root
 npm run test:python
 ```
 
 The Python environment is managed through `pyproject.toml`; Poetry package mode is
 disabled because the Node.js workspace owns this package.
+
+## Package layout
+
+- `src/extract-resume/`: PDF/DOCX extraction and the `extract-resume` CLI.
+- `src/create-resume/`: the `create-resume` JSON-to-PDF CLI.
+- `src/resume-schema/`: schema, validation, PDF generation, and examples.
+- `python/`: PDFium/OCR worker.
+
+Both CLI commands are built by `npm run build:js --workspace packages/resume`.
+
+```sh
+npm exec -- create-resume packages/resume/src/resume-schema/resume.example.json -o resume.pdf
+```

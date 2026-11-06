@@ -1,13 +1,14 @@
+import { helpWorkdaySignIn, openWorkdayApplication } from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "../playwright-adapters/index.mjs";
-import { fillWorkdayExperience } from "../playwright-adapters/workday/experience.mjs";
+import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./index.mjs";
+import { fillWorkdayExperience } from "./workday/experience.mjs";
 
 const sessions = new Map();
-let launching = false;
+const launchingJobs = new Set();
 const ALLOWED = /(^|\.)(greenhouse\.io|lever\.co|ashbyhq\.com|myworkdayjobs\.com|workday\.com|smartrecruiters\.com)$/i;
 const SUCCESS = /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
 
@@ -78,8 +79,8 @@ function status(session) {
   };
 }
 
-export function getActiveApplication() {
-  const session = sessions.values().next().value;
+export function getActiveApplication(jobId) {
+  const session = jobId ? [...sessions.values()].find(item => item.jobId === jobId) : sessions.values().next().value;
   return session ? status(session) : null;
 }
 
@@ -159,19 +160,21 @@ export async function answerApplicationQuestions(id, answers) {
   return { ...status(session), answerResult: result };
 }
 
-export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
+export async function prepareApplication({ jobUrl, jobId, profile, resume,
+  launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }) }) {
   const url = validateUrl(jobUrl);
   const adapter = adapterForUrl(url);
   if (typeof jobId !== "string" || !jobId.trim()) throw new Error("A job identifier is required.");
-  if (launching || sessions.size > 0) throw new Error("Close the existing application browser session before starting another.");
-  launching = true;
+  if (launchingJobs.has(jobId) || [...sessions.values()].some(item => item.jobId === jobId))
+    throw new Error("This application already has an open browser session.");
+  launchingJobs.add(jobId);
   let browser;
   let directory;
   let id;
   try {
     id = randomUUID();
     directory = await mkdtemp(join(tmpdir(), "moya-apply-"));
-    browser = await chromium.launch({ headless: process.env.HEADLESS === "true" });
+    browser = await launchBrowser();
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: false });
     const page = await context.newPage();
     const session = {
@@ -189,6 +192,10 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
       session.state = "login_required";
       session.message = "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
       return status(session);
+    }
+    if (adapter.id === "workday") {
+      await openWorkdayApplication(page).catch(() => {});
+      await helpWorkdaySignIn(session).catch(() => {});
     }
     const text = (await page.locator("body").innerText().catch(() => "")).slice(0, 20000);
     const state = formState(text, page.url());
@@ -214,7 +221,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume }) {
     }
     throw error;
   } finally {
-    launching = false;
+    launchingJobs.delete(jobId);
   }
 }
 
@@ -224,9 +231,10 @@ export function getApplication(id) {
   return status(session);
 }
 
-export async function refreshScreenshot(id) {
+export async function refreshScreenshot(id, { focus = false } = {}) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
+  if (focus) await session.page.bringToFront();
   const path = resolve("screenshots", id + ".png");
   await mkdir(resolve("screenshots"), { recursive: true });
   await session.page.screenshot({ path, fullPage: false });

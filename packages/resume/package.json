@@ -1,5 +1,5 @@
 {
-  "name": "@moyarich/extract-resume",
+  "name": "@moyarich/resume",
   "version": "0.1.0",
   "description": "Local PDF/DOCX resume extraction with PDFium and OCR fallback",
   "private": true,
@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./create-pdf": {
+      "types": "./dist/resume-schema/create-pdf.d.ts",
+      "import": "./dist/create-pdf.js"
     }
   },
   "files": [
@@ -24,10 +28,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "playwright": "^1.56.0"
   },
   "bin": {
-    "extract-resume": "./dist/cli.js"
+    "extract-resume": "./dist/extract-resume.js",
+    "create-resume": "./dist/create-resume.js"
   },
   "devDependencies": {
     "vite": "^7.3.7",

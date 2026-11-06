@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { validateUrl, isSubmissionConfirmed, fillKnownFields } from "../server/automation.mjs";
+import { validateUrl, isSubmissionConfirmed, fillKnownFields, prepareApplication, getActiveApplication, closeApplication } from "../packages/job-sites/automation.mjs";
 
 describe("application safety", () => {
   it("permits known ATS sites only over HTTPS", () => {
@@ -25,4 +25,31 @@ describe("application safety", () => {
     expect(results.missing).toEqual(["email"]);
     expect(target.fill).toHaveBeenCalledWith("Ada", { timeout:2500 });
   });
+});
+
+it("keeps concurrent applications separate and closes only the requested session", async () => {
+  function browserFor(url) {
+    const page = { goto: async()=>{}, waitForTimeout: async()=>{}, url:()=>url,
+      locator:()=>({innerText:async()=>"Create an account to continue"}) };
+    return {newContext:async()=>({newPage:async()=>page}),close:async()=>{}};
+  }
+  const firstJob="aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",secondJob="bbbbbbbb-bbbb-5bbb-8bbb-bbbbbbbbbbbb";
+  const firstUrl="https://jobs.lever.co/example/a",secondUrl="https://boards.greenhouse.io/example/jobs/1";
+  let first, second;
+  try {
+    [first,second]=await Promise.all([
+      prepareApplication({jobId:firstJob,jobUrl:firstUrl,profile:{},launchBrowser:async()=>browserFor(firstUrl)}),
+      prepareApplication({jobId:secondJob,jobUrl:secondUrl,profile:{},launchBrowser:async()=>browserFor(secondUrl)})
+    ]);
+    expect(first.id).not.toBe(second.id);
+    expect(getActiveApplication(firstJob).id).toBe(first.id);
+    expect(getActiveApplication(secondJob).id).toBe(second.id);
+    await expect(prepareApplication({jobId:firstJob,jobUrl:firstUrl,profile:{}})).rejects.toThrow("already has an open");
+    await closeApplication(first.id);
+    expect(getActiveApplication(firstJob)).toBeNull();
+    expect(getActiveApplication(secondJob).id).toBe(second.id);
+  } finally {
+    if(first)await closeApplication(first.id);
+    if(second)await closeApplication(second.id);
+  }
 });

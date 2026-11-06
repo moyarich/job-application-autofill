@@ -1,5 +1,5 @@
 import { extractEmploymentHistory } from "./experience.js";
-import { getPdfPython } from "./python-runtime.js";
+import { getPdfPython, resumePackageDir } from "./python-runtime.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -155,7 +155,7 @@ export async function extractResumeText(
     const input = join(dir, "resume.pdf");
     await writeFile(input, buffer, { mode: 0o600 });
     const python = await getPdfPython();
-    const script = resolve(import.meta.dirname, "../python/pdf_ocr.py");
+    const script = resolve(resumePackageDir(), "python/pdf_ocr.py");
     const { stdout } = await execFileAsync(python, [script, input], {
       timeout: 120000,
       maxBuffer: 15 * 1024 * 1024,

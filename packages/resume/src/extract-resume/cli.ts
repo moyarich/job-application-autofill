@@ -1,3 +1,4 @@
+import { resumePackageDir } from "./python-runtime.js";
 import { realpathSync } from "node:fs";
 import { Command } from "commander";
 import { readFile, stat, writeFile } from "node:fs/promises";
@@ -11,7 +12,7 @@ import {
 } from "./index.js";
 
 const { version } = JSON.parse(
-  await readFile(resolve(import.meta.dirname, "../package.json"), "utf8"),
+  await readFile(resolve(resumePackageDir(), "package.json"), "utf8"),
 );
 
 export function createCommand() {

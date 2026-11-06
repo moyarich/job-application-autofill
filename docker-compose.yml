@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile
     image: job-application-autofill:local
     entrypoint: ["/app/docker/start-review.sh"]
-    command: ["node", "server/index.mjs"]
+    command: ["node", "packages/resume-api/index.mjs"]
     environment:
       NODE_ENV: development
       AUTOFILL_PORT: "4177"
@@ -18,6 +18,9 @@ services:
       DISPLAY: ":99"
       BROWSER_REVIEW_URL: "http://localhost:${MOYA_REVIEW_PORT:-6080}/vnc.html"
       WEB_VNC_PASSWORD: "${WEB_VNC_PASSWORD:?Set WEB_VNC_PASSWORD in .env before starting Docker Compose}"
+      RESUME_SITE_HOST: "${RESUME_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
+      RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
+      RESUME_SITE_PASSWORD: "${RESUME_SITE_PASSWORD:-}"
       CONTAINER_MODE: "true"
       MOYA_DB_PATH: /app/data/moyaapply.sqlite
     expose:
@@ -44,6 +47,7 @@ services:
     command: ["npm", "run", "dev", "--workspace", "apps/playground"]
     environment:
       VITE_API_PROXY_TARGET: http://api:4177
+      VITE_VNC_PROXY_TARGET: http://api:6080
     ports:
       - "127.0.0.1:${MOYA_WEB_PORT:-5173}:5173"
     depends_on:

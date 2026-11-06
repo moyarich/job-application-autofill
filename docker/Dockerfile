@@ -34,13 +34,17 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/playground/package.json apps/playground/package.json
 COPY packages/job-application-autofill/package.json packages/job-application-autofill/package.json
-COPY packages/extract-resume/package.json packages/extract-resume/package.json
+COPY packages/resume/package.json packages/resume/package.json
+COPY packages/resume-api/package.json packages/resume-api/package.json
+COPY packages/job-sites/package.json packages/job-sites/package.json
 RUN npm ci --include=optional --no-audit --no-fund
+RUN npx playwright install chromium
 
 # Install the Python OCR environment with Poetry, separate from Node.
-COPY packages/extract-resume/pyproject.toml packages/extract-resume/pyproject.toml
-COPY packages/extract-resume/README.md packages/extract-resume/README.md
-RUN cd packages/extract-resume \
+COPY packages/resume/pyproject.toml packages/resume/pyproject.toml
+COPY packages/resume/README.md packages/resume/README.md
+COPY packages/resume/poetry.lock packages/resume/poetry.lock
+RUN cd packages/resume \
     && poetry config virtualenvs.create true \
     && poetry install --only main --no-root \
     && poetry env info --path > /tmp/moya-venv-path \
@@ -52,11 +56,9 @@ RUN cd packages/extract-resume \
 # Dependency import check runs with the same interpreter used by the API above.
 
 COPY . .
-RUN npm run build:js --workspace packages/extract-resume
+RUN npm run build:js --workspace packages/resume
 RUN chmod +x docker/start-review.sh
 
-# Ensure browser binaries match npm's Playwright dependency.
-RUN npx playwright install chromium
 
 EXPOSE 4177 5173 6080
-CMD ["node", "server/index.mjs"]
+CMD ["node", "packages/resume-api/index.mjs"]

@@ -31,7 +31,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "lucide-react": "^1.47.0"
+    "lucide-react": "^1.47.0",
+    "uuid": "^14.0.3"
   },
   "peerDependencies": {
     "react": ">=18",

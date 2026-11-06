@@ -59,7 +59,7 @@ docker compose up --build
 
 Open http://localhost:5173. The **interactive Playwright browser viewer** is available at http://localhost:6080/vnc.html (or use the embedded **live browser viewer** in the application review panel (with a full-window option)). Enter the password configured as `WEB_VNC_PASSWORD`. Override local ports with `MOYA_WEB_PORT=5174` or `MOYA_REVIEW_PORT=6081`.
 
-Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node/Playwright/Poetry `api` service. The backend stays on the internal Docker network; only the web port is bound to `127.0.0.1`. Python OCR is installed from `packages/extract-resume/pyproject.toml` at image build time. Rebuild the image after source changes.
+Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node/Playwright/Poetry `api` service. The backend stays on the internal Docker network; only the web port is bound to `127.0.0.1`. Python OCR is installed from `packages/resume/pyproject.toml` at image build time. Rebuild the image after source changes.
 
 **Interactive browser review:** Docker launches Chromium in an Xvfb desktop with noVNC (password protected). The viewer and dashboard are published on host-loopback ports only, not on the public interface. Before final submission you must open the viewer, inspect the actual employer form, complete any mandatory fields, check the review acknowledgment, and explicitly click **Confirm & submit**. VNC password authentication uses a legacy protocol (only the first eight password bytes are significant); do not expose port 6080 externally or use this setup across an untrusted network. The display is shared among application sessions.
 
@@ -71,7 +71,7 @@ Requires Node.js 22.13+ (for built-in node:sqlite), Chromium for Playwright, Pyt
 npm ci
 npx playwright install chromium
 # Install Poetry first (e.g. pipx install poetry)
-cd packages/extract-resume
+cd packages/resume
 poetry install --with test --no-root
 cd ../..
 ```
@@ -79,7 +79,7 @@ cd ../..
 For advanced host-only development without the Docker noVNC viewer, run these in two terminals:
 
 ```sh
-PYTHON_EXECUTABLE="$(cd packages/extract-resume && poetry env info --executable)" npm run dev:server
+PYTHON_EXECUTABLE="$(cd packages/resume && poetry env info --executable)" npm run dev:server
 npm run dev --workspace apps/playground
 ```
 
@@ -87,7 +87,7 @@ Open http://localhost:5173.
 
 ## Use résumé JSON without a parser
 
-**Résumé parsing is optional.** The canonical data format lives in [`resume-schema/resume.schema.json`](resume-schema/resume.schema.json), independent of `packages/extract-resume`. Download [an example JSON résumé](resume-schema/resume.example.json), replace the sample information with your own, and open **Candidate profile → Import JSON** (or **Resume parser → Import résumé JSON**).
+**Résumé parsing is optional.** The canonical data format lives in [`packages/resume/src/resume-schema/resume.schema.json`](packages/resume/src/resume-schema/resume.schema.json), usable without the extraction pipeline. Download [an example JSON résumé](packages/resume/src/resume-schema/resume.example.json), replace the sample information with your own, and open **Candidate profile → Import JSON** (or **Resume parser → Import résumé JSON**).
 
 Importing does **not** call the OCR/PDF parser or require a résumé file. You can edit the profile, then select **Apply** on a saved job. ATS adapters read `profile.contact`, `profile.experience`, and other structured sections directly; a PDF/DOCX attachment is optional and separate. The backend validates the same JSON contract before launching Playwright. Unsupported form fields remain for interactive browser review.
 
@@ -101,9 +101,9 @@ The PDF generator supports Latin text; if a résumé contains unsupported charac
 
 ## Generate an ATS-friendly PDF from résumé JSON
 
-Import a JSON résumé conforming to [`resume-schema/resume.schema.json`](resume-schema/resume.schema.json), or optionally parse a PDF/DOCX into that structure. On the **Candidate profile** page, select **Export PDF**; the same action is available next to the parsed profile preview. The browser generates and downloads a standard US Letter PDF without uploading personal information to an external service.
+Import a JSON résumé conforming to [`packages/resume/src/resume-schema/resume.schema.json`](packages/resume/src/resume-schema/resume.schema.json), or optionally parse a PDF/DOCX into that structure. On the **Candidate profile** page, select **Export PDF**; the same action is available next to the parsed profile preview. The browser generates and downloads a standard US Letter PDF without uploading personal information to an external service.
 
-The standalone generator [`resume-schema/pdf.mjs`](resume-schema/pdf.mjs) creates a single-column, left-aligned document with ordinary headings, plain text bullets, selectable text, reverse-chronological work experience and automatic page breaks. This PDF generation functionality works directly from JSON; it does **not** depend on `packages/extract-resume`, Python, OCR or a source PDF file.
+The standalone generator [`packages/resume/src/resume-schema/create-pdf.ts`](packages/resume/src/resume-schema/create-pdf.ts) creates a single-column, left-aligned document with ordinary headings, plain text bullets, selectable text, reverse-chronological work experience and automatic page breaks. This PDF generation functionality works directly from JSON; it does **not** depend on the extractor, Python, OCR or a source PDF file.
 
 The built-in font supports Latin text; unsupported Unicode characters produce an actionable error rather than a corrupted résumé. As with any résumé, review the finished PDF and follow the employer's file-format instructions.
 
@@ -149,13 +149,13 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 
 - `apps/playground`: React + Vite application
 - `packages/job-application-autofill`: typed candidate and job models
-- `packages/extract-resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
-- `packages/extract-resume/src/index.mjs`: Node.js resume extraction and profile heuristics
-- `packages/extract-resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
-- `packages/extract-resume/pyproject.toml`: Poetry dependency groups and OCR environment
-- `playwright-adapters/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
-- `server/automation.mjs`: Playwright review-before-submit sessions
-- `server/index.mjs`: local JSON HTTP API
+- `packages/resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
+- `packages/resume/src/extract-resume/index.ts`: Node.js resume extraction and profile heuristics
+- `packages/resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
+- `packages/resume/pyproject.toml`: Poetry dependency groups and OCR environment
+- `packages/job-sites/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
+- `packages/job-sites/automation.mjs`: Playwright review-before-submit sessions
+- `packages/resume-api/index.mjs`: local JSON HTTP API
 
 ## Checks
 
@@ -166,9 +166,53 @@ npm run checks
 ## PDF OCR tests
 
 ```sh
-cd packages/extract-resume
+cd packages/resume
 poetry install --with test --no-root
 poetry run python -m unittest discover -s python -p 'test_*.py' -v
 ```
 
 To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend invokes `python3`. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.
+
+### Optional Workday sign-in from .env
+
+Set `RESUME_SITE_HOST`, `RESUME_SITE_EMAIL`, and `RESUME_SITE_PASSWORD` in the ignored
+root `.env` file for an existing employer account. Copy the names from `.env.example`.
+The default tenant is `workday.wd5.myworkdayjobs.com`; credentials are never filled
+on another tenant or an external identity provider. Restart/recreate the API after
+editing credentials (`docker compose up -d --force-recreate api`).
+
+When preparing an application, the server can open Workday's Apply / Autofill with
+Resume flow, select email sign-in, and attempt existing-account sign-in once per
+session. Credentials stay server-side and are not saved in candidate JSON or sent
+to the dashboard. The browser viewer still uses `WEB_VNC_PASSWORD`.
+On a sign-up form, the helper can prefill the configured email only. New passwords,
+terms acceptance, SSO, CAPTCHA, and verification codes require manual
+action in the viewer. No account is created automatically.
+
+## Workspace structure
+
+- `packages/resume-api`: HTTP API and SQLite persistence for every supported job site.
+- `packages/job-sites`: adapter registry, shared browser automation, and site modules.
+- `packages/job-sites/workday`: Workday fields, experience, sign-in and sign-up helpers.
+- `packages/resume`: schema, PDF export, extraction, Python worker, and both CLI commands.
+- `packages/job-application-autofill`: candidate profile and application state utilities.
+- `apps/playground`: dashboard.
+
+The server selects an adapter from the job URL. Shared orchestration is in
+`packages/job-sites/automation.mjs`; only Workday-specific actions live under
+`packages/job-sites/workday/`. Greenhouse, Lever, Ashby and SmartRecruiters remain
+separate adapters. Environment-based authentication currently targets Workday.
+
+### Application pages and viewer connection
+
+Apply opens a dedicated page identified by the saved application UUID. New IDs use
+UUID v5 of the trimmed Company, Role and Job URL tuple; adding the same tuple is
+blocked as a duplicate. Existing saved IDs remain unchanged. Each page retrieves
+only the browser session for its application, and different jobs can have open
+sessions at the same time. Application status updates are saved individually.
+
+The embedded viewer authenticates using `WEB_VNC_PASSWORD` from `.env`; it does
+not put credentials in URLs or browser storage. Its authenticated local API route
+and same-origin VNC proxy are used by the dashboard. Browser windows have separate
+application contexts but share the local virtual desktop; focusing an application
+viewer brings that job's browser window forward.
