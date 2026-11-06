@@ -1,3 +1,4 @@
+import "./ApplicationReview.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function ApplicationReview({
   controller,

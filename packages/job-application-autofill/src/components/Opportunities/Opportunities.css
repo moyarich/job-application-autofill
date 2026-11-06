@@ -1,0 +1,17 @@
+.add-form { display:grid;grid-template-columns:1fr 1fr 1.5fr auto;gap:12px;align-items:end }
+.search { max-width:255px }
+.job-list { border-top:1px solid #eef0f5 }
+.job:last-child { border-bottom:0 }
+.job-icon { width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#eaf0ff;color:#4259c9;font-weight:800;flex-shrink:0 }
+.job-info { display:flex;flex-direction:column;gap:4px;flex:1;min-width:0 }
+.job-info strong { font-size:14px }
+.job-info span,.job-info a { font-size:12px }
+.job-info span { color:#748199 }
+.job select { width:180px;font-size:12px }
+.empty { padding:48px 10px;text-align:center;color:#8a96aa;font-size:14px }
+@media(max-width:1000px) { .add-form { grid-template-columns:1fr 1fr } }
+@media(max-width:700px) { .add-form,.profile-grid { grid-template-columns:1fr } }
+@media(max-width:700px) { .job select { width:145px } }
+@media(max-width:700px) { .job .primary { flex-shrink:0 } }
+.job-notes { flex-basis:100%;margin:9px 0 4px 57px }
+.job-notes textarea { resize:vertical }

@@ -1,3 +1,4 @@
+import "./ResumeParser.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function ResumeParser({
   controller,

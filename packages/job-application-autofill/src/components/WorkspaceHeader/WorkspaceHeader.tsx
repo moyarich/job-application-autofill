@@ -1,3 +1,4 @@
+import "./WorkspaceHeader.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function WorkspaceHeader({
   controller,

@@ -1,3 +1,4 @@
+import "./CandidateProfile.css";
 import { fields } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
 import type { ApplicationController } from "../../utils/application/useApplication";
