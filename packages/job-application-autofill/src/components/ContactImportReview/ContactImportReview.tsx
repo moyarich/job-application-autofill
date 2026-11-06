@@ -3,7 +3,7 @@ import type { ApplicationController } from "../../utils/application/useApplicati
 import { fields } from "../../utils/profile/fields";
 
 export function ContactImportReview({ controller }: { controller: ApplicationController }) {
-  const { pendingImport, sharedContact, conflictKeys, importChoices,
+  const { pendingImport, sharedContact, profile, conflictKeys, importChoices,
     setImportChoices, confirmImport, cancelImport } = controller;
   if (!pendingImport) return null;
   return (
@@ -13,7 +13,7 @@ export function ContactImportReview({ controller }: { controller: ApplicationCon
       {conflictKeys.map(key => (
         <fieldset key={key} className="contact-import-field">
           <legend>{fields.find(field => field.key === key)?.label ?? key}</legend>
-          <p>Saved: <strong>{sharedContact[key]}</strong> · Imported: <strong>{pendingImport.contact[key]}</strong></p>
+          <p>Shared default: <strong>{sharedContact[key]}</strong> · Current resume: <strong>{profile.contact[key]}</strong> · Imported: <strong>{pendingImport.contact[key]}</strong></p>
           <label><input type="radio" name={"contact-import-"+key}
             checked={(importChoices[key] ?? "resume") === "resume"}
             onChange={() => setImportChoices(previous => ({...previous,[key]:"resume"}))} />
