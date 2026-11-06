@@ -3,14 +3,10 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-const cli = new URL("../packages/resume/dist/extract-resume.js", import.meta.url).pathname;
+const cli = new URL("../../packages/resume/dist/extract-resume.js", import.meta.url).pathname;
 
 describe("extract-resume CLI", () => {
-  it("offers help and rejects missing or unknown arguments", () => {
-    expect(execFileSync(process.execPath, [cli, "--help"], { encoding: "utf8" })).toContain("--output <file>");
-    expect(spawnSync(process.execPath, [cli]).status).toBe(1);
-    expect(spawnSync(process.execPath, [cli, "--unknown"]).status).toBe(1);
-  });
+  
   it("extracts DOCX through the real command and protects existing output", () => {
     const dir = mkdtempSync(join(tmpdir(), "resume-cli-"));
     try {
