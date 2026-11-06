@@ -1,4 +1,5 @@
 import "./CandidateProfile.css";
+import { ResumeSections } from "./ResumeSections";
 import { Download, FileText, FileUp, Plus, Trash2 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -238,6 +239,7 @@ export function CandidateProfile({
             </div>
           ))}
         </section>
+        <ResumeSections controller={controller} />
         <div className={errors.length ? "validation warning" : "validation"}>
           {errors.length
             ? "Please complete: " + errors.join(", ")
