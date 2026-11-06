@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it } from "vitest";
 import { extractProfile, extractEmploymentHistory } from "@moyarich/resume";

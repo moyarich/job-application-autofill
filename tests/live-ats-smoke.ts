@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migrated test fixtures retain runtime assertions.
 // Read-only live employer ATS smoke checks; no credentials, autofill or submission.
 // Set ATS_LIVE_URLS to a JSON object keyed by adapter ID.
