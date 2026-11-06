@@ -1,5 +1,5 @@
 import { v5 as uuidv5 } from "uuid";
-import { parseResumeJson } from "../../resume/src/resume-schema/validate.mjs";
+import { parseResumeJson } from "../../resume/src/resume-schema/validate.ts";
 export type ApplicationStatus = "saved" | "in_progress" | "ready_for_review" | "submitted" | "interview" | "rejected";
 
 export interface EmploymentEntry {
