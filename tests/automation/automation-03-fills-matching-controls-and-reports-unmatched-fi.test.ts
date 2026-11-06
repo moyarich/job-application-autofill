@@ -35,6 +35,6 @@ describe("application safety", () => {
     const results = await fillWorkdayContact(page as unknown as Page, profile);
     expect(results.filled).toEqual(["firstName"]);
     expect(results.missing).toEqual(["email"]);
-    expect(target.fill).toHaveBeenCalledWith("Ada", { timeout: 2500 });
+    expect(target.fill).toHaveBeenCalledWith("Ada", { timeout: 2000 });
   });
 });
