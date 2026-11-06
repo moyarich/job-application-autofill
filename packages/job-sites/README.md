@@ -32,8 +32,8 @@ The exact URL has a provider-regression test. Public page inspection is **not** 
 
 ## Workday structured work experience
 
-The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+Workday-specific form logic is grouped in `workday/autofill.ts`, which calls the helpers for experience, education, skills, and follow-up résumé uploads. The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
 
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 
-Browser fixtures: `node --test tests/workday-experience.test.ts`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.
+Browser fixtures: `npx vitest run tests/workday`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.
