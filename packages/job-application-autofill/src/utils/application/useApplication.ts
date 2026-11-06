@@ -299,7 +299,7 @@ export function useApplication() {
         switch (choices[key] ?? "resume") {
           case "shared": nextShared[key] = value; delete nextOverrides[key]; break;
           case "resume": nextOverrides[key] = value; break;
-          case "keep": delete nextOverrides[key]; break;
+          case "keep": break; // Preserve the currently saved value, including an existing override.
         }
       } else delete nextOverrides[key];
     }
