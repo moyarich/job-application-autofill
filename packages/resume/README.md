@@ -97,8 +97,12 @@ npm exec -- extract-resume "Moya Richards - Resume.pdf" -o resume.json
 
 PDF extraction first checks `PYTHON_EXECUTABLE` if set, then an existing Poetry
 virtual environment, then `python3` and `python`. The selected interpreter must
-contain `pypdfium2`, `rapidocr`, `onnxruntime`, and Pillow. If none is ready, the
-package attempts `poetry install --only main --no-root` automatically.
+contain `pypdfium2`, `rapidocr`, `onnxruntime`, and Pillow. Runtime discovery
+never installs Python packages or invokes Poetry installation. If no interpreter
+has the required dependencies, run `npm run build:python --workspace packages/resume`
+from the repository root, or run the app in Docker. The build script provisions
+Poetry and the PDF/OCR dependencies; it requires a compatible Python interpreter
+to already be installed.
 
 To select an interpreter explicitly:
 
@@ -185,7 +189,8 @@ const profile = {
 
 Uploads are limited to 10 MB. PDF extraction supports up to 30 pages, renders OCR
 pages at 250 DPI, and gives the Python extraction worker a 120-second timeout.
-Python environment discovery or installation may take additional time.
+Python interpreter discovery verifies dependencies without installing anything.
+Environment provisioning runs only during the explicit Python build step.
 
 The parser is heuristic. Known cases needing correction include consecutive
 promotions with inline dates, date ranges mistaken for missing phone numbers,
