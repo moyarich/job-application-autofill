@@ -32,7 +32,7 @@ try {
         result: "inspected",
       });
     } catch (error) {
-      report.push({ ats: id, result: "error", message: error.message });
+      report.push({ ats: id, result: "error", message: error instanceof Error ? error.message : String(error) });
     } finally { await page.close(); }
   }
 } finally { await browser.close(); }

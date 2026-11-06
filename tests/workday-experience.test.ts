@@ -7,7 +7,7 @@ const jobs=[
   {company:"Example Technologies",jobTitle:"Senior Software Engineer",location:"Chicago, IL",startDate:"2021-06",endDate:null,isCurrent:true,description:"Built cloud apps."},
   {company:"Example Solutions",jobTitle:"Software Engineer",location:"",startDate:"2018-03",endDate:"2021-05",isCurrent:false,description:"Maintained APIs."},
 ];
-const row=index=>'<div data-work-experience-entry><label>Company<input type="text" name="company'+index+'"></label>'+
+const row=(index: number)=>'<div data-work-experience-entry><label>Company<input type="text" name="company'+index+'"></label>'+
   '<label>Job Title<input type="text" name="title'+index+'"></label>'+
   '<label>Location<input type="text"></label>'+
   '<label>From Date<input type="text" placeholder="MM/YYYY"></label>'+

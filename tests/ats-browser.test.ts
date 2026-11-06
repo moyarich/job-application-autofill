@@ -134,7 +134,7 @@ test("Playwright uses structured resume JSON for autofill and the matching PDF f
           buffer: attachment.buffer,
         });
         const upload = await page.locator('input[type="file"]').evaluate(async input => {
-          const file = input.files?.[0];
+          const file = (input as HTMLInputElement).files?.[0];
           const bytes = file ? new Uint8Array(await file.arrayBuffer()) : null;
           return { name: file?.name, type: file?.type, prefix: bytes ? String.fromCharCode(...bytes.slice(0, 5)) : "" };
         });
