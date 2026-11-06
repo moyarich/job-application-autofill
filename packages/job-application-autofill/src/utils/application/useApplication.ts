@@ -82,6 +82,7 @@ export function useApplication() {
     } catch(error) { setMessage(String(error)); }
   }
   async function markDefaultContact() {
+    if (!contactId) return;
     try {
       await flushPending();
       const changed = await chooseDefaultContact(activeProfileId,contactId);
