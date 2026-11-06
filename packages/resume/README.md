@@ -201,7 +201,7 @@ Run the CLI and parser tests from the repository root:
 
 ```sh
 npm run build:js --workspace packages/resume
-npx vitest run tests/extract-resume-cli.test.mjs tests/resume.test.mjs tests/experience.test.mjs tests/pdf-python-runtime.test.mjs
+npx vitest run tests/extract-resume-cli.test.ts tests/resume.test.ts tests/experience.test.ts tests/pdf-python-runtime.test.ts
 ```
 
 Run the Python tests with their optional dependencies:
