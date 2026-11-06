@@ -56,7 +56,7 @@ export function CandidateProfile({
               <input
                 type={key === "email" ? "email" : "text"}
                 value={profile.contact[key]}
-                onChange={(e) => editContact(key, e.target.value)
+                onChange={(e) => editContact(key, e.target.value)}
                 placeholder={label}
               />
               <span className="review-checkbox">
