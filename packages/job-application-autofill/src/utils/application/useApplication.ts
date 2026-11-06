@@ -97,7 +97,7 @@ export function useApplication() {
         setHydrated(true);
       })
       .catch((error) => {
-        if (!cancelled) setMessage("SQLite unavailable: " + String(error));
+        if (!cancelled) setMessage("We couldn’t load your saved information. Check the connection and try again. " + String(error));
       });
     return () => {
       cancelled = true;
@@ -122,9 +122,9 @@ export function useApplication() {
         .catch((error) => {
           blockedRef.current = true;
           setMessage(
-            "SQLite save failed: " +
+            "Your changes could not be saved: " +
               String(error) +
-              " Refresh to reload saved data.",
+              " Reload to restore your last saved changes.",
           );
         });
     }, 350);
@@ -232,7 +232,7 @@ export function useApplication() {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setMessage(
-        "Generated a selectable-text resume PDF from structured JSON. Review the PDF before submitting.",
+        "Your resume PDF is ready. Review it before submitting.",
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
@@ -243,7 +243,7 @@ export function useApplication() {
     if (!file) return;
     try {
       setProfile(parseCandidateJson(await file.text()));
-      setMessage("Profile imported from JSON.");
+      setMessage("Profile imported successfully.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Invalid JSON profile",
@@ -501,7 +501,7 @@ export function useApplication() {
         );
       } else {
         setSession(null);
-        setMessage("Browser session closed.");
+        setMessage("Application preview closed.");
       }
     } catch (error) {
       setMessage(
