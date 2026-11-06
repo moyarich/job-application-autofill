@@ -356,7 +356,7 @@ CREATE TABLE IF NOT EXISTS applications (
     const owner = requireProfile(profileId);
     const id = resumeId ?? listResumes(owner)[0]?.id;
     if (!id) throw new Error("No resume selected.");
-    const selected = requireResume(owner,id);
+    requireResume(owner,id);
     if (!snapshot || typeof snapshot !== "object") throw new Error("Invalid state.");
     const state = snapshot as Record<string,unknown>;
     const candidate = state.profile == null ? null : validateResume(state.profile);
