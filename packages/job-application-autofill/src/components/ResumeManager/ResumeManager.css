@@ -1,0 +1,22 @@
+.resume-management .panel-title { margin-bottom: 19px; }
+.resume-management-list { display:grid; gap:12px; }
+.resume-management-row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:18px; border:1px solid var(--line); border-radius:13px; }
+.resume-management-row.selected { border-color:#a9bbf1; background:#f9fbff; }
+.resume-management-file { display:grid; place-items:center; width:44px; height:44px; border-radius:12px; flex-shrink:0; background:#eaf0ff; color:#4a61c9; }
+.resume-management-info { display:flex; min-width:0; flex:1 1 190px; flex-direction:column; gap:5px; }
+.resume-management-name { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+.resume-management-name strong { font-size:14px; overflow-wrap:anywhere; }
+.resume-management-current { padding:3px 8px; border-radius:99px; color:#3753a8; background:#e6edff; font-size:10px; font-weight:700; }
+.resume-management-info > span { color:#586780; font-size:12px; }
+.resume-management-info small { color:var(--muted); font-size:11px; }
+.resume-management-actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.resume-management-actions button { min-height:36px; padding:8px 10px; }
+.resume-management-actions .resume-management-delete { color:#a6384a; }
+.resume-management-error { padding:12px; background:#fff4f5; border:1px solid #f0c8d0; border-radius:10px; color:#9e3048; font-size:13px; }
+.resume-management-form { padding:20px; margin-top:20px; border:1px solid #dbe3ee; border-radius:14px; background:#f9fbff; }
+.resume-management-form-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.resume-management-form-heading h3 { margin:0; font-size:17px; }
+.resume-management-form p { margin:0 0 16px; color:var(--muted); font-size:12px; line-height:1.55; }
+.resume-management-form > label { max-width:500px; }
+.resume-management-form .actions { margin-top:18px; }
+@media(max-width:760px) { .resume-management-row { align-items:flex-start; } .resume-management-actions { width:100%; } .resume-management-form { padding:16px; } }
