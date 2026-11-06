@@ -1,4 +1,4 @@
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import type { Page } from "playwright";
 import type { JobSiteAdapter, JobSiteStepContext } from "../../packages/job-sites/types.ts";
 import { automateCurrentStep } from "../../packages/job-sites/core/orchestrator.ts";
@@ -7,7 +7,7 @@ it("runs only matching site-defined operations without a predefined section list
   const page = { url: () => "https://jobs.lever.co/acme/123", locator: () => ({ innerText: async () => "Application" }) } as unknown as Page;
   const events: string[] = [];
   const adapter: JobSiteAdapter = {
-    id: "custom", label: "Custom", hosts: ["lever.co"], fields: {},
+    id: "lever", label: "Custom", hosts: ["lever.co"], fields: {},
     employerTenant: () => "acme",
     steps: [
       { id: "custom.portfolio", matches: async () => true,
@@ -16,8 +16,6 @@ it("runs only matching site-defined operations without a predefined section list
         run: async () => { events.push("references"); return { filled: [], missing: [] }; } },
     ],
   };
-  // Match registered hostname and id so destination verification succeeds.
-  adapter.id = "lever";
   const context: JobSiteStepContext & { expectedHost: string } = {
     page, expectedHost: "jobs.lever.co", profile: {} as JobSiteStepContext["profile"],
     directory: "/tmp", pendingResume: null,
