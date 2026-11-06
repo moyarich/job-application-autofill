@@ -1,29 +1,28 @@
-import type { CandidateProfile } from "../../resume/src/types.ts";
-import { fillKnownFields } from "../handlers/contact.ts";
-import { fillResumeStep, type ResumeStepContext } from "../handlers/resume.ts";
-import { detectScreeningQuestions } from "../handlers/screening.ts";
 import { detectCurrentPage } from "./state-machine.ts";
-import type { JobSiteAdapter, AutofillResult, ApplicationStep, PageDetection } from "../types.ts";
+import type { JobSiteAdapter, JobSiteStepContext, PageDetection } from "../types.ts";
 import type { ApplicationQuestion } from "../index.ts";
 
-export type StepContext = ResumeStepContext & { profile: CandidateProfile; expectedHost: string };
+export type StepContext = JobSiteStepContext & { expectedHost: string };
 export interface StepOutcome {
   detection: PageDetection;
   filled: string[];
   missing: string[];
-  executed: ApplicationStep[];
+  executed: string[];
   questions: ApplicationQuestion[];
-  pendingResume: ResumeStepContext["pendingResume"];
+  pendingResume: JobSiteStepContext["pendingResume"];
   resumeFile?: string;
   resumeUploadUrls?: string[];
 }
 
 /**
- * Current-step workflow: recognize the page, stop on login/challenge/redirect,
- * then dispatch independent, idempotent capabilities without clicking Next,
- * Submit, registration consent, or guessing screening answers.
+ * Execute only the current provider's matching steps.
+ * The provider defines step identities, applicability, and DOM behavior.
+ * The orchestrator validates the destination before and after every step.
  */
-export async function automateCurrentStep(context: StepContext, adapter: JobSiteAdapter): Promise<StepOutcome> {
+export async function automateCurrentStep(
+  context: StepContext,
+  adapter: JobSiteAdapter,
+): Promise<StepOutcome> {
   const detection = await detectCurrentPage(context.page, adapter, context.expectedHost);
   const outcome: StepOutcome = {
     detection, filled: [], missing: [], executed: [], questions: [],
@@ -33,38 +32,31 @@ export async function automateCurrentStep(context: StepContext, adapter: JobSite
   };
   if (detection.kind !== "application") return outcome;
 
-  const collect = (step: ApplicationStep, result: AutofillResult) => {
-    outcome.executed.push(step);
+  for (const step of adapter.steps ?? []) {
+    const before = await detectCurrentPage(context.page, adapter, context.expectedHost);
+    if (before.kind !== "application") {
+      outcome.detection = before;
+      break;
+    }
+    const current: JobSiteStepContext = {
+      page: context.page, profile: context.profile, directory: context.directory,
+      pendingResume: outcome.pendingResume, resumeFile: outcome.resumeFile,
+      resumeUploadUrls: outcome.resumeUploadUrls,
+    };
+    if (!(await step.matches(current))) continue;
+    const result = await step.run(current);
+    outcome.executed.push(step.id);
     outcome.filled.push(...result.filled);
     outcome.missing.push(...result.missing);
-  };
-  // Every step remains independent so one employer can show several sections
-  // together, while another splits them over separate pages.
-  collect("contact", adapter.fillContact
-    ? await adapter.fillContact(context.page, context.profile)
-    : await fillKnownFields(context.page, context.profile));
-
-  if (adapter.fillEmployment || adapter.fillEducation || adapter.fillSkills) {
-    if (adapter.fillEmployment) collect("employment", await adapter.fillEmployment(context.page, context.profile));
-    else if (context.profile.experience?.length)
-      outcome.missing.push(`work experience (${context.profile.experience.length} entries; review in employer browser)`);
-    if (adapter.fillEducation) collect("education", await adapter.fillEducation(context.page, context.profile));
-    if (adapter.fillSkills) collect("skills", await adapter.fillSkills(context.page, context.profile));
-  } else if (adapter.fillProfile) {
-    // Existing third-party adapters can migrate to individual capabilities
-    // incrementally without breaking their behavior.
-    collect("employment", await adapter.fillProfile(context.page, context.profile));
-  } else if (context.profile.experience?.length) {
-    outcome.missing.push(`work experience (${context.profile.experience.length} entries; review in employer browser)`);
+    if (result.questions !== undefined) outcome.questions = result.questions;
+    if ("pendingResume" in result) outcome.pendingResume = result.pendingResume ?? null;
+    if ("resumeFile" in result) outcome.resumeFile = result.resumeFile;
+    if ("resumeUploadUrls" in result) outcome.resumeUploadUrls = result.resumeUploadUrls;
+    const after = await detectCurrentPage(context.page, adapter, context.expectedHost);
+    if (after.kind !== "application") {
+      outcome.detection = after;
+      break;
+    }
   }
-
-  const resume = await fillResumeStep(context, adapter);
-  collect("resume", resume);
-  outcome.pendingResume = resume.pendingResume;
-  outcome.resumeFile = resume.resumeFile;
-  outcome.resumeUploadUrls = resume.resumeUploadUrls;
-
-  outcome.questions = await detectScreeningQuestions(context.page).catch(() => []);
-  outcome.executed.push("screening");
   return outcome;
 }

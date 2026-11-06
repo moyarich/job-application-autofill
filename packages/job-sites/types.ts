@@ -1,17 +1,42 @@
 import type { Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
+import type { ApplicationQuestion } from "./index.ts";
 
 export type ContactField = keyof CandidateProfile["contact"] | "fullName";
 export type AutofillResult = { filled: string[]; missing: string[] };
 export type ResumeRetryResult = AutofillResult & { uploaded: boolean };
 export type BrowserSignInSession = { page: Page; loginAttempted?: boolean };
-export type ApplicationStep = "contact" | "employment" | "education" | "skills" | "resume" | "screening";
 export type PageKind = "application" | "registration" | "sign_in" | "challenge" | "external";
 export type PageDetection = { kind: PageKind; url: string };
 
+/** Inputs shared by site-owned steps; no predefined section names or order. */
+export interface JobSiteStepContext {
+  page: Page;
+  profile: CandidateProfile;
+  directory: string;
+  pendingResume: { fileName: string; buffer: Buffer } | null;
+  resumeFile?: string;
+  resumeUploadUrls?: string[];
+}
+
+/** A site may return any subset of these outcome fields. */
+export interface JobSiteStepResult extends AutofillResult {
+  questions?: ApplicationQuestion[];
+  pendingResume?: JobSiteStepContext["pendingResume"];
+  resumeFile?: string;
+  resumeUploadUrls?: string[];
+}
+
+/** A job site defines its own named operations, detection and ordering. */
+export interface JobSiteStep {
+  readonly id: string;
+  matches(context: JobSiteStepContext): Promise<boolean>;
+  run(context: JobSiteStepContext): Promise<JobSiteStepResult>;
+}
+
 /**
- * A provider strategy translates an ATS's pages and controls into common
- * application operations. The orchestrator owns ordering and safety gates.
+ * Provider Strategy/Adapter contract.
+ * No global section enumeration, generic form fallback, or forced capabilities.
  */
 export interface JobSiteAdapter {
   readonly id: string;
@@ -19,22 +44,13 @@ export interface JobSiteAdapter {
   readonly hosts: readonly string[];
   readonly fields: Partial<Record<ContactField, RegExp[]>>;
   employerTenant(url: URL): string | undefined;
-
-  // Page recognition and account capabilities.
+  readonly steps?: readonly JobSiteStep[];
   detectPage?(page: Page, text: string): Promise<PageKind | null>;
   openApplication?(page: Page): Promise<void>;
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
   loginFailureMessage?(text: string): string | null;
-
-  // Form capabilities. Unsupported operations remain visible for manual review.
   skipContactField?(page: Page, field: ContactField): Promise<boolean>;
-  fillContact?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
-  fillEmployment?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
-  fillEducation?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
-  fillSkills?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
   retryResumeUpload?(page: Page, file: string, uploadedUrls: string[]): Promise<ResumeRetryResult>;
-
-  // Backwards-compatible grouped provider hook (new integrations should use
-  // the individual employment/education/skills strategies instead).
-  fillProfile?(page: Page, profile: CandidateProfile): Promise<AutofillResult>;
+  discoverQuestions?(page: Page): Promise<ApplicationQuestion[]>;
+  answerQuestions?(page: Page, answers: Record<string, string>): Promise<{ filled: string[]; unresolved: string[] }>;
 }

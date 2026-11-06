@@ -3,11 +3,9 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
-import { fillKnownFields } from "./handlers/contact.ts";
 export { fillKnownFields } from "./handlers/contact.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
-import { detectScreeningQuestions, fillScreeningAnswers } from "./handlers/screening.ts";
 import { automateCurrentStep } from "./core/orchestrator.ts";
 import { detectCurrentPage } from "./core/state-machine.ts";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
@@ -230,9 +228,12 @@ export async function answerApplicationQuestions(
       "Finish sign-in and prepare the application before answering questions.",
     );
   validateUrl(session.page.url());
-  session.questions = await detectScreeningQuestions(session.page);
-  const result = await fillScreeningAnswers(session.page, answers);
-  session.questions = await discoverQuestions(session.page);
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter?.answerQuestions || !adapter.discoverQuestions) {
+    throw new Error("This job site has no configured screening-answer handler.");
+  }
+  const result = await adapter.answerQuestions(session.page, answers);
+  session.questions = await adapter.discoverQuestions(session.page);
   session.message = result.unresolved.length
     ? "Some answers need manual attention in the browser viewer."
     : "Supplied answers were filled. Review their exact selections in the browser viewer.";

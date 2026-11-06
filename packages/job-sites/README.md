@@ -37,3 +37,7 @@ Workday-specific form logic is grouped in `workday/autofill.ts`, which calls the
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 
 Browser fixtures: `npx vitest run tests/workday`. The fixtures are simulated Workday-style forms, **not** authenticated employer sessions.
+
+## Site-defined operations
+
+Adapters declare their own `steps` array of `{ id, matches(context), run(context) }`. There is no shared list of application sections: Workday may declare work history, education or resume steps, while another ATS can define entirely different operations. The orchestrator executes only matching steps in the site's declared order and validates the employer destination before and after every step. Unknown or absent sections are not labeled unsupported and no arbitrary HTML autofill fallback is applied. Screening answers require an adapter-owned handler and explicitly supplied values.
