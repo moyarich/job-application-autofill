@@ -33,11 +33,12 @@ export function useApplication() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
-  const tab = location.pathname === "/profile" ? "profile" :
+  const tab = location.pathname === "/resume" ? "profile" :
+    location.pathname === "/profile" ? "personal" :
     location.pathname === "/import" ? "parser" :
     location.pathname === "/workspace" ? "workspace" : "applications";
-  function setTab(next: "applications" | "profile" | "parser" | "workspace") {
-    navigate({ pathname: next === "parser" ? "/import" : "/" + next, search: location.search });
+  function setTab(next: "applications" | "profile" | "personal" | "parser" | "workspace") {
+    navigate({ pathname: next === "parser" ? "/import" : next === "profile" ? "/resume" : next === "personal" ? "/profile" : "/" + next, search: location.search });
   }
   const [profile, setProfile] = useState<CandidateProfile>(() =>
     structuredClone(emptyCandidate),

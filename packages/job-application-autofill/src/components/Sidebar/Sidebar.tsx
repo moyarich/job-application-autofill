@@ -5,7 +5,8 @@ import "./Sidebar.css";
 
 const pages = [
   { path: "/applications", label: "Applications", icon: BriefcaseBusiness },
-  { path: "/profile", label: "Resume editor", icon: UserRound },
+  { path: "/profile", label: "Profile", icon: UserRound },
+  { path: "/resume", label: "Resume editor", icon: FileText },
   { path: "/import", label: "Resume import", icon: FileText },
   { path: "/workspace", label: "Profiles & resumes", icon: FolderOpen },
 ] as const;

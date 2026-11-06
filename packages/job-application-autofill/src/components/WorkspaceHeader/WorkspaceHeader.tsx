@@ -6,6 +6,7 @@ export function WorkspaceHeader({ controller }: { controller: ApplicationControl
   const { tab, setTab } = controller;
   const content = {
     applications: { title: "Applications", description: "Organize your job search and keep every application on track." },
+    personal: { title: "Profile", description: "Manage your saved contact details and the profile you are working with." },
     profile: { title: "Resume editor", description: "Manage your contact details, experience, and resume versions." },
     parser: { title: "Import a resume", description: "Bring in a PDF, Word document, or resume JSON to get started." },
     workspace: { title: "Profiles & resumes", description: "Manage profiles and the resumes associated with each profile." },
