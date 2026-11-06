@@ -6,7 +6,11 @@ export function workdayCredentials(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   const destination = new URL(url);
-  const host = (env.RESUME_SITE_HOST || "workday.wd5.myworkdayjobs.com")
+  const host = (
+    env.WORKDAY_HOST ||
+    env.RESUME_SITE_HOST ||
+    "workday.wd5.myworkdayjobs.com"
+  )
     .trim()
     .toLowerCase();
   if (
@@ -17,8 +21,11 @@ export function workdayCredentials(
     destination.password
   )
     return null;
-  if (!env.RESUME_SITE_EMAIL || !env.RESUME_SITE_PASSWORD) return null;
-  return { email: env.RESUME_SITE_EMAIL, password: env.RESUME_SITE_PASSWORD };
+  const email =
+    env.WORKDAY_USERNAME || env.WORKDAY_USER_EMAIL || env.RESUME_SITE_EMAIL;
+  const password = env.WORKDAY_PASSWORD || env.RESUME_SITE_PASSWORD;
+  if (!email || !password) return null;
+  return { email, password };
 }
 
 export async function openWorkdayApplication(page: Page) {
@@ -48,6 +55,24 @@ export async function helpWorkdaySignIn(
 ) {
   if (session.loginAttempted) return;
   const page = session.page;
+  if (
+    workdayCredentials(page.url(), env) &&
+    (await page
+      .getByRole("heading", { name: /^create (?:an? )?account$/i })
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    const existing = page.getByRole("link", { name: /^sign in$/i }).first();
+    if (await existing.isVisible().catch(() => false)) {
+      await existing.click();
+      await page
+        .getByRole("heading", { name: /^sign in$/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 5000 })
+        .catch(() => {});
+    }
+  }
   if ((await helpWorkdaySignUp(page, env)).state === "manual_required") return;
   if (session.loginAttempted || !workdayCredentials(page.url(), env)) return;
   const visible = async (locator: Locator) =>
@@ -95,10 +120,13 @@ export async function helpWorkdaySignIn(
   // Workday also has a global Sign In button. Prefer the actual form submit.
   if (typeof password.locator === "function") {
     const form = password.locator("xpath=ancestor::form[1]");
-    const workdaySubmit = page.locator('[data-automation-id="signInSubmitButton"]').last();
+    const workdaySubmit = page
+      .locator('[data-automation-id="signInSubmitButton"]')
+      .last();
     if (await visible(workdaySubmit)) submit = workdaySubmit;
-    else if (await form.count()) submit = form.getByRole("button", {name:/^sign in$/i}).first();
-    else submit = page.getByRole("button",{name:/^sign in$/i}).first();
+    else if (await form.count())
+      submit = form.getByRole("button", { name: /^sign in$/i }).first();
+    else submit = page.getByRole("button", { name: /^sign in$/i }).last();
   }
   if (
     !(await visible(email)) ||

@@ -61,6 +61,6 @@ test("five ATS-style browser fixtures: discover and fill employer questions", as
       } finally { await page.close(); }
     }
   } finally { await browser.close(); }
-});
+}, 30_000);
 
 

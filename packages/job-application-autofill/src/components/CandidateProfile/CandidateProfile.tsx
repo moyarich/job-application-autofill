@@ -203,7 +203,7 @@ export function CandidateProfile({
                   {label}
                   <input
                     type={key === "email" ? "email" : "text"}
-                    value={profile.contact[key]}
+                    value={profile.contact[key] || ""}
                     onChange={(e) => editContact(key, e.target.value)}
                     placeholder={label}
                   />

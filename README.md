@@ -129,7 +129,7 @@ The built-in font supports Latin text; unsupported Unicode characters produce an
 
 The Playwright runner recognizes **Greenhouse, Lever, Ashby, Workday and SmartRecruiters**. Each supported domain has an adapter with common candidate-field mappings, including full-name-only forms. The runner detects sign-in, registration, SSO redirects and security challenges and pauses for manual completion in the noVNC browser. Passwords, verification codes and CAPTCHA solutions are never collected in the dashboard.
 
-Once login has finished, use **I've finished — continue**. On multi-step forms, advance via the live employer browser and click **Refresh form after next step** to inspect newly visible questions. The dashboard can fill *only answers you provide explicitly*. Dropdowns, text areas and checkboxes are supported where their accessible labels and options match; complex autocomplete widgets and unknown controls remain manual. Voluntary demographic questions and sensitive identifiers are not filled automatically.
+Once login has finished, use **I've finished — continue**. On multi-step forms, advance via the live employer browser and click **Refresh form after next step** to inspect newly visible questions. The dashboard can fill _only answers you provide explicitly_. Dropdowns, text areas and checkboxes are supported where their accessible labels and options match; complex autocomplete widgets and unknown controls remain manual. Voluntary demographic questions and sensitive identifiers are not filled automatically.
 
 A browser-fixture suite covers all five ATS adapters without contacting employers:
 
@@ -183,8 +183,8 @@ To force a particular Python interpreter for the Node backend, set `PYTHON_EXECU
 
 ### Optional Workday sign-in from .env
 
-Set `RESUME_SITE_HOST`, `RESUME_SITE_EMAIL`, and `RESUME_SITE_PASSWORD` in the ignored
-root `.env` file for an existing employer account. Copy the names from `.env.example`.
+Set `WORKDAY_HOST`, `WORKDAY_USERNAME`, and `WORKDAY_PASSWORD` in the ignored
+root `.env` file for an existing employer account. `WORKDAY_USER_EMAIL` is accepted as a username alias; legacy `RESUME_SITE_HOST`, `RESUME_SITE_EMAIL`, and `RESUME_SITE_PASSWORD` remain supported. Copy the names from `.env.example`.
 The default tenant is `workday.wd5.myworkdayjobs.com`; credentials are never filled
 on another tenant or an external identity provider. Restart/recreate the API after
 editing credentials (`docker compose up -d --force-recreate api`).
