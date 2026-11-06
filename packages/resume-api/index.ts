@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume/src/resume-schema/validate.ts";
 import { renderResumePdf } from "../resume/src/resume-schema/create-pdf.ts";
-import { openStore } from "./store.ts";
+import { openStore, DEFAULT_PROFILE_ID } from "./store.ts";
 import { decodePdfAttachment } from "../resume/src/resume-schema/attachment.ts";
 import { prepareApplication, getApplication, getActiveApplication, continueApplication, answerApplicationQuestions, refreshScreenshot, submitApplication, closeApplication } from "../job-sites/automation.ts";
 
@@ -45,11 +45,29 @@ const server = createServer(async (req, res) => {
       if (!process.env.WEB_VNC_PASSWORD) throw new Error("WEB_VNC_PASSWORD is not configured.");
       return send(res, 200, { password: process.env.WEB_VNC_PASSWORD });
     }
+    const profileIdHeader = req.headers["x-profile-id"];
+    if (Array.isArray(profileIdHeader)) throw new Error("Multiple profile IDs are not allowed.");
+    const profileId = profileIdHeader ?? DEFAULT_PROFILE_ID;
+    if (req.method === "GET" && url.pathname === "/api/profiles")
+      return send(res, 200, { profiles: store.listProfiles(), defaultProfileId: DEFAULT_PROFILE_ID });
+    if (req.method === "POST" && url.pathname === "/api/profiles") {
+      const payload = record(await readJson(req));
+      return send(res, 201, store.createProfile(payload.name));
+    }
+    const profileRoute = url.pathname.match(/^\/api\/profiles\/([0-9a-f-]{36})$/i);
+    if (profileRoute && req.method === "PATCH") {
+      const payload = record(await readJson(req));
+      return send(res, 200, store.renameProfile(profileRoute[1], payload.name));
+    }
+    if (profileRoute && req.method === "DELETE") {
+      store.deleteProfile(profileRoute[1]);
+      return send(res, 200, { deleted: true });
+    }
     if (req.method === "GET" && url.pathname === "/api/state")
-      return send(res, 200, store.getSnapshot());
+      return send(res, 200, store.getSnapshot(profileId));
     if (req.method === "PUT" && url.pathname === "/api/state") {
       const payload = await readJson(req);
-      try { return send(res, 200, store.saveSnapshot(payload)); }
+      try { return send(res, 200, store.saveSnapshot(payload, profileId)); }
       catch (error) {
         if (error instanceof Error && "code" in error && error.code === "STALE_STATE") return send(res, 409, { error: error.message });
         throw error;
@@ -59,10 +77,10 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && jobStatus) {
       const { status } = record(await readJson(req));
       if (typeof status !== "string") throw new Error("Application status must be a string.");
-      const snapshot = store.getSnapshot();
+      const snapshot = store.getSnapshot(profileId);
       if (!snapshot.jobs.some(job => job.id === jobStatus[1])) throw new Error("Application not found.");
       snapshot.jobs = snapshot.jobs.map(job => job.id === jobStatus[1] ? {...job, status} : job);
-      return send(res, 200, store.saveSnapshot(snapshot));
+      return send(res, 200, store.saveSnapshot(snapshot, profileId));
     }
     if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
       const profile = validateResume(await readJson(req));
