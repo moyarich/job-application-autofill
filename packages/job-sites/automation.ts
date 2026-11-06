@@ -225,7 +225,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume,
       session.message = "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
       return status(session);
     }
-    if (adapter.id === "workday") {
+    if (adapter?.id === "workday") {
       await openWorkdayApplication(page).catch(() => {});
       await helpWorkdaySignIn(session).catch(() => {});
     }
