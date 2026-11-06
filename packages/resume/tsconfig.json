@@ -1,10 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "noEmit": true,
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["src/**/*", "vite.config.ts", "scripts/python-runtime.ts"]
+  "include": [
+    "src/**/*",
+    "vite.config.ts"
+  ]
 }

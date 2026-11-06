@@ -222,7 +222,8 @@ disabled because the Node.js workspace owns this package.
 
 ## Package layout
 
-- `src/extract-resume/`: PDF/DOCX extraction and the `extract-resume` CLI.
+- `src/extract-resume/`: PDF/DOCX extraction, read-only Python environment discovery, and the `extract-resume` CLI.
+- `scripts/build-python.ts`: explicit Python/Poetry dependency provisioning.
 - `src/create-resume/`: the `create-resume` JSON-to-PDF CLI.
 - `src/resume-schema/`: schema, validation, PDF generation, and examples.
 - `python/`: PDFium/OCR worker.

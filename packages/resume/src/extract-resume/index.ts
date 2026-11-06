@@ -2,7 +2,7 @@ import { extractEmploymentHistory } from "./experience.js";
 import {
   getPdfPython,
   resumePackageDir,
-} from "../../scripts/python-runtime.js";
+} from "./python-runtime.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";

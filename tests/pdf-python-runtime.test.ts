@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { findPdfPython } from "../packages/resume/scripts/python-runtime.ts";
+import { findPdfPython } from "../packages/resume/src/extract-resume/python-runtime.ts";
 
 describe("PDF Python environment resolution", () => {
   it("uses an explicitly configured and verified interpreter", async () => {
