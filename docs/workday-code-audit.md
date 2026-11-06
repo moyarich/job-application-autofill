@@ -30,7 +30,7 @@ Audited on the `fix/workday-env-credentials` branch, November 6, 2026.
 - `packages/job-sites/index.ts`: provider registry import.
 - `.env.example`, `docker-compose.yml`: Workday environment variable names and legacy aliases.
 - `README.md`, `packages/job-sites/README.md`: user-facing provider support and credentials documentation.
-- `.github/workflows/ci_docker.yml`: `tests/workday` workflow path and command.
+- Workday Vitest tests run through the regular test workflow; Docker CI keeps its container smoke checks and ATS integration fixtures.
 - `tests/ats/`: cross-ATS host discovery, form fixture and employer identity tests.
 - `tests/workday/`: provider-specific regression tests.
 
