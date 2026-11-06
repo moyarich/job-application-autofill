@@ -107,7 +107,12 @@ export function renderResumeHtml(input: unknown) {
   const p = validateResume(input) as CandidateProfile;
   const c = p.contact;
   const name = [c.firstName, c.lastName].filter(Boolean).join(" ");
-  const experience = recent(p.experience)
+  const experience = [...p.experience]
+    .sort(
+      (a, b) =>
+        Number(b.isCurrent) - Number(a.isCurrent) ||
+        b.startDate.localeCompare(a.startDate),
+    )
     .map((e) =>
       entry(
         e.jobTitle,
@@ -156,7 +161,23 @@ export function renderResumeHtml(input: unknown) {
       "</div>",
     section("Professional Summary", paragraphs(p.summary)),
     section("Work Experience", experience),
-    section("Skills", p.skills.length ? el("p", p.skills.join(", ")) : ""),
+    section(
+      "Skills",
+      p.skillGroups?.length
+        ? p.skillGroups
+            .map(
+              (g) =>
+                "<p><strong>" +
+                escapeHtml(g.heading) +
+                ":</strong> " +
+                escapeHtml(g.content) +
+                "</p>",
+            )
+            .join("")
+        : p.skills.length
+          ? el("p", p.skills.join(", "))
+          : "",
+    ),
     section("Education", education),
     section("Projects", projects),
     section("Certifications", certs),
@@ -165,6 +186,9 @@ export function renderResumeHtml(input: unknown) {
       p.languages.length ? el("p", p.languages.join(", ")) : "",
     ),
     section("Awards", p.awards.length ? "<ul>" + list(p.awards) + "</ul>" : ""),
+    ...(p.additionalSections || []).map((s) =>
+      section(s.heading, paragraphs(s.content)),
+    ),
   ].join("");
   return `<!doctype html><html lang="und"><head><meta charset="UTF-8"><style>
     @page { size: letter; margin: 0.68in 0.75in; }

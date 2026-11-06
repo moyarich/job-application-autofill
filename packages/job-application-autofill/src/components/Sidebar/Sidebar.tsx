@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { BriefcaseBusiness, FileText, Menu, UserRound, X } from "lucide-react";
+import { NavLink, useLocation } from "react-router";
+import { BriefcaseBusiness, FileText, FolderOpen, Menu, UserRound, X } from "lucide-react";
 import "./Sidebar.css";
-import type { ApplicationController } from "../../utils/application/useApplication";
-import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 
-const navigation = [
-  { id: "applications", label: "Applications", icon: BriefcaseBusiness },
-  { id: "profile", label: "My profile", icon: UserRound },
-  { id: "parser", label: "Resume import", icon: FileText },
+const pages = [
+  { path: "/applications", label: "Applications", icon: BriefcaseBusiness },
+  { path: "/profile", label: "Profile", icon: UserRound },
+  { path: "/resume", label: "Resume editor", icon: FileText },
+  { path: "/import", label: "Resume import", icon: FileText },
+  { path: "/workspace", label: "Profiles & resumes", icon: FolderOpen },
 ] as const;
 
-export function Sidebar({ controller }: { controller: ApplicationController }) {
-  const { tab, setTab } = controller;
+export function Sidebar() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <aside className={menuOpen ? "sidebar sidebar-open" : "sidebar"}>
@@ -20,37 +21,25 @@ export function Sidebar({ controller }: { controller: ApplicationController }) {
           <span className="brand-symbol" aria-hidden="true"><BriefcaseBusiness size={19} strokeWidth={2.2} /></span>
           <span className="brand-name">Job Application<span className="brand-light"> Autofill</span></span>
         </div>
-        <button
-          className="sidebar-toggle"
-          type="button"
+        <button className="sidebar-toggle" type="button"
           aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-          aria-expanded={menuOpen}
-          aria-controls="sidebar-content"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
+          aria-expanded={menuOpen} aria-controls="sidebar-content"
+          onClick={() => setMenuOpen(open => !open)}>
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
       <div id="sidebar-content" className="sidebar-content">
         <nav className="sidebar-navigation" aria-label="Main navigation">
-          <span className="nav-label">Menu</span>
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={tab === id ? "nav active" : "nav"}
-              aria-current={tab === id ? "page" : undefined}
-              onClick={() => {
-                setTab(id);
-                setMenuOpen(false);
-              }}
-            >
+          <span className="nav-label">Pages</span>
+          {pages.map(({ path, label, icon: Icon }) => (
+            <NavLink key={path} to={{ pathname: path, search: location.search }}
+              className={({ isActive }) => isActive ? "nav active" : "nav"}
+              onClick={() => setMenuOpen(false)}>
               <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
               <span>{label}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
-        <LocalProfiles controller={controller} />
         <div className="sidebar-bottom">
           <span className="sidebar-privacy-dot" aria-hidden="true" />
           Your workspace is saved on this device

@@ -1,4 +1,5 @@
 import "./Opportunities.css";
+import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -26,9 +27,9 @@ export function Opportunities({
   } = controller;
   return (
     <>
-      <section className="panel">
+      <section className="panel" id="add-application">
         <div className="panel-title">
-          <h2>Add a job</h2>
+          <h2>Add an opportunity</h2>
           <p>Save the details of a role you want to apply for.</p>
         </div>
         <form className="add-form" onSubmit={addJob}>
@@ -66,7 +67,7 @@ export function Opportunities({
             />
           </label>
           <button className="primary" type="submit">
-            Add job
+            <FilePlus2 size={15} /> Add job
           </button>
         </form>
       </section>
@@ -76,19 +77,23 @@ export function Opportunities({
             <h2>Applications</h2>
             <p>Keep track of every stage, from saved to submitted.</p>
           </div>
-          <button
-            className="secondary"
-            onClick={() => downloadJson("job-applications.json", jobs)}
-          >
-            Export applications
-          </button>
-          <input
-            aria-label="Search applications"
-            className="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search company or role..."
-          />
+          <div className="opportunity-controls">
+            <label className="search-control">
+              <span className="sr-only">Search applications</span>
+              <Search size={15} aria-hidden="true" />
+              <input
+                aria-label="Search applications"
+                className="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search applications"
+              />
+            </label>
+            <button type="button" className="secondary"
+              onClick={() => downloadJson("job-applications.json", jobs)}>
+              <Download size={15} /> Export
+            </button>
+          </div>
         </div>
         <div className="job-list">
           {filtered.length === 0 ? (
@@ -149,7 +154,7 @@ export function Opportunities({
                     setJobs((items) => items.filter((x) => x.id !== job.id))
                   }
                 >
-                  ×
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
                 {notesJobId === job.id && (
                   <label className="job-notes">

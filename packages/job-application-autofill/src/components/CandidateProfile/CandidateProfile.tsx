@@ -1,4 +1,6 @@
 import "./CandidateProfile.css";
+import { ResumeSections } from "./ResumeSections";
+import { Download, FileText, FileUp, Plus, Trash2 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
 import type { ApplicationController } from "../../utils/application/useApplication";
@@ -21,8 +23,8 @@ export function CandidateProfile({
       <section className="panel">
         <div className="panel-title horizontal">
           <div>
-            <h2>Contact for this resume</h2>
-            <p>Each resume selects a reusable contact record. Changes to that record affect every resume using it.</p>
+            <h2>Contact details</h2>
+            <p>Choose a saved contact or add details to a draft. A saved contact can be reused across resumes.</p>
           </div>
           <div className="actions">
             <input
@@ -36,21 +38,21 @@ export function CandidateProfile({
               className="secondary"
               onClick={() => importRef.current?.click()}
             >
-              Import profile
+              <FileUp size={15} /> Import JSON
             </button>
             <button
               className="primary"
               onClick={() => downloadJson("candidate-profile.json", profile)}
             >
-              Export profile
+              <Download size={15} /> Export JSON
             </button>
-            <button className="primary" onClick={exportResumePdf}>
-              Export PDF
+            <button className="secondary" onClick={exportResumePdf}>
+              <FileText size={15} /> Export PDF
             </button>
           </div>
         </div>
         <div className="contact-record-selector">
-          <label htmlFor="resume-contact-record">Contact record</label>
+          <label htmlFor="resume-contact-record">Selected contact</label>
           <select id="resume-contact-record" value={contactId ?? ""}
             onChange={event => chooseContact(event.target.value)}>
             <option value="">Draft — no saved contact</option>
@@ -59,9 +61,14 @@ export function CandidateProfile({
             </option>)}
           </select>
           {!contactId && <button type="button" className="primary"
-            onClick={() => void saveContactRecord()}>Save contact for this resume</button>}
+            onClick={() => void saveContactRecord()}>Save contact</button>}
           {contactId && contactId !== defaultContactId && <button type="button" className="secondary"
-            onClick={() => void markDefaultContact()}>Make default for new resumes</button>}
+            onClick={() => void markDefaultContact()}>Set as default</button>}
+          <p className="contact-hint">
+            {contactId
+              ? "Edits to this contact are reflected in other resumes linked to the same record."
+              : "Draft contact details are kept with this resume. Save a complete contact to enable applications."}
+          </p>
         </div>
         <div className="profile-grid">
           {fields.map(({ key, label }) => (
@@ -95,6 +102,7 @@ export function CandidateProfile({
             onChange={(e) =>
               setProfile((x) => ({
                 ...x,
+                skillGroups: [],
                 skills: e.target.value
                   .split(",")
                   .map((v) => v.trim())
@@ -127,7 +135,7 @@ export function CandidateProfile({
                 }))
               }
             >
-              Add position
+              <Plus size={15} /> Add position
             </button>
           </div>
           {profile.experience.map((job, index) => (
@@ -226,15 +234,16 @@ export function CandidateProfile({
                   }))
                 }
               >
-                Remove job
+                <Trash2 size={14} aria-hidden="true" /> Remove position
               </button>
             </div>
           ))}
         </section>
+        <ResumeSections controller={controller} />
         <div className={errors.length ? "validation warning" : "validation"}>
           {errors.length
             ? "Please complete: " + errors.join(", ")
-            : "Selected resume ready to use."}
+            : contactId ? "Resume contact is ready for applications." : "Save a contact record before applying."}
         </div>
       </section>
     </>

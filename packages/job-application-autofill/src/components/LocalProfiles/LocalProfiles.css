@@ -1,9 +1,9 @@
-.local-profiles { display:flex;flex-direction:column;gap:9px;margin:24px 0;padding:23px 7px 19px;border-top:1px solid #293951 }
-.local-profiles label { color:#9eaecc;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase }
-.local-profiles select { width:100%;padding:10px 12px;background:#202e47;color:#f5f7ff;border:1px solid #405371;border-radius:10px;font-size:13px }
-.local-profile-actions { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px }
-.local-profile-actions button { padding:7px 9px;background:transparent;color:#c2cee3;border:1px solid #3b4d69;border-radius:8px;font-size:12px;font-weight:550;cursor:pointer;transition:background .15s }
-.local-profile-actions button:hover:not(:disabled) { background:#2c3f60;color:white }
-.local-profile-actions button:disabled { opacity:.4;cursor:not-allowed }
-.local-profiles p { font-size:11px;color:#99a8c5;margin:0 }
-@media(max-width:760px) { .local-profiles { margin:18px 0 12px } }
+.local-profiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 660px; }
+.local-profiles label { color: #44526b; font-size: 12px; font-weight: 700; letter-spacing: .01em; text-transform: none; }
+.local-profiles select { width: 100%; min-height: 44px; border: 1px solid #dbe3ee; border-radius: 10px; padding: 10px 13px; background: white; color: #182338; }
+.local-profile-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 17px; }
+.local-profile-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 39px; padding: 9px 12px; background: #fff; color: #42516a; border: 1px solid #dbe3ee; border-radius: 9px; font-size: 12px; font-weight: 650; }
+.local-profile-actions button:hover:not(:disabled) { background: #f5f8ff; border-color: #bfcbe0; }
+.local-profile-actions button:disabled { opacity: .4; }
+.local-profile-actions .action-danger:hover:not(:disabled) { color: #ae3146; background: #fff4f5; border-color: #efcbd0; }
+.local-profiles .resume-context { margin: -7px 0 0; padding: 12px 14px; border: 1px solid #e2e7f2; border-radius: 10px; background: #f8faff; color: #67758a; font-size: 12px; line-height: 1.5; }

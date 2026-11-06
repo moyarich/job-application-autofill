@@ -1,36 +1,78 @@
+import { useState } from "react";
+import { CheckCircle2, ContactRound, Info } from "lucide-react";
 import "./ContactImportReview.css";
 import type { ApplicationController } from "../../utils/application/useApplication";
+import type { ContactChoice } from "../../utils/api/client";
 import { fields } from "../../utils/profile/fields";
 
 export function ContactImportReview({ controller }: { controller: ApplicationController }) {
-  const { pendingImport, profile, conflictKeys, importChoices,
-    setImportChoices, confirmImport, cancelImport } = controller;
+  if (!controller.pendingImport) return null;
+  return <ContactImportDecision key={JSON.stringify(controller.pendingImport)} controller={controller} />;
+}
+
+function ContactImportDecision({ controller }: { controller: ApplicationController }) {
+  const { pendingImport, contactId, selectedContact, confirmImport, cancelImport } = controller;
+  const [strategy, setStrategy] = useState<ContactChoice>("resume");
   if (!pendingImport) return null;
+
+  const hasLinkedContact = Boolean(contactId && selectedContact);
+  const imported = fields.filter(({key}) => pendingImport.contact[key]?.trim());
+  const fullName = [pendingImport.contact.firstName,pendingImport.contact.lastName].filter(Boolean).join(" ");
+  const options = [
+    { value: "resume" as const, title: "Use imported contact", description: "Save it as a separate contact for this resume. Other resumes will not change." },
+    { value: "keep" as const, title: "Keep existing contact", description: "Import the resume content without changing its linked contact." },
+    { value: "shared" as const, title: "Update linked contact", description: "Replace matching fields on the existing contact. This changes every resume using it." },
+  ];
+
   return (
     <section className="panel contact-import-review" aria-label="Review imported contact details">
-      <h2>Review contact differences</h2>
-      <p>Choose how to handle each difference. No contact information changes until you confirm.</p>
-      {conflictKeys.map(key => (
-        <fieldset key={key} className="contact-import-field">
-          <legend>{fields.find(field => field.key === key)?.label ?? key}</legend>
-          <p>Current contact: <strong>{profile.contact[key] || "(blank)"}</strong> · Imported: <strong>{pendingImport.contact[key] || "(blank)"}</strong></p>
-          <label><input type="radio" name={"contact-import-"+key}
-            checked={(importChoices[key] ?? "resume") === "resume"}
-            onChange={() => setImportChoices(previous => ({...previous,[key]:"resume"}))} />
-            Use imported value in a separate contact record for this resume</label>
-          <label><input type="radio" name={"contact-import-"+key}
-            checked={importChoices[key] === "shared"}
-            onChange={() => setImportChoices(previous => ({...previous,[key]:"shared"}))} />
-            Update the current contact record for all resumes using it</label>
-          <label><input type="radio" name={"contact-import-"+key}
-            checked={importChoices[key] === "keep"}
-            onChange={() => setImportChoices(previous => ({...previous,[key]:"keep"}))} />
-            Keep the current contact value</label>
+      <div className="contact-import-heading">
+        <span className="contact-import-symbol"><ContactRound size={22} aria-hidden="true" /></span>
+        <div>
+          <h2>{hasLinkedContact ? "Confirm imported contact" : "Contact found in your resume"}</h2>
+          <p>{hasLinkedContact
+            ? "Choose what to do with the contact details. The resume's experience, skills, and summary will be imported separately."
+            : "Review these details before adding them to this resume."}</p>
+        </div>
+      </div>
+      <div className="imported-contact-preview">
+        <div className="contact-import-preview-heading">
+          <CheckCircle2 size={17} aria-hidden="true" />
+          <strong>{fullName || "Imported contact details"}</strong>
+        </div>
+        {imported.length ? (
+          <dl>
+            {imported.map(({key,label}) => (
+              <div key={key}><dt>{label}</dt><dd>{pendingImport.contact[key]}</dd></div>
+            ))}
+          </dl>
+        ) : (
+          <p>No contact information was found. You can still import the resume as a draft.</p>
+        )}
+      </div>
+      {hasLinkedContact ? (
+        <fieldset className="contact-import-options">
+          <legend>How should these details be used?</legend>
+          {options.map(option => (
+            <label key={option.value} className={strategy === option.value ? "contact-import-option selected" : "contact-import-option"}>
+              <input type="radio" name="contact-import-strategy"
+                value={option.value} checked={strategy === option.value}
+                onChange={() => setStrategy(option.value)} />
+              <span><strong>{option.title}</strong><small>{option.description}</small></span>
+            </label>
+          ))}
         </fieldset>
-      ))}
-      <div className="actions">
-        <button type="button" className="primary" onClick={confirmImport}>Confirm import</button>
-        <button type="button" className="secondary" onClick={cancelImport}>Cancel import</button>
+      ) : (
+        <p className="contact-import-explanation">
+          <Info size={16} aria-hidden="true" />
+          A new contact will be saved and linked to this resume when the required name and email details are available. Otherwise, the resume stays a draft. No other resume is changed.
+        </p>
+      )}
+      <div className="actions contact-import-actions">
+        <button className="primary" type="button" onClick={() => void confirmImport(hasLinkedContact ? strategy : "resume")}>
+          {hasLinkedContact ? "Confirm and import resume" : "Use these details"}
+        </button>
+        <button className="secondary" type="button" onClick={cancelImport}>Cancel import</button>
       </div>
     </section>
   );

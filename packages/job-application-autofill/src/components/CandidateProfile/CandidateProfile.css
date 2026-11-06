@@ -1,2 +1,13 @@
-.profile-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px }
-.wide-label { margin-top:20px }
+.profile-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 20px; }
+.wide-label { margin-top: 20px; }
+.contact-record-selector { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; padding: 18px; border-radius: 14px; border: 1px solid #dce6f6; background: #f7f9ff; }
+.contact-record-selector > label { flex: 1 1 260px; }
+.contact-record-selector > button { flex-shrink: 0; }
+.contact-record-selector .contact-hint { flex-basis: 100%; color: #65748c; margin: -4px 0 0; font-size: 12px; line-height: 1.5; }
+.employment-editor { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.employment-entry { position: relative; padding: 22px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fbfcff; }
+.employment-entry .remove { margin-top: 14px; color: #a43c51; font-weight: 700; }
+.employment-entry .remove:hover { text-decoration: underline; }
+@media(max-width: 700px) { .profile-grid { grid-template-columns: 1fr; } .contact-record-selector { align-items: stretch; flex-direction: column; } .contact-record-selector > label { flex-basis: auto; } .employment-entry { padding: 17px; } }
+
+.resume-full-width { grid-column: 1 / -1; }

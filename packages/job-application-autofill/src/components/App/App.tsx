@@ -1,4 +1,5 @@
 import "./App.css";
+import { ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { useApplication } from "../../utils/application/useApplication";
 import { ResumeParser } from "../ResumeParser/ResumeParser";
 import { CandidateProfile } from "../CandidateProfile/CandidateProfile";
@@ -7,6 +8,9 @@ import { Opportunities } from "../Opportunities/Opportunities";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
+import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
+import { ContactManager } from "../ContactManager/ContactManager";
+import { ResumeManager } from "../ResumeManager/ResumeManager";
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -23,7 +27,7 @@ export function App() {
     );
   return (
     <div className={applicationId ? "app application-page" : "app"}>
-      <Sidebar controller={controller} />
+      <Sidebar />
       <main className="main">
         <WorkspaceHeader controller={controller} />
         {message && (
@@ -40,45 +44,44 @@ export function App() {
         <ContactImportReview controller={controller} />
         {tab === "applications" ? (
           <>
-            <section className="stats">
-              <div className="stat">
-                <span>Total applications</span>
-                <strong>{jobs.length}</strong>
-              </div>
-              <div className="stat">
-                <span>In progress</span>
-                <strong>
-                  {
-                    jobs.filter(
-                      (x) =>
-                        x.status === "in_progress" ||
-                        x.status === "ready_for_review",
-                    ).length
-                  }
-                </strong>
-              </div>
-              <div className="stat">
-                <span>Submitted</span>
-                <strong>
-                  {jobs.filter((x) => x.status === "submitted").length}
-                </strong>
-              </div>
-              <div className="stat">
-                <span>Interviews</span>
-                <strong>
-                  {jobs.filter((x) => x.status === "interview").length}
-                </strong>
-              </div>
+            <section className="stats" aria-label="Application overview">
+              <div className="stat"><span><ListChecks size={15} aria-hidden="true" /> Total applications</span><strong>{jobs.length}</strong></div>
+              <div className="stat"><span><Clock3 size={15} aria-hidden="true" /> In progress</span>
+                <strong>{jobs.filter(job => job.status === "in_progress" || job.status === "ready_for_review").length}</strong></div>
+              <div className="stat"><span><CheckCircle2 size={15} aria-hidden="true" /> Submitted</span>
+                <strong>{jobs.filter(job => job.status === "submitted").length}</strong></div>
+              <div className="stat"><span><MessageCircle size={15} aria-hidden="true" /> Interviews</span>
+                <strong>{jobs.filter(job => job.status === "interview").length}</strong></div>
             </section>
             <ApplicationReview controller={controller} />
             <Opportunities controller={controller} />
           </>
         ) : tab === "parser" ? (
           <ResumeParser controller={controller} />
+        ) : tab === "personal" ? (
+          <>
+            <section className="panel">
+              <div className="panel-title"><h2>Your profile</h2><p>Choose your profile and manage its resume versions.</p></div>
+              <LocalProfiles controller={controller} />
+            </section>
+            <ContactManager controller={controller} />
+          </>
+        ) : tab === "workspace" ? (
+          <>
+          <section className="panel workspace-management">
+            <div className="panel-title">
+              <h2>Manage profiles and resumes</h2>
+              <p>Switch between profiles, create resume versions, and manage saved records.</p>
+            </div>
+            <LocalProfiles controller={controller} />
+          </section>
+          <ResumeManager controller={controller} />
+          <ContactManager controller={controller} />
+          </>
         ) : (
           <CandidateProfile controller={controller} />
         )}
-        <footer>Applications stay under your control. Always review before submitting.</footer>
+        <footer>Review all application details before submitting. <ArrowUpRight size={13} aria-hidden="true" /></footer>
       </main>
     </div>
   );

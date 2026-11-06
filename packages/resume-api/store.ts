@@ -211,13 +211,39 @@ CREATE TABLE IF NOT EXISTS applications (
     const id = addContact(owner,valid,name(label),!getDefaultContact.get(owner));
     return selectContact.get(owner,id) as unknown as ProfileContact;
   }
-  function updateContactRecord(profileId: string, contactId: string, contact: unknown): ProfileContact {
+  function updateContactRecord(profileId: string, contactId: string, contact: unknown, label?: unknown): ProfileContact {
     const owner = requireProfile(profileId);
     if (!selectContact.get(owner,validId(contactId))) throw new Error("Contact not found for profile.");
     const valid = validateContact(contact);
     if (!isUsableContact(valid)) throw new Error("Contact requires first name, last name, and a valid email.");
     updateContact.run(...contactValues(valid),owner,contactId);
+    if (label !== undefined)
+      db.prepare("UPDATE profile_contact SET name=? WHERE profile_id=? AND id=?").run(name(label),owner,contactId);
     return selectContact.get(owner,contactId) as unknown as ProfileContact;
+  }
+  function deleteContactRecord(profileId: string, contactId: string) {
+    const owner = requireProfile(profileId);
+    const id = validId(contactId);
+    const selected = selectContact.get(owner,id) as unknown as ProfileContact | undefined;
+    if (!selected) throw new Error("Contact not found for profile.");
+    const linked = db.prepare("SELECT COUNT(*) AS count FROM resumes WHERE profile_id=? AND contact_id=?")
+      .get(owner,id) as {count:number};
+    if (linked.count > 0)
+      throw new Error("This contact is linked to " + linked.count +
+        " resume(s). Select another contact for those resumes before deleting it.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare("DELETE FROM profile_contact WHERE profile_id=? AND id=?").run(owner,id);
+      if (selected.isDefault) {
+        const remaining = db.prepare("SELECT id FROM profile_contact WHERE profile_id=? ORDER BY name,id LIMIT 1")
+          .get(owner) as {id:string} | undefined;
+        if (remaining)
+          db.prepare("UPDATE profile_contact SET is_default=1 WHERE id=? AND profile_id=?")
+            .run(remaining.id,owner);
+      }
+      db.exec("COMMIT");
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+    return {deleted:true};
   }
   function setDefaultContact(profileId: string, contactId: string): ProfileContact {
     const owner = requireProfile(profileId);
@@ -289,7 +315,7 @@ CREATE TABLE IF NOT EXISTS applications (
     const source = copyId ? requireResume(owner,copyId) : null;
     const defaultId = (getDefaultContact.get(owner) as {id:string}|undefined)?.id;
     const row: ResumeVersion = { id: randomUUID(), name: name(value),
-      contactId: source?.contactId ?? defaultId ?? null, createdAt: now(), updatedAt: now() };
+      contactId: source ? source.contactId : (defaultId ?? null), createdAt: now(), updatedAt: now() };
     insertResume.run(row.id,owner,row.contactId,row.name,source?.json ?? null,row.createdAt,row.updatedAt);
     return row;
   }
@@ -401,5 +427,5 @@ CREATE TABLE IF NOT EXISTS applications (
       return { revision: current+1 };
     } catch(error) { db.exec("ROLLBACK"); throw error; }
   }
-  return { listProfiles, createProfile, renameProfile, deleteProfile, listContacts, createContact, updateContactRecord, setDefaultContact, resolveImportContact, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
+  return { listProfiles, createProfile, renameProfile, deleteProfile, listContacts, createContact, updateContactRecord, deleteContactRecord, setDefaultContact, resolveImportContact, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
 }

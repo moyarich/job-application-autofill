@@ -163,7 +163,11 @@ export function extractEmploymentHistory(text: unknown) {
       !RANGE.test(lines[i + 1])
     ) {
       const company = parts.length > 1 ? parts[0] : prefix;
-      id = { company, jobTitle: lines[i + 1], location: "" };
+      id = {
+        company,
+        jobTitle: lines[i + 1],
+        location: parts.length > 1 ? parts.slice(1).join(" | ") : "",
+      };
       end = i + 1;
     }
     if (!id) id = identity(parts);
@@ -193,10 +197,25 @@ export function extractEmploymentHistory(text: unknown) {
     startDate: j.startDate,
     endDate: j.endDate,
     isCurrent: j.isCurrent,
-    description: lines
-      .slice(j.end + 1, n + 1 < jobs.length ? jobs[n + 1].begin : lines.length)
-      .map((x) => x.replace(BULLET, "").trim())
-      .filter(Boolean)
-      .join("\n"),
+    description: joinDescription(
+      lines.slice(
+        j.end + 1,
+        n + 1 < jobs.length ? jobs[n + 1].begin : lines.length,
+      ),
+    ),
   }));
+}
+
+// PDF line breaks are visual wrapping; only source bullet markers start new items.
+function joinDescription(lines: string[]) {
+  if (!lines.some((line) => BULLET.test(line)))
+    return lines.filter(Boolean).join("\n");
+  const items: string[] = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    if (BULLET.test(line) || !items.length)
+      items.push(line.replace(BULLET, "").trim());
+    else items[items.length - 1] += " " + line.trim();
+  }
+  return items.join("\n");
 }

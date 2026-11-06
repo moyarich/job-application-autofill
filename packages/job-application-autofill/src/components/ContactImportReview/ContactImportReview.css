@@ -1,5 +1,25 @@
-.contact-import-review { margin-bottom: 1rem; }
-.contact-import-field { border: 1px solid var(--border, #d1d5db); border-radius: 0.5rem; margin: 1rem 0; padding: 0.9rem; }
-.contact-import-field legend { font-weight: 650; padding: 0 0.35rem; }
-.contact-import-field label { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
-.contact-import-field p { overflow-wrap: anywhere; }
+.contact-import-review { border-color: #cbd7f3; }
+.contact-import-heading { display:flex; align-items:flex-start; gap:14px; margin-bottom:19px; }
+.contact-import-heading h2 { font-size:19px; letter-spacing:-.025em; margin:0 0 6px; }
+.contact-import-heading p { margin:0; color:var(--muted); font-size:13px; line-height:1.6; }
+.contact-import-symbol { flex-shrink:0; display:grid; place-items:center; width:44px; height:44px; border-radius:13px; color:#4a61c9; background:#edf2ff; }
+.imported-contact-preview { padding:19px; border:1px solid var(--line); border-radius:14px; background:#fafbff; }
+.contact-import-preview-heading { display:flex; align-items:center; gap:9px; margin-bottom:12px; font-size:15px; }
+.contact-import-preview-heading svg { color:#419b79; }
+.imported-contact-preview dl { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px 20px; margin:0; }
+.imported-contact-preview dl > div { min-width:0; }
+.imported-contact-preview dt { color:var(--muted); font-size:11px; font-weight:650; margin-bottom:5px; }
+.imported-contact-preview dd { margin:0; overflow-wrap:anywhere; font-size:13px; font-weight:600; }
+.imported-contact-preview > p { font-size:13px; color:var(--muted); margin:0; }
+.contact-import-options { margin:20px 0 0; border:0; padding:0; }
+.contact-import-options legend { font-size:13px; font-weight:750; margin:0 0 11px; }
+.contact-import-option { display:flex; flex-direction:row; align-items:flex-start; gap:12px; padding:14px; margin:0 0 9px; border-radius:12px; border:1px solid var(--line); cursor:pointer; }
+.contact-import-option.selected { border-color:#8298e9; background:#f4f6ff; }
+.contact-import-option input { margin-top:3px; flex-shrink:0; accent-color:var(--accent); }
+.contact-import-option span { display:flex; flex-direction:column; gap:5px; }
+.contact-import-option strong { font-size:13px; color:var(--ink); }
+.contact-import-option small { font-size:12px; line-height:1.5; color:var(--muted); }
+.contact-import-explanation { display:flex; align-items:flex-start; gap:10px; margin:16px 0 0; line-height:1.55; color:#536681; font-size:12px; }
+.contact-import-explanation svg { flex-shrink:0; margin-top:1px; }
+.contact-import-actions { margin-top:21px; }
+@media(max-width:600px) { .contact-import-heading { gap:10px; } .imported-contact-preview dl { grid-template-columns:1fr; } .contact-import-actions > button { width:100%; } }

@@ -1,28 +1,27 @@
-.sidebar { position:sticky;top:0;width:264px;height:100vh;flex-shrink:0;display:flex;flex-direction:column;background:#111b2e;color:#f4f7ff;border-right:1px solid #25334a;padding:28px 16px 18px;z-index:10 }
-.sidebar-header { display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-bottom:34px;gap:8px }
-.brand { display:flex;align-items:center;gap:11px;font-size:15px;font-weight:760;letter-spacing:-.035em;min-width:0;line-height:1.3 }
-.brand-name { min-width:0 }
-.brand-symbol { display:grid;place-items:center;flex-shrink:0;width:38px;height:38px;border-radius:12px;background:#536bed;color:white;box-shadow:0 3px 12px #1c29677a }
-.brand-light { display:block;font-weight:500;color:#b5c4e0;letter-spacing:0 }
-.sidebar-toggle { display:none;align-items:center;justify-content:center;color:#dce6fa;background:transparent;border:1px solid #40516d;border-radius:10px;width:40px;height:40px }
-.sidebar-content { display:flex;flex-direction:column;min-height:0;flex:1;overflow-y:auto }
-.sidebar-navigation { display:flex;flex-direction:column;gap:4px }
-.nav-label { display:block;font-size:11px;font-weight:700;color:#8f9fbd;letter-spacing:.09em;text-transform:uppercase;margin:0 12px 11px }
-.sidebar .nav { display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;color:#b8c5dc;border:1px solid transparent;border-radius:11px;padding:12px 13px;font-size:14px;font-weight:560;line-height:1.3;transition:background .15s,color .15s,border-color .15s }
-.sidebar .nav:hover { background:#202d46;color:#fff }
-.sidebar .nav.active { background:#2c3f65;color:#fff;border-color:#465d88;box-shadow:inset 3px 0 0 #8fa8ff }
-.sidebar button:focus-visible,.sidebar select:focus-visible { outline:2px solid #a3b7ff;outline-offset:2px }
-.sidebar-bottom { display:flex;align-items:center;gap:9px;margin-top:auto;padding:20px 10px 2px;color:#a7b6d2;font-size:12px;line-height:1.5;border-top:1px solid #293951 }
-.sidebar-privacy-dot { width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#52cba3 }
-@media(max-width:760px) {
-  .sidebar { position:relative;width:100%;height:auto;padding:12px 16px;border-right:0;border-bottom:1px solid #25334a }
-  .sidebar-header { margin:0;padding:0 }
-  .brand-light { display:inline }
-  .sidebar-toggle { display:flex }
-  .sidebar-content { display:none;padding-top:20px;overflow:visible }
-  .sidebar-open .sidebar-content { display:flex }
-  .sidebar-navigation { gap:5px }
-  .sidebar .nav { padding:12px }
-  .sidebar-bottom { margin-top:12px }
+.sidebar { position: sticky; top: 0; display: flex; flex-direction: column; width: 266px; flex-shrink: 0; height: 100vh; padding: 27px 16px 18px; z-index: 10; color: #e6edfb; background: #142039; border-right: 1px solid #273650; }
+.sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 0 8px; margin-bottom: 34px; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; font-size: 14px; font-weight: 760; letter-spacing: -.035em; line-height: 1.25; }
+.brand-symbol { display: grid; place-items: center; width: 39px; height: 39px; flex-shrink: 0; color: #fff; background: #5368df; border: 1px solid #7386ed; border-radius: 12px; }
+.brand-name { min-width: 0; }
+.brand-light { display: block; color: #aebddb; font-weight: 450; letter-spacing: 0; }
+.sidebar-toggle { display: none; align-items: center; justify-content: center; width: 40px; height: 40px; color: #f4f7ff; border: 1px solid #455775; border-radius: 10px; background: transparent; }
+.sidebar-content { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #435574 transparent; }
+.sidebar-navigation { display: flex; flex-direction: column; gap: 5px; }
+.nav-label { padding: 0 12px; margin: 0 0 9px; color: #8fa1c0; text-transform: uppercase; font-size: 10px; font-weight: 750; letter-spacing: .12em; }
+.sidebar .nav { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 11px 13px; color: #bac7dc; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 11px; font-size: 13px; font-weight: 550; transition: background .15s,color .15s; }
+.sidebar .nav:hover { color: #fff; background: #22334f; text-decoration: none; }
+.sidebar .nav:focus-visible { outline: 2px solid #a7b9fc; outline-offset: 2px; }
+.sidebar .nav.active { color: #fff; border-color: #415679; background: #2c4063; font-weight: 670; box-shadow: inset 3px 0 #a5b9ff; }
+.sidebar :is(button,select):focus-visible { outline: 2px solid #a7b9fc; outline-offset: 2px; }
+.sidebar-bottom { display: flex; align-items: center; gap: 9px; margin-top: auto; padding: 18px 10px 2px; border-top: 1px solid #2c3b55; font-size: 11px; color: #9fafd0; line-height: 1.5; }
+.sidebar-privacy-dot { width: 7px; height: 7px; background: #57c6a2; border-radius: 50%; flex-shrink: 0; }
+.application-page .sidebar { display: none; }
+@media(max-width: 760px) {
+  .sidebar { position: relative; width: 100%; height: auto; padding: 13px 17px; border-right: 0; border-bottom: 1px solid #273650; }
+  .sidebar-header { margin: 0; padding: 0; }
+  .brand-light { display: inline; }
+  .sidebar-toggle { display: flex; }
+  .sidebar-content { display: none; padding-top: 18px; overflow: visible; }
+  .sidebar-open .sidebar-content { display: flex; }
+  .sidebar-bottom { margin-top: 14px; }
 }
-.application-page .sidebar { display:none }
