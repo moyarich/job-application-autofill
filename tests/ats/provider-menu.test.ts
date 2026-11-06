@@ -33,7 +33,7 @@ describe("provider-owned floating menu", () => {
   it("runs only the selected declared menu step and rejects arbitrary actions", async () => {
     const calls: string[] = [];
     const adapter: JobSiteAdapter = {
-      id: "lever", label: "Fixture", hosts: ["lever.co"], fields: {},
+      id: "lever", label: "Fixture", hosts: ["lever.co"],
       employerTenant: () => "acme",
       menuItems: [
         { id: "portfolio", label: "Portfolio", stepId: "fixture.portfolio" },
@@ -58,7 +58,7 @@ describe("provider-owned floating menu", () => {
 
   it("disables items that do not match the employer page", async () => {
     const adapter: JobSiteAdapter = {
-      id: "lever", label: "Fixture", hosts: ["lever.co"], fields: {},
+      id: "lever", label: "Fixture", hosts: ["lever.co"],
       employerTenant: () => "acme",
       menuItems: [{ id: "missing", label: "Missing step", stepId: "fixture.missing" }],
       steps: [{ id: "fixture.missing", matches: async () => false,
