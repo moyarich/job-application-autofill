@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import {
   createApplication,
   emptyCandidate,
@@ -13,12 +14,16 @@ import {
   requestApi, readState, saveState, readProfiles, createLocalProfile,
   renameLocalProfile, deleteLocalProfile, createResumeVersion, renameResumeVersion,
   deleteResumeVersion, DEFAULT_PROFILE_ID, ACTIVE_PROFILE_STORAGE_KEY,
-  type LocalProfile, type ResumeVersion,
+  resolveImportedContact, chooseDefaultContact,
+  type LocalProfile, type ResumeVersion, type ProfileContact, type ContactChoice,
 } from "../api/client";
 import { filePayload } from "../files/resume-files";
 export function useApplication() {
-  const query = new URLSearchParams(window.location.search);
-  const applicationId = query.get("application");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const query = new URLSearchParams(location.search);
+  const applicationId = params.applicationId ?? null;
   const activeProfileId = query.get("profile") || localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY) || DEFAULT_PROFILE_ID;
   const requestedResumeId = query.get("resume") || undefined;
   const [profiles, setProfiles] = useState<LocalProfile[]>([]);
@@ -27,44 +32,46 @@ export function useApplication() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
-  const [tab, setTab] = useState<"applications" | "profile" | "parser">(
-    "applications",
-  );
+  const tab = location.pathname === "/profile" ? "profile" :
+    location.pathname === "/import" ? "parser" : "applications";
+  function setTab(next: "applications" | "profile" | "parser") {
+    navigate({ pathname: next === "parser" ? "/import" : "/" + next, search: location.search });
+  }
   const [profile, setProfile] = useState<CandidateProfile>(() =>
     structuredClone(emptyCandidate),
   );
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   type Contact = CandidateProfile["contact"];
   type ContactKey = keyof Contact;
-  type ContactOverrides = Partial<Contact>;
-  type ContactChoice = "resume" | "shared" | "keep";
-  const [sharedContact, setSharedContact] = useState<Contact>(() => structuredClone(emptyCandidate.contact));
-  const [contactOverrides, setContactOverrides] = useState<ContactOverrides>({});
+  const [contacts, setContacts] = useState<ProfileContact[]>([]);
+  const [contactId, setContactId] = useState<string>("");
+  const [defaultContactId, setDefaultContactId] = useState<string>("");
   const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(null);
   const [importChoices, setImportChoices] = useState<Partial<Record<ContactKey,ContactChoice>>>({});
   const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
   const conflictKeys = pendingImport ? contactKeys.filter(key =>
-    Boolean(pendingImport.contact[key]?.trim() && sharedContact[key]?.trim() &&
-    pendingImport.contact[key].trim() !== sharedContact[key].trim())) : [];
+    pendingImport.contact[key].trim() !== profile.contact[key].trim()) : [];
+  const selectedContact = contacts.find(item => item.id === contactId);
+  const defaultContact = contacts.find(item => item.id === defaultContactId);
   function editContact(key: ContactKey, value: string) {
-    if (Object.hasOwn(contactOverrides,key)) {
-      setContactOverrides(previous => ({ ...previous, [key]: value }));
-    } else {
-      setSharedContact(previous => ({ ...previous, [key]: value }));
-    }
     setProfile(previous => ({ ...previous, contact: { ...previous.contact, [key]: value } }));
+    setContacts(previous => previous.map(item => item.id === contactId ? {...item,[key]:value} : item));
   }
-  function setContactScope(key: ContactKey, forResume: boolean) {
-    if (forResume) {
-      setContactOverrides(previous => ({ ...previous, [key]: profile.contact[key] }));
-    } else {
-      setContactOverrides(previous => {
-        const next = { ...previous };
-        delete next[key];
-        return next;
-      });
-      setProfile(previous => ({ ...previous, contact: { ...previous.contact, [key]: sharedContact[key] } }));
-    }
+  function chooseContact(id: string) {
+    const selected = contacts.find(item => item.id === id);
+    if (!selected) return;
+    setContactId(id);
+    const contact = Object.fromEntries(contactKeys.map(key => [key,selected[key]])) as Contact;
+    setProfile(previous => ({ ...previous,contact }));
+  }
+  async function markDefaultContact() {
+    try {
+      await flushPending();
+      const changed = await chooseDefaultContact(activeProfileId,contactId);
+      setContacts(previous => previous.map(item => ({...item,isDefault:item.id === changed.id})));
+      setDefaultContactId(changed.id);
+      setMessage("Default contact updated for new resumes.");
+    } catch (error) { setMessage(String(error)); }
   }
   const [hydrated, setHydrated] = useState(false);
   const revisionRef = useRef(0);
@@ -123,11 +130,12 @@ export function useApplication() {
           ? parseCandidateJson(JSON.stringify(state.profile))
           : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
         setProfile(value);
-        setSharedContact(state.contact ?? value.contact);
-        setContactOverrides(state.contactOverrides ?? {});
+        setContacts(state.contacts);
+        setContactId(state.contactId);
+        setDefaultContactId(state.defaultContactId);
         setJobs(state.jobs);
         revisionRef.current = state.revision;
-        savedRef.current = JSON.stringify({ profile: value, contact: state.contact ?? value.contact, contactOverrides: state.contactOverrides ?? {}, jobs: state.jobs });
+        savedRef.current = JSON.stringify({ profile: value, contactId: state.contactId, jobs: state.jobs });
         setHydrated(true);
       })
       .catch((error) => {
@@ -139,7 +147,7 @@ export function useApplication() {
   }, []);
   useEffect(() => {
     if (!hydrated || blockedRef.current || applicationId) return;
-    const state = { profile, contact: sharedContact, contactOverrides, jobs };
+    const state = { profile, contact: profile.contact, contactId, jobs };
     const signature = JSON.stringify(state);
     if (signature === savedRef.current) return;
     const timer = setTimeout(() => {
@@ -164,7 +172,7 @@ export function useApplication() {
     }, 350);
     saveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [hydrated, profile, sharedContact, contactOverrides, jobs, activeProfileId, activeResumeId]);
+  }, [hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
 
   useEffect(() => {
     if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
@@ -182,7 +190,7 @@ export function useApplication() {
   useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
-      if (JSON.stringify({ profile, contact: sharedContact, contactOverrides, jobs }) !== savedRef.current) return;
+      if (JSON.stringify({ profile, contactId, jobs }) !== savedRef.current) return;
       void readState(activeProfileId, activeResumeId ?? undefined)
         .then((state) => {
           revisionRef.current = state.revision;
@@ -191,12 +199,12 @@ export function useApplication() {
             : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
           savedRef.current = JSON.stringify({
             profile: nextProfile,
-            contact: state.contact ?? nextProfile.contact,
-            contactOverrides: state.contactOverrides ?? {},
+            contactId: state.contactId,
             jobs: state.jobs,
           });
-          setSharedContact(state.contact ?? nextProfile.contact);
-          setContactOverrides(state.contactOverrides ?? {});
+          setContacts(state.contacts);
+          setContactId(state.contactId);
+          setDefaultContactId(state.defaultContactId);
           setProfile(nextProfile);
           setJobs(state.jobs);
         })
@@ -204,7 +212,7 @@ export function useApplication() {
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [applicationId, hydrated, profile, sharedContact, contactOverrides, jobs, activeProfileId, activeResumeId]);
+  }, [applicationId, hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter((job) =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
@@ -276,43 +284,31 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
-  // Imported content is held in memory until contact conflicts are resolved.
+  // Contact imports are reviewed before any database writes occur.
   function offerImport(incoming: CandidateProfile) {
-    const conflict = contactKeys.some(key => incoming.contact[key]?.trim() &&
-      sharedContact[key]?.trim() && incoming.contact[key].trim() !== sharedContact[key].trim());
     setImportChoices({});
-    if (conflict) {
+    if (contactKeys.some(key => incoming.contact[key].trim() !== profile.contact[key].trim())) {
       setPendingImport(incoming);
       setMessage("Review contact differences before importing this resume.");
-    } else applyImport(incoming, {});
+    } else applyImportedContent(incoming,contactId,incoming.contact);
   }
-  function applyImport(incoming: CandidateProfile, choices: Partial<Record<ContactKey,ContactChoice>>) {
-    const nextShared = { ...sharedContact };
-    const nextOverrides = { ...contactOverrides };
-    for (const key of contactKeys) {
-      const value = incoming.contact[key]?.trim() ?? "";
-      if (!value) continue;
-      if (!nextShared[key]) {
-        nextShared[key] = value;
-        delete nextOverrides[key];
-      } else if (value !== nextShared[key]) {
-        switch (choices[key] ?? "resume") {
-          case "shared": nextShared[key] = value; delete nextOverrides[key]; break;
-          case "resume": nextOverrides[key] = value; break;
-          case "keep": break; // Preserve the currently saved value, including an existing override.
-        }
-      } else delete nextOverrides[key];
-    }
-    setSharedContact(nextShared);
-    setContactOverrides(nextOverrides);
-    setProfile({ ...incoming, contact: { ...nextShared, ...nextOverrides } });
+  function applyImportedContent(incoming: CandidateProfile, selectedId: string, resolved: Contact) {
+    setContactId(selectedId);
+    setProfile({...incoming,contact:resolved});
     setPendingImport(null);
     setImportChoices({});
     setResume(null);
-    setMessage("Resume imported. Contact choices saved for the selected resume.");
+    setMessage("Resume imported with its selected contact record.");
   }
-  function confirmImport() {
-    if (pendingImport) applyImport(pendingImport, importChoices);
+  async function confirmImport() {
+    if (!pendingImport || !activeResumeId) return;
+    try {
+      await flushPending();
+      const result = await resolveImportedContact(activeProfileId,activeResumeId,
+        pendingImport.contact,importChoices);
+      setContacts(result.contacts);
+      applyImportedContent(pendingImport,result.contactId,result.contact);
+    } catch(error) { setMessage(error instanceof Error ? error.message : "Could not import resume."); }
   }
   function cancelImport() {
     setPendingImport(null);
@@ -381,8 +377,8 @@ export function useApplication() {
   async function prepareJob(job: JobApplication) {
     if (!applicationId) {
       const url = new URL(window.location.href);
+      url.pathname = "/apply/" + encodeURIComponent(job.id);
       url.search = "";
-      url.searchParams.set("application", job.id);
       url.searchParams.set("profile", activeProfileId);
       if (activeResumeId) url.searchParams.set("resume", activeResumeId);
       window.open(url.href, "application-" + job.id);
@@ -586,7 +582,7 @@ export function useApplication() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await saveQueueRef.current;
     if (blockedRef.current) throw new Error("The current changes could not be saved. Resolve that error before switching.");
-    const current = { profile, contact: sharedContact, contactOverrides, jobs };
+    const current = { profile, contact: profile.contact, contactId, jobs };
     const signature = JSON.stringify(current);
     if (signature !== savedRef.current) {
       const saved = await saveState({ ...current, revision: revisionRef.current }, activeProfileId, activeResumeId!);
@@ -599,7 +595,7 @@ export function useApplication() {
     url.searchParams.set("profile", nextPerson);
     if (nextResume) url.searchParams.set("resume", nextResume);
     else url.searchParams.delete("resume");
-    url.searchParams.delete("application");
+    url.pathname = "/applications";
     window.location.assign(url.href);
   }
   async function switchProfile(next: string) {
@@ -679,10 +675,14 @@ export function useApplication() {
     setTab,
     profile,
     setProfile,
-    sharedContact,
-    contactOverrides,
+    contacts,
+    contactId,
+    defaultContactId,
+    selectedContact,
+    defaultContact,
     editContact,
-    setContactScope,
+    chooseContact,
+    markDefaultContact,
     pendingImport,
     importChoices,
     setImportChoices,
