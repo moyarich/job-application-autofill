@@ -86,14 +86,14 @@ export function ResumeParser({
           </button>
           <div className="json-import-panel">
             <p>
-              <strong>Have a saved profile?</strong> Import it directly from a JSON file.
+              <strong>Have resume JSON?</strong> Import it into the selected resume version. Existing contact details stay shared.
             </p>
             <button
               className="secondary"
               type="button"
               onClick={() => importRef.current?.click()}
             >
-              Import profile JSON
+              Import resume JSON
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@ export function ResumeParser({
             <strong>Resume details</strong>
             <div className="actions">
               <button className="secondary" onClick={() => setTab("profile")}>
-                Edit profile
+                Edit selected resume
               </button>
               <button className="secondary" onClick={exportResumePdf}>
                 Export PDF

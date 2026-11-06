@@ -6,6 +6,7 @@ import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
 import { Opportunities } from "../Opportunities/Opportunities";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
+import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -36,6 +37,7 @@ export function App() {
             </button>
           </div>
         )}
+        <ContactImportReview controller={controller} />
         {tab === "applications" ? (
           <>
             <section className="stats">

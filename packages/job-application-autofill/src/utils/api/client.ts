@@ -3,7 +3,22 @@ import type { CandidateProfile, JobApplication } from "../../index";
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export const ACTIVE_PROFILE_STORAGE_KEY = "job-application-autofill:active-profile";
 export type LocalProfile = { id: string; name: string; createdAt: string };
-export type ResumeVersion = { id: string; name: string; createdAt: string };
+export type ResumeVersion = { id: string; name: string; contactId: string | null; createdAt: string; updatedAt: string };
+export type ProfileContact = CandidateProfile["contact"] & {
+  id: string; profileId: string; name: string; isDefault: boolean;
+};
+export type ContactChoice = "resume" | "shared" | "keep";
+export async function resolveImportedContact(profileId: string, resumeId: string,
+  contact: CandidateProfile["contact"], choices: Partial<Record<keyof CandidateProfile["contact"],ContactChoice>>
+): Promise<{contactId:string|null;contact:CandidateProfile["contact"];contacts:ProfileContact[]}> {
+  return requestApi("/api/profile-contacts/import",{resumeId,contact,choices},profileId,resumeId);
+}
+export async function addProfileContact(profileId: string, name: string, contact: CandidateProfile["contact"]): Promise<ProfileContact> {
+  return requestApi("/api/profile-contacts",{name,contact},profileId);
+}
+export async function chooseDefaultContact(profileId: string, contactId: string): Promise<ProfileContact> {
+  return requestApi("/api/profile-contacts/"+encodeURIComponent(contactId)+"/default",{},profileId);
+}
 
 const profileHeaders = (profileId: string, resumeId?: string) => ({
   "X-Moya-Client": "dashboard",
@@ -30,6 +45,10 @@ export type StoredState = {
   resumes: ResumeVersion[];
   revision: number;
   profile: CandidateProfile | null;
+  contact: CandidateProfile["contact"] | null;
+  contactId: string | null;
+  defaultContactId: string | null;
+  contacts: ProfileContact[];
   jobs: JobApplication[];
 };
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {
@@ -58,6 +77,8 @@ export async function readState(profileId: string, resumeId?: string): Promise<S
 export async function saveState(payload: {
   revision: number;
   profile: CandidateProfile;
+  contact: CandidateProfile["contact"];
+  contactId: string | null;
   jobs: JobApplication[];
 }, profileId: string, resumeId: string): Promise<{ revision: number }> {
   return decodeResponse(

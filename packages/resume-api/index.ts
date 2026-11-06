@@ -81,6 +81,25 @@ const server = createServer(async (req, res) => {
       store.getOrCreateEmployerAccount(profileId, identity);
       return send(res, 200, store.setEmployerAccountStatus(profileId, identity.provider, identity.employerKey, payload.status));
     }
+    if (req.method === "GET" && url.pathname === "/api/profile-contacts")
+      return send(res, 200, { contacts: store.listContacts(profileId) });
+    if (req.method === "POST" && url.pathname === "/api/profile-contacts") {
+      const payload = record(await readJson(req));
+      return send(res, 201, store.createContact(profileId,payload.contact,payload.name));
+    }
+    if (req.method === "POST" && url.pathname === "/api/profile-contacts/import") {
+      const payload = record(await readJson(req));
+      if (typeof payload.resumeId !== "string") throw new Error("Resume ID required.");
+      return send(res, 200, store.resolveImportContact(profileId,payload.resumeId,payload.contact,payload.choices));
+    }
+    const contactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})$/i);
+    if (contactRoute && req.method === "PATCH") {
+      const payload = record(await readJson(req));
+      return send(res, 200, store.updateContactRecord(profileId,contactRoute[1],payload.contact));
+    }
+    const defaultContactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})\/default$/i);
+    if (defaultContactRoute && req.method === "POST")
+      return send(res, 200, store.setDefaultContact(profileId,defaultContactRoute[1]));
     if (req.method === "GET" && url.pathname === "/api/resumes")
       return send(res, 200, { resumes: store.listResumes(profileId) });
     if (req.method === "POST" && url.pathname === "/api/resumes") {

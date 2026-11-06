@@ -13,6 +13,7 @@ export function CandidateProfile({
     profile,
     exportResumePdf,
     setProfile,
+    contacts, contactId, defaultContactId, chooseContact, markDefaultContact, saveContactRecord, editContact,
     errors,
   } = controller;
   return (
@@ -20,8 +21,8 @@ export function CandidateProfile({
       <section className="panel">
         <div className="panel-title horizontal">
           <div>
-            <h2>Personal information</h2>
-            <p>Review and update the details used in your applications.</p>
+            <h2>Contact for this resume</h2>
+            <p>Each resume selects a reusable contact record. Changes to that record affect every resume using it.</p>
           </div>
           <div className="actions">
             <input
@@ -48,6 +49,20 @@ export function CandidateProfile({
             </button>
           </div>
         </div>
+        <div className="contact-record-selector">
+          <label htmlFor="resume-contact-record">Contact record</label>
+          <select id="resume-contact-record" value={contactId ?? ""}
+            onChange={event => chooseContact(event.target.value)}>
+            <option value="">Draft — no saved contact</option>
+            {contacts.map(item => <option key={item.id} value={item.id}>
+              {item.name}{item.isDefault ? " (default)" : ""}
+            </option>)}
+          </select>
+          {!contactId && <button type="button" className="primary"
+            onClick={() => void saveContactRecord()}>Save contact for this resume</button>}
+          {contactId && contactId !== defaultContactId && <button type="button" className="secondary"
+            onClick={() => void markDefaultContact()}>Make default for new resumes</button>}
+        </div>
         <div className="profile-grid">
           {fields.map(({ key, label }) => (
             <label key={key}>
@@ -55,19 +70,14 @@ export function CandidateProfile({
               <input
                 type={key === "email" ? "email" : "text"}
                 value={profile.contact[key]}
-                onChange={(e) =>
-                  setProfile((x) => ({
-                    ...x,
-                    contact: { ...x.contact, [key]: e.target.value },
-                  }))
-                }
+                onChange={(e) => editContact(key, e.target.value)}
                 placeholder={label}
               />
             </label>
           ))}
         </div>
         <label className="wide-label">
-          Professional summary
+          Resume-specific professional summary
           <textarea
             rows={4}
             value={profile.summary}
@@ -96,7 +106,7 @@ export function CandidateProfile({
         </label>
         <section className="employment-editor">
           <div className="panel-title horizontal">
-            <h2>Work experience</h2>
+            <div><h2>Work experience for this resume</h2><p>Titles, dates, and descriptions can differ between resume versions.</p></div>
             <button
               className="secondary"
               onClick={() =>
@@ -224,7 +234,7 @@ export function CandidateProfile({
         <div className={errors.length ? "validation warning" : "validation"}>
           {errors.length
             ? "Please complete: " + errors.join(", ")
-            : "Profile ready to use."}
+            : "Selected resume ready to use."}
         </div>
       </section>
     </>

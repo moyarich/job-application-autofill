@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import {
   createApplication,
   emptyCandidate,
@@ -13,12 +14,17 @@ import {
   requestApi, readState, saveState, readProfiles, createLocalProfile,
   renameLocalProfile, deleteLocalProfile, createResumeVersion, renameResumeVersion,
   deleteResumeVersion, DEFAULT_PROFILE_ID, ACTIVE_PROFILE_STORAGE_KEY,
-  type LocalProfile, type ResumeVersion,
+  resolveImportedContact, chooseDefaultContact,
+  addProfileContact,
+  type LocalProfile, type ResumeVersion, type ProfileContact, type ContactChoice,
 } from "../api/client";
 import { filePayload } from "../files/resume-files";
 export function useApplication() {
-  const query = new URLSearchParams(window.location.search);
-  const applicationId = query.get("application");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const query = new URLSearchParams(location.search);
+  const applicationId = params.applicationId ?? null;
   const activeProfileId = query.get("profile") || localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY) || DEFAULT_PROFILE_ID;
   const requestedResumeId = query.get("resume") || undefined;
   const [profiles, setProfiles] = useState<LocalProfile[]>([]);
@@ -27,13 +33,64 @@ export function useApplication() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
-  const [tab, setTab] = useState<"applications" | "profile" | "parser">(
-    "applications",
-  );
+  const tab = location.pathname === "/profile" ? "profile" :
+    location.pathname === "/import" ? "parser" : "applications";
+  function setTab(next: "applications" | "profile" | "parser") {
+    navigate({ pathname: next === "parser" ? "/import" : "/" + next, search: location.search });
+  }
   const [profile, setProfile] = useState<CandidateProfile>(() =>
     structuredClone(emptyCandidate),
   );
   const [jobs, setJobs] = useState<JobApplication[]>([]);
+  type Contact = CandidateProfile["contact"];
+  type ContactKey = keyof Contact;
+  const [contacts, setContacts] = useState<ProfileContact[]>([]);
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [defaultContactId, setDefaultContactId] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(null);
+  const [importChoices, setImportChoices] = useState<Partial<Record<ContactKey,ContactChoice>>>({});
+  const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
+  const conflictKeys = pendingImport ? contactKeys.filter(key =>
+    pendingImport.contact[key].trim() !== profile.contact[key].trim()) : [];
+  const selectedContact = contacts.find(item => item.id === contactId);
+  const defaultContact = contacts.find(item => item.id === defaultContactId);
+  function editContact(key: ContactKey, value: string) {
+    setProfile(previous => ({ ...previous, contact: { ...previous.contact, [key]: value } }));
+    setContacts(previous => previous.map(item => item.id === contactId ? {...item,[key]:value} : item));
+  }
+  function chooseContact(id: string) {
+    const selected = contacts.find(item => item.id === id);
+    if (!selected) return;
+    setContactId(id);
+    const contact = Object.fromEntries(contactKeys.map(key => [key,selected[key]])) as Contact;
+    setProfile(previous => ({ ...previous,contact }));
+  }
+  async function saveContactRecord() {
+    if (contactId) return;
+    const missing = validateCandidate(profile);
+    if (missing.length) {
+      setMessage("Complete the contact details before saving a contact record: " + missing.join(", "));
+      return;
+    }
+    try {
+      await flushPending();
+      const created = await addProfileContact(activeProfileId,"Primary contact",profile.contact);
+      setContacts(previous => [...previous,created]);
+      setContactId(created.id);
+      if (created.isDefault) setDefaultContactId(created.id);
+      setMessage("Contact saved and selected for this resume.");
+    } catch(error) { setMessage(String(error)); }
+  }
+  async function markDefaultContact() {
+    if (!contactId) return;
+    try {
+      await flushPending();
+      const changed = await chooseDefaultContact(activeProfileId,contactId);
+      setContacts(previous => previous.map(item => ({...item,isDefault:item.id === changed.id})));
+      setDefaultContactId(changed.id);
+      setMessage("Default contact updated for new resumes.");
+    } catch (error) { setMessage(String(error)); }
+  }
   const [hydrated, setHydrated] = useState(false);
   const revisionRef = useRef(0);
   const savedRef = useRef("");
@@ -78,10 +135,31 @@ export function useApplication() {
   }, []);
   useEffect(() => {
     let cancelled = false;
-    Promise.all([readProfiles(), readState(activeProfileId, requestedResumeId)])
-      .then(([available, state]) => {
-        if (!available.profiles.some(item => item.id === activeProfileId))
-          throw new Error("The selected local profile does not exist.");
+    // The browser can retain a profile/resume ID after a fresh database is created.
+    // Resolve the profile against the database before requesting its resume.
+    readProfiles().then(async available => {
+      const selectedProfileId = available.profiles.some(item => item.id === activeProfileId)
+        ? activeProfileId : available.defaultProfileId;
+      const profileChanged = selectedProfileId !== activeProfileId;
+      const state = await readState(selectedProfileId,profileChanged ? undefined : requestedResumeId)
+        .catch(async error => {
+          if (profileChanged || !requestedResumeId) throw error;
+          return readState(selectedProfileId);
+        });
+      if (cancelled) return;
+      if (profileChanged || (requestedResumeId && state.resumeId !== requestedResumeId)) {
+        localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY,selectedProfileId);
+        const next = new URLSearchParams(location.search);
+        next.set("profile",selectedProfileId);
+        next.set("resume",state.resumeId);
+        navigate({pathname:location.pathname,search:next.toString()},{replace:true});
+        return;
+      }
+      return {available,state};
+    })
+      .then(result => {
+        if (!result || cancelled) return;
+        const {available,state} = result;
         setProfiles(available.profiles);
         setResumeVersions(state.resumes);
         setActiveResumeId(state.resumeId);
@@ -89,11 +167,14 @@ export function useApplication() {
         if (cancelled) return;
         const value = state.profile
           ? parseCandidateJson(JSON.stringify(state.profile))
-          : structuredClone(emptyCandidate);
+          : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
         setProfile(value);
+        setContacts(state.contacts);
+        setContactId(state.contactId);
+        setDefaultContactId(state.defaultContactId);
         setJobs(state.jobs);
         revisionRef.current = state.revision;
-        savedRef.current = JSON.stringify({ profile: value, jobs: state.jobs });
+        savedRef.current = JSON.stringify({ profile: value, contact: value.contact, contactId: state.contactId, jobs: state.jobs });
         setHydrated(true);
       })
       .catch((error) => {
@@ -102,10 +183,10 @@ export function useApplication() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeProfileId, requestedResumeId]);
   useEffect(() => {
     if (!hydrated || blockedRef.current || applicationId) return;
-    const state = { profile, jobs };
+    const state = { profile, contact: profile.contact, contactId, jobs };
     const signature = JSON.stringify(state);
     if (signature === savedRef.current) return;
     const timer = setTimeout(() => {
@@ -130,7 +211,7 @@ export function useApplication() {
     }, 350);
     saveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [hydrated, profile, jobs, activeProfileId, activeResumeId]);
+  }, [hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
 
   useEffect(() => {
     if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
@@ -148,17 +229,22 @@ export function useApplication() {
   useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
-      if (JSON.stringify({ profile, jobs }) !== savedRef.current) return;
+      if (JSON.stringify({ profile, contact: profile.contact, contactId, jobs }) !== savedRef.current) return;
       void readState(activeProfileId, activeResumeId ?? undefined)
         .then((state) => {
           revisionRef.current = state.revision;
           const nextProfile = state.profile
             ? parseCandidateJson(JSON.stringify(state.profile))
-            : structuredClone(emptyCandidate);
+            : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
           savedRef.current = JSON.stringify({
             profile: nextProfile,
+            contact: nextProfile.contact,
+            contactId: state.contactId,
             jobs: state.jobs,
           });
+          setContacts(state.contacts);
+          setContactId(state.contactId);
+          setDefaultContactId(state.defaultContactId);
           setProfile(nextProfile);
           setJobs(state.jobs);
         })
@@ -166,7 +252,7 @@ export function useApplication() {
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [applicationId, hydrated, profile, jobs, activeProfileId, activeResumeId]);
+  }, [applicationId, hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter((job) =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
@@ -238,12 +324,43 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
+  // Contact imports are reviewed before any database writes occur.
+  function offerImport(incoming: CandidateProfile) {
+    setImportChoices({});
+    if (contactKeys.some(key => incoming.contact[key].trim() !== profile.contact[key].trim())) {
+      setPendingImport(incoming);
+      setMessage("Review contact differences before importing this resume.");
+    } else applyImportedContent(incoming,contactId,incoming.contact);
+  }
+  function applyImportedContent(incoming: CandidateProfile, selectedId: string | null, resolved: Contact) {
+    setContactId(selectedId);
+    setProfile({...incoming,contact:resolved});
+    setPendingImport(null);
+    setImportChoices({});
+    setResume(null);
+    setMessage("Resume imported with its selected contact record.");
+  }
+  async function confirmImport() {
+    if (!pendingImport || !activeResumeId) return;
+    try {
+      await flushPending();
+      const result = await resolveImportedContact(activeProfileId,activeResumeId,
+        pendingImport.contact,importChoices);
+      setContacts(result.contacts);
+      applyImportedContent(pendingImport,result.contactId,result.contact);
+    } catch(error) { setMessage(error instanceof Error ? error.message : "Could not import resume."); }
+  }
+  function cancelImport() {
+    setPendingImport(null);
+    setImportChoices({});
+    setMessage("Import cancelled. No information was changed.");
+  }
   async function importProfile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      setProfile(parseCandidateJson(await file.text()));
-      setMessage("Profile imported successfully.");
+      offerImport(parseCandidateJson(await file.text()));
+
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Invalid JSON profile",
@@ -286,11 +403,9 @@ export function useApplication() {
         preview: string;
         warnings: string[];
       }>("/api/resume/parse", upload, activeProfileId, activeResumeId ?? undefined);
-      setProfile(result.profile);
+      offerImport(result.profile);
       setParsePreview(result.preview);
-      setMessage(
-        "Resume parsed. Review and correct extracted information in Candidate profile.",
-      );
+
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Resume parse failed",
@@ -302,8 +417,8 @@ export function useApplication() {
   async function prepareJob(job: JobApplication) {
     if (!applicationId) {
       const url = new URL(window.location.href);
+      url.pathname = "/apply/" + encodeURIComponent(job.id);
       url.search = "";
-      url.searchParams.set("application", job.id);
       url.searchParams.set("profile", activeProfileId);
       if (activeResumeId) url.searchParams.set("resume", activeResumeId);
       window.open(url.href, "application-" + job.id);
@@ -314,9 +429,9 @@ export function useApplication() {
       setMessage("Add a job URL before applying.");
       return;
     }
-    if (errors.length) {
+    if (!contactId || errors.length) {
       setMessage(
-        "Complete first name, last name and email in Candidate profile before applying.",
+        "Select a saved contact with first name, last name and email before applying.",
       );
       setTab("profile");
       return;
@@ -327,27 +442,15 @@ export function useApplication() {
     );
     try {
       // The JSON drives autofill. The application also needs a PDF attachment.
-      // Reuse the user's uploaded PDF when available; otherwise create one from JSON.
+      // Generate from resolved data, never attach an outdated imported PDF.
       const validProfile = parseCandidateJson(JSON.stringify(profile));
-      const uploadedPdf = resume && /\.pdf$/i.test(resume.name) ? resume : null;
-      const generated = uploadedPdf
-        ? null
-        : await requestApi<{ base64: string }>("/api/resume/pdf", validProfile, activeProfileId, activeResumeId ?? undefined);
-      const attachment =
-        uploadedPdf ||
-        new File(
-          [
-            Uint8Array.from(atob(generated!.base64), (char) =>
-              char.charCodeAt(0),
-            ),
-          ],
-          (
-            [validProfile.contact.firstName, validProfile.contact.lastName]
-              .filter(Boolean)
-              .join("-") || "resume"
-          ).replace(/[^a-z0-9-]/gi, "_") + ".pdf",
-          { type: "application/pdf" },
-        );
+      const generated = await requestApi<{ base64: string }>("/api/resume/pdf", validProfile, activeProfileId, activeResumeId ?? undefined);
+      const attachment = new File(
+        [Uint8Array.from(atob(generated.base64), char => char.charCodeAt(0))],
+        ([validProfile.contact.firstName, validProfile.contact.lastName].filter(Boolean).join("-") || "resume")
+          .replace(/[^a-z0-9-]/gi, "_") + ".pdf",
+        { type: "application/pdf" },
+      );
       const upload = await filePayload(attachment);
       const result = await requestApi<ApplySession>("/api/apply/prepare", {
         jobUrl: job.url,
@@ -519,7 +622,7 @@ export function useApplication() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await saveQueueRef.current;
     if (blockedRef.current) throw new Error("The current changes could not be saved. Resolve that error before switching.");
-    const current = { profile, jobs };
+    const current = { profile, contact: profile.contact, contactId, jobs };
     const signature = JSON.stringify(current);
     if (signature !== savedRef.current) {
       const saved = await saveState({ ...current, revision: revisionRef.current }, activeProfileId, activeResumeId!);
@@ -532,7 +635,7 @@ export function useApplication() {
     url.searchParams.set("profile", nextPerson);
     if (nextResume) url.searchParams.set("resume", nextResume);
     else url.searchParams.delete("resume");
-    url.searchParams.delete("application");
+    url.pathname = "/applications";
     window.location.assign(url.href);
   }
   async function switchProfile(next: string) {
@@ -612,6 +715,21 @@ export function useApplication() {
     setTab,
     profile,
     setProfile,
+    contacts,
+    contactId,
+    defaultContactId,
+    selectedContact,
+    defaultContact,
+    editContact,
+    chooseContact,
+    markDefaultContact,
+    saveContactRecord,
+    pendingImport,
+    importChoices,
+    setImportChoices,
+    conflictKeys,
+    confirmImport,
+    cancelImport,
     jobs,
     setJobs,
     hydrated,
