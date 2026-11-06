@@ -2,6 +2,7 @@ import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
 import {
   helpWorkdaySignIn,
   openWorkdayApplication,
+  workdayLoginFailureMessage,
 } from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -295,14 +296,14 @@ export async function continueApplication(
   const detected = formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
+    const workdayError =
+      adapterForUrl(session.page.url())?.id === "workday"
+        ? workdayLoginFailureMessage(text)
+        : null;
     session.message =
       detected === "login_required"
-        ? adapterForUrl(session.page.url())?.id === "workday" &&
-          /wrong email address or password|account (?:may|might) be locked/i.test(
-            text,
-          )
-          ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
-          : "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
+        ? workdayError ??
+          "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
         : "Complete the security challenge manually in the browser viewer.";
     return status(session);
   }
