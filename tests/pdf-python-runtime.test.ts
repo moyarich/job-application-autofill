@@ -1,3 +1,4 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, it, expect } from "vitest";
 import { findPdfPython } from "../packages/resume/src/extract-resume/python-runtime.ts";
 

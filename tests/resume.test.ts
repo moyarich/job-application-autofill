@@ -1,5 +1,6 @@
+// @ts-nocheck — migrated test fixtures retain runtime assertions.
 import { describe, expect, it } from "vitest";
-import { validateResume } from "../packages/resume/src/resume-schema/validate.mjs";
+import { validateResume } from "../packages/resume/src/resume-schema/validate.ts";
 import { extractProfile, decodeUpload } from "@moyarich/resume";
 
 describe("resume parser", () => {
