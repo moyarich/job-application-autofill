@@ -9,7 +9,7 @@ services:
     entrypoint: ["/app/docker/start-review.sh"]
     command: ["node", "packages/resume-api/index.mjs"]
     environment:
-      NODE_ENV: development
+      NODE_ENV: "${NODE_ENV:-development}"
       AUTOFILL_PORT: "4177"
       AUTOFILL_HOST: "0.0.0.0"
       AUTOFILL_ORIGIN: "http://localhost:${MOYA_WEB_PORT:-5173}"
@@ -46,6 +46,7 @@ services:
       dockerfile: docker/Dockerfile
     command: ["npm", "run", "dev", "--workspace", "apps/playground"]
     environment:
+      NODE_ENV: "${NODE_ENV:-development}"
       VITE_API_PROXY_TARGET: http://api:4177
       VITE_VNC_PROXY_TARGET: http://api:6080
     ports:

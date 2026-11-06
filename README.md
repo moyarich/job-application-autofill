@@ -216,3 +216,8 @@ not put credentials in URLs or browser storage. Its authenticated local API rout
 and same-origin VNC proxy are used by the dashboard. Browser windows have separate
 application contexts but share the local virtual desktop; focusing an application
 viewer brings that job's browser window forward.
+
+Set `NODE_ENV=development` in the root `.env` for local development. Compose passes
+it to the API and web services, defaulting to `development` when absent. Changing
+it requires recreating the containers. Setting `NODE_ENV=production` alone does
+not replace the current Vite development server with a production deployment.
