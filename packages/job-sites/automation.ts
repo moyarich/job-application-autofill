@@ -14,6 +14,7 @@ type ResumeAttachment = { fileName: string; buffer: Buffer };
 type ApplicationSession = {
   id: string;
   jobId: string;
+  profileId: string;
   url: string;
   browser: Browser;
   context: BrowserContext;
@@ -33,6 +34,7 @@ type ApplicationSession = {
 type ApplicationPreparation = {
   jobUrl: string;
   jobId: string;
+  profileId?: string;
   profile: CandidateProfile;
   resume?: ResumeAttachment;
   launchBrowser?: () => Promise<Browser>;
@@ -99,6 +101,7 @@ function status(session: ApplicationSession) {
   return {
     id: session.id,
     jobId: session.jobId,
+    profileId: session.profileId,
     state: session.state,
     url: session.url,
     message: session.message,
@@ -111,8 +114,8 @@ function status(session: ApplicationSession) {
   };
 }
 
-export function getActiveApplication(jobId?: string | null) {
-  const session = jobId ? [...sessions.values()].find(item => item.jobId === jobId) : sessions.values().next().value;
+export function getActiveApplication(jobId?: string | null, profileId = "00000000-0000-4000-8000-000000000001") {
+  const session = [...sessions.values()].find(item => item.profileId === profileId && (!jobId || item.jobId === jobId));
   return session ? status(session) : null;
 }
 
@@ -192,14 +195,15 @@ export async function answerApplicationQuestions(id: string, answers: Record<str
   return { ...status(session), answerResult: result };
 }
 
-export async function prepareApplication({ jobUrl, jobId, profile, resume,
+export async function prepareApplication({ jobUrl, jobId, profileId = "00000000-0000-4000-8000-000000000001", profile, resume,
   launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }) }: ApplicationPreparation) {
   const url = validateUrl(jobUrl);
   const adapter = adapterForUrl(url);
   if (typeof jobId !== "string" || !jobId.trim()) throw new Error("A job identifier is required.");
-  if (launchingJobs.has(jobId) || [...sessions.values()].some(item => item.jobId === jobId))
+  const sessionKey = profileId + ":" + jobId;
+  if (launchingJobs.has(sessionKey) || [...sessions.values()].some(item => item.profileId === profileId && item.jobId === jobId))
     throw new Error("This application already has an open browser session.");
-  launchingJobs.add(jobId);
+  launchingJobs.add(sessionKey);
   let browser: Browser | undefined;
   let directory: string | undefined;
   let id: string | undefined;
@@ -210,7 +214,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume,
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: false });
     const page = await context.newPage();
     const session: ApplicationSession = {
-      id, jobId, url, browser, context, page, directory, state: "preparing",
+      id, jobId, profileId, url, browser, context, page, directory, state: "preparing",
       message: "", screenshot: null, filled: [], missing: [], profile, pendingResume: resume ?? null,
       ats: adapter?.id || "unknown", questions: [],
     };
@@ -253,7 +257,7 @@ export async function prepareApplication({ jobUrl, jobId, profile, resume,
     }
     throw error;
   } finally {
-    launchingJobs.delete(jobId);
+    launchingJobs.delete(sessionKey);
   }
 }
 
