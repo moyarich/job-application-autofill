@@ -1,5 +1,6 @@
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
+import { AutomationPillMenu, type AutomationAction } from "../AutomationPillMenu/AutomationPillMenu";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function ApplicationReview({
   controller,
@@ -14,6 +15,7 @@ export function ApplicationReview({
     session,
     applyBusy,
     continueAfterChallenge,
+    prepareAccountSignUp,
     questionAnswers,
     setQuestionAnswers,
     fillCustomQuestions,
@@ -226,6 +228,27 @@ export function ApplicationReview({
                       I have reviewed the application details.
                     </label>
                   </div>
+                )}
+                {session.reviewUrl && (
+                  <AutomationPillMenu busy={applyBusy} status={session.ats ? "ATS: " + session.ats : "Application session connected"}
+                    actions={[
+                      { id: "detect", label: "Detect current page", description: "Dedicated page detection is not configured", available: false },
+                      { id: "register", label: "Create account", description: "Prepare employer registration fields",
+                        available: !applyBusy && session.state !== "preparing",
+                        onSelect: () => prepareAccountSignUp() },
+                      { id: "sign-in", label: "Sign in", description: "Sign in manually in the employer browser", available: false },
+                      { id: "contact", label: "Contact autofill", description: "A dedicated contact-only action is not configured", available: false },
+                      { id: "employment", label: "Employment autofill", description: "A dedicated employment-only action is not configured", available: false },
+                      { id: "education", label: "Education autofill", description: "A dedicated education-only action is not configured", available: false },
+                      { id: "resume", label: "Upload resume", description: "Upload runs during supported application autofill", available: false },
+                      { id: "questions", label: "Screening questions", description: "Fill the answers entered in Application review",
+                        available: !applyBusy && session.state === "ready_for_review" && Object.values(questionAnswers).some(Boolean),
+                        onSelect: fillCustomQuestions },
+                      { id: "next", label: "Autofill current step", description: "Rerun supported form automation on the open page",
+                        available: !applyBusy && ["ready_for_review", "login_required", "manual_intervention"].includes(session.state),
+                        onSelect: continueAfterChallenge },
+                    ] satisfies AutomationAction[]}
+                  />
                 )}
                 <div className="actions">
                   <button
