@@ -1,5 +1,12 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck — migration: follow up with typed Playwright interface annotations.
+import type { Page } from "playwright";
+
+export interface ApplicationQuestion {
+  label: string;
+  kind: "radio" | "checkbox" | "select" | "combobox" | "textarea" | "text";
+  required: boolean;
+  options: string[];
+}
+
 import greenhouse from "./greenhouse/index.ts";
 import lever from "./lever/index.ts";
 import workday from "./workday/index.ts";
@@ -12,7 +19,7 @@ export const ADAPTERS = Object.freeze({
 const UNSAFE_QUESTIONS = /(?:password|passcode|verification code|otp|one.time code|social security|ssn|date of birth|birth date|credit card|bank account|passport|driver.?s license|tax id|national id)/i;
 const VOLUNTARY_QUESTIONS = /(?:race|ethnic|gender|transgender|hispanic|latino|disab|veteran|sexual orientation|pronouns|demographic|self.identif)/i;
 
-export function adapterForUrl(url) {
+export function adapterForUrl(url: string) {
   let host;
   try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
   for (const [id, adapter] of Object.entries(ADAPTERS))
@@ -21,7 +28,7 @@ export function adapterForUrl(url) {
   return null;
 }
 
-export function formState(text, url = "") {
+export function formState(text: string, url = "") {
   if (/captcha|verify you are human|security challenge|cloudflare check/i.test(text))
     return "manual_intervention";
   const path = new URL(url, "https://example.com").pathname;
@@ -31,18 +38,18 @@ export function formState(text, url = "") {
   return "ready_for_review";
 }
 
-export function classifyQuestion(label) {
+export function classifyQuestion(label: string) {
   if (UNSAFE_QUESTIONS.test(label)) return "sensitive";
   if (VOLUNTARY_QUESTIONS.test(label)) return "voluntary";
   return "general";
 }
 
 // DOM scanning is read-only and does not extract field values or credentials.
-export async function discoverQuestions(page) {
+export async function discoverQuestions(page: Page): Promise<ApplicationQuestion[]> {
   return page.evaluate(() => {
     const fields = [...document.querySelectorAll("input:not([type=hidden]), textarea, select, [role=combobox], [role=radiogroup]")];
-    const normalized = [];
-    const seen = new Set();
+    const normalized: ApplicationQuestion[] = [];
+    const seen = new Set<string>();
     for (const el of fields) {
       if (!(el instanceof HTMLElement)) continue;
       if (el.closest("[hidden], [aria-hidden=true]")) continue;
@@ -63,7 +70,7 @@ export async function discoverQuestions(page) {
         : el.matches("select") ? "select"
         : el.matches("[role=combobox]") ? "combobox"
         : el.matches("textarea") ? "textarea" : "text";
-      let options = [];
+      let options: string[] = [];
       if (el instanceof HTMLSelectElement) options = [...el.options].map(option => option.textContent?.trim() || "").filter(Boolean);
       else if (kind === "radio") options = [...(group || el.parentElement || el).querySelectorAll("label")].map(node => node.textContent?.trim() || "").filter(Boolean);
       normalized.push({ label, kind, required, options: options.slice(0, 30) });
@@ -72,16 +79,16 @@ export async function discoverQuestions(page) {
   });
 }
 
-function findQuestion(questions, label) {
+function findQuestion(questions: ApplicationQuestion[], label: string) {
   const wanted = label.trim().toLowerCase();
   return questions.find(q => q.label.trim().toLowerCase() === wanted);
 }
 
 // Only user-provided answers are filled. No guessed work authorization,
 // demographics, salary or screening answers.
-export async function fillQuestionAnswers(page, questions, answers) {
+export async function fillQuestionAnswers(page: Page, questions: ApplicationQuestion[], answers: Record<string, string>) {
   if (!answers || typeof answers !== "object" || Array.isArray(answers)) throw new Error("Answers must be a key-value object.");
-  const results = { filled: [], unresolved: [] };
+  const results: { filled: string[]; unresolved: string[] } = { filled: [], unresolved: [] };
   for (const [label, answer] of Object.entries(answers)) {
     const question = findQuestion(questions, label);
     if (!question || classifyQuestion(label) !== "general" || typeof answer !== "string" || !answer.trim()) {
