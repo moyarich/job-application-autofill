@@ -13,7 +13,7 @@ export function CandidateProfile({
     profile,
     exportResumePdf,
     setProfile,
-    contactOverrides, editContact, setContactScope,
+    contacts, contactId, defaultContactId, chooseContact, markDefaultContact, editContact,
     errors,
   } = controller;
   return (
@@ -21,8 +21,8 @@ export function CandidateProfile({
       <section className="panel">
         <div className="panel-title horizontal">
           <div>
-            <h2>Shared contact information</h2>
-            <p>These details belong to this person and are used across their resumes. Changes to work history below affect only the selected resume.</p>
+            <h2>Contact for this resume</h2>
+            <p>Each resume selects a reusable contact record. Changes to that record affect every resume using it.</p>
           </div>
           <div className="actions">
             <input
@@ -49,6 +49,17 @@ export function CandidateProfile({
             </button>
           </div>
         </div>
+        <div className="contact-record-selector">
+          <label htmlFor="resume-contact-record">Contact record</label>
+          <select id="resume-contact-record" value={contactId}
+            onChange={event => chooseContact(event.target.value)}>
+            {contacts.map(item => <option key={item.id} value={item.id}>
+              {item.name}{item.isDefault ? " (default)" : ""}
+            </option>)}
+          </select>
+          {contactId !== defaultContactId && <button type="button" className="secondary"
+            onClick={() => void markDefaultContact()}>Make default for new resumes</button>}
+        </div>
         <div className="profile-grid">
           {fields.map(({ key, label }) => (
             <label key={key}>
@@ -59,11 +70,6 @@ export function CandidateProfile({
                 onChange={(e) => editContact(key, e.target.value)}
                 placeholder={label}
               />
-              <span className="review-checkbox">
-                <input type="checkbox" checked={Object.hasOwn(contactOverrides,key)}
-                  onChange={event => setContactScope(key,event.target.checked)} />
-                Use a different value for this resume
-              </span>
             </label>
           ))}
         </div>

@@ -3,7 +3,7 @@ import type { ApplicationController } from "../../utils/application/useApplicati
 import { fields } from "../../utils/profile/fields";
 
 export function ContactImportReview({ controller }: { controller: ApplicationController }) {
-  const { pendingImport, sharedContact, profile, conflictKeys, importChoices,
+  const { pendingImport, profile, conflictKeys, importChoices,
     setImportChoices, confirmImport, cancelImport } = controller;
   if (!pendingImport) return null;
   return (
@@ -13,19 +13,19 @@ export function ContactImportReview({ controller }: { controller: ApplicationCon
       {conflictKeys.map(key => (
         <fieldset key={key} className="contact-import-field">
           <legend>{fields.find(field => field.key === key)?.label ?? key}</legend>
-          <p>Shared default: <strong>{sharedContact[key]}</strong> · Current resume: <strong>{profile.contact[key]}</strong> · Imported: <strong>{pendingImport.contact[key]}</strong></p>
+          <p>Current contact: <strong>{profile.contact[key] || "(blank)"}</strong> · Imported: <strong>{pendingImport.contact[key] || "(blank)"}</strong></p>
           <label><input type="radio" name={"contact-import-"+key}
             checked={(importChoices[key] ?? "resume") === "resume"}
             onChange={() => setImportChoices(previous => ({...previous,[key]:"resume"}))} />
-            Use imported value only for this resume</label>
+            Use imported value in a separate contact record for this resume</label>
           <label><input type="radio" name={"contact-import-"+key}
             checked={importChoices[key] === "shared"}
             onChange={() => setImportChoices(previous => ({...previous,[key]:"shared"}))} />
-            Update shared contact for resumes without an override</label>
+            Update the current contact record for all resumes using it</label>
           <label><input type="radio" name={"contact-import-"+key}
             checked={importChoices[key] === "keep"}
             onChange={() => setImportChoices(previous => ({...previous,[key]:"keep"}))} />
-            Keep saved contact for this resume</label>
+            Keep the current contact value</label>
         </fieldset>
       ))}
       <div className="actions">
