@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { validateResume, parseResumeJson } from "../../packages/resume/src/resume-schema/validate.ts";
-import { parseCandidateJson, validateCandidate } from "../../packages/job-application-autofill/src/index";
+import { validateResume } from "../../packages/resume/src/resume-schema/validate.ts";
+
 
 const example = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 
