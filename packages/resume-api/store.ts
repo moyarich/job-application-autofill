@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS profile_identity (
  profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE,
  contact_json TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS resume_contact_overrides (
+ resume_id TEXT PRIMARY KEY REFERENCES profile_resumes(id) ON DELETE CASCADE,
+ overrides_json TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS profile_state (
  profile_id TEXT PRIMARY KEY REFERENCES local_profiles(id) ON DELETE CASCADE, revision INTEGER NOT NULL DEFAULT 0
 );
@@ -89,6 +93,8 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   const listResumeRows = db.prepare("SELECT id,name,created_at AS createdAt FROM profile_resumes WHERE profile_id=? ORDER BY created_at,id");
   const selectResume = db.prepare("SELECT id,name,json,created_at AS createdAt FROM profile_resumes WHERE id=? AND profile_id=?");
   const getRevision = db.prepare("SELECT revision FROM profile_state WHERE profile_id=?");
+  const getOverrides = db.prepare("SELECT overrides_json AS overridesJson FROM resume_contact_overrides WHERE resume_id=?");
+  const putOverrides = db.prepare("INSERT INTO resume_contact_overrides (resume_id,overrides_json) VALUES (?,?) ON CONFLICT(resume_id) DO UPDATE SET overrides_json=excluded.overrides_json");
   const getIdentity = db.prepare("SELECT contact_json AS contactJson FROM profile_identity WHERE profile_id=?");
   const putIdentity = db.prepare("INSERT INTO profile_identity (profile_id,contact_json) VALUES (?,?) ON CONFLICT(profile_id) DO UPDATE SET contact_json=excluded.contact_json");
   const getJobs = db.prepare("SELECT id,company,role,url,status,created_at AS createdAt,notes FROM profile_applications WHERE profile_id=? ORDER BY created_at DESC,id");
@@ -144,7 +150,15 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     const owner = requireProfile(profileId);
     const source = copyId ? requireResume(owner, copyId) : null;
     const row: ResumeVersion = { id: randomUUID(), name: name(value), createdAt: now() };
-    insertResume.run(row.id, owner, row.name, source?.json ?? null, row.createdAt);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      insertResume.run(row.id, owner, row.name, source?.json ?? null, row.createdAt);
+      if (source) {
+        const overrides = getOverrides.get(source.id) as { overridesJson: string } | undefined;
+        if (overrides) putOverrides.run(row.id, overrides.overridesJson);
+      }
+      db.exec("COMMIT");
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
     return row;
   }
   function renameResume(profileId: string, resumeId: string, value: unknown): ResumeVersion {
@@ -190,10 +204,14 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     const identity = getIdentity.get(owner) as { contactJson: string } | undefined;
     const contact = identity ? JSON.parse(identity.contactJson) as Record<string,string> : null;
     const document = selected.json ? JSON.parse(selected.json) as Record<string,unknown> : null;
+    const overridesRow = getOverrides.get(selected.id) as { overridesJson: string } | undefined;
+    const contactOverrides = overridesRow ? JSON.parse(overridesRow.overridesJson) as Record<string,string> : {};
+    const sharedContact = contact ?? (document?.contact as Record<string,string> | undefined) ?? null;
     return {
       revision: (getRevision.get(owner) as { revision: number }).revision,
-      contact,
-      profile: document ? { ...document, contact: contact ?? document.contact } : null,
+      contact: sharedContact,
+      contactOverrides,
+      profile: document ? { ...document, contact: { ...sharedContact, ...contactOverrides } } : null,
       jobs: getJobs.all(owner) as JobRecord[],
       resumeId: selected.id, resumes,
     };
@@ -207,6 +225,19 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     const state = snapshot as Record<string, unknown>;
     const candidate = state.profile == null ? null : validateResume(state.profile);
     const jobs = validateJobs(state.jobs);
+    const contactKeys = ["firstName","lastName","email","phone","location","linkedIn","github","website"];
+    const shared = state.contact ?? candidate?.contact ?? null;
+    if (shared !== null && (!shared || typeof shared !== "object" || Array.isArray(shared) ||
+        contactKeys.some(key => typeof (shared as Record<string,unknown>)[key] !== "string") ||
+        Object.keys(shared).some(key => !contactKeys.includes(key)))) throw new Error("Invalid shared contact.");
+    const rawOverrides = state.contactOverrides ?? {};
+    if (!rawOverrides || typeof rawOverrides !== "object" || Array.isArray(rawOverrides) ||
+        Object.entries(rawOverrides).some(([key,value]) => !contactKeys.includes(key) || typeof value !== "string"))
+      throw new Error("Invalid resume contact overrides.");
+    const overrides = rawOverrides as Record<string,string>;
+    const effectiveContact = { ...(shared as Record<string,string> | null), ...overrides };
+    if (candidate && JSON.stringify(effectiveContact) !== JSON.stringify(candidate.contact))
+      throw new Error("Resume contact does not match shared contact and overrides.");
     const revision = state.revision;
     if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
       throw new Error("Expected a nonnegative revision.");
@@ -222,7 +253,8 @@ CREATE TABLE IF NOT EXISTS profile_applications (
       for (const job of jobs) insertJob.run(owner, job.id,job.company,job.role,job.url,job.status,job.createdAt,job.notes);
       // Contact belongs to the person, while work history and tailored wording belong to each resume.
       // Keep the complete resume JSON for schema validation/export, but overlay shared contact when reading.
-      if (candidate) putIdentity.run(owner, JSON.stringify(candidate.contact));
+      if (shared) putIdentity.run(owner, JSON.stringify(shared));
+      putOverrides.run(id, JSON.stringify(overrides));
       db.prepare("UPDATE profile_resumes SET json=? WHERE profile_id=? AND id=?").run(candidate ? JSON.stringify(candidate) : null, owner, id);
       db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?").run(current + 1, owner);
       db.exec("COMMIT");

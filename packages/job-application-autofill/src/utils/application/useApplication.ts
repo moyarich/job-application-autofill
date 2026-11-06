@@ -34,6 +34,38 @@ export function useApplication() {
     structuredClone(emptyCandidate),
   );
   const [jobs, setJobs] = useState<JobApplication[]>([]);
+  type Contact = CandidateProfile["contact"];
+  type ContactKey = keyof Contact;
+  type ContactOverrides = Partial<Contact>;
+  type ContactChoice = "resume" | "shared" | "keep";
+  const [sharedContact, setSharedContact] = useState<Contact>(() => structuredClone(emptyCandidate.contact));
+  const [contactOverrides, setContactOverrides] = useState<ContactOverrides>({});
+  const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(null);
+  const [importChoices, setImportChoices] = useState<Partial<Record<ContactKey,ContactChoice>>>({});
+  const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
+  const conflictKeys = pendingImport ? contactKeys.filter(key =>
+    Boolean(pendingImport.contact[key]?.trim() && sharedContact[key]?.trim() &&
+    pendingImport.contact[key].trim() !== sharedContact[key].trim())) : [];
+  function editContact(key: ContactKey, value: string) {
+    if (Object.hasOwn(contactOverrides,key)) {
+      setContactOverrides(previous => ({ ...previous, [key]: value }));
+    } else {
+      setSharedContact(previous => ({ ...previous, [key]: value }));
+    }
+    setProfile(previous => ({ ...previous, contact: { ...previous.contact, [key]: value } }));
+  }
+  function setContactScope(key: ContactKey, forResume: boolean) {
+    if (forResume) {
+      setContactOverrides(previous => ({ ...previous, [key]: profile.contact[key] }));
+    } else {
+      setContactOverrides(previous => {
+        const next = { ...previous };
+        delete next[key];
+        return next;
+      });
+      setProfile(previous => ({ ...previous, contact: { ...previous.contact, [key]: sharedContact[key] } }));
+    }
+  }
   const [hydrated, setHydrated] = useState(false);
   const revisionRef = useRef(0);
   const savedRef = useRef("");
@@ -91,9 +123,11 @@ export function useApplication() {
           ? parseCandidateJson(JSON.stringify(state.profile))
           : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
         setProfile(value);
+        setSharedContact(state.contact ?? value.contact);
+        setContactOverrides(state.contactOverrides ?? {});
         setJobs(state.jobs);
         revisionRef.current = state.revision;
-        savedRef.current = JSON.stringify({ profile: value, jobs: state.jobs });
+        savedRef.current = JSON.stringify({ profile: value, contact: state.contact ?? value.contact, contactOverrides: state.contactOverrides ?? {}, jobs: state.jobs });
         setHydrated(true);
       })
       .catch((error) => {
@@ -105,7 +139,7 @@ export function useApplication() {
   }, []);
   useEffect(() => {
     if (!hydrated || blockedRef.current || applicationId) return;
-    const state = { profile, jobs };
+    const state = { profile, contact: sharedContact, contactOverrides, jobs };
     const signature = JSON.stringify(state);
     if (signature === savedRef.current) return;
     const timer = setTimeout(() => {
@@ -130,7 +164,7 @@ export function useApplication() {
     }, 350);
     saveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [hydrated, profile, jobs, activeProfileId, activeResumeId]);
+  }, [hydrated, profile, sharedContact, contactOverrides, jobs, activeProfileId, activeResumeId]);
 
   useEffect(() => {
     if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
@@ -148,7 +182,7 @@ export function useApplication() {
   useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
-      if (JSON.stringify({ profile, jobs }) !== savedRef.current) return;
+      if (JSON.stringify({ profile, contact: sharedContact, contactOverrides, jobs }) !== savedRef.current) return;
       void readState(activeProfileId, activeResumeId ?? undefined)
         .then((state) => {
           revisionRef.current = state.revision;
@@ -157,8 +191,12 @@ export function useApplication() {
             : { ...structuredClone(emptyCandidate), contact: state.contact ?? structuredClone(emptyCandidate.contact) };
           savedRef.current = JSON.stringify({
             profile: nextProfile,
+            contact: state.contact ?? nextProfile.contact,
+            contactOverrides: state.contactOverrides ?? {},
             jobs: state.jobs,
           });
+          setSharedContact(state.contact ?? nextProfile.contact);
+          setContactOverrides(state.contactOverrides ?? {});
           setProfile(nextProfile);
           setJobs(state.jobs);
         })
@@ -166,7 +204,7 @@ export function useApplication() {
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [applicationId, hydrated, profile, jobs, activeProfileId, activeResumeId]);
+  }, [applicationId, hydrated, profile, sharedContact, contactOverrides, jobs, activeProfileId, activeResumeId]);
   const errors = validateCandidate(profile);
   const filtered = jobs.filter((job) =>
     (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
@@ -528,7 +566,7 @@ export function useApplication() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await saveQueueRef.current;
     if (blockedRef.current) throw new Error("The current changes could not be saved. Resolve that error before switching.");
-    const current = { profile, jobs };
+    const current = { profile, contact: sharedContact, contactOverrides, jobs };
     const signature = JSON.stringify(current);
     if (signature !== savedRef.current) {
       const saved = await saveState({ ...current, revision: revisionRef.current }, activeProfileId, activeResumeId!);
@@ -621,6 +659,16 @@ export function useApplication() {
     setTab,
     profile,
     setProfile,
+    sharedContact,
+    contactOverrides,
+    editContact,
+    setContactScope,
+    pendingImport,
+    importChoices,
+    setImportChoices,
+    conflictKeys,
+    confirmImport,
+    cancelImport,
     jobs,
     setJobs,
     hydrated,
