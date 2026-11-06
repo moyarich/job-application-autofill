@@ -232,7 +232,7 @@ export function useApplication() {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setMessage(
-        "Generated a selectable-text résumé PDF from structured JSON. Review the PDF before submitting.",
+        "Generated a selectable-text resume PDF from structured JSON. Review the PDF before submitting.",
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
@@ -323,7 +323,7 @@ export function useApplication() {
     }
     setApplyBusy(true);
     setMessage(
-      "Preparing structured résumé JSON and PDF attachment for browser review...",
+      "Preparing structured resume JSON and PDF attachment for browser review...",
     );
     try {
       // The JSON drives autofill. The application also needs a PDF attachment.
@@ -527,14 +527,14 @@ export function useApplication() {
     } catch (error) { setMessage(String(error)); }
   }
   async function removePerson() {
-    if (activeProfileId === DEFAULT_PROFILE_ID || !window.confirm("Permanently delete this person, all résumé versions, and all saved applications?")) return;
+    if (activeProfileId === DEFAULT_PROFILE_ID || !window.confirm("Permanently delete this person, all resume versions, and all saved applications?")) return;
     try {
       await deleteLocalProfile(activeProfileId);
       navigateTo(DEFAULT_PROFILE_ID);
     } catch (error) { setMessage(String(error)); }
   }
   async function createResume(copy = false) {
-    const value = window.prompt(copy ? "Name for the copied résumé" : "Name for the new résumé version");
+    const value = window.prompt(copy ? "Name for the copied resume" : "Name for the new resume version");
     if (!value) return;
     try {
       await flushPending();
@@ -544,7 +544,7 @@ export function useApplication() {
   }
   async function renameResume() {
     if (!activeResumeId) return;
-    const value = window.prompt("Rename résumé version", resumeVersions.find(item => item.id === activeResumeId)?.name);
+    const value = window.prompt("Rename resume version", resumeVersions.find(item => item.id === activeResumeId)?.name);
     if (!value) return;
     try {
       const result = await renameResumeVersion(activeProfileId, activeResumeId, value);
@@ -552,7 +552,7 @@ export function useApplication() {
     } catch (error) { setMessage(String(error)); }
   }
   async function removeResume() {
-    if (!activeResumeId || resumeVersions.length <= 1 || !window.confirm("Permanently delete this résumé version?")) return;
+    if (!activeResumeId || resumeVersions.length <= 1 || !window.confirm("Permanently delete this resume version?")) return;
     try {
       await deleteResumeVersion(activeProfileId, activeResumeId);
       const remaining = resumeVersions.find(item => item.id !== activeResumeId);

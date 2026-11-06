@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS profile_applications (
       const createdAt = now();
       insertProfile.run(DEFAULT_PROFILE_ID, "Default profile", createdAt);
       insertState.run(DEFAULT_PROFILE_ID);
-      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, "Primary résumé", null, createdAt);
+      insertResume.run(randomUUID(), DEFAULT_PROFILE_ID, "Primary resume", null, createdAt);
       db.exec("COMMIT");
     } catch (error) { db.exec("ROLLBACK"); db.close(); throw error; }
   }
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   function requireResume(profileId: string, resumeId: string) {
     const row = selectResume.get(validId(resumeId), requireProfile(profileId)) as
       { id: string; name: string; json: string | null; createdAt: string } | undefined;
-    if (!row) throw new Error("Résumé version not found for the selected local profile.");
+    if (!row) throw new Error("Resume version not found for the selected local profile.");
     return row;
   }
   const listProfiles = (): LocalProfile[] => listProfileRows.all() as LocalProfile[];
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     try {
       insertProfile.run(row.id, row.name, row.createdAt);
       insertState.run(row.id);
-      insertResume.run(randomUUID(), row.id, "Primary résumé", null, row.createdAt);
+      insertResume.run(randomUUID(), row.id, "Primary resume", null, row.createdAt);
       db.exec("COMMIT");
       return row;
     } catch (error) { db.exec("ROLLBACK"); throw error; }
@@ -132,14 +132,14 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   function deleteResume(profileId: string, resumeId: string) {
     const owner = requireProfile(profileId);
     requireResume(owner, resumeId);
-    if (listResumes(owner).length <= 1) throw new Error("Keep at least one résumé version per local profile.");
+    if (listResumes(owner).length <= 1) throw new Error("Keep at least one resume version per local profile.");
     db.prepare("DELETE FROM profile_resumes WHERE id=? AND profile_id=?").run(resumeId, owner);
   }
   function getSnapshot(profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
     const owner = requireProfile(profileId);
     const resumes = listResumes(owner);
     const selectedId = resumeId ?? resumes[0]?.id;
-    if (!selectedId) throw new Error("No résumé versions exist for this profile.");
+    if (!selectedId) throw new Error("No resume versions exist for this profile.");
     const selected = requireResume(owner, selectedId);
     return {
       revision: (getRevision.get(owner) as { revision: number }).revision,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS profile_applications (
   function saveSnapshot(snapshot: unknown, profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
     const owner = requireProfile(profileId);
     const id = resumeId ?? listResumes(owner)[0]?.id;
-    if (!id) throw new Error("No résumé version selected.");
+    if (!id) throw new Error("No resume version selected.");
     requireResume(owner, id);
     if (!snapshot || typeof snapshot !== "object") throw new Error("Invalid state.");
     const state = snapshot as Record<string, unknown>;

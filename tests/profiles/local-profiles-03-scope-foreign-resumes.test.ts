@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import { openStore } from "../../packages/resume-api/store.ts";
 
-test("a résumé version from another person cannot be loaded, changed, or deleted", () => {
+test("a resume version from another person cannot be loaded, changed, or deleted", () => {
   const db = openStore(":memory:");
   try {
     const alice = db.createProfile("Alice");

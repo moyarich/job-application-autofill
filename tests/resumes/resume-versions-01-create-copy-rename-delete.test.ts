@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const candidate = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 
-test("résumé versions can be copied, named and deleted without changing the source", () => {
+test("resume versions can be copied, named and deleted without changing the source", () => {
   const db = openStore(":memory:");
   try {
     const primary = db.listResumes(DEFAULT_PROFILE_ID)[0];

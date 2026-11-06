@@ -4,7 +4,7 @@ import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/store.t
 
 const candidate = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 
-test("saving a named résumé only updates that version and keeps job history shared per person", () => {
+test("saving a named resume only updates that version and keeps job history shared per person", () => {
   const db = openStore(":memory:");
   try {
     const first = db.listResumes(DEFAULT_PROFILE_ID)[0];

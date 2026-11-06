@@ -49,7 +49,7 @@ const server = createServer(async (req, res) => {
     if (Array.isArray(profileIdHeader)) throw new Error("Multiple profile IDs are not allowed.");
     const profileId = profileIdHeader ?? DEFAULT_PROFILE_ID;
     const resumeIdHeader = req.headers["x-resume-id"];
-    if (Array.isArray(resumeIdHeader)) throw new Error("Multiple résumé IDs are not allowed.");
+    if (Array.isArray(resumeIdHeader)) throw new Error("Multiple resume IDs are not allowed.");
     if (req.method === "GET" && url.pathname === "/api/profiles")
       return send(res, 200, { profiles: store.listProfiles(), defaultProfileId: DEFAULT_PROFILE_ID });
     if (req.method === "POST" && url.pathname === "/api/profiles") {
@@ -69,7 +69,7 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { resumes: store.listResumes(profileId) });
     if (req.method === "POST" && url.pathname === "/api/resumes") {
       const payload = record(await readJson(req));
-      if (payload.copyId != null && typeof payload.copyId !== "string") throw new Error("Invalid source résumé ID.");
+      if (payload.copyId != null && typeof payload.copyId !== "string") throw new Error("Invalid source resume ID.");
       return send(res, 201, store.createResume(profileId, payload.name, payload.copyId as string | undefined));
     }
     const resumeRoute = url.pathname.match(/^\/api\/resumes\/([0-9a-f-]{36})$/i);
@@ -124,7 +124,7 @@ const server = createServer(async (req, res) => {
       const profile = validateResume(payload.profile);
       const contact = profile.contact;
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
-        return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
+        return send(res, 400, { error: "Complete first name, last name and valid email in the resume JSON." });
       if (!payload.resume) return send(res, 400, { error: "A PDF resume attachment is required alongside the structured resume JSON." });
       const attachment = record(payload.resume);
       if (typeof attachment.fileName !== "string" || typeof attachment.base64 !== "string") throw new Error("Invalid resume attachment.");

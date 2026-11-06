@@ -78,10 +78,10 @@ export async function renameResumeVersion(profileId: string, resumeId: string, n
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
     body: JSON.stringify({ name }),
-  }), "Could not rename résumé.");
+  }), "Could not rename resume.");
 }
 export async function deleteResumeVersion(profileId: string, resumeId: string): Promise<void> {
   await decodeResponse(await fetch("/api/resumes/" + encodeURIComponent(resumeId), {
     method: "DELETE", headers: profileHeaders(profileId),
-  }), "Could not delete résumé.");
+  }), "Could not delete resume.");
 }
