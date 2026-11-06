@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { adapterForUrl, formState, discoverQuestions, fillQuestionAnswers } from "./index.ts";
 import { fillWorkdayExperience } from "./workday/experience.ts";
+import { prepareEmployerSignUp, type AccountSetupResult } from "./account-sign-up.ts";
 
 type ResumeAttachment = { fileName: string; buffer: Buffer };
 type ApplicationSession = {
@@ -30,6 +31,7 @@ type ApplicationSession = {
   ats: string;
   questions: ApplicationQuestion[];
   loginAttempted?: boolean;
+  signupPrepared?: AccountSetupResult;
 };
 type ApplicationPreparation = {
   jobUrl: string;
@@ -38,6 +40,8 @@ type ApplicationPreparation = {
   profile: CandidateProfile;
   resume?: ResumeAttachment;
   launchBrowser?: () => Promise<Browser>;
+  accountSetupRequired?: boolean;
+  company?: string;
 };
 
 const sessions = new Map<string, ApplicationSession>();
@@ -111,6 +115,7 @@ function status(session: ApplicationSession) {
     missing: session.missing,
     ats: session.ats,
     questions: session.questions || [],
+    signupPrepared: session.signupPrepared ?? null,
   };
 }
 
@@ -180,6 +185,28 @@ export async function continueApplication(id: string) {
   return status(session);
 }
 
+export async function prepareApplicationAccount(id: string, company: string, password?: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (!adapterForUrl(session.page.url())) throw new Error("Open the supported employer application first.");
+  if (password !== undefined && (typeof password !== "string" || password.length < 12 || password.length > 128))
+    throw new Error("Account password must contain 12–128 characters.");
+  // The destination is compared to the original employer's exact tenant host.
+  const result = await prepareEmployerSignUp(session.page, session.url, company, session.profile,
+    { openRegistration: true, password });
+  session.signupPrepared = result;
+  if (result.state === "manual_required") {
+    session.state = "login_required";
+    session.message = "Account fields prepared. Review the signup form and finish terms, verification, and submission in the employer browser.";
+  } else if (result.state === "unavailable") {
+    session.message = "Account automation was stopped because the browser is no longer on the employer's application host.";
+  } else {
+    session.message = "No registration form was found. Continue in the employer browser or sign in to an existing account.";
+  }
+  await refreshScreenshot(id).catch(() => {});
+  return status(session);
+}
+
 export async function answerApplicationQuestions(id: string, answers: Record<string, string>) {
   const session = sessions.get(id);
   if (!session || session.state !== "ready_for_review")
@@ -196,7 +223,8 @@ export async function answerApplicationQuestions(id: string, answers: Record<str
 }
 
 export async function prepareApplication({ jobUrl, jobId, profileId = "00000000-0000-4000-8000-000000000001", profile, resume,
-  launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }) }: ApplicationPreparation) {
+  launchBrowser = () => chromium.launch({ headless: process.env.HEADLESS === "true" }),
+  accountSetupRequired = false, company = "" }: ApplicationPreparation) {
   const url = validateUrl(jobUrl);
   const adapter = adapterForUrl(url);
   if (typeof jobId !== "string" || !jobId.trim()) throw new Error("A job identifier is required.");
@@ -231,14 +259,21 @@ export async function prepareApplication({ jobUrl, jobId, profileId = "00000000-
     }
     if (adapter?.id === "workday") {
       await openWorkdayApplication(page).catch(() => {});
-      await helpWorkdaySignIn(session).catch(() => {});
+      if (!accountSetupRequired) await helpWorkdaySignIn(session).catch(() => {});
+    }
+    if (accountSetupRequired && company) {
+      session.signupPrepared = await prepareEmployerSignUp(page, url, company, profile).catch(() => ({
+        state: "not_required" as const, filled: [], missing: [],
+      }));
     }
     const text = (await page.locator("body").innerText().catch(() => "")).slice(0, 20000);
     const state = formState(text, page.url());
     if (state !== "ready_for_review") {
       session.state = state;
       session.message = state === "login_required"
-        ? "Complete employer account sign-in or verification manually in the interactive browser viewer."
+        ? (session.signupPrepared?.state === "manual_required"
+          ? "Account signup fields prepared. Finish password, legal terms and verification in the employer browser."
+          : "Complete employer account sign-in or verification manually in the interactive browser viewer.")
         : "Complete the security challenge manually in the interactive browser viewer.";
       return status(session);
     }
