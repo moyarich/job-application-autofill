@@ -40,41 +40,37 @@ describe("PDF Python environment resolution", () => {
       "virtualenvs",
     );
   });
-  it("installs dependencies once via Poetry when no interpreter is ready", async () => {
-    let installed = false,
-      installs = 0;
+  it("never provisions dependencies during interpreter discovery", async () => {
+    const commands: string[] = [];
     const run = async (command: string, args: string[]) => {
-      if (command === "poetry" && args[0] === "env")
-        return { stdout: "/venv/python\n" };
-      if (command === "poetry" && args[0] === "install") {
-        installed = true;
-        installs++;
-        return { stdout: "" };
-      }
-      if (command === "/venv/python" && installed) return { stdout: "" };
-      throw new Error("Missing pypdfium2");
-    };
-    expect(await findPdfPython({ env: {}, executeCommand: run })).toBe(
-      "/venv/python",
-    );
-    expect(installs).toBe(1);
-  });
-  it("reports a setup error when Poetry itself cannot be installed", async () => {
-    const run = async () => {
-      throw Object.assign(new Error("poetry not found"), {
-        stderr: "poetry not found",
-      });
-    };
-    await expect(
-      findPdfPython({ env: {}, executeCommand: run }),
-    ).rejects.toThrow(/install Poetry/i);
-  });
-  it("can fail fast without installing dependencies when autoInstall is disabled", async () => {
-    const run = async () => {
+      commands.push([command, ...args].join(" "));
       throw new Error("missing");
     };
-    await expect(
-      findPdfPython({ env: {}, executeCommand: run, autoInstall: false }),
-    ).rejects.toThrow(/npm run dev/);
+    await expect(findPdfPython({ env: {}, executeCommand: run })).rejects.toThrow(
+      /npm run build:python --workspace packages\\/resume/,
+    );
+    expect(commands).toContain("poetry env info --executable");
+    expect(commands).toContain("python3 -c import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image");
+    expect(commands.some(command => /\\b(install|venv|pip)\\b/.test(command))).toBe(false);
+  });
+  it("does not modify an existing Poetry environment when OCR modules are missing", async () => {
+    const commands: string[] = [];
+    const run = async (command: string, args: string[]) => {
+      commands.push([command, ...args].join(" "));
+      if (command === "poetry" && args[0] === "env") return { stdout: "/venv/python\\n" };
+      throw new Error("Missing pypdfium2");
+    };
+    await expect(findPdfPython({ env: {}, executeCommand: run })).rejects.toThrow(
+      /npm run build:python/,
+    );
+    expect(commands.filter(command => command.startsWith("poetry "))).toEqual([
+      "poetry env info --executable",
+    ]);
+  });
+  it("reports the build command when Poetry is not installed", async () => {
+    const run = async () => { throw new Error("poetry not found"); };
+    await expect(findPdfPython({ env: {}, executeCommand: run })).rejects.toThrow(
+      /npm run build:python/,
+    );
   });
 });
