@@ -109,12 +109,12 @@ test("viewer restores keyboard input after connecting and after returning focus"
   await expect(page.getByRole("status")).toHaveText("Connected to application browser");
   await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest?.focusCount)).toBeGreaterThan(0);
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-  expect(await page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.viewOnly)).toBe(true);
+  expect(await page.evaluate(() => (window as ViewerTestWindow).__rfbForTest?.viewOnly)).toBe(true);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   // The API request is still pending; input must not become stuck in view-only mode.
   await page.locator("#screen").click();
-  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.viewOnly)).toBe(false);
-  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest.focusCount)).toBeGreaterThan(1);
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest?.viewOnly)).toBe(false);
+  await expect.poll(() => page.evaluate(() => (window as ViewerTestWindow).__rfbForTest?.focusCount)).toBeGreaterThan(1);
 });
 
 test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
