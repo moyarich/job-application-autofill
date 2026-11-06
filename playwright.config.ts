@@ -38,7 +38,7 @@ export default defineConfig({
   use: { baseURL, trace: "on-first-retry" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npm exec --workspace apps/playground -- vite --host 127.0.0.1 --port ${port} --strictPort`,
+    command: `npm exec --workspace packages/job-application-autofill -- vite --config vite.app.config.ts --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

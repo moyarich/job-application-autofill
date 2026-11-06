@@ -4,9 +4,9 @@ const source = path => readFileSync(new URL("../" + path, import.meta.url), "utf
 
 describe("job-application-autofill application naming", () => {
   it("uses the app name in its dashboard, browser title and launcher", () => {
-    expect(source("apps/playground/index.html")).toContain("<title>job-application-autofill");
-    expect(source("apps/playground/src/main.tsx")).toContain("job-application-");
-    expect(source("apps/playground/src/main.tsx")).toContain(">autofill</span>");
+    expect(source("packages/job-application-autofill/index.html")).toContain("<title>job-application-autofill");
+    expect(source("packages/job-application-autofill/src/components/Sidebar/Sidebar.tsx")).toContain("job-application-");
+    expect(source("packages/job-application-autofill/src/components/Sidebar/Sidebar.tsx")).toContain(">autofill</span>");
     expect(source("scripts/dev.mjs")).toContain("Starting job-application-autofill");
     expect(source("packages/resume-api/index.mjs")).toContain("job-application-autofill local API");
   });

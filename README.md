@@ -196,7 +196,7 @@ action in the viewer. No account is created automatically.
 - `packages/job-sites/workday`: Workday fields, experience, sign-in and sign-up helpers.
 - `packages/resume`: schema, PDF export, extraction, Python worker, and both CLI commands.
 - `packages/job-application-autofill`: candidate profile and application state utilities.
-- `apps/playground`: dashboard.
+- `apps/playground`: separate documentation app.
 
 The server selects an adapter from the job URL. Shared orchestration is in
 `packages/job-sites/automation.mjs`; only Workday-specific actions live under
@@ -221,3 +221,17 @@ Set `NODE_ENV=development` in the root `.env` for local development. Compose pas
 it to the API and web services, defaulting to `development` when absent. Changing
 it requires recreating the containers. Setting `NODE_ENV=production` alone does
 not replace the current Vite development server with a production deployment.
+
+### Standalone application
+
+The real application is `packages/job-application-autofill`. Its entry point mounts
+`src/components/App/App.tsx`; feature UI lives under `src/components/*/`, and
+API, file, profile and state helpers live under `src/utils/*/`.
+
+```sh
+npm run dev --workspace packages/job-application-autofill
+npm run build:app
+```
+
+The app serves on port 5173. `apps/playground` is a separate documentation entry
+on port 5174. Docker and the browser tests target the real application.

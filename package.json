@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "storybook": "storybook dev",
     "build:storybook": "storybook build",
-    "dev:server": "node packages/resume-api/index.mjs"
+    "dev:server": "node packages/resume-api/index.mjs",
+    "build:app": "npm run build:app --workspace packages/job-application-autofill"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

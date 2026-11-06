@@ -28,7 +28,9 @@
   ],
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "vite --config vite.app.config.ts",
+    "build:app": "vite build --config vite.app.config.ts"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
@@ -44,7 +46,8 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5"
+    "vite": "^7.1.5",
+    "@vitejs/plugin-react": "^5.0.0"
   },
   "private": true
 }

@@ -44,7 +44,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: ["npm", "run", "dev", "--workspace", "apps/playground"]
+    command: ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
       VITE_API_PROXY_TARGET: http://api:4177

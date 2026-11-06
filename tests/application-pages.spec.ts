@@ -6,7 +6,7 @@ test("application pages use separate UUIDs and restore only their own session", 
   const profile = JSON.parse(readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"));
   const jobs = [createApplication("Example A", "Engineer A", "https://jobs.lever.co/example/a"), createApplication("Example B", "Engineer B", "https://boards.greenhouse.io/example/jobs/123")];
   const sessions = new Map<string, object>();
-  await context.route("**/api/**", async route => {
+  await context.route(url => url.pathname.startsWith("/api/"), async route => {
     const request = route.request(); const url = new URL(request.url());
     let body: unknown = {};
     if (url.pathname === "/api/state") body = {revision: 1, profile, jobs};
