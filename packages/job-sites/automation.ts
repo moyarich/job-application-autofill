@@ -1,25 +1,20 @@
 import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
-import {
-  helpWorkdaySignIn,
-  openWorkdayApplication,
-} from "./workday/workday-login.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
-import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
+import { prepareRegistration } from "./handlers/registration.ts";
+import { prepareSignIn } from "./handlers/sign-in.ts";
+import { automateCurrentStep, listJobSiteMenu, executeJobSiteMenuItem } from "./core/orchestrator.ts";
+import { detectCurrentPage } from "./core/state-machine.ts";
+import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import {
   adapterForUrl,
   formState,
-  discoverQuestions,
-  fillQuestionAnswers,
 } from "./index.ts";
-import { fillWorkdayEducation } from "./workday/education.ts";
-import { fillWorkdaySkills } from "./workday/skills.ts";
-import { fillWorkdayExperience } from "./workday/experience.ts";
 import {
   prepareEmployerSignUp,
   type AccountSetupResult,
@@ -62,8 +57,7 @@ type ApplicationPreparation = {
 
 const sessions = new Map<string, ApplicationSession>();
 const launchingJobs = new Set<string>();
-const ALLOWED =
-  /(^|\.)(greenhouse\.io|lever\.co|ashbyhq\.com|myworkdayjobs\.com|workday\.com|smartrecruiters\.com)$/i;
+
 const SUCCESS =
   /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
 
@@ -71,7 +65,7 @@ export function validateUrl(input: string) {
   const url = new URL(input);
   if (
     url.protocol !== "https:" ||
-    !ALLOWED.test(url.hostname) ||
+    !adapterForUrl(url.toString()) ||
     url.username ||
     url.password
   )
@@ -83,99 +77,6 @@ export function validateUrl(input: string) {
 
 export function isSubmissionConfirmed(text: string) {
   return SUCCESS.test(text);
-}
-
-async function fill(page: Page, names: RegExp[], value: string) {
-  if (!value || !String(value).trim()) return false;
-  for (const name of names) {
-    for (const locator of [
-      page.getByLabel(name, { exact: false }),
-      page.getByPlaceholder(name, { exact: false }),
-    ]) {
-      try {
-        const target = locator.first();
-        if (
-          (await target.isVisible({ timeout: 350 })) &&
-          (await target.isEnabled())
-        ) {
-          if (await target.evaluate((element) => element.tagName === "SELECT"))
-            await target.selectOption(
-              { label: String(value) },
-              { timeout: 2500 },
-            );
-          else if (
-            (await target.getAttribute("role")) === "combobox" ||
-            (await target.getAttribute("aria-haspopup")) === "listbox"
-          ) {
-            await target.click({ timeout: 2500 });
-            await target.fill(String(value), { timeout: 1000 }).catch(() => {});
-            await page
-              .getByRole("option", { name: String(value), exact: true })
-              .click({ timeout: 2500 });
-          } else await target.fill(String(value), { timeout: 2500 });
-          return true;
-        }
-      } catch {
-        /* Unsupported or hidden control: manual review required. */
-      }
-    }
-  }
-  return false;
-}
-
-export async function fillKnownFields(page: Page, profile: CandidateProfile) {
-  const fields: Array<
-    [keyof CandidateProfile["contact"] | "fullName", RegExp[]]
-  > = [
-    ["firstName", [/first.?name/i]],
-    ["lastName", [/last.?name/i]],
-    ["email", [/e.?mail/i]],
-    ["phone", [/^phone number\s*\*?$/i, /^mobile(?: number)?\s*\*?$/i]],
-    ["location", [/^location\s*\*?$/i]],
-    ["addressLine1", [/^address line 1\s*\*?$/i, /^street address\s*\*?$/i]],
-    ["addressLine2", [/^address line 2\s*\*?$/i]],
-    ["city", [/^city\s*\*?$/i]],
-    ["state", [/^(?:state|province|state or province)\s*\*?$/i]],
-    ["postalCode", [/^(?:postal code|zip(?: code)?)\s*\*?$/i]],
-    ["country", [/^country\s*\*?$/i]],
-    ["phoneCountryCode", [/^country phone code\s*\*?$/i]],
-    ["phoneType", [/^phone device type\s*\*?$/i]],
-    ["linkedIn", [/linkedin/i]],
-    ["github", [/github/i]],
-    ["website", [/website|portfolio/i]],
-  ];
-  const filled: string[] = [];
-  const missing: string[] = [];
-  const adapter = adapterForUrl(page.url?.() || "");
-  const adapterFields: Partial<Record<string, RegExp[]>> =
-    adapter?.fields ?? {};
-  if (
-    adapterFields.fullName &&
-    profile.contact.firstName &&
-    profile.contact.lastName
-  )
-    fields.push(["fullName", adapterFields.fullName]);
-  for (const [key, locators] of fields) {
-    const value =
-      key === "fullName"
-        ? [profile.contact.firstName, profile.contact.lastName].join(" ")
-        : profile.contact[key];
-    if (!value) continue;
-    if (
-      key === "location" &&
-      (await page
-        .getByText(/^Work Experience$/i, { exact: true })
-        .first()
-        .isVisible()
-        .catch(() => false))
-    )
-      continue;
-    ((await fill(page, adapterFields[key] || locators, value))
-      ? filled
-      : missing
-    ).push(key);
-  }
-  return { filled, missing };
 }
 
 function status(session: ApplicationSession) {
@@ -207,91 +108,64 @@ export function getActiveApplication(
 }
 
 async function populateSession(session: ApplicationSession) {
-  const page = session.page;
-  validateUrl(page.url());
-  const results = await fillKnownFields(page, session.profile);
-  session.filled = results.filled;
-  session.missing = results.missing;
-  if (
-    Array.isArray(session.profile.experience) &&
-    session.profile.experience.length
-  ) {
-    if (adapterForUrl(page.url())?.id === "workday") {
-      const work = await fillWorkdayExperience(
-        page,
-        session.profile.experience,
-      );
-      session.filled.push(...work.filled);
-      session.missing.push(...work.unresolved);
-    } else {
-      session.missing.push(
-        "work experience (" +
-          session.profile.experience.length +
-          " entries; review in employer browser)",
-      );
-    }
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) throw new Error("Return to the supported employer application.");
+  const outcome = await automateCurrentStep({
+    page: session.page,
+    profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory,
+    pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile,
+    resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter);
+  if (outcome.detection.kind !== "application") {
+    throw new Error("The employer application is not ready for autofill.");
   }
+  session.filled = outcome.filled;
+  session.missing = outcome.missing;
+  session.pendingResume = outcome.pendingResume;
+  session.resumeFile = outcome.resumeFile;
+  session.resumeUploadUrls = outcome.resumeUploadUrls;
+  session.questions = outcome.questions;
+}
 
-  if (adapterForUrl(page.url())?.id === "workday") {
-    const education = await fillWorkdayEducation(
-      page,
-      session.profile.education || [],
-    );
-    session.filled.push(...education.filled);
-    session.missing.push(...education.unresolved);
-    const skills = await fillWorkdaySkills(page, session.profile.skills || []);
-    session.filled.push(...skills.filled);
-    session.missing.push(...skills.unresolved);
-  }
+/** Only actions explicitly declared by the current site's adapter are visible. */
+export async function getApplicationMenu(id: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) return [];
+  return listJobSiteMenu({
+    page: session.page, profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory, pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter);
+}
 
-  if (session.pendingResume?.buffer?.length) {
-    const filename = join(session.directory, session.pendingResume.fileName);
-    await writeFile(filename, session.pendingResume.buffer, { mode: 0o600 });
-    session.resumeFile = filename;
-    try {
-      const fileInput = page.locator('input[type="file"]').first();
-      if (await fileInput.count()) {
-        await fileInput.setInputFiles(filename, { timeout: 3000 });
-        session.filled.push("resume");
-        session.pendingResume = null;
-        session.resumeUploadUrls = [
-          ...(session.resumeUploadUrls || []),
-          page.url(),
-        ];
-      } else {
-        session.missing.push("resume");
-      }
-    } catch {
-      session.missing.push("resume");
-    }
-  }
-
-  if (
-    !session.pendingResume &&
-    session.resumeFile &&
-    !session.resumeUploadUrls?.includes(page.url()) &&
-    adapterForUrl(page.url())?.id === "workday"
-  ) {
-    const upload = page.locator('input[type="file"]').first();
-    if (
-      (await upload.count()) &&
-      !(await upload.evaluate(
-        (node) => (node as HTMLInputElement).files?.length,
-      ))
-    ) {
-      await upload
-        .setInputFiles(session.resumeFile, { timeout: 3000 })
-        .then(() => {
-          session.filled.push("resume");
-          session.resumeUploadUrls = [
-            ...(session.resumeUploadUrls || []),
-            page.url(),
-          ];
-        })
-        .catch(() => session.missing.push("resume attachment"));
-    }
-  }
-  session.questions = await discoverQuestions(page).catch(() => []);
+/** A menu click invokes exactly one site-owned step; it never submits. */
+export async function runApplicationMenuItem(id: string, itemId: string) {
+  const session = sessions.get(id);
+  if (!session || !["ready_for_review", "login_required", "manual_intervention"].includes(session.state))
+    throw new Error("Application session is not ready for this action.");
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) throw new Error("Return to the employer application first.");
+  const outcome = await executeJobSiteMenuItem({
+    page: session.page, profile: session.profile,
+    expectedHost: new URL(session.url).hostname,
+    directory: session.directory, pendingResume: session.pendingResume,
+    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
+  }, adapter, itemId);
+  session.filled = [...new Set([...session.filled, ...outcome.filled])];
+  session.missing = [...new Set([...session.missing, ...outcome.missing])];
+  session.questions = outcome.questions.length ? outcome.questions : session.questions;
+  session.pendingResume = outcome.pendingResume;
+  session.resumeFile = outcome.resumeFile;
+  session.resumeUploadUrls = outcome.resumeUploadUrls;
+  session.state = "ready_for_review";
+  session.message = "Selected employer step processed. Review the fields before submitting.";
+  return status(session);
 }
 
 export async function continueApplication(
@@ -313,24 +187,23 @@ export async function continueApplication(
       "Complete login in the browser viewer and return to the employer application before continuing.";
     return status(session);
   }
-  if (adapterForUrl(session.page.url())?.id === "workday")
-    await helpWorkdaySignIn(session).catch(() => {});
+  const adapter = adapterForUrl(session.page.url());
+  if (adapter) await prepareSignIn(adapter, session).catch(() => {});
   const text = (
     await session.page
       .locator("body")
       .innerText()
       .catch(() => "")
   ).slice(0, 20000);
-  const detected = formState(text, session.page.url());
+  const pageDetection = adapter ? await detectCurrentPage(session.page, adapter, new URL(session.url).hostname) : null;
+  const detected = pageDetection?.kind === "challenge" ? "manual_intervention" : pageDetection?.kind === "external" || pageDetection?.kind === "registration" || pageDetection?.kind === "sign_in" ? "login_required" : formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
+    const providerError = adapter?.loginFailureMessage?.(text);
     session.message =
       detected === "login_required"
-        ? /wrong email address or password|account (?:may|might) be locked/i.test(
-            text,
-          )
-          ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
-          : "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
+        ? providerError ??
+          "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
         : "Complete the security challenge manually in the browser viewer.";
     return status(session);
   }
@@ -359,7 +232,7 @@ export async function prepareApplicationAccount(
   )
     throw new Error("Account password must contain 12–128 characters.");
   // The destination is compared to the original employer's exact tenant host.
-  const result = await prepareEmployerSignUp(
+  const result = await prepareRegistration(
     session.page,
     session.url,
     company,
@@ -392,13 +265,12 @@ export async function answerApplicationQuestions(
       "Finish sign-in and prepare the application before answering questions.",
     );
   validateUrl(session.page.url());
-  session.questions = await discoverQuestions(session.page);
-  const result = await fillQuestionAnswers(
-    session.page,
-    session.questions,
-    answers,
-  );
-  session.questions = await discoverQuestions(session.page);
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter?.answerQuestions || !adapter.discoverQuestions) {
+    throw new Error("This job site has no configured screening-answer handler.");
+  }
+  const result = await adapter.answerQuestions(session.page, answers);
+  session.questions = await adapter.discoverQuestions(session.page);
   session.message = result.unresolved.length
     ? "Some answers need manual attention in the browser viewer."
     : "Supplied answers were filled. Review their exact selections in the browser viewer.";
@@ -473,10 +345,10 @@ export async function prepareApplication({
         "Sign in manually in the viewer and return to the supported employer application; never provide passwords to the dashboard.";
       return status(session);
     }
-    if (adapter?.id === "workday") {
-      await openWorkdayApplication(page).catch(() => {});
-      await helpWorkdaySignIn(session).catch(() => {});
-    }
+    if (adapter?.openApplication)
+      await adapter.openApplication(page).catch(() => {});
+    if (adapter?.helpSignIn)
+      await prepareSignIn(adapter, session).catch(() => {});
     if (accountSetupRequired && company) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,

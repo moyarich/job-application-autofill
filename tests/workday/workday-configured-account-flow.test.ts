@@ -42,7 +42,8 @@ it("tries configured login for new employer records and keeps a pending resume u
     });
     expect(session.state).toBe("ready_for_review");
     expect(await page!.locator("h1").innerText()).toBe("My Information");
-    expect(session.missing).toContain("resume");
+    // No upload control is present yet; the provider will retry on a matching step.
+    expect(session.missing).not.toContain("resume");
     await page!.setContent(
       '<h1>Upload your resume</h1><label>Resume<input type="file"></label>',
     );

@@ -1,4 +1,6 @@
 import type { Page } from "playwright";
+import type { JobSiteAdapter } from "./types.ts";
+export type { JobSiteAdapter } from "./types.ts";
 
 export interface ApplicationQuestion {
   label: string;
@@ -13,7 +15,7 @@ import workday from "./workday/index.ts";
 import ashby from "./ashby/index.ts";
 import smartRecruiters from "./smart-recruiters/index.ts";
 
-export const ADAPTERS = Object.freeze({
+export const ADAPTERS: Readonly<Record<string, JobSiteAdapter>> = Object.freeze({
   greenhouse, lever, workday, ashby, "smart-recruiters": smartRecruiters,
 });
 const UNSAFE_QUESTIONS = /(?:password|passcode|verification code|otp|one.time code|social security|ssn|date of birth|birth date|credit card|bank account|passport|driver.?s license|tax id|national id)/i;
@@ -23,9 +25,9 @@ const VOLUNTARY_QUESTIONS = /(?:race|ethnic|gender|transgender|hispanic|latino|d
 export function adapterForUrl(url: string) {
   let host;
   try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
-  for (const [id, adapter] of Object.entries(ADAPTERS))
+  for (const adapter of Object.values(ADAPTERS))
     if (adapter.hosts.some(domain => host === domain || host.endsWith("." + domain)))
-      return { ...adapter, id };
+      return adapter;
   return null;
 }
 

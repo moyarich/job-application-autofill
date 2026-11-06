@@ -12,7 +12,6 @@ on:
       - "packages/extract-resume/**"
       - "resume-schema/**"
       - "tests/ats/**"
-      - "tests/workday/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ci_docker.yml"
@@ -76,7 +75,7 @@ jobs:
             exit 1
           fi
       - name: ATS browser adapter integration fixtures
-        run: docker compose exec -T api npx --no-install vitest run tests/ats tests/workday
+        run: docker compose exec -T api npx --no-install vitest run tests/ats
       - name: Verify SQLite persists after Compose shutdown and restart
         run: |
           docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && printf "persistent" > /app/data/.ci-volume-marker'

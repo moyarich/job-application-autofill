@@ -1,5 +1,12 @@
 import type { Page, Locator } from "playwright";
 import { helpWorkdaySignUp } from "./workday-sign-up.ts";
+/** Return a provider-specific explanation only for recognized Workday login failures. */
+export function workdayLoginFailureMessage(text: string): string | null {
+  return /wrong email address or password|account (?:may|might) be locked/i.test(text)
+    ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
+    : null;
+}
+
 // Credentials are scoped to one employer tenant and never returned to the dashboard.
 export function workdayCredentials(
   url: string,
