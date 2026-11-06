@@ -47,17 +47,17 @@ describe("PDF Python environment resolution", () => {
       throw new Error("missing");
     };
     await expect(findPdfPython({ env: {}, executeCommand: run })).rejects.toThrow(
-      /npm run build:python --workspace packages\\/resume/,
+      /npm run build:python --workspace packages\/resume/,
     );
     expect(commands).toContain("poetry env info --executable");
     expect(commands).toContain("python3 -c import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image");
-    expect(commands.some(command => /\\b(install|venv|pip)\\b/.test(command))).toBe(false);
+    expect(commands.some(command => /\b(install|venv|pip)\b/.test(command))).toBe(false);
   });
   it("does not modify an existing Poetry environment when OCR modules are missing", async () => {
     const commands: string[] = [];
     const run = async (command: string, args: string[]) => {
       commands.push([command, ...args].join(" "));
-      if (command === "poetry" && args[0] === "env") return { stdout: "/venv/python\\n" };
+      if (command === "poetry" && args[0] === "env") return { stdout: "/venv/python\n" };
       throw new Error("Missing pypdfium2");
     };
     await expect(findPdfPython({ env: {}, executeCommand: run })).rejects.toThrow(
