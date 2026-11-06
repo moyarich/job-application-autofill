@@ -22,7 +22,7 @@ test("contact changes follow the person, not a resume, while tailored roles rema
     expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.experience[0].jobTitle).toBe("Cloud Engineer");
     expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.experience[0].description).toBe("Managed AWS infrastructure.");
     const third = db.createResume(DEFAULT_PROFILE_ID, "New resume");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, third.id).contact.email).toBe("new@example.com");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, third.id).contact!.email).toBe("new@example.com");
     expect(db.getSnapshot(DEFAULT_PROFILE_ID, third.id).profile).toBeNull();
     const other = db.createProfile("Different person");
     expect(db.getSnapshot(other.id).contact).toBeNull();
