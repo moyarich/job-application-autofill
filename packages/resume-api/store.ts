@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS applications (
     const selectedContact = contacts.find(item => item.id === selected.contactId);
     const defaultContact = contacts.find(item => item.isDefault);
     if (!selectedContact || !defaultContact) throw new Error("Missing contact for profile.");
-    const { id: _id, profileId: _profileId, name: _name, isDefault: _isDefault, ...contact } = selectedContact;
+    const contact = Object.fromEntries(CONTACT_KEYS.map(key => [key,selectedContact[key]])) as CandidateProfile["contact"];
     const document = selected.json ? JSON.parse(selected.json) as CandidateProfile : null;
     return {
       revision: (getRevision.get(owner) as {revision:number}).revision,
