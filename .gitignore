@@ -15,7 +15,7 @@ coverage/
 .nyc_output/
 playwright-report/
 test-results/
-Moya Richards - Resume.pdf
+
 # Generated output
 dist/
 build/
@@ -68,3 +68,6 @@ data/
 
 # Standalone application build
 **/dist-app/
+
+# PDF files
+*.pdf
