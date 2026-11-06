@@ -1,7 +1,7 @@
 import type { Browser } from "playwright";
 import type { CandidateProfile } from "../types.js";
 import { chromium } from "playwright";
-import { validateResume } from "./validate.mjs";
+import { validateResume } from "./validate.ts";
 
 // Chromium embeds the fonts used to render the HTML in its PDF output.
 // HTML is escaped at the boundary; resume fields must never be interpreted as markup.
