@@ -58,16 +58,15 @@ async function poetryPython(executeCommand: ExecuteCommand) {
 }
 /**
  * Resolve the interpreter that actually has the PDFium/OCR dependencies.
- * Poetry is optional for Docker, but bootstrapped on demand on a developer host.
+ * Provisioning is exclusively the responsibility of scripts/build-python.ts.
+ * Runtime detection never installs packages or modifies an environment.
  */
 export async function findPdfPython({
   env = process.env,
   executeCommand = execute,
-  autoInstall = true,
 }: {
   env?: NodeJS.ProcessEnv;
   executeCommand?: ExecuteCommand;
-  autoInstall?: boolean;
 } = {}) {
   const explicit = env.PYTHON_EXECUTABLE?.trim();
   if (explicit) {
@@ -83,29 +82,8 @@ export async function findPdfPython({
   for (const python of ["python3", "python"]) {
     if (await check(python, executeCommand)) return python;
   }
-  if (autoInstall) {
-    try {
-      await executeCommand(
-        "poetry",
-        ["install", "--only", "main", "--no-root"],
-        { timeout: 300000, maxBuffer: 1024 * 1024 },
-      );
-      const installed = await poetryPython(executeCommand);
-      if (installed && (await check(installed, executeCommand)))
-        return installed;
-    } catch (caught) {
-      const error = caught as Error & { stderr?: string };
-      const reason = error.stderr?.trim() || error.message;
-      throw new Error(
-        "Unable to initialize PDF extraction Python dependencies: " +
-          reason.slice(0, 400) +
-          ". Run npm run dev for the containerized app, or install Poetry for host development.",
-        { cause: caught },
-      );
-    }
-  }
   throw new Error(
-    "Python PDF dependencies are unavailable. Start the complete app with npm run dev (Docker) or install Poetry for host development.",
+    "Python PDF dependencies are unavailable. Run npm run build:python --workspace packages/resume to provision the OCR environment, or start the containerized app with npm run dev. Set PYTHON_EXECUTABLE to an existing interpreter with PDF/OCR dependencies if needed.",
   );
 }
 export function getPdfPython() {
