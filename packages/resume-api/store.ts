@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { validateResume } from "../resume/src/resume-schema/validate.ts";
+import type { CandidateProfile } from "../resume/src/types.ts";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export type LocalProfile = { id: string; name: string; createdAt: string };
@@ -202,11 +203,11 @@ CREATE TABLE IF NOT EXISTS profile_applications (
     if (!selectedId) throw new Error("No resume versions exist for this profile.");
     const selected = requireResume(owner, selectedId);
     const identity = getIdentity.get(owner) as { contactJson: string } | undefined;
-    const contact = identity ? JSON.parse(identity.contactJson) as Record<string,string> : null;
-    const document = selected.json ? JSON.parse(selected.json) as Record<string,unknown> : null;
+    const contact = identity ? JSON.parse(identity.contactJson) as CandidateProfile["contact"] : null;
+    const document = selected.json ? JSON.parse(selected.json) as CandidateProfile : null;
     const overridesRow = getOverrides.get(selected.id) as { overridesJson: string } | undefined;
-    const contactOverrides = overridesRow ? JSON.parse(overridesRow.overridesJson) as Record<string,string> : {};
-    const sharedContact = contact ?? (document?.contact as Record<string,string> | undefined) ?? null;
+    const contactOverrides = overridesRow ? JSON.parse(overridesRow.overridesJson) as Partial<CandidateProfile["contact"]> : {};
+    const sharedContact = contact ?? document?.contact ?? null;
     return {
       revision: (getRevision.get(owner) as { revision: number }).revision,
       contact: sharedContact,

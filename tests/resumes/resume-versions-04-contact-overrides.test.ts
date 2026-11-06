@@ -15,17 +15,17 @@ test("per-resume contact overrides survive reload, duplication, and shared conta
     db.saveSnapshot({ revision: 0, profile: original, jobs: [] }, DEFAULT_PROFILE_ID, first.id);
     db.saveSnapshot({ revision: 1, profile: cloud, contact: original.contact,
       contactOverrides: { email: "cloud@example.com" }, jobs: [] }, DEFAULT_PROFILE_ID, second.id);
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile.contact.email).toBe("cloud@example.com");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, first.id).profile.contact.email).toBe("ada@example.com");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.contact.email).toBe("cloud@example.com");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, first.id).profile!.contact.email).toBe("ada@example.com");
     const copy = db.createResume(DEFAULT_PROFILE_ID,"Cloud copy",second.id);
     expect(db.getSnapshot(DEFAULT_PROFILE_ID, copy.id).contactOverrides).toEqual({ email: "cloud@example.com" });
     const updated = structuredClone(original);
     updated.contact.phone = "555-0123";
     db.saveSnapshot({ revision: 2, profile: updated, contact: updated.contact,
       contactOverrides: {}, jobs: [] }, DEFAULT_PROFILE_ID, first.id);
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile.contact.phone).toBe("555-0123");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile.contact.email).toBe("cloud@example.com");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile.experience[0].jobTitle).toBe("Cloud Engineer");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.contact.phone).toBe("555-0123");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.contact.email).toBe("cloud@example.com");
+    expect(db.getSnapshot(DEFAULT_PROFILE_ID, second.id).profile!.experience[0].jobTitle).toBe("Cloud Engineer");
     expect(() => db.saveSnapshot({ revision: 3, profile: cloud, contact: original.contact,
       contactOverrides: { unsupported: "x" }, jobs: [] }, DEFAULT_PROFILE_ID, second.id)).toThrow(/overrides/i);
   } finally { db.close(); }
