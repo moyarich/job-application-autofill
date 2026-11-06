@@ -55,7 +55,7 @@ export const workdaySteps = [
     id: "workday.resume",
     matches: async ({ page, pendingResume, resumeFile }) =>
       Boolean(pendingResume || resumeFile) &&
-      page.locator('input[type="file"]').first().isVisible().catch(() => false),
+      page.locator('input[type="file"]').count().then((count) => count > 0).catch(() => false),
     run: async (context: JobSiteStepContext): Promise<JobSiteStepResult> => {
       const { page } = context;
       let { pendingResume, resumeFile } = context;
