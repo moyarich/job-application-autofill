@@ -92,12 +92,12 @@ const server = createServer(async (req, res) => {
       if (typeof payload.resumeId !== "string") throw new Error("Resume ID required.");
       return send(res, 200, store.resolveImportContact(profileId,payload.resumeId,payload.contact,payload.choices));
     }
-    const contactRoute = url.pathname.match(/^\\/api\\/profile-contacts\\/([0-9a-f-]{36})$/i);
+    const contactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})$/i);
     if (contactRoute && req.method === "PATCH") {
       const payload = record(await readJson(req));
       return send(res, 200, store.updateContactRecord(profileId,contactRoute[1],payload.contact));
     }
-    const defaultContactRoute = url.pathname.match(/^\\/api\\/profile-contacts\\/([0-9a-f-]{36})\\/default$/i);
+    const defaultContactRoute = url.pathname.match(/^\/api\/profile-contacts\/([0-9a-f-]{36})\/default$/i);
     if (defaultContactRoute && req.method === "POST")
       return send(res, 200, store.setDefaultContact(profileId,defaultContactRoute[1]));
     if (req.method === "GET" && url.pathname === "/api/resumes")
