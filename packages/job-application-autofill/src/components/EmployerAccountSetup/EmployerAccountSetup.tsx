@@ -37,11 +37,11 @@ export function EmployerAccountSetup({ controller }: { controller: ApplicationCo
       <h3>Employer account — {account.employerName}</h3>
       <p>{account.provider} · {account.host}</p>
       {account.status === "ready" ? (
-        <p>Account marked ready for this employer and local profile. Use the employer browser to sign in if required.</p>
+        <p>Your account is ready. Sign in on the employer’s site when prompted.</p>
       ) : (
         <>
-          <p>Prepare a separate employer account. Name and email are filled automatically on supported registration forms. You can optionally generate a password and fill both password fields.</p>
-          <label htmlFor="account-signup-password">One-time signup password (optional)</label>
+          <p>This employer requires an account. We can help fill out supported signup forms; you’ll complete verification and confirm account creation.</p>
+          <label htmlFor="account-signup-password">Account password (optional)</label>
           <div className="employer-account-password">
             <input id="account-signup-password" type={visible ? "text" : "password"}
               value={password} onChange={event => { setPassword(event.target.value); setGenerated(false); setCopied(false); }}
@@ -52,7 +52,7 @@ export function EmployerAccountSetup({ controller }: { controller: ApplicationCo
           </div>
           {generated && !copied && <p className="validation warning">Copy and save the generated password in your password manager before preparing signup.</p>}
           <button className="secondary" type="button" disabled={applyBusy || (generated && !copied) || (password.length > 0 && password.length < 12)}
-            onClick={() => void prepare()}>Autofill account signup</button>
+            onClick={() => void prepare()}>Fill signup form</button>
           {signup?.state === "manual_required" && (
             <p>Prepared: {signup.filled.length ? signup.filled.join(", ") : "registration page opened"}. Finish any terms, verification, and final Create Account action in the employer browser.</p>
           )}
@@ -65,7 +65,7 @@ export function EmployerAccountSetup({ controller }: { controller: ApplicationCo
         <button className="secondary" type="button" disabled={applyBusy}
           onClick={() => void setEmployerAccountStatus("setup_required")}>Account needs setup</button>
       )}
-      <p>Passwords are not stored in the app database. CAPTCHA, email verification, terms, and final registration remain in your control.</p>
+      <p>Your password is never saved here. Complete verification and account creation on the employer’s site.</p>
     </section>
   );
 }

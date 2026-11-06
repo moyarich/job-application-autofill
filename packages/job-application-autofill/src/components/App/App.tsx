@@ -15,8 +15,8 @@ export function App() {
     return (
       <div className={applicationId ? "app application-page" : "app"}>
         <main className="main">
-          <h1>Loading SQLite data</h1>
-          <p>{message || "Connecting to the local API..."}</p>
+          <h1>Opening your workspace</h1>
+          <p>{message || "Loading your information..."}</p>
         </main>
       </div>
     );
@@ -68,7 +68,6 @@ export function App() {
                 </strong>
               </div>
             </section>
-            <ResumeParser controller={controller} />
             <ApplicationReview controller={controller} />
             <Opportunities controller={controller} />
           </>
@@ -77,10 +76,7 @@ export function App() {
         ) : (
           <CandidateProfile controller={controller} />
         )}
-        <footer>
-          Local-first prototype · Resume data stays on your computer ·
-          Playwright requires the local API · Review before submission.
-        </footer>
+        <footer>Applications stay under your control. Always review before submitting.</footer>
       </main>
     </div>
   );

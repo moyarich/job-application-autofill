@@ -21,7 +21,7 @@ export function CandidateProfile({
         <div className="panel-title horizontal">
           <div>
             <h2>Personal information</h2>
-            <p>Stored in local SQLite. Import or export as JSON.</p>
+            <p>Review and update the details used in your applications.</p>
           </div>
           <div className="actions">
             <input
@@ -35,13 +35,13 @@ export function CandidateProfile({
               className="secondary"
               onClick={() => importRef.current?.click()}
             >
-              Import JSON
+              Import profile
             </button>
             <button
               className="primary"
               onClick={() => downloadJson("candidate-profile.json", profile)}
             >
-              Export JSON
+              Export profile
             </button>
             <button className="primary" onClick={exportResumePdf}>
               Export PDF
@@ -117,7 +117,7 @@ export function CandidateProfile({
                 }))
               }
             >
-              + Add job
+              Add position
             </button>
           </div>
           {profile.experience.map((job, index) => (
@@ -190,7 +190,7 @@ export function CandidateProfile({
                 </label>
               </div>
               <label className="wide-label">
-                Responsibilities
+                Highlights and responsibilities
                 <textarea
                   rows={3}
                   value={job.description}
@@ -223,8 +223,8 @@ export function CandidateProfile({
         </section>
         <div className={errors.length ? "validation warning" : "validation"}>
           {errors.length
-            ? "Missing required profile data: " + errors.join(", ")
-            : "✓ Required profile fields look valid."}
+            ? "Please complete: " + errors.join(", ")
+            : "Profile ready to use."}
         </div>
       </section>
     </>

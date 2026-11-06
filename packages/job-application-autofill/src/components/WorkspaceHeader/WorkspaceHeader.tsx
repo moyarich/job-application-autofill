@@ -9,26 +9,26 @@ export function WorkspaceHeader({
   return (
     <header>
       <div>
-        <div className="eyebrow">JOB APPLICATION WORKSPACE</div>
+        <div className="eyebrow">YOUR WORKSPACE</div>
         <h1>
           {tab === "profile"
-            ? "Candidate profile"
+            ? "My profile"
             : tab === "parser"
-              ? "Resume parser"
-              : "Application tracker"}
+              ? "Resume import"
+              : "Applications"}
         </h1>
         <p>
           {tab === "profile"
-            ? "Maintain your structured candidate information."
+            ? "Keep your details and work history up to date."
             : tab === "parser"
-              ? "Extract profile data from a resume file."
-              : "Organize opportunities and apply to supported job boards."}
+              ? "Import a resume and review the information we find."
+              : "Manage your opportunities and track each application."}
         </p>
       </div>
       <div className="actions">
-        <span className="header-chip">● &nbsp; SQLite storage</span>
+        
         <button className="secondary" onClick={() => setTab("parser")}>
-          Parse resume
+          Import resume
         </button>
         <button
           className="primary"
@@ -39,7 +39,7 @@ export function WorkspaceHeader({
               ?.scrollIntoView({ behavior: "smooth" });
           }}
         >
-          Apply to job
+          View applications
         </button>
       </div>
     </header>

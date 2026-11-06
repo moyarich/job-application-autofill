@@ -9,7 +9,7 @@
 .notice button { background:none;border:0;color:inherit;font-size:20px }
 footer { color:#93a0b2;font-size:12px;padding-top:6px }
 @media(max-width:1000px) { .stats { grid-template-columns:repeat(2,1fr) } }
-@media(max-width:700px) { .app { flex-direction:column } }
+@media(max-width:760px) { .app { flex-direction:column } }
 @media(max-width:700px) { .main { padding:25px 16px } }
 @media(max-width:700px) { .stats { gap:8px } }
 @media(max-width:700px) { .stat { padding:15px } }
