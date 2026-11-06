@@ -34,6 +34,13 @@ export interface JobSiteStep {
   run(context: JobSiteStepContext): Promise<JobSiteStepResult>;
 }
 
+/** Visible menu action declared by the job site's own adapter. */
+export interface JobSiteMenuItem {
+  readonly id: string;
+  readonly label: string;
+  readonly stepId: string;
+}
+
 /**
  * Provider Strategy/Adapter contract.
  * No global section enumeration, generic form fallback, or forced capabilities.
@@ -45,6 +52,7 @@ export interface JobSiteAdapter {
   readonly fields: Partial<Record<ContactField, RegExp[]>>;
   employerTenant(url: URL): string | undefined;
   readonly steps?: readonly JobSiteStep[];
+  readonly menuItems?: readonly JobSiteMenuItem[];
   detectPage?(page: Page, text: string): Promise<PageKind | null>;
   openApplication?(page: Page): Promise<void>;
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
