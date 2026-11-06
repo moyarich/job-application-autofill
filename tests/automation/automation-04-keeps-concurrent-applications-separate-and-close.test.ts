@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import type { Browser } from "playwright";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 import { prepareApplication, getActiveApplication, closeApplication } from "../../packages/job-sites/automation.ts";
