@@ -5,20 +5,6 @@ import { renderResumeHtml } from "../../packages/resume/src/resume-schema/create
 
 const resume = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 
-describe("Unicode resume PDF export", () => {
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-});
-
 describe("PDF pagination", () => {
   it("allows long roles to flow across pages while keeping individual bullets together", () => {
     const html = renderResumeHtml(resume);

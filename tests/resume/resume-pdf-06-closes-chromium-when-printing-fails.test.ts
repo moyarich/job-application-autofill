@@ -33,7 +33,3 @@ describe("Unicode resume PDF export", () => {
     expect(state.closed).toBe(true);
   });
 });
-
-describe("PDF pagination", () => {
-  
-});
