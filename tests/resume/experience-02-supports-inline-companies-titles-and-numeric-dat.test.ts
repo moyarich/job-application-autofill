@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractProfile, extractEmploymentHistory } from "@moyarich/resume";
+import { extractEmploymentHistory } from "@moyarich/resume";
 describe("employment history",()=>{
   
   it("supports inline companies, titles and numeric dates",()=>{
