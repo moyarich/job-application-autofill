@@ -6,6 +6,11 @@ import type { ContactChoice } from "../../utils/api/client";
 import { fields } from "../../utils/profile/fields";
 
 export function ContactImportReview({ controller }: { controller: ApplicationController }) {
+  if (!controller.pendingImport) return null;
+  return <ContactImportDecision key={JSON.stringify(controller.pendingImport)} controller={controller} />;
+}
+
+function ContactImportDecision({ controller }: { controller: ApplicationController }) {
   const { pendingImport, contactId, selectedContact, confirmImport, cancelImport } = controller;
   const [strategy, setStrategy] = useState<ContactChoice>("resume");
   if (!pendingImport) return null;
