@@ -9,7 +9,7 @@ export function WorkspaceHeader({ controller }: { controller: ApplicationControl
     profile: { title: "Resume editor", description: "Manage your contact details, experience, and resume versions." },
     parser: { title: "Import a resume", description: "Bring in a PDF, Word document, or resume JSON to get started." },
   } as const;
-  const current = content[tab];
+  const current = content[tab as keyof typeof content] ?? content.applications;
   return (
     <header className="workspace-header">
       <div>
