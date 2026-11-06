@@ -1,4 +1,5 @@
 import "./ApplicationReview.css";
+import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
 import type { ApplicationController } from "../../utils/application/useApplication";
 export function ApplicationReview({
   controller,
@@ -60,6 +61,7 @@ export function ApplicationReview({
                     </button>
                   </div>
                 )}
+                <EmployerAccountSetup controller={controller} />
                 {session.state === "submission_unverified" && (
                   <p className="validation warning">
                     Submission was attempted but the employer did not show a
@@ -204,7 +206,7 @@ export function ApplicationReview({
                     <iframe
                       className="browser-viewer"
                       title="Interactive Playwright application browser"
-                      src={"/application-viewer.html?session=" + session.id}
+                      src={"/application-viewer.html?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
                       allow="clipboard-read; clipboard-write"
                       referrerPolicy="no-referrer"
                     />
