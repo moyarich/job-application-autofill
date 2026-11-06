@@ -641,12 +641,12 @@ export function useApplication() {
       savedRef.current = signature;
     }
   }
-  function navigateTo(nextPerson: string, nextResume?: string) {
+  function navigateTo(nextPerson: string, nextResume?: string, destination = "/workspace") {
     const url = new URL(window.location.href);
-    url.searchParams.set("profile", nextPerson);
-    if (nextResume) url.searchParams.set("resume", nextResume);
+    url.searchParams.set("profile",nextPerson);
+    if (nextResume) url.searchParams.set("resume",nextResume);
     else url.searchParams.delete("resume");
-    url.pathname = "/applications";
+    url.pathname = destination;
     window.location.assign(url.href);
   }
   async function switchProfile(next: string) {
@@ -688,36 +688,46 @@ export function useApplication() {
       navigateTo(DEFAULT_PROFILE_ID);
     } catch (error) { setMessage(String(error)); }
   }
-  async function createResume(copy = false) {
-    const value = window.prompt(copy ? "Name for the copied resume" : "Name for the new resume version");
-    if (!value) return;
+  async function openResume(resumeId: string) {
+    if (applicationId || applyBusy || session) return;
     try {
       await flushPending();
-      const result = await createResumeVersion(activeProfileId, value, copy ? activeResumeId ?? undefined : undefined);
-      navigateTo(activeProfileId, result.id);
+      navigateTo(activeProfileId,resumeId,"/profile");
     } catch (error) { setMessage(String(error)); }
   }
-  async function renameResume() {
-    if (!activeResumeId) return;
-    const value = window.prompt("Rename resume version", resumeVersions.find(item => item.id === activeResumeId)?.name);
-    if (!value) return;
+  async function createResume(name: string, copyId?: string) {
+    if (applicationId || applyBusy || session) return;
     try {
-      const result = await renameResumeVersion(activeProfileId, activeResumeId, value);
-      setResumeVersions(items => items.map(item => item.id === result.id ? result : item));
-    } catch (error) { setMessage(String(error)); }
+      await flushPending();
+      const created = await createResumeVersion(activeProfileId,name,copyId);
+      navigateTo(activeProfileId,created.id,"/profile");
+    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); throw error; }
   }
-  async function removeResume() {
-    if (!activeResumeId || resumeVersions.length <= 1 || !window.confirm("Permanently delete this resume version?")) return;
+  async function renameResume(resumeId: string, name: string) {
+    if (applicationId || applyBusy || session) return;
     try {
-      await deleteResumeVersion(activeProfileId, activeResumeId);
-      const remaining = resumeVersions.find(item => item.id !== activeResumeId);
-      navigateTo(activeProfileId, remaining?.id);
-    } catch (error) { setMessage(String(error)); }
+      await flushPending();
+      const changed = await renameResumeVersion(activeProfileId,resumeId,name);
+      setResumeVersions(items => items.map(item => item.id === changed.id ? changed : item));
+    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); throw error; }
+  }
+  async function removeResume(resumeId: string) {
+    if (applicationId || applyBusy || session || resumeVersions.length <= 1) return;
+    try {
+      await flushPending();
+      await deleteResumeVersion(activeProfileId,resumeId);
+      if (resumeId === activeResumeId) {
+        const remaining = resumeVersions.find(item => item.id !== resumeId);
+        navigateTo(activeProfileId,remaining?.id,"/workspace");
+      } else {
+        setResumeVersions(items => items.filter(item => item.id !== resumeId));
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); throw error; }
   }
   return {
     profiles, activeProfileId, resumeVersions, activeResumeId,
     switchProfile, switchResume, createPerson, renamePerson, removePerson,
-    createResume, renameResume, removeResume,
+    createResume, renameResume, removeResume, openResume,
     flushPending,
     applicationId,
     activeLoaded,
