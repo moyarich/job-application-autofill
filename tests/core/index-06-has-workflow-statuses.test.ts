@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { statuses } from "../../packages/job-application-autofill/src/index";
-
-describe("candidate profile", () => {
-  
-  
-  
-});
   
 describe("application tracking", () => {
   
@@ -14,8 +8,4 @@ describe("application tracking", () => {
     expect(statuses).toContain("ready_for_review");
     expect(statuses).toContain("submitted");
   });
-});
-
-describe("application UUID v5", () => {
-  
 });

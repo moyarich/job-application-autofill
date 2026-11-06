@@ -31,7 +31,3 @@ describe("Unicode resume PDF export", () => {
 
   
 });
-
-describe("PDF pagination", () => {
-  
-});

@@ -8,7 +8,3 @@ describe("resume parser", () => {
     expect(() => decodeUpload({ fileName:"test.txt",base64:"YWJj" })).toThrow();
   });
 });
-
-describe("structured PDF reading order", () => {
-  
-});

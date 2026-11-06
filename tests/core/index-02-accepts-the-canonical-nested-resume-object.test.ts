@@ -9,13 +9,3 @@ describe("candidate profile", () => {
   });
   
 });
-  
-describe("application tracking", () => {
-  
-  
-  
-});
-
-describe("application UUID v5", () => {
-  
-});

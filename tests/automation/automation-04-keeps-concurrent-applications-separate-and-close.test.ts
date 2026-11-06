@@ -3,12 +3,6 @@ import type { Browser } from "playwright";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 import { prepareApplication, getActiveApplication, closeApplication } from "../../packages/job-sites/automation.ts";
 
-describe("application safety", () => {
-  
-  
-  
-});
-
 it("keeps concurrent applications separate and closes only the requested session", async () => {
   function browserFor(url: string): Browser {
     const page = { goto: async()=>{}, waitForTimeout: async()=>{}, url:()=>url,

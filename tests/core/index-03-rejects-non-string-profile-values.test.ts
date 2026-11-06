@@ -8,13 +8,3 @@ describe("candidate profile", () => {
     expect(() => parseCandidateJson(JSON.stringify({...emptyCandidate,contact:{...emptyCandidate.contact,firstName:123}}))).toThrow();
   });
 });
-  
-describe("application tracking", () => {
-  
-  
-  
-});
-
-describe("application UUID v5", () => {
-  
-});

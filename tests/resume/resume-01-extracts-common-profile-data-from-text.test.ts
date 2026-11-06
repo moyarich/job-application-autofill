@@ -13,7 +13,3 @@ describe("resume parser", () => {
   });
   
 });
-
-describe("structured PDF reading order", () => {
-  
-});

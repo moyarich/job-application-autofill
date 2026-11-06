@@ -2,11 +2,6 @@ import { describe, expect, it } from "vitest";
 import { validateResume } from "../../packages/resume/src/resume-schema/validate.ts";
 import { extractProfile } from "@moyarich/resume";
 
-describe("resume parser", () => {
-  
-  
-});
-
 describe("structured PDF reading order", () => {
   it("retains sections, wrapped skills and company/date/title employment", () => {
     const profile = extractProfile([

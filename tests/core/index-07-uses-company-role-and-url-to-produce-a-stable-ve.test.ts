@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createApplication } from "../../packages/job-application-autofill/src/index";
 
-describe("candidate profile", () => {
-  
-  
-  
-});
-  
-describe("application tracking", () => {
-  
-  
-  
-});
-
 describe("application UUID v5", () => {
   it("uses company, role and URL to produce a stable version 5 UUID", () => {
     const first = createApplication("Example", "Engineer", "https://example.com/job");
