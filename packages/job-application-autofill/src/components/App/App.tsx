@@ -9,6 +9,7 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
+import { ContactManager } from "../ContactManager/ContactManager";
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -64,6 +65,7 @@ export function App() {
             </div>
             <LocalProfiles controller={controller} />
           </section>
+          <ContactManager controller={controller} />
         ) : (
           <CandidateProfile controller={controller} />
         )}
