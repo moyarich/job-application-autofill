@@ -22,6 +22,7 @@ export interface StepOutcome {
 export async function automateCurrentStep(
   context: StepContext,
   adapter: JobSiteAdapter,
+  selectedStepId?: string,
 ): Promise<StepOutcome> {
   const detection = await detectCurrentPage(context.page, adapter, context.expectedHost);
   const outcome: StepOutcome = {
@@ -33,6 +34,7 @@ export async function automateCurrentStep(
   if (detection.kind !== "application") return outcome;
 
   for (const step of adapter.steps ?? []) {
+    if (selectedStepId && step.id !== selectedStepId) continue;
     const before = await detectCurrentPage(context.page, adapter, context.expectedHost);
     if (before.kind !== "application") {
       outcome.detection = before;
@@ -59,4 +61,29 @@ export async function automateCurrentStep(
     }
   }
   return outcome;
+}
+
+/** Public menu entries are looked up from the provider, not generated globally. */
+export async function listJobSiteMenu(context: StepContext, adapter: JobSiteAdapter) {
+  if ((await detectCurrentPage(context.page, adapter, context.expectedHost)).kind !== "application")
+    return [];
+  const steps = new Map((adapter.steps ?? []).map(step => [step.id, step]));
+  const items: { id: string; label: string; available: boolean }[] = [];
+  for (const item of adapter.menuItems ?? []) {
+    const step = steps.get(item.stepId);
+    if (!step) continue;
+    items.push({ id: item.id, label: item.label, available: await step.matches(context).catch(() => false) });
+  }
+  return items;
+}
+
+/** Execute only one authorized, matching, site-owned menu operation. */
+export async function executeJobSiteMenuItem(context: StepContext, adapter: JobSiteAdapter, itemId: string) {
+  const item = adapter.menuItems?.find(entry => entry.id === itemId);
+  if (!item || !adapter.steps?.some(step => step.id === item.stepId))
+    throw new Error("Unknown employer menu action.");
+  const result = await automateCurrentStep(context, adapter, item.stepId);
+  if (!result.executed.includes(item.stepId))
+    throw new Error("This action is not available on the current employer page.");
+  return result;
 }
