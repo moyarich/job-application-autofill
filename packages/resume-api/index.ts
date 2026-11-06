@@ -1,6 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck — migration: incremental runtime interface typing pending.
 import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { validateResume } from "../resume/src/resume-schema/validate.ts";
@@ -11,17 +10,19 @@ import { prepareApplication, getApplication, getActiveApplication, continueAppli
 
 // Local host development loads .env; Compose supplies the same keys as server environment.
 try { process.loadEnvFile(resolve(import.meta.dirname, "../../.env")); }
-catch (error) { if (error.code !== "ENOENT") throw error; }
+catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error; }
 
 const PORT = Number(process.env.AUTOFILL_PORT || 4177);
 const ORIGIN = process.env.AUTOFILL_ORIGIN || "http://localhost:5173";
 const MAX_BODY = 15 * 1024 * 1024;
 const store = openStore();
-function send(res, code, data, contentType = "application/json") {
+function send(res: ServerResponse, code: number, data: unknown, contentType = "application/json") {
   res.writeHead(code, { "Content-Type": contentType, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
-  res.end(contentType === "application/json" ? JSON.stringify(data) : data);
+  const body = contentType === "application/json" ? JSON.stringify(data) : data;
+  if (typeof body !== "string" && !Buffer.isBuffer(body)) throw new Error("Unsupported response body.");
+  res.end(body);
 }
-async function readJson(req) {
+async function readJson(req: IncomingMessage): Promise<unknown> {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
@@ -29,6 +30,10 @@ async function readJson(req) {
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected a JSON object.");
+  return value as Record<string, unknown>;
 }
 const server = createServer(async (req, res) => {
   try {
@@ -46,13 +51,14 @@ const server = createServer(async (req, res) => {
       const payload = await readJson(req);
       try { return send(res, 200, store.saveSnapshot(payload)); }
       catch (error) {
-        if (error.code === "STALE_STATE") return send(res, 409, { error: error.message });
+        if (error instanceof Error && "code" in error && error.code === "STALE_STATE") return send(res, 409, { error: error.message });
         throw error;
       }
     }
     const jobStatus = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]{36})\/status$/);
     if (req.method === "POST" && jobStatus) {
-      const { status } = await readJson(req);
+      const { status } = record(await readJson(req));
+      if (typeof status !== "string") throw new Error("Application status must be a string.");
       const snapshot = store.getSnapshot();
       if (!snapshot.jobs.some(job => job.id === jobStatus[1])) throw new Error("Application not found.");
       snapshot.jobs = snapshot.jobs.map(job => job.id === jobStatus[1] ? {...job, status} : job);
@@ -76,13 +82,16 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/apply/active")
       return send(res, 200, { session: getActiveApplication(url.searchParams.get("jobId")) });
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
-      const payload = await readJson(req);
+      const payload = record(await readJson(req));
       const profile = validateResume(payload.profile);
       const contact = profile.contact;
       if (!contact.firstName.trim() || !contact.lastName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email))
         return send(res, 400, { error: "Complete first name, last name and valid email in the résumé JSON." });
       if (!payload.resume) return send(res, 400, { error: "A PDF resume attachment is required alongside the structured resume JSON." });
-      const resume = decodePdfAttachment(payload.resume);
+      const attachment = record(payload.resume);
+      if (typeof attachment.fileName !== "string" || typeof attachment.base64 !== "string") throw new Error("Invalid resume attachment.");
+      const resume = decodePdfAttachment({ fileName: attachment.fileName, base64: attachment.base64 });
+      if (typeof payload.jobUrl !== "string" || typeof payload.jobId !== "string") throw new Error("Invalid application identifiers.");
       return send(res, 200, await prepareApplication({ jobUrl: payload.jobUrl, jobId: payload.jobId, profile, resume }));
     }
     const match = url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|focus))?$/);
@@ -90,8 +99,8 @@ const server = createServer(async (req, res) => {
       const [, id, action] = match;
       if (req.method === "GET" && !action) return send(res, 200, getApplication(id));
       if (req.method === "POST" && action === "answers") {
-        const payload = await readJson(req);
-        return send(res, 200, await answerApplicationQuestions(id, payload.answers));
+        const payload = record(await readJson(req));
+        return send(res, 200, await answerApplicationQuestions(id, record(payload.answers) as Record<string, string>));
       }
       if (req.method === "POST" && action === "continue")
         return send(res, 200, await continueApplication(id));
@@ -100,7 +109,7 @@ const server = createServer(async (req, res) => {
       if (req.method === "POST" && action === "snapshot")
         return send(res, 200, await refreshScreenshot(id));
       if (req.method === "POST" && action === "submit") {
-        const payload = await readJson(req);
+        const payload = record(await readJson(req));
         if (payload.confirm !== true || (process.env.CONTAINER_MODE === "true" && payload.reviewed !== true))
           return send(res, 400, { error: "Confirm submission and acknowledge reviewing the browser first." });
         return send(res, 200, await submitApplication(id));
