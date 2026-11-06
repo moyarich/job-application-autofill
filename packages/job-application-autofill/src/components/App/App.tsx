@@ -68,7 +68,6 @@ export function App() {
                 </strong>
               </div>
             </section>
-            <ResumeParser controller={controller} />
             <ApplicationReview controller={controller} />
             <Opportunities controller={controller} />
           </>

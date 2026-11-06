@@ -22,10 +22,9 @@ export function ApplicationReview({
   } = controller;
   return (
     <>
-      {" "}
       {applicationId && (
         <div className="application-page-heading">
-          <a href="/">← Application tracker</a>
+          <a href="/">← Back to applications</a>
           <h2>
             {jobs.find((job) => job.id === applicationId)?.role ||
               "Application"}
@@ -43,7 +42,7 @@ export function ApplicationReview({
                   <p>{session.message}</p>
                 </div>
                 <p>
-                  <strong>Session:</strong> {session.state.replaceAll("_", " ")}{" "}
+                  <strong>Status:</strong> {session.state.replaceAll("_", " ")}{" "}
                   · {session.url}
                 </p>
                 {(session.state === "manual_intervention" ||
@@ -77,10 +76,9 @@ export function ApplicationReview({
                 {session.state === "ready_for_review" && (
                   <div className="application-questions">
                     <div className="panel-title">
-                      <h3>Employer-specific questions</h3>
+                      <h3>Application questions</h3>
                       <p>
-                        Only your own answers are filled. Sensitive and
-                        voluntary questions stay in the employer browser.
+                        Review these questions and enter your answers. Sensitive questions remain on the employer’s site.
                       </p>
                     </div>
                     {(session.questions || [])
@@ -168,7 +166,7 @@ export function ApplicationReview({
                         disabled={applyBusy}
                         onClick={continueAfterChallenge}
                       >
-                        Refresh form after next step
+                        Refresh questions
                       </button>
                     </div>
                   </div>
@@ -176,7 +174,7 @@ export function ApplicationReview({
                 {session.reviewUrl && (
                   <div className="browser-review employer-application">
                     <div className="browser-review-header">
-                      <strong>Live employer application</strong>
+                      <strong>Application preview</strong>
                       <a
                         className="browser-open"
                         href={"/application-viewer.html?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
@@ -184,17 +182,15 @@ export function ApplicationReview({
                         rel="noopener noreferrer"
                         onClick={() => setReviewed(false)}
                       >
-                        Open in full window ↗
+                        Open in new window
                       </a>
                     </div>
                     <p>
-                      The browser connects using your local viewer
-                      configuration. Review every field and complete any missing
-                      questions before submitting.
+                      Review the application and complete any missing information before submitting.
                     </p>
                     {session.filled?.length > 0 && (
                       <p>
-                        <strong>Prepared:</strong> {session.filled.join(", ")}
+                        <strong>Completed:</strong> {session.filled.join(", ")}
                       </p>
                     )}
                     {session.missing?.length > 0 && (
@@ -216,7 +212,7 @@ export function ApplicationReview({
                         checked={reviewed}
                         onChange={(event) => setReviewed(event.target.checked)}
                       />{" "}
-                      I inspected the live application and reviewed all fields.
+                      I have reviewed the application details.
                     </label>
                   </div>
                 )}
@@ -241,9 +237,7 @@ export function ApplicationReview({
                   </button>
                 </div>
                 <p className="review-note">
-                  Review the actual Playwright browser window and answer any
-                  required questions before submitting. Submission is never
-                  automatic.
+                  Your application will only be submitted after you confirm.
                 </p>
               </>
             ) : (

@@ -1,7 +1,9 @@
-.local-profiles { display:flex; flex-direction:column; gap:9px; margin-bottom:25px; padding:12px 8px; border-top:1px solid #31405b; border-bottom:1px solid #31405b }
-.local-profiles label { color:#aab8db; font-size:11px; font-weight:700; letter-spacing:.08em }
-.local-profiles select { width:100%; padding:9px 10px; background:#223452; color:white; border:1px solid #455a7c; border-radius:7px }
-.local-profile-actions { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px }
-.local-profile-actions button { padding:5px 7px; background:#304565; color:white; border:1px solid #546b90; border-radius:6px; font-size:11px; cursor:pointer }
-.local-profile-actions button:disabled { opacity:.4; cursor:not-allowed }
-.local-profiles p { font-size:11px; color:#99a8c5; margin:0 }
+.local-profiles { display:flex;flex-direction:column;gap:9px;margin:24px 0;padding:23px 7px 19px;border-top:1px solid #293951 }
+.local-profiles label { color:#9eaecc;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase }
+.local-profiles select { width:100%;padding:10px 12px;background:#202e47;color:#f5f7ff;border:1px solid #405371;border-radius:10px;font-size:13px }
+.local-profile-actions { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px }
+.local-profile-actions button { padding:7px 9px;background:transparent;color:#c2cee3;border:1px solid #3b4d69;border-radius:8px;font-size:12px;font-weight:550;cursor:pointer;transition:background .15s }
+.local-profile-actions button:hover:not(:disabled) { background:#2c3f60;color:white }
+.local-profile-actions button:disabled { opacity:.4;cursor:not-allowed }
+.local-profiles p { font-size:11px;color:#99a8c5;margin:0 }
+@media(max-width:760px) { .local-profiles { margin:18px 0 12px } }

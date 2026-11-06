@@ -26,11 +26,10 @@ export function Opportunities({
   } = controller;
   return (
     <>
-      {" "}
       <section className="panel">
         <div className="panel-title">
-          <h2>Add an opportunity</h2>
-          <p>Save a job URL and track its progress.</p>
+          <h2>Add a job</h2>
+          <p>Save the details of a role you want to apply for.</p>
         </div>
         <form className="add-form" onSubmit={addJob}>
           <label>
@@ -67,7 +66,7 @@ export function Opportunities({
             />
           </label>
           <button className="primary" type="submit">
-            + Add job
+            Add job
           </button>
         </form>
       </section>
@@ -75,7 +74,7 @@ export function Opportunities({
         <div className="panel-title horizontal">
           <div>
             <h2>Applications</h2>
-            <p>Update a job status after taking action.</p>
+            <p>Keep track of every stage, from saved to submitted.</p>
           </div>
           <button
             className="secondary"
@@ -94,7 +93,7 @@ export function Opportunities({
         <div className="job-list">
           {filtered.length === 0 ? (
             <div className="empty">
-              No applications found. Add a job above to get started.
+              No matching applications. Try a different search or add a job.
             </div>
           ) : (
             filtered.map((job) => (
@@ -110,7 +109,7 @@ export function Opportunities({
                   </span>
                   {job.url && (
                     <a href={job.url} target="_blank" rel="noopener noreferrer">
-                      Open listing ↗
+                      View job posting
                     </a>
                   )}
                 </div>
@@ -119,7 +118,7 @@ export function Opportunities({
                   disabled={applyBusy || Boolean(session) || !job.url}
                   onClick={() => prepareJob(job)}
                 >
-                  {applyBusy ? "Working..." : "Apply"}
+                  {applyBusy ? "Preparing..." : "Apply"}
                 </button>
                 <select
                   aria-label={`Status for ${job.company} ${job.role}`}

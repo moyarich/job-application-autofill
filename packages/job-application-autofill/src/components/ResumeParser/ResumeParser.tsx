@@ -24,10 +24,9 @@ export function ResumeParser({
   return (
     <section className="panel">
       <div className="panel-title">
-        <h2>Resume parser</h2>
+        <h2>Import resume</h2>
         <p>
-          Upload a PDF or DOCX to extract contact details and skills. Review the
-          results before applying.
+          Choose a PDF or Word document to get started. Review the details before using them in an application.
         </p>
       </div>
       <div className="parser-grid">
@@ -74,7 +73,7 @@ export function ResumeParser({
               type="button"
               onClick={() => resumeRef.current?.click()}
             >
-              Choose resume
+              Browse files
             </button>
           </div>
           <button
@@ -83,25 +82,24 @@ export function ResumeParser({
             disabled={parseBusy || !resume}
             onClick={parseResume}
           >
-            {parseBusy ? "Parsing..." : "✧ Parse resume"}
+            {parseBusy ? "Importing..." : "Import resume"}
           </button>
           <div className="json-import-panel">
             <p>
-              <strong>Already have structured résumé JSON?</strong> Import it
-              directly—no PDF or DOCX parser needed.
+              <strong>Have a saved profile?</strong> Import it directly from a JSON file.
             </p>
             <button
               className="secondary"
               type="button"
               onClick={() => importRef.current?.click()}
             >
-              Import résumé JSON
+              Import profile JSON
             </button>
           </div>
         </div>
         <div className="parsed-profile">
           <div className="parsed-title">
-            <strong>Parsed profile</strong>
+            <strong>Resume details</strong>
             <div className="actions">
               <button className="secondary" onClick={() => setTab("profile")}>
                 Edit profile
@@ -116,7 +114,7 @@ export function ResumeParser({
             <strong>
               {[profile.contact.firstName, profile.contact.lastName]
                 .filter(Boolean)
-                .join(" ") || "Not extracted"}
+                .join(" ") || "Not available"}
             </strong>
           </div>
           <div>
@@ -135,7 +133,7 @@ export function ResumeParser({
       </div>
       {parsePreview && (
         <details className="text-preview">
-          <summary>View extracted text preview</summary>
+          <summary>View document text</summary>
           <pre>{parsePreview}</pre>
         </details>
       )}
