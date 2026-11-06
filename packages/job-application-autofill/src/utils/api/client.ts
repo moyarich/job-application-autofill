@@ -31,6 +31,7 @@ export type StoredState = {
   revision: number;
   profile: CandidateProfile | null;
   contact: CandidateProfile["contact"] | null;
+  contactOverrides: Partial<CandidateProfile["contact"]>;
   jobs: JobApplication[];
 };
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {
@@ -59,6 +60,8 @@ export async function readState(profileId: string, resumeId?: string): Promise<S
 export async function saveState(payload: {
   revision: number;
   profile: CandidateProfile;
+  contact: CandidateProfile["contact"];
+  contactOverrides: Partial<CandidateProfile["contact"]>;
   jobs: JobApplication[];
 }, profileId: string, resumeId: string): Promise<{ revision: number }> {
   return decodeResponse(

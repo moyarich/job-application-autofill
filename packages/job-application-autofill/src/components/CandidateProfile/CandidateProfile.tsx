@@ -13,6 +13,7 @@ export function CandidateProfile({
     profile,
     exportResumePdf,
     setProfile,
+    contactOverrides, editContact, setContactScope,
     errors,
   } = controller;
   return (
@@ -55,14 +56,14 @@ export function CandidateProfile({
               <input
                 type={key === "email" ? "email" : "text"}
                 value={profile.contact[key]}
-                onChange={(e) =>
-                  setProfile((x) => ({
-                    ...x,
-                    contact: { ...x.contact, [key]: e.target.value },
-                  }))
-                }
+                onChange={(e) => editContact(key, e.target.value)
                 placeholder={label}
               />
+              <span className="review-checkbox">
+                <input type="checkbox" checked={Object.hasOwn(contactOverrides,key)}
+                  onChange={event => setContactScope(key,event.target.checked)} />
+                Use a different value for this resume
+              </span>
             </label>
           ))}
         </div>
