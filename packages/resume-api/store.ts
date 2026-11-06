@@ -229,6 +229,52 @@ CREATE TABLE IF NOT EXISTS applications (
     } catch (error) { db.exec("ROLLBACK"); throw error; }
     return selectContact.get(owner,contactId) as ProfileContact;
   }
+  function resolveImportContact(
+    profileId: string,
+    resumeId: string,
+    incoming: unknown,
+    choices: unknown,
+  ) {
+    const owner = requireProfile(profileId);
+    const resume = requireResume(owner,resumeId);
+    const parsed = validateContact(incoming);
+    if (!choices || typeof choices !== "object" || Array.isArray(choices))
+      throw new Error("Contact choices are required.");
+    const decisions = choices as Record<string,unknown>;
+    if (Object.entries(decisions).some(([key,value]) =>
+      !CONTACT_KEYS.includes(key as typeof CONTACT_KEYS[number]) ||
+      !["resume","shared","keep"].includes(String(value))))
+      throw new Error("Invalid contact import choice.");
+    const current = selectContact.get(owner,resume.contactId) as ProfileContact;
+    const shared = Object.fromEntries(CONTACT_KEYS.map(key => [key,current[key]])) as CandidateProfile["contact"];
+    const tailored = {...shared};
+    let hasResumeDifference = false;
+    for (const key of CONTACT_KEYS) {
+      const value = parsed[key].trim();
+      if (!value || value === shared[key]) continue;
+      const choice = decisions[key] ?? "resume";
+      if (choice === "shared") shared[key] = value;
+      if (choice === "resume") { tailored[key] = value; hasResumeDifference = true; }
+    }
+    // Shared updates also flow into newly created contact records unless a
+    // resume-specific choice explicitly overrides that field.
+    for (const key of CONTACT_KEYS)
+      if (decisions[key] !== "resume") tailored[key] = shared[key];
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      if (CONTACT_KEYS.some(key => shared[key] !== current[key]))
+        updateContact.run(...contactValues(shared),owner,current.id);
+      let contactId = current.id;
+      if (hasResumeDifference) {
+        const duplicate = listContacts(owner).find(item => CONTACT_KEYS.every(key => item[key] === tailored[key]));
+        contactId = duplicate?.id ?? addContact(owner,tailored,"Imported contact");
+        db.prepare("UPDATE resumes SET contact_id=?,updated_at=? WHERE profile_id=? AND id=?")
+          .run(contactId,now(),owner,resume.id);
+      }
+      db.exec("COMMIT");
+      return {contactId,contact:tailored,contacts:listContacts(owner)};
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+  }
   function createResume(profileId: string, value: unknown, copyId?: string): ResumeVersion {
     const owner = requireProfile(profileId);
     const source = copyId ? requireResume(owner,copyId) : null;
@@ -292,7 +338,7 @@ CREATE TABLE IF NOT EXISTS applications (
       defaultContactId: defaultContact.id,
       contacts,
       profile: document ? { ...document, contact } : null,
-      jobs: (getJobs.all(owner) as (JobRecord & {resumeId:string|null})[]).map(({resumeId,...job}) => ({...job,resumeId})),
+      jobs: (getJobs.all(owner) as (JobRecord & {resumeId:string|null})[]).map(({resumeId,...job}) => resumeId ? {...job,resumeId} : job),
       resumeId: selected.id, resumes,
     };
   }
@@ -336,5 +382,5 @@ CREATE TABLE IF NOT EXISTS applications (
       return { revision: current+1 };
     } catch(error) { db.exec("ROLLBACK"); throw error; }
   }
-  return { listProfiles, createProfile, renameProfile, deleteProfile, listContacts, createContact, updateContactRecord, setDefaultContact, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
+  return { listProfiles, createProfile, renameProfile, deleteProfile, listContacts, createContact, updateContactRecord, setDefaultContact, resolveImportContact, listResumes, createResume, renameResume, deleteResume, getOrCreateEmployerAccount, listAccounts, setEmployerAccountStatus, getSnapshot, saveSnapshot, close: () => db.close() };
 }
