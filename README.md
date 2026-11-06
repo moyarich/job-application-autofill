@@ -34,6 +34,14 @@ docker run --rm \
 
 Run `npm run dev` and verify your saved résumé and application history. Keep the old volume until you confirm the migration; `docker compose down` does not delete it. This step is needed only when migrating from the previous named-volume configuration.
 
+## Employer account automation
+
+The dashboard tracks candidate account setup **per local person, ATS provider, and employer tenant**. Workday employers have separate accounts even when they share the Workday platform. Greenhouse, Lever, Ashby, and SmartRecruiters use the same employer-scoped flow **when a particular site requires signup**. An application at the same employer can reuse the existing account.
+
+When a new account is required, the application runner attempts to open the employer's registration form and autofill first name, last name and email. In the review panel, **Autofill account signup** can also fill an optional password and password confirmation. Use **Generate** and **Copy** to save a unique password in your password manager before filling it. The optional password is transmitted to the local API only for that request and is **not saved** in SQLite, browser localStorage, session metadata, or logs.
+
+For safety, the automation checks the exact employer host before entering signup fields. It never checks legal agreement boxes, bypasses CAPTCHA or verification, or submits the Create Account form automatically. Complete those steps in the interactive employer browser, then mark the account as created to reuse it. Some employers use SSO or registration on another domain; those steps remain manual. The app's local profiles **do not require sign-in**.
+
 ## Start the complete app with npm
 
 ```sh
