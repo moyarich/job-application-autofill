@@ -1,6 +1,6 @@
+#!/usr/bin/env node
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — migration: incremental runtime interface typing pending.
-#!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
