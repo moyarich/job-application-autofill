@@ -2,7 +2,7 @@ import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
 
 
-export const handleContacts: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
+export const handleContacts: RouteHandler = async ({ req, url, store, profileId }) => {
     if (req.method === "GET" && url.pathname === "/api/profile-contacts")
       return reply(200, { contacts: store.listContacts(profileId) });
     if (req.method === "POST" && url.pathname === "/api/profile-contacts") {

@@ -2,7 +2,7 @@ import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
 
 
-export const handleResumes: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
+export const handleResumes: RouteHandler = async ({ req, url, store, profileId }) => {
     if (req.method === "GET" && url.pathname === "/api/resumes")
       return reply(200, { resumes: store.listResumes(profileId) });
     if (req.method === "POST" && url.pathname === "/api/resumes") {

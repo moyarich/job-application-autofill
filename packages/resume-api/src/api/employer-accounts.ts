@@ -2,7 +2,7 @@ import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
 import { employerAccountIdentity } from "../../../job-sites/employer-account.ts";
 
-export const handleEmployerAccounts: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
+export const handleEmployerAccounts: RouteHandler = async ({ req, url, store, profileId }) => {
     if (req.method === "GET" && url.pathname === "/api/employer-accounts")
       return reply(200, { accounts: store.listAccounts(profileId) });
     if (

@@ -1,8 +1,9 @@
 import type { RouteHandler } from "../server/types.ts";
+import { DEFAULT_PROFILE_ID } from "../database/store.ts";
 import { reply, record } from "../server/types.ts";
 
 
-export const handleProfiles: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
+export const handleProfiles: RouteHandler = async ({ req, url, store }) => {
     if (req.method === "GET" && url.pathname === "/api/profiles")
       return reply(200, {
         profiles: store.listProfiles(),

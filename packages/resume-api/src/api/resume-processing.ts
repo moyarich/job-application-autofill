@@ -4,7 +4,7 @@ import { validateResume } from "../../../resume/src/resume-schema/validate.ts";
 import { renderResumePdf } from "../../../resume/src/resume-schema/create-pdf.ts";
 // Resume parse dependencies are dynamically imported on demand.
 
-export const handleResumeProcessing: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
+export const handleResumeProcessing: RouteHandler = async ({ req, url }) => {
     if (req.method === "POST" && url.pathname === "/api/resume/pdf") {
       const profile = validateResume(await req.readJson());
       const bytes = await renderResumePdf(profile);
