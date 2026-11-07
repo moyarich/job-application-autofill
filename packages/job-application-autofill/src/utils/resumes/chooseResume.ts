@@ -2,7 +2,7 @@ import type { ResumeImportActionsContext } from "./import-context";
 import type React from "react";
 
 export function createChooseResume(context: ResumeImportActionsContext) {
-  const { resume, setMessage, setProfile, setResume } = context;
+  const { setMessage, setProfile, setResume } = context;
   function chooseResume(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     if (
