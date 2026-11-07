@@ -4,13 +4,13 @@ import { useApplication } from "../../utils/application/useApplication";
 import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
-import { ApplicationsPage } from "../../pages/applications/index";
-import { ResumesPage } from "../../pages/resumes/index";
-import { ResumeEditorPage } from "../../pages/resumes/edit/index";
-import { ResumeViewPage } from "../../pages/resumes/view/index";
-import { ResumeImportPage } from "../../pages/resumes/import/index";
-import { ProfilePage } from "../../pages/profile/index";
-import { WorkspacePage } from "../../pages/workspace/index";
+import { ApplicationsPage } from "../../pages/applications/ApplicationsPage";
+import { ResumesPage } from "../../pages/resumes/ResumesPage";
+import { ResumeEditorPage } from "../../pages/resumes/edit/ResumeEditorPage";
+import { ResumeViewPage } from "../../pages/resumes/view/ResumeViewPage";
+import { ResumeImportPage } from "../../pages/resumes/import/ResumeImportPage";
+import { ProfilePage } from "../../pages/profile/ProfilePage";
+import { WorkspacePage } from "../../pages/workspace/WorkspacePage";
 
 export function App() {
   const controller = useApplication();
