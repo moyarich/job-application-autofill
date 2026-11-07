@@ -1,5 +1,6 @@
 import type { Page } from "playwright";
-import type { AutofillResult } from "../types.ts";
+import type { AutofillResult } from "../../types.ts";
+import { resumeFields } from "./selectors.ts";
 
 /** Restore an already-saved resume on a subsequent Workday upload step. */
 export async function retryWorkdayResumeUpload(
@@ -10,7 +11,7 @@ export async function retryWorkdayResumeUpload(
   if (resumeUploadUrls.includes(page.url())) {
     return { filled: [], missing: [], uploaded: false };
   }
-  const upload = page.locator('input[type="file"]').first();
+  const upload = page.locator(resumeFields.upload).first();
   if (!(await upload.count()) ||
       (await upload.evaluate((node) => (node as HTMLInputElement).files?.length))) {
     return { filled: [], missing: [], uploaded: false };

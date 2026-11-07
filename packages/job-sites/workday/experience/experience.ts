@@ -9,27 +9,8 @@ export interface WorkExperienceEntry {
   endDate?: string | null;
   isCurrent: boolean;
 }
-// Workday experience autofill: only visible, scoped and clearly labeled controls.
-const SECTION =
-  '[data-automation-id="workExperienceSection"], [data-automation-id="workExperience"], section:has(> h2:text-is("Work Experience")), fieldset:has(> legend:text-is("Work Experience"))';
-const ROW =
-  '[data-automation-id="workExperienceItem"], [data-automation-id="workExperienceCard"], [data-work-experience-entry], [data-automation-id^="workExperience-"]:not([data-automation-id*="--"])';
-const BASE_LABEL = {
-  company: /^(company|company name|employer)$/i,
-  jobTitle: /^(job title|title|position)$/i,
-  location: /^(location|job location)$/i,
-  description:
-    /^(role description|description|responsibilities(?: and achievements)?)$/i,
-  startDate: /^(from|from date|start date)$/i,
-  endDate: /^(to|to date|end date)$/i,
-  isCurrent: /^(i currently work here|currently work here)$/i,
-};
-const LABEL = Object.fromEntries(
-  Object.entries(BASE_LABEL).map(([key, pattern]) => [
-    key,
-    new RegExp(pattern.source.replace("$", "\\s*\\*?\\s*$"), "i"),
-  ]),
-) as typeof BASE_LABEL;
+import { SECTION, ROW, LABEL, DATE_FIELDS } from "./selectors.ts";
+
 async function input(row: Locator, key: keyof typeof LABEL) {
   const el = row.getByLabel(LABEL[key], { exact: true }).first();
   return (await el.isVisible().catch(() => false)) ? el : null;
@@ -71,13 +52,13 @@ async function date(
   ) {
     const field = row.locator(
       key === "startDate"
-        ? '[data-automation-id="formField-startDate"]'
-        : '[data-automation-id="formField-endDate"]',
+        ? DATE_FIELDS.startDate
+        : DATE_FIELDS.endDate,
     );
     const month = field.locator(
-      '[data-automation-id="dateSectionMonth-input"]',
+      DATE_FIELDS.month,
     );
-    const year = field.locator('[data-automation-id="dateSectionYear-input"]');
+    const year = field.locator(DATE_FIELDS.year);
     if (
       !match[2] ||
       !(await month.isVisible().catch(() => false)) ||

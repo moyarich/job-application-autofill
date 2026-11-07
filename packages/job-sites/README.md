@@ -32,7 +32,7 @@ The exact URL has a provider-regression test. Public page inspection is **not** 
 
 ## Workday structured work experience
 
-Workday-specific operations are declared in `workday/steps.ts`, with resume re-upload behavior in `workday/resume.ts`. The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+Workday-specific operations are declared in `workday/steps.ts`, with resume re-upload behavior in `workday/resume/resume.ts`. The Workday helper at `workday/experience/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
 
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 
@@ -45,3 +45,43 @@ Adapters declare their own `steps` array of `{ id, matches(context), run(context
 ## Floating menu actions
 
 Each site declares only the actions it supports with `menuItems: [{ id, label, stepId }]`. The referenced `stepId` must be a site-owned `steps` entry; no section names or menu actions are enforced by shared code. The browser viewer loads the current session's menu from `GET /api/apply/:id/menu`, checks each action's `matches()` guard, and executes only explicitly selected actions via `POST /api/apply/:id/menu`. Missing steps are never auto-generated. Workday defines its own menu; other providers display no menu until they declare one. The floating pill is draggable by its handle and never submits an application.
+
+## Provider-owned selector objects
+
+Workday's contact field definitions live in `workday/contact/selectors.ts` as a
+`Partial<Record<WorkdayContactField, FieldLocatorConfig>>`. The contact-local
+`workday/contact/contact.ts` handler resolves accessible-label candidates in
+priority order, followed by optional **verified** CSS fallbacks. To support a changed employer label, add a
+provider-specific label alternative and a Playwright fixture instead of editing
+the filling algorithm.
+
+The contact handler never chooses the first of multiple matches, never targets hidden,
+disabled, read-only, password or file inputs, and the Workday autofiller does not
+overwrite conflicting existing values. Missing or ambiguous fields are reported
+for manual review. Selector objects only locate controls; the site adapter remains
+responsible for form workflow, selects, uploads, and navigation.
+
+There is no shared field matcher. Other ATS adapters currently do not implement the same contact autofill step.
+Do not add speculative provider selector maps until those steps and fixtures
+exist. These fixtures are synthetic DOMs; they do not prove live employer
+compatibility.
+
+Run the regression fixtures with
+`npx vitest run tests/workday/workday-field-map.test.ts`.
+
+## Workday section-local selector objects
+
+Workday form sections keep selectors alongside their handlers:
+
+```text
+workday/
+  contact/{contact.ts,selectors.ts}
+  experience/{experience.ts,selectors.ts}
+  education/{education.ts,selectors.ts}
+  skills/{skills.ts,selectors.ts}
+  resume/{resume.ts,selectors.ts}
+```
+
+Update a section's `selectors.ts` and its fixture test when a verified employer
+layout changes. Pure orchestration, page detection and account handling do not
+have artificial selector objects. No shared locator matcher is used.
