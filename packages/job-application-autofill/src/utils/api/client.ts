@@ -56,54 +56,72 @@ export async function requestApi<T>(url: string, data: unknown, profileId = DEFA
     "Local API request failed",
   );
 }
-export type StoredState = {
+export type ResumeContent = {
   resumeId: string;
-  resumes: ResumeVersion[];
   revision: number;
-  profile: CandidateProfile | null;
-  contact: CandidateProfile["contact"] | null;
   contactId: string | null;
-  defaultContactId: string | null;
-  contacts: ProfileContact[];
-  jobs: JobApplication[];
+  profile: CandidateProfile | null;
 };
+export type JobList = { revision: number; jobs: JobApplication[] };
+
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {
-  return decodeResponse(await fetch("/api/profiles", { headers: profileHeaders(DEFAULT_PROFILE_ID), cache: "no-store" }), "Could not list local profiles.");
+  return decodeResponse(await fetch("/api/profiles", {
+    headers: profileHeaders(DEFAULT_PROFILE_ID), cache: "no-store",
+  }), "Could not list local profiles.");
 }
-export async function createLocalProfile(name: string): Promise<LocalProfile> {
-  return requestApi("/api/profiles", { name });
+
+export async function readResumes(profileId: string): Promise<ResumeVersion[]> {
+  const result = await decodeResponse<{ resumes: ResumeVersion[] }>(
+    await fetch("/api/resumes", { headers: profileHeaders(profileId), cache: "no-store" }),
+    "Could not load resumes.",
+  );
+  return result.resumes;
 }
-export async function renameLocalProfile(profileId: string, name: string): Promise<LocalProfile> {
-  return decodeResponse(await fetch("/api/profiles/" + encodeURIComponent(profileId), {
-    method: "PATCH", headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
-    body: JSON.stringify({ name }),
-  }), "Could not rename profile.");
+
+export async function readContacts(profileId: string): Promise<ProfileContact[]> {
+  const result = await decodeResponse<{ contacts: ProfileContact[] }>(
+    await fetch("/api/profile-contacts", { headers: profileHeaders(profileId), cache: "no-store" }),
+    "Could not load contacts.",
+  );
+  return result.contacts;
 }
-export async function deleteLocalProfile(profileId: string): Promise<void> {
-  await decodeResponse(await fetch("/api/profiles/" + encodeURIComponent(profileId), {
-    method: "DELETE", headers: profileHeaders(profileId),
-  }), "Could not delete profile.");
-}
-export async function readState(profileId: string, resumeId?: string): Promise<StoredState> {
-  return decodeResponse<StoredState>(
-    await fetch("/api/state", { headers: profileHeaders(profileId, resumeId), cache: "no-store" }),
-    "Could not load SQLite data.",
+
+export async function readResumeContent(profileId: string, resumeId: string): Promise<ResumeContent> {
+  return decodeResponse<ResumeContent>(
+    await fetch("/api/resumes/" + encodeURIComponent(resumeId) + "/content", {
+      headers: profileHeaders(profileId), cache: "no-store",
+    }),
+    "Could not load resume content.",
   );
 }
-export async function saveState(payload: {
-  revision: number;
-  profile: CandidateProfile;
-  contact: CandidateProfile["contact"];
-  contactId: string | null;
-  jobs: JobApplication[];
-}, profileId: string, resumeId: string): Promise<{ revision: number }> {
-  return decodeResponse(
-    await fetch("/api/state", {
+export async function saveResumeContent(
+  profileId: string, resumeId: string,
+  content: { revision: number; profile: CandidateProfile; contactId: string | null },
+): Promise<{ revision: number }> {
+  return decodeResponse<{ revision: number }>(
+    await fetch("/api/resumes/" + encodeURIComponent(resumeId) + "/content", {
       method: "PUT",
-      headers: { "Content-Type": "application/json", ...profileHeaders(profileId, resumeId) },
+      headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
+      body: JSON.stringify(content),
+    }), "Could not save resume content.",
+  );
+}
+
+export async function readJobs(profileId: string): Promise<JobList> {
+  return decodeResponse<JobList>(
+    await fetch("/api/jobs", { headers: profileHeaders(profileId), cache: "no-store" }),
+    "Could not load applications.",
+  );
+}
+export async function saveJobs(
+  profileId: string, payload: { revision: number; jobs: JobApplication[] },
+): Promise<{ revision: number }> {
+  return decodeResponse<{ revision: number }>(
+    await fetch("/api/jobs", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
       body: JSON.stringify(payload),
-    }),
-    "Could not save SQLite data.",
+    }), "Could not save applications.",
   );
 }
 
