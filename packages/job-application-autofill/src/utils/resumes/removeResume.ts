@@ -1,3 +1,4 @@
+import { routes } from "../../routes";
 import type { ProfileResumeActionsContext } from "./library-context";
 import { deleteResumeVersion } from "../api/client";
 import { navigateTo } from "./navigateTo";
@@ -12,7 +13,7 @@ export function createRemoveResume(context: ProfileResumeActionsContext) {
       await deleteResumeVersion(activeProfileId, resumeId);
       if (resumeId === activeResumeId) {
         const remaining = resumeVersions.find((item) => item.id !== resumeId);
-        navigateTo(activeProfileId, remaining?.id, "/resumes");
+        navigateTo(activeProfileId, remaining?.id, routes.resumes);
       } else {
         setResumeVersions((items) =>
           items.filter((item) => item.id !== resumeId),
