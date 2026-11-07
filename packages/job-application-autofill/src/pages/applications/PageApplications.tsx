@@ -1,20 +1,28 @@
 import { ArrowRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import { useStoredRecord } from "../../hooks/useStoredRecord";
+import { useProfileSelection } from "../../hooks/useProfileSelection";
+import { useJobApplications } from "../../hooks/useJobApplications";
 import { PageStatus } from "../../components/App/PageStatus";
 import { useJobTracker } from "../../hooks/useJobTracker";
 import { openApplication } from "../../utils/application/openApplication";
 
 export function PageApplications() {
-  const record = useStoredRecord();
-  const tracker = useJobTracker(record);
-  const { jobs } = record;
+  const selection = useProfileSelection();
+  const applications = useJobApplications({
+    profileId: selection.activeProfileId,
+    enabled: selection.hydrated,
+    applicationId: selection.applicationId,
+    setMessage: selection.setMessage,
+  });
+  const tracker = useJobTracker({ ...selection, ...applications });
+  const { jobs } = applications;
   const prepareJob = (job: (typeof jobs)[number]) =>
-    openApplication(job, record.activeProfileId, record.activeResumeId);
-  const controller = { ...record, ...tracker, prepareJob };
+    openApplication(job, selection.activeProfileId, selection.activeResumeId);
+  const controller = { ...selection, ...applications, ...tracker, prepareJob };
+  const ready = selection.hydrated && applications.jobsHydrated;
   return (
-    <PageStatus {...record}>
+    <PageStatus hydrated={ready} message={selection.message} setMessage={selection.setMessage}>
       <>
       <WorkspaceHeader
         title="Applications"
