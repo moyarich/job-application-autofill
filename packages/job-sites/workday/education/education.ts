@@ -18,7 +18,7 @@ export async function fillWorkdayEducation(
   for (const [i, entry] of entries.entries()) {
     const key = `education[${i}]`;
     const rows = section
-      .getByText(/^Education\s+\d+$/i, { exact: true })
+      .getByText(educationFields.get("row")!, { exact: true })
       .locator("xpath=ancestor::*[.//input][1]");
     // Workday's numbered education cards keep school controls local to each entry.
     let target = null;
