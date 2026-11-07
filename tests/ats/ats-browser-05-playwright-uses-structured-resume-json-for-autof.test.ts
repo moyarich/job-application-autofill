@@ -2,7 +2,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
-import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
+import { fillWorkdayContact } from "../../packages/job-sites/workday/contact/contact.ts";
 import { renderResumePdf } from "../../packages/resume/src/resume-schema/create-pdf.ts";
 import { decodePdfAttachment } from "../../packages/resume/src/resume-schema/attachment.ts";
 import { adapterForUrl } from "../../packages/job-sites/index.ts";

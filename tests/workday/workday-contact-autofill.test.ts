@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
+import { fillWorkdayContact } from "../../packages/job-sites/workday/contact/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("fills structured contact data without confusing phone number with country code", async () => {
