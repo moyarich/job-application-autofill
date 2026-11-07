@@ -1,12 +1,10 @@
+import { accountForJob, prepareSavedApplication } from "../services/applications.ts";
 import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { validateResume } from "../../../resume/src/resume-schema/validate.ts";
 import { employerAccountIdentity } from "../../../job-sites/employer-account.ts";
-import { decodePdfAttachment } from "../../../resume/src/resume-schema/attachment.ts";
 import {
-  prepareApplication,
   pasteApplicationText,
   getApplication,
   getApplicationMenu,
@@ -21,22 +19,6 @@ import {
 } from "../../../job-sites/automation.ts";
 
 export const handleApplications: RouteHandler = async ({ req, url, store, profileId, resumeIdHeader }) => {
-    function accountForJob(jobId: string) {
-      const job = store
-        .getSnapshot(profileId)
-        .jobs.find((item) => item.id === jobId);
-      if (!job) return null;
-      const identity = employerAccountIdentity(job.url, job.company);
-      return identity
-        ? (store
-            .listAccounts(profileId)
-            .find(
-              (account) =>
-                account.provider === identity.provider &&
-                account.employerKey === identity.employerKey,
-            ) ?? null)
-        : null;
-    }
     if (req.method === "GET" && url.pathname === "/api/apply/active") {
       const active = getActiveApplication(
         url.searchParams.get("jobId"),
@@ -44,65 +26,13 @@ export const handleApplications: RouteHandler = async ({ req, url, store, profil
       );
       return reply(200, {
         session: active
-          ? { ...active, employerAccount: accountForJob(active.jobId) }
+          ? { ...active, employerAccount: accountForJob(store, profileId, active.jobId) }
           : null,
       });
     }
     if (req.method === "POST" && url.pathname === "/api/apply/prepare") {
-      const payload = record(await req.readJson());
-      const savedJob = store
-        .getSnapshot(profileId, resumeIdHeader)
-        .jobs.find((job) => job.id === payload.jobId);
-      if (!savedJob || savedJob.url !== payload.jobUrl)
-        throw new Error("Application does not belong to the selected profile.");
-      const profile = validateResume(payload.profile);
-      const contact = profile.contact;
-      if (
-        !contact.firstName.trim() ||
-        !contact.lastName.trim() ||
-        !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email)
-      )
-        return reply(400, {
-          error:
-            "Complete first name, last name and valid email in the resume JSON.",
-        });
-      if (!payload.resume)
-        return reply(400, {
-          error:
-            "A PDF resume attachment is required alongside the structured resume JSON.",
-        });
-      const attachment = record(payload.resume);
-      if (
-        typeof attachment.fileName !== "string" ||
-        typeof attachment.base64 !== "string"
-      )
-        throw new Error("Invalid resume attachment.");
-      const resume = decodePdfAttachment({
-        fileName: attachment.fileName,
-        base64: attachment.base64,
-      });
-      if (
-        typeof payload.jobUrl !== "string" ||
-        typeof payload.jobId !== "string"
-      )
-        throw new Error("Invalid application identifiers.");
-      const accountIdentity = employerAccountIdentity(
-        savedJob.url,
-        savedJob.company,
-      );
-      const employerAccount = accountIdentity
-        ? store.getOrCreateEmployerAccount(profileId, accountIdentity)
-        : null;
-      const prepared = await prepareApplication({
-        jobUrl: payload.jobUrl,
-        jobId: payload.jobId,
-        profileId,
-        profile,
-        resume,
-        company: savedJob.company,
-        accountSetupRequired: employerAccount?.status === "setup_required",
-      });
-      return reply(200, { ...prepared, employerAccount });
+      const result = await prepareSavedApplication(store, profileId, resumeIdHeader, record(await req.readJson()));
+      return result.ok ? reply(200, result.data) : reply(400, { error: result.error });
     }
     const match = url.pathname.match(
       /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste|menu))?$/,
@@ -116,7 +46,7 @@ export const handleApplications: RouteHandler = async ({ req, url, store, profil
       if (req.method === "GET" && !action)
         return reply(200, {
           ...getApplication(id),
-          employerAccount: accountForJob(getApplication(id).jobId),
+          employerAccount: accountForJob(store, profileId, getApplication(id).jobId),
         });
       if (req.method === "GET" && action === "menu")
         return reply(200, { items: await getApplicationMenu(id) });
