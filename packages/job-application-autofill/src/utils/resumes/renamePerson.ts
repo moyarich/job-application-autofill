@@ -2,7 +2,7 @@ import type { ProfileResumeActionsContext } from "./library-context";
 import { renameLocalProfile } from "../api/client";
 
 export function createRenamePerson(context: ProfileResumeActionsContext) {
-  const { activeProfileId, profile, profiles, setMessage, setProfiles } = context;
+  const { activeProfileId, profiles, setMessage, setProfiles } = context;
   async function renamePerson() {
     const value = window.prompt(
       "Rename local profile",
