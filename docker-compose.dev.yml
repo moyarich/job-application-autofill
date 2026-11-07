@@ -1,6 +1,8 @@
 # Local development only. The base compose file remains image-based for deployments.
 services:
   api:
+    # The source mount shadows Dockerfile chmod; invoke the host script via Bash.
+    entrypoint: ["bash", "/app/docker/start-review.sh"]
     # Mount source for node --watch while preserving image-installed dependencies
     # and the prebuilt resume package exported from dist/.
     volumes:

@@ -18,6 +18,7 @@ web containers, while keeping image-installed `node_modules` and the prebuilt
 
 - React/Vite changes update in the browser through HMR (polling enabled for Docker Desktop).
 - API TypeScript changes restart the Node process using `node --watch`.
+- The API starts `start-review.sh` via Bash because bind-mounted host scripts may not be executable.
 - SQLite persists on the host at `./sqlite-data`, not inside the source image.
 - Changes to dependencies or the Dockerfile still require rebuilding the image.
 - Changes to the `@moyarich/resume` package's `src` need a rebuild of its

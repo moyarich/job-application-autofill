@@ -13,6 +13,7 @@ describe("Docker development configuration", () => {
 
   it("mounts local sources and restarts the API when code changes", () => {
     const override = source("docker-compose.dev.yml");
+    expect(override).toContain('entrypoint: ["bash", "/app/docker/start-review.sh"]');
     expect(override).toContain("- .:/app");
     expect(override).toContain("- /app/node_modules");
     expect(override).toContain("- /app/packages/resume/dist");
