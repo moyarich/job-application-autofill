@@ -605,8 +605,11 @@ export function openStore(
     const id = resumeId ?? listResumes(owner)[0]?.id;
     if (!id) throw new Error("No resume exists for profile.");
     const row = requireResume(owner, id);
-    const contact = row.contactId
+    const selectedContact = row.contactId
       ? decodeContact(selectContact.get(owner, row.contactId))
+      : null;
+    const contact = selectedContact
+      ? Object.fromEntries(CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""])) as CandidateProfile["contact"]
       : null;
     if (row.contactId && !contact)
       throw new Error("Selected resume contact not found.");
