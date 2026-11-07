@@ -2,7 +2,7 @@ import { routes } from "../../routes";
 export function navigateTo(
   nextPerson: string,
   nextResume?: string,
-  destination = routes.workspace,
+  destination: string = routes.workspace,
 ) {
   const url = new URL(window.location.href);
   url.searchParams.set("profile", nextPerson);
