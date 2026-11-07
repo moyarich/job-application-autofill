@@ -4,13 +4,13 @@ import { useApplication } from "../../utils/application/useApplication";
 import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
-import { Applications } from "../../pages/applications/Applications";
-import { Resumes } from "../../pages/resumes/Resumes";
-import { ResumeEditor } from "../../pages/resumes/edit/ResumeEditor";
-import { ResumeView } from "../../pages/resumes/view/ResumeView";
-import { ResumeImport } from "../../pages/resumes/import/ResumeImport";
-import { Profile } from "../../pages/profile/Profile";
-import { Workspace } from "../../pages/workspace/Workspace";
+import { PageApplications } from "../../pages/applications/PageApplications";
+import { PageResumes } from "../../pages/resumes/PageResumes";
+import { PageResumeEditor } from "../../pages/resumes/edit/PageResumeEditor";
+import { PageResumeView } from "../../pages/resumes/view/PageResumeView";
+import { PageResumeImport } from "../../pages/resumes/import/PageResumeImport";
+import { PageProfile } from "../../pages/profile/PageProfile";
+import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
 
 export function App() {
   const controller = useApplication();
@@ -45,19 +45,19 @@ export function App() {
         {applicationId ? (
           <ApplicationReview controller={controller} />
         ) : tab === "applications" ? (
-          <Applications controller={controller} />
+          <PageApplications controller={controller} />
         ) : tab === "parser" ? (
-          <ResumeImport controller={controller} />
+          <PageResumeImport controller={controller} />
         ) : tab === "view" ? (
-          <ResumeView controller={controller} />
+          <PageResumeView controller={controller} />
         ) : tab === "resumes" ? (
-          <Resumes controller={controller} />
+          <PageResumes controller={controller} />
         ) : tab === "personal" ? (
-          <Profile controller={controller} />
+          <PageProfile controller={controller} />
         ) : tab === "workspace" ? (
-          <Workspace controller={controller} />
+          <PageWorkspace controller={controller} />
         ) : (
-          <ResumeEditor controller={controller} />
+          <PageResumeEditor controller={controller} />
         )}
         <footer>
           Review all application details before submitting.

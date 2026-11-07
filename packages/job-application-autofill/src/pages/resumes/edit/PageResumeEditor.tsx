@@ -2,7 +2,7 @@ import { CandidateProfile } from "../../../components/CandidateProfile/Candidate
 import { WorkspaceHeader } from "../../../components/WorkspaceHeader/WorkspaceHeader";
 import type { ApplicationController } from "../../../utils/application/useApplication";
 
-export function ResumeEditor({ controller }: { controller: ApplicationController }) {
+export function PageResumeEditor({ controller }: { controller: ApplicationController }) {
   return (
     <>
       <WorkspaceHeader

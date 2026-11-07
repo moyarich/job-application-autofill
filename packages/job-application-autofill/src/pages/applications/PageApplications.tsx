@@ -4,7 +4,7 @@ import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import type { ApplicationController } from "../../utils/application/useApplication";
 
-export function Applications({ controller }: { controller: ApplicationController }) {
+export function PageApplications({ controller }: { controller: ApplicationController }) {
   const { jobs } = controller;
   return (
     <>
