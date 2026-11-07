@@ -1,17 +1,21 @@
 import { ArrowRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useWorkspace } from "../../hooks/useWorkspace";
+import { useStoredRecord } from "../../hooks/useStoredRecord";
+import { PageStatus } from "../../components/App/PageStatus";
 import { useJobTracker } from "../../hooks/useJobTracker";
 import { openApplication } from "../../utils/application/openApplication";
 
-export function PageApplications({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
-  const tracker = useJobTracker(workspace);
-  const { jobs } = workspace;
-  const prepareJob = (job: (typeof jobs)[number]) => openApplication(job, workspace.activeProfileId, workspace.activeResumeId);
-  const controller = { ...workspace, ...tracker, prepareJob };
+export function PageApplications() {
+  const record = useStoredRecord();
+  const tracker = useJobTracker(record);
+  const { jobs } = record;
+  const prepareJob = (job: (typeof jobs)[number]) =>
+    openApplication(job, record.activeProfileId, record.activeResumeId);
+  const controller = { ...record, ...tracker, prepareJob };
   return (
-    <>
+    <PageStatus {...record}>
+      <>
       <WorkspaceHeader
         title="Applications"
         description="Organize your job search and keep every application on track."
@@ -39,6 +43,7 @@ export function PageApplications({ workspace }: { workspace: ReturnType<typeof u
           <strong>{jobs.filter((job) => job.status === "interview").length}</strong></div>
       </section>
       <Opportunities controller={controller} />
-    </>
+      </>
+    </PageStatus>
   );
 }

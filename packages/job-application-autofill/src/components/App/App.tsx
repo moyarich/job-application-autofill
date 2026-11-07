@@ -1,6 +1,7 @@
 import "./App.css";
 import { ArrowUpRight } from "lucide-react";
-import { useWorkspace } from "../../hooks/useWorkspace";
+import { useLocation, useParams } from "react-router";
+import { tabForPath } from "../../routes";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { PageApplications } from "../../pages/applications/PageApplications";
 import { PageApplicationReview } from "../../pages/applications/PageApplicationReview";
@@ -12,50 +13,30 @@ import { PageProfile } from "../../pages/profile/PageProfile";
 import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
 
 export function App() {
-  const workspace = useWorkspace();
-  const { applicationId, tab, hydrated, message, setMessage } = workspace;
-
-  if (!hydrated)
-    return (
-      <div className={applicationId ? "app application-page" : "app"}>
-        <main className="main">
-          <h1>Opening your workspace</h1>
-          <p>{message || "Loading your information..."}</p>
-        </main>
-      </div>
-    );
+  const location = useLocation();
+  const applicationId = useParams().applicationId ?? null;
+  const tab = tabForPath(location.pathname);
 
   return (
     <div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
-        {message && (
-          <div className="notice" role="status">
-            {message}
-            <button
-              onClick={() => setMessage("")}
-              aria-label="Dismiss notification"
-            >
-              ×
-            </button>
-          </div>
-        )}
         {applicationId ? (
-          <PageApplicationReview workspace={workspace} />
+          <PageApplicationReview />
         ) : tab === "applications" ? (
-          <PageApplications workspace={workspace} />
+          <PageApplications />
         ) : tab === "parser" ? (
-          <PageResumeImport workspace={workspace} />
+          <PageResumeImport />
         ) : tab === "view" ? (
-          <PageResumeView workspace={workspace} />
+          <PageResumeView />
         ) : tab === "resumes" ? (
-          <PageResumes workspace={workspace} />
+          <PageResumes />
         ) : tab === "personal" ? (
-          <PageProfile workspace={workspace} />
+          <PageProfile />
         ) : tab === "workspace" ? (
-          <PageWorkspace workspace={workspace} />
+          <PageWorkspace />
         ) : (
-          <PageResumeEditor workspace={workspace} />
+          <PageResumeEditor />
         )}
         <footer>
           Review all application details before submitting.

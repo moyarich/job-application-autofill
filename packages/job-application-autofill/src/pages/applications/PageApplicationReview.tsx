@@ -1,11 +1,17 @@
 import { ApplicationReview } from "../../components/ApplicationReview/ApplicationReview";
 import { changeJobStatus } from "../../utils/application/changeJobStatus";
 import { useApplicationReview } from "../../hooks/useApplicationReview";
-import type { useWorkspace } from "../../hooks/useWorkspace";
+import { useStoredRecord } from "../../hooks/useStoredRecord";
+import { PageStatus } from "../../components/App/PageStatus";
 
-export function PageApplicationReview({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+export function PageApplicationReview() {
+  const record = useStoredRecord();
   const changeJob = (id: Parameters<typeof changeJobStatus>[0], status: Parameters<typeof changeJobStatus>[1]) =>
-    changeJobStatus(id, status, workspace);
-  const review = useApplicationReview({ ...workspace, changeJob });
-  return <ApplicationReview controller={{ ...workspace, ...review }} />;
+    changeJobStatus(id, status, record);
+  const review = useApplicationReview({ ...record, changeJob });
+  return (
+    <PageStatus {...record}>
+      <ApplicationReview controller={{ ...record, ...review }} />
+    </PageStatus>
+  );
 }
