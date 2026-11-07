@@ -15,6 +15,7 @@ describe("SQLite application data persistence", () => {
   it("does not save partial data when validation fails", () => {
     const db=openStore(":memory:");
     try {
+      db.createResume("00000000-0000-4000-8000-000000000001", "Test resume");
       db.saveResumeContent({revision:0,profile:example,contactId:null});
       db.updateJobRecord({revision:0,job});
       expect(()=>db.updateJobRecord({revision:1,job:{...job,status:"invalid"}})).toThrow(/status/);

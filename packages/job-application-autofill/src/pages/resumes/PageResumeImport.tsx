@@ -1,3 +1,4 @@
+import { NoResume } from "../../components/NoResume/NoResume";
 import { ResumeParser } from "../../components/ResumeParser/ResumeParser";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -25,7 +26,8 @@ export function PageResumeImport() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated && draft.resumeHydrated;
+    selection.hydrated && contacts.contactsHydrated &&
+    (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
     await contacts.flushContacts();
@@ -61,8 +63,8 @@ export function PageResumeImport() {
           title="Import a resume"
           description="Bring in a PDF, Word document, or resume JSON to get started."
         />
-        <ResumeParser controller={controller} />
-        <ContactImportReview controller={controller} />
+        {selection.activeResumeId ? <ResumeParser controller={controller} /> : <NoResume />}
+        {selection.activeResumeId && <ContactImportReview controller={controller} />}
       </>
     </PageStatus>
   );

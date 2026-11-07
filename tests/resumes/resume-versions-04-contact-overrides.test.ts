@@ -7,7 +7,7 @@ const sample = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume
 test("saved contact records are reusable; drafts have no contact ID", () => {
   const db = openStore(":memory:");
   try {
-    const first = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const first = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     expect(first.contactId).toBeNull();
     expect(db.listContacts(DEFAULT_PROFILE_ID)).toEqual([]);
     expect(() => db.createContact(DEFAULT_PROFILE_ID,{...sample.contact,firstName:""},"Incomplete")).toThrow(/requires/i);
@@ -32,7 +32,7 @@ test("saved contact records are reusable; drafts have no contact ID", () => {
 test("resume import with no existing contact creates a selected reusable contact", () => {
   const db = openStore(":memory:");
   try {
-    const primary = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const primary = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     const result = db.resolveImportContact(DEFAULT_PROFILE_ID,primary.id,sample.contact,{});
     expect(result.contactId).not.toBeNull();
     expect(db.getResumeContent(DEFAULT_PROFILE_ID,primary.id).contactId).toBe(result.contactId);

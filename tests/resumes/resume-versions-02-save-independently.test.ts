@@ -7,7 +7,7 @@ const candidate = JSON.parse(readFileSync(new URL("../../packages/resume/src/res
 test("saving a named resume only updates that version and keeps job history shared per person", () => {
   const db = openStore(":memory:");
   try {
-    const first = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const first = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     const second = db.createResume(DEFAULT_PROFILE_ID, "Engineering Manager");
     const changed = structuredClone(candidate);
     changed.summary = "Manager version";

@@ -1,3 +1,4 @@
+import { NoResume } from "../../components/NoResume/NoResume";
 import { CandidateProfile } from "../../components/CandidateProfile/CandidateProfile";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -27,7 +28,8 @@ export function PageResumeEditor() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated && draft.resumeHydrated;
+    selection.hydrated && contacts.contactsHydrated &&
+    (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
     await contacts.flushContacts();
@@ -65,8 +67,8 @@ export function PageResumeEditor() {
           title="Resume editor"
           description="Manage your contact details, experience, and resume versions."
         />
-        <CandidateProfile controller={controller} />
-        <ContactImportReview controller={controller} />
+        {selection.activeResumeId ? <CandidateProfile controller={controller} /> : <NoResume />}
+        {selection.activeResumeId && <ContactImportReview controller={controller} />}
       </>
     </PageStatus>
   );
