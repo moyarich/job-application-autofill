@@ -62,7 +62,7 @@ export type ResumeContent = {
   contactId: string | null;
   profile: CandidateProfile | null;
 };
-export type JobList = { revision: number; jobs: JobApplication[] };
+export type JobList = { jobs: JobApplication[]; revisions: Record<string, number> };
 
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {
   return decodeResponse(await fetch("/api/profiles", {
@@ -140,7 +140,7 @@ export async function saveJob(
 }
 export async function deleteJob(
   profileId: string, jobId: string, revision: number,
-): Promise<{ revision: number; deleted: true }> {
+): Promise<{ deleted: true }> {
   return decodeResponse<{ revision: number; deleted: true }>(
     await fetch("/api/jobs/" + encodeURIComponent(jobId), {
       method: "DELETE",

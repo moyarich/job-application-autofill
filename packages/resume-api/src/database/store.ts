@@ -172,10 +172,10 @@ export function openStore(
     } as ProfileContact;
   }
   const now = () => new Date().toISOString();
-  const { insertProfile, insertState, selectProfile, listProfileRows } = createProfilesStatements(db);
+  const { insertProfile, selectProfile, listProfileRows } = createProfilesStatements(db);
   const { insertContact, updateContact, selectContact, listContactRows, getDefaultContact } = createContactsStatements(db);
   const { insertResume, listResumeRows, selectResume } = createResumesStatements(db);
-  const { getRevision, getJobs } = createApplicationsStatements(db);
+  const { getJobs, getJobRevision } = createApplicationsStatements(db);
   function contactValues(contact: CandidateProfile["contact"]) {
     return [
       ...REQUIRED_CONTACT_KEYS.map((key) => contact[key]),
@@ -209,7 +209,6 @@ export function openStore(
     try {
       const createdAt = now();
       insertProfile.run(DEFAULT_PROFILE_ID, "Default profile", createdAt);
-      insertState.run(DEFAULT_PROFILE_ID);
       insertResume.run(
         randomUUID(),
         DEFAULT_PROFILE_ID,
@@ -266,7 +265,6 @@ export function openStore(
     db.exec("BEGIN IMMEDIATE");
     try {
       insertProfile.run(row.id, row.name, row.createdAt);
-      insertState.run(row.id);
       insertResume.run(
         randomUUID(),
         row.id,
@@ -674,11 +672,19 @@ export function openStore(
 
   function getJobList(profileId = DEFAULT_PROFILE_ID) {
     const owner = requireProfile(profileId);
-    return {
-      revision: (getRevision.get(owner) as { revision: number }).revision,
-      jobs: (getJobs.all(owner) as (JobRecord & { resumeId: string | null })[])
-        .map(({ resumeId, ...job }) => (resumeId ? { ...job, resumeId } : job)),
-    };
+    const revisions: Record<string, number> = {};
+    const jobs = (getJobs.all(owner) as (JobRecord & { resumeId: string | null; revision: number })[])
+      .map(({ resumeId, revision, ...job }) => {
+        revisions[job.id] = revision;
+        return resumeId ? { ...job, resumeId } : job;
+      });
+    return { jobs, revisions };
+  }
+
+  function staleJob(): Error & { code: string } {
+    return Object.assign(new Error("This application changed in another tab. Reload before saving it."), {
+      code: "STALE_STATE",
+    });
   }
 
   function updateJobRecord(raw: unknown, profileId = DEFAULT_PROFILE_ID) {
@@ -689,27 +695,29 @@ export function openStore(
     const [job] = validateJobs([payload.job]);
     const revision = payload.revision;
     if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
-      throw new Error("Expected a nonnegative applications revision.");
+      throw new Error("Expected a nonnegative application revision.");
+    const association = job as JobRecord & { resumeId?: string | null };
+    const selectedResume = association.resumeId ?? null;
+    if (selectedResume) requireResume(owner, selectedResume);
     db.exec("BEGIN IMMEDIATE");
     try {
-      const current = (getRevision.get(owner) as { revision: number }).revision;
-      if (current !== revision) {
-        const error = new Error("Applications changed in another tab. Reload to avoid overwriting them.") as Error & { code?: string };
-        error.code = "STALE_STATE";
-        throw error;
+      const existing = getJobRevision.get(owner, job.id) as { revision: number } | undefined;
+      if ((existing?.revision ?? 0) !== revision || (!existing && revision !== 0))
+        throw staleJob();
+      if (existing) {
+        const updated = db.prepare(`UPDATE applications SET resume_id=?,company=?,role=?,url=?,
+          status=?,created_at=?,notes=?,revision=revision+1
+          WHERE profile_id=? AND id=? AND revision=?`)
+          .run(selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes,
+            owner, job.id, revision);
+        if (!updated.changes) throw staleJob();
+      } else {
+        db.prepare(`INSERT INTO applications(profile_id,id,resume_id,company,role,url,status,created_at,notes,revision)
+          VALUES (?,?,?,?,?,?,?,?,?,1)`)
+          .run(owner, job.id, selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
       }
-      const association = job as JobRecord & { resumeId?: string | null };
-      const selectedResume = association.resumeId ?? null;
-      if (selectedResume) requireResume(owner, selectedResume);
-      db.prepare(`INSERT INTO applications(profile_id,id,resume_id,company,role,url,status,created_at,notes)
-        VALUES (?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(profile_id,id) DO UPDATE SET
-        resume_id=excluded.resume_id,company=excluded.company,role=excluded.role,
-        url=excluded.url,status=excluded.status,created_at=excluded.created_at,notes=excluded.notes`)
-        .run(owner, job.id, selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
-      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
       db.exec("COMMIT");
-      return { revision: current + 1 };
+      return { revision: revision + 1 };
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
@@ -723,43 +731,33 @@ export function openStore(
       throw new Error("Invalid application deletion.");
     const revision = (raw as Record<string, unknown>).revision;
     if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
-      throw new Error("Expected a nonnegative applications revision.");
+      throw new Error("Expected a nonnegative application revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
-      const current = (getRevision.get(owner) as { revision: number }).revision;
-      if (current !== revision) {
-        const error = new Error("Applications changed in another tab. Reload to avoid overwriting them.") as Error & { code?: string };
-        error.code = "STALE_STATE";
-        throw error;
+      const deleted = db.prepare("DELETE FROM applications WHERE profile_id=? AND id=? AND revision=?")
+        .run(owner, id, revision);
+      if (!deleted.changes) {
+        if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+        throw staleJob();
       }
-      const deleted = db.prepare("DELETE FROM applications WHERE profile_id=? AND id=?").run(owner, id);
-      if (!deleted.changes) throw new Error("Application not found.");
-      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
       db.exec("COMMIT");
-      return { revision: current + 1, deleted: true };
+      return { deleted: true };
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
     }
   }
 
-  /** Update only the chosen application; never rewrite resume content or other jobs. */
+  /** Update only this application's status and revision. */
   function setJobStatus(profileId: string, jobId: string, status: string) {
     const owner = requireProfile(profileId);
     const id = validId(jobId);
     if (!statuses.has(status)) throw new Error("Invalid job status.");
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      const updated = db.prepare("UPDATE applications SET status=? WHERE profile_id=? AND id=?")
-        .run(status, owner, id);
-      if (!updated.changes) throw new Error("Application not found.");
-      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
-      db.exec("COMMIT");
-      return { updated: true };
-    } catch (error) {
-      db.exec("ROLLBACK");
-      throw error;
-    }
+    const updated = db.prepare(
+      "UPDATE applications SET status=?,revision=revision+1 WHERE profile_id=? AND id=?",
+    ).run(status, owner, id);
+    if (!updated.changes) throw new Error("Application not found.");
+    return { updated: true };
   }
   return {
     listProfiles,

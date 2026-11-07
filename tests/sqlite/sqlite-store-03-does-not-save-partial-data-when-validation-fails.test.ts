@@ -20,7 +20,7 @@ describe("SQLite application data persistence", () => {
       expect(()=>db.updateJobRecord({revision:1,job:{...job,status:"invalid"}})).toThrow(/status/);
       expect(()=>db.saveResumeContent({revision:1,profile:{bad:true},contactId:null})).toThrow();
       expect(db.getResumeContent()).toMatchObject({revision:1,profile:example});
-      expect(db.getJobList()).toMatchObject({revision:1,jobs:[job]});
+      expect(db.getJobList()).toMatchObject({jobs:[job],revisions:{[job.id]:1}});
     } finally { db.close(); }
   });
   

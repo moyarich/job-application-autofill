@@ -12,6 +12,6 @@ test("two local people have independent résumés and application histories", ()
     expect(db.getJobList(jane.id).jobs).toEqual([job]);
     expect(db.getJobList(john.id).jobs).toEqual([]);
     expect(db.getJobList(DEFAULT_PROFILE_ID).jobs).toEqual([]);
-    expect(db.getJobList(john.id).revision).toBe(0);
+    expect(db.getJobList(john.id).revisions).toEqual({});
   } finally { db.close(); }
 });

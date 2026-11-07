@@ -17,7 +17,7 @@ test("saving a named resume only updates that version and keeps job history shar
     expect(db.getResumeContent(DEFAULT_PROFILE_ID, second.id).profile).toEqual(changed);
     expect(db.getResumeContent(DEFAULT_PROFILE_ID).revision).toBe(1);
     expect(db.getResumeContent(DEFAULT_PROFILE_ID, second.id).revision).toBe(1);
-    expect(db.getJobList(DEFAULT_PROFILE_ID).revision).toBe(0);
+    expect(db.getJobList(DEFAULT_PROFILE_ID).revisions).toEqual({});
     expect(() => db.saveResumeContent({ revision: 0, profile: changed, contactId: null }, DEFAULT_PROFILE_ID, first.id)).toThrow(/another tab/i);
   } finally { db.close(); }
 });

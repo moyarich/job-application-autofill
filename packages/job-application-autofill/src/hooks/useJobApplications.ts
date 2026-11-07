@@ -13,7 +13,7 @@ export function useJobApplications({
 }) {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [jobsHydrated, setJobsHydrated] = useState(false);
-  const revisionRef = useRef(0);
+  const revisionsRef = useRef<Record<string, number>>({});
   const savedRef = useRef("");
   const queue = useRef<Promise<void>>(Promise.resolve());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,7 +26,7 @@ export function useJobApplications({
     readJobs(profileId).then((result) => {
       if (cancelled) return;
       setJobs(result.jobs);
-      revisionRef.current = result.revision;
+      revisionsRef.current = result.revisions;
       savedRef.current = JSON.stringify(result.jobs);
       blocked.current = false;
       setJobsHydrated(true);
@@ -45,15 +45,15 @@ export function useJobApplications({
     const after = new Map(jobs.map((job) => [job.id, job]));
     for (const job of jobs) {
       if (JSON.stringify(before.get(job.id)) === JSON.stringify(job)) continue;
-      const result = await saveJob(profileId, { revision: revisionRef.current, job });
-      revisionRef.current = result.revision;
+      const result = await saveJob(profileId, { revision: revisionsRef.current[job.id] ?? 0, job });
+      revisionsRef.current[job.id] = result.revision;
       before.set(job.id, job);
       savedRef.current = JSON.stringify([...before.values()]);
     }
     for (const previousJob of previous) {
       if (after.has(previousJob.id)) continue;
-      const result = await deleteJob(profileId, previousJob.id, revisionRef.current);
-      revisionRef.current = result.revision;
+      await deleteJob(profileId, previousJob.id, revisionsRef.current[previousJob.id]);
+      delete revisionsRef.current[previousJob.id];
       before.delete(previousJob.id);
       savedRef.current = JSON.stringify([...before.values()]);
     }

@@ -1,0 +1,2 @@
+ALTER TABLE applications ADD COLUMN revision INTEGER NOT NULL DEFAULT 1;
+DROP TABLE IF EXISTS profile_state;

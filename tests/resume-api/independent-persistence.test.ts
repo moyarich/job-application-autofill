@@ -29,12 +29,12 @@ describe("independent persistence endpoints", () => {
       const contentPath = "/api/resumes/" + version.id + "/content";
 
       expect((await api(request(contentPath))).body).toMatchObject({ revision: 0, profile: null });
-      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 0, jobs: [] });
+      expect((await api(request("/api/jobs"))).body).toEqual({ jobs: [], revisions: {} });
 
       expect((await api(request(contentPath, "PUT", {
         revision: 0, profile, contactId: null,
       }))).status).toBe(200);
-      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 0, jobs: [] });
+      expect((await api(request("/api/jobs"))).body).toEqual({ jobs: [], revisions: {} });
       expect((await api(request("/api/profile-contacts"))).body).toEqual({ contacts: [] });
 
       expect((await api(request("/api/jobs", "PUT", {
@@ -54,7 +54,7 @@ describe("independent persistence endpoints", () => {
         revision: 1, profile, contactId: contact.id,
       }));
       expect(linked.status).toBe(200);
-      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 1, jobs: [job] });
+      expect((await api(request("/api/jobs"))).body).toEqual({ jobs: [job], revisions: { [job.id]: 1 } });
 
       const changedContact = { ...profile.contact, phone: "555-0199" };
       expect((await api(request("/api/profile-contacts/" + contact.id, "PATCH", {
@@ -64,7 +64,7 @@ describe("independent persistence endpoints", () => {
         revision: 2, contactId: contact.id,
         profile: { contact: changedContact },
       });
-      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 1, jobs: [job] });
+      expect((await api(request("/api/jobs"))).body).toEqual({ jobs: [job], revisions: { [job.id]: 1 } });
       expect((await api(request(contentPath, "PUT", {
         revision: 1, profile, contactId: contact.id,
       }))).status).toBe(409);
@@ -79,14 +79,15 @@ describe("independent persistence endpoints", () => {
       store.saveResumeContent({ revision: 0, profile, contactId: null }, DEFAULT_PROFILE_ID, resumeId);
       const other = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
       store.updateJobRecord({ revision: 0, job }, DEFAULT_PROFILE_ID);
-      store.updateJobRecord({ revision: 1, job: other }, DEFAULT_PROFILE_ID);
+      store.updateJobRecord({ revision: 0, job: other }, DEFAULT_PROFILE_ID);
       expect((await api(request("/api/jobs/" + job.id + "/status", "POST", {
         status: "interview",
       }))).status).toBe(200);
       const jobs = (await api(request("/api/jobs"))).body as {
-        revision: number; jobs: typeof job[];
+        revisions: Record<string,number>; jobs: typeof job[];
       };
-      expect(jobs.revision).toBe(3);
+      expect(jobs.revisions[job.id]).toBe(2);
+      expect(jobs.revisions[other.id]).toBe(1);
       expect(jobs.jobs.find((item) => item.id === job.id)?.status).toBe("interview");
       expect(jobs.jobs.find((item) => item.id === other.id)?.status).toBe("saved");
       expect(store.getResumeContent(DEFAULT_PROFILE_ID, resumeId).revision).toBe(1);
@@ -99,12 +100,26 @@ describe("independent persistence endpoints", () => {
       const api = createApiHandler(store, { origin: "http://localhost" });
       const second = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
       expect((await api(request("/api/jobs", "PUT", { revision: 0, job }))).status).toBe(200);
-      expect((await api(request("/api/jobs", "PUT", { revision: 1, job: second }))).status).toBe(200);
-      expect((await api(request("/api/jobs", "PUT", { revision: 2, job: { ...job, notes: "Edited" } }))).status).toBe(200);
-      expect((await api(request("/api/jobs"))).body).toMatchObject({ revision: 3, jobs: expect.arrayContaining([second, { ...job, notes: "Edited" }]) });
-      expect((await api(request("/api/jobs/" + job.id, "DELETE", { revision: 3 }))).status).toBe(200);
-      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 4, jobs: [second] });
-      expect((await api(request("/api/jobs", "PUT", { revision: 2, job }))).status).toBe(409);
+      expect((await api(request("/api/jobs", "PUT", { revision: 0, job: second }))).status).toBe(200);
+      expect((await api(request("/api/jobs", "PUT", { revision: 1, job: { ...job, notes: "Edited" } }))).status).toBe(200);
+      expect((await api(request("/api/jobs"))).body).toMatchObject({ revisions: { [job.id]: 2, [second.id]: 1 }, jobs: expect.arrayContaining([second, { ...job, notes: "Edited" }]) });
+      expect((await api(request("/api/jobs/" + job.id, "DELETE", { revision: 2 }))).status).toBe(200);
+      expect((await api(request("/api/jobs"))).body).toEqual({ jobs: [second], revisions: { [second.id]: 1 } });
+      expect((await api(request("/api/jobs", "PUT", { revision: 1, job }))).status).toBe(409);
+    } finally { store.close(); }
+  });
+
+  it("accepts independent job edits at the same revision and rejects stale edits to one job", async () => {
+    const store = openStore(":memory:");
+    try {
+      const first = job;
+      const second = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
+      expect(store.updateJobRecord({ revision: 0, job: first })).toEqual({ revision: 1 });
+      expect(store.updateJobRecord({ revision: 0, job: second })).toEqual({ revision: 1 });
+      expect(store.updateJobRecord({ revision: 1, job: { ...first, notes: "Edited" } })).toEqual({ revision: 2 });
+      expect(store.updateJobRecord({ revision: 1, job: { ...second, notes: "Also edited" } })).toEqual({ revision: 2 });
+      expect(() => store.updateJobRecord({ revision: 1, job: first })).toThrow(/another tab/);
+      expect(store.getJobList().revisions).toEqual({ [first.id]: 2, [second.id]: 2 });
     } finally { store.close(); }
   });
 });
