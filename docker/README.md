@@ -9,12 +9,12 @@ npm run dev
 The script runs:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build --renew-anon-volumes
 ```
 
 The development override mounts the local checkout at `/app` in both the API and
 web containers, while keeping image-installed `node_modules` and the prebuilt
-`packages/resume/dist` available in container-managed volumes.
+`packages/resume/dist` available in container-managed volumes. Anonymous dependency volumes are renewed on startup.
 
 - React/Vite changes update in the browser through HMR (polling enabled for Docker Desktop).
 - API TypeScript changes restart the Node process using `node --watch`.
