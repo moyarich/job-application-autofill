@@ -1,4 +1,3 @@
-import { exportResume, type ResumeExportFormat } from "../utils/files/export-resume";
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
@@ -35,6 +34,7 @@ import {
 import { filePayload } from "../utils/files/resume-files";
 import { createApplicationReviewActions } from "../utils/application/review-actions";
 import { createResumeImportActions } from "../utils/resumes/import-actions";
+import { createProfileResumeActions } from "../utils/resumes/library-actions";
 export function useApplication() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -536,167 +536,14 @@ export function useApplication() {
       savedRef.current = signature;
     }
   }
-  function navigateTo(
-    nextPerson: string,
-    nextResume?: string,
-    destination = "/workspace",
-  ) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("profile", nextPerson);
-    if (nextResume) url.searchParams.set("resume", nextResume);
-    else url.searchParams.delete("resume");
-    url.pathname = destination;
-    window.location.assign(url.href);
-  }
-  async function switchProfile(next: string) {
-    if (applicationId || applyBusy || session) return;
-    if (next === activeProfileId) return;
-    try {
-      await flushPending();
-      navigateTo(next);
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function switchResume(next: string) {
-    if (applicationId || applyBusy || session || next === activeResumeId)
-      return;
-    try {
-      await flushPending();
-      // Switching versions must not unexpectedly leave the resume editor/preview.
-      const destination =
-        location.pathname === "/resumes/edit" ||
-        location.pathname === "/resumes/view" ||
-        location.pathname === "/resumes"
-          ? location.pathname
-          : "/workspace";
-      navigateTo(activeProfileId, next, destination);
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function createPerson() {
-    const value = window.prompt("Name for the new local profile");
-    if (!value) return;
-    try {
-      await flushPending();
-      const result = await createLocalProfile(value);
-      navigateTo(result.id);
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function renamePerson() {
-    const value = window.prompt(
-      "Rename local profile",
-      profiles.find((item) => item.id === activeProfileId)?.name,
-    );
-    if (!value) return;
-    try {
-      const result = await renameLocalProfile(activeProfileId, value);
-      setProfiles((items) =>
-        items.map((item) => (item.id === result.id ? result : item)),
-      );
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function removePerson() {
-    if (
-      activeProfileId === DEFAULT_PROFILE_ID ||
-      !window.confirm(
-        "Permanently delete this person, all resume versions, and all saved applications?",
-      )
-    )
-      return;
-    try {
-      await deleteLocalProfile(activeProfileId);
-      navigateTo(DEFAULT_PROFILE_ID);
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function exportResumeVersion(
-    resumeId: string,
-    format: ResumeExportFormat,
-  ) {
-    try {
-      await flushPending();
-      const selected = resumeVersions.find((item) => item.id === resumeId);
-      if (!selected) throw new Error("Resume no longer exists.");
-      const state =
-        resumeId === activeResumeId
-          ? null
-          : await readState(activeProfileId, resumeId);
-      const value = state ? state.profile : profile;
-      if (!value) throw new Error("This resume has no content to export.");
-      await exportResume(
-        value,
-        selected.name,
-        format,
-        activeProfileId,
-        resumeId,
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-    }
-  }
-  async function openResume(resumeId: string, mode: "view" | "edit" = "edit") {
-    if (applicationId || applyBusy || session) return;
-    try {
-      await flushPending();
-      navigateTo(activeProfileId, resumeId, "/resumes/" + mode);
-    } catch (error) {
-      setMessage(String(error));
-    }
-  }
-  async function createResume(name: string, copyId?: string) {
-    if (applicationId || applyBusy || session) return;
-    try {
-      await flushPending();
-      const created = await createResumeVersion(activeProfileId, name, copyId);
-      navigateTo(activeProfileId, created.id, "/resumes/edit");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-      throw error;
-    }
-  }
-  async function renameResume(resumeId: string, name: string) {
-    if (applicationId || applyBusy || session) return;
-    try {
-      await flushPending();
-      const changed = await renameResumeVersion(
-        activeProfileId,
-        resumeId,
-        name,
-      );
-      setResumeVersions((items) =>
-        items.map((item) => (item.id === changed.id ? changed : item)),
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-      throw error;
-    }
-  }
-  async function removeResume(resumeId: string) {
-    if (applicationId || applyBusy || session || resumeVersions.length <= 1)
-      return;
-    try {
-      await flushPending();
-      await deleteResumeVersion(activeProfileId, resumeId);
-      if (resumeId === activeResumeId) {
-        const remaining = resumeVersions.find((item) => item.id !== resumeId);
-        navigateTo(activeProfileId, remaining?.id, "/resumes");
-      } else {
-        setResumeVersions((items) =>
-          items.filter((item) => item.id !== resumeId),
-        );
-      }
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-      throw error;
-    }
-  }
+  const { switchProfile, switchResume, createPerson, renamePerson,
+    removePerson, createResume, renameResume, removeResume,
+    openResume, exportResumeVersion } = createProfileResumeActions({
+      applicationId, applyBusy, sessionActive: Boolean(session),
+      activeProfileId, activeResumeId, pathname: location.pathname,
+      profile, profiles, resumeVersions, flushPending, setMessage,
+      setProfiles, setResumeVersions,
+    });
   return {
     profiles,
     activeProfileId,
