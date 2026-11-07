@@ -1,6 +1,6 @@
-import { ResumeParser } from "../../../components/ResumeParser/ResumeParser";
-import { WorkspaceHeader } from "../../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../../utils/application/useApplication";
+import { ResumeParser } from "../../components/ResumeParser/ResumeParser";
+import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
+import type { ApplicationController } from "../../utils/application/useApplication";
 
 export function PageResumeImport({ controller }: { controller: ApplicationController }) {
   return (

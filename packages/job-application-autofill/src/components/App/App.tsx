@@ -6,9 +6,9 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 import { PageApplications } from "../../pages/applications/PageApplications";
 import { PageResumes } from "../../pages/resumes/PageResumes";
-import { PageResumeEditor } from "../../pages/resumes/edit/PageResumeEditor";
-import { PageResumeView } from "../../pages/resumes/view/PageResumeView";
-import { PageResumeImport } from "../../pages/resumes/import/PageResumeImport";
+import { PageResumeEditor } from "../../pages/resumes/PageResumeEditor";
+import { PageResumeView } from "../../pages/resumes/PageResumeView";
+import { PageResumeImport } from "../../pages/resumes/PageResumeImport";
 import { PageProfile } from "../../pages/profile/PageProfile";
 import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
 

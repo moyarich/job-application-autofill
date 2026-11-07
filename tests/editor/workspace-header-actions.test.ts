@@ -29,9 +29,9 @@ describe("workspace header actions", () => {
     expect(applications).toContain('title="Applications"');
     for (const path of [
       "resumes/PageResumes.tsx",
-      "resumes/edit/PageResumeEditor.tsx",
-      "resumes/view/PageResumeView.tsx",
-      "resumes/import/PageResumeImport.tsx",
+      "resumes/PageResumeEditor.tsx",
+      "resumes/PageResumeView.tsx",
+      "resumes/PageResumeImport.tsx",
       "profile/PageProfile.tsx",
       "workspace/PageWorkspace.tsx",
     ]) {
