@@ -6,7 +6,9 @@ import { fillWorkdayContact } from "../../packages/job-sites/workday/contact/con
 describe("application safety", () => {
   it("Workday-owned contact handler fills matching fields and reports missing fields", async () => {
     const target = {
-      evaluate: vi.fn().mockResolvedValue("INPUT"),
+      evaluate: vi.fn(async (callback: (node: HTMLInputElement) => unknown) =>
+        callback({ tagName: "INPUT", type: "text", readOnly: false } as HTMLInputElement)),
+      count: vi.fn().mockResolvedValue(1),
       inputValue: vi.fn().mockResolvedValue(""),
       getAttribute: vi.fn().mockResolvedValue(null),
       isVisible: vi.fn().mockResolvedValue(true),
@@ -14,14 +16,15 @@ describe("application safety", () => {
       fill: vi.fn().mockResolvedValue(undefined),
     };
     const missing = {
+      count: vi.fn().mockResolvedValue(0),
       isVisible: vi.fn().mockResolvedValue(false),
       isEnabled: vi.fn(),
       fill: vi.fn(),
     };
     const page = {
-      getByLabel: vi.fn((pattern: RegExp) => ({
-        first: () => (pattern.test("First Name") ? target : missing),
-      })),
+      getByLabel: vi.fn((pattern: RegExp) =>
+        pattern.test("First Name") ? target : missing,
+      ),
       getByPlaceholder: vi.fn(() => ({ first: () => missing })),
     };
     const profile = {
