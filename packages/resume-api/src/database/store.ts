@@ -129,6 +129,13 @@ function validateJobs(raw: unknown): JobRecord[] {
     ])
       if (typeof row[key] !== "string")
         throw new Error("Invalid job field: " + key);
+    if ("resumeId" in row && row.resumeId != null &&
+        (typeof row.resumeId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.resumeId)))
+      throw new Error("Invalid associated resume ID.");
+    if (Object.keys(row).some(key => ![
+      "id", "company", "role", "url", "status", "createdAt", "notes", "resumeId",
+    ].includes(key))) throw new Error("Invalid job field.");
     const job = row as JobRecord;
     if (!validId(job.id) || ids.has(job.id))
       throw new Error("Duplicate job identifier.");
