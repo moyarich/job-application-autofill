@@ -79,7 +79,8 @@ describe("independent persistence endpoints", () => {
       const resumeId = store.listResumes(DEFAULT_PROFILE_ID)[0].id;
       store.saveResumeContent({ revision: 0, profile, contactId: null }, DEFAULT_PROFILE_ID, resumeId);
       const other = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
-      store.saveJobList({ revision: 0, job }, DEFAULT_PROFILE_ID);
+      store.updateJobRecord({ revision: 0, job }, DEFAULT_PROFILE_ID);
+      store.updateJobRecord({ revision: 1, job: other }, DEFAULT_PROFILE_ID);
       expect((await api(request("/api/jobs/" + job.id + "/status", "POST", {
         status: "interview",
       }))).status).toBe(200);
