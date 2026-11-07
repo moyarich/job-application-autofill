@@ -32,7 +32,7 @@ The exact URL has a provider-regression test. Public page inspection is **not** 
 
 ## Workday structured work experience
 
-Workday-specific operations are declared in `workday/steps.ts`, with resume re-upload behavior in `workday/resume.ts`. The Workday helper at `workday/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
+Workday-specific operations are declared in `workday/steps.ts`, with resume re-upload behavior in `workday/resume/resume.ts`. The Workday helper at `workday/experience/experience.ts` fills repeatable **Work Experience** rows from the canonical résumé JSON `experience[]`. It maps company, job title, location, job description, start/end dates and the **I currently work here** checkbox. It prefers an existing matching job row, then an empty row, then a section-scoped **Add** or **Add Another** control. Repeated refreshes do not intentionally duplicate existing jobs.
 
 To prevent incorrect employment claims, the helper never invents days for dates stored as `YYYY` or `YYYY-MM`, never overwrites pre-filled conflicting values, and does not auto-navigate, answer authorization questions, create accounts, or submit. Unrecognized fields/controls are flagged in `missing` for browser review. Workday employers customize these controls, so live behavior for individual employers is **not yet verified**.
 
@@ -68,3 +68,20 @@ compatibility.
 
 Run the regression fixtures with
 `npx vitest run tests/workday/workday-field-map.test.ts`.
+
+## Workday section-local field maps
+
+Workday form sections keep selectors alongside their handlers:
+
+```text
+workday/
+  contact/{contact.ts,field-map.ts}
+  experience/{experience.ts,field-map.ts}
+  education/{education.ts,field-map.ts}
+  skills/{skills.ts,field-map.ts}
+  resume/{resume.ts,field-map.ts}
+```
+
+Update a section's `field-map.ts` and its fixture test when a verified employer
+layout changes. Pure orchestration, page detection and account handling do not
+have artificial field maps. No shared locator matcher is used.

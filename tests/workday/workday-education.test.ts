@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { fillWorkdayEducation } from "../../packages/job-sites/workday/education.ts";
+import { fillWorkdayEducation } from "../../packages/job-sites/workday/education/education.ts";
 test("fills saved education into a numbered Workday card", async () => {
   const browser = await chromium.launch({ headless: true });
   try {

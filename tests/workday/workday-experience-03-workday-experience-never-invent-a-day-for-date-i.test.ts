@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { fillWorkdayExperience } from "../../packages/job-sites/workday/experience.ts";
+import { fillWorkdayExperience } from "../../packages/job-sites/workday/experience/experience.ts";
 
 const jobs=[
   {company:"Example Technologies",jobTitle:"Senior Software Engineer",location:"Chicago, IL",startDate:"2021-06",endDate:null,isCurrent:true,description:"Built cloud apps."},

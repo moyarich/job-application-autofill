@@ -1,4 +1,5 @@
 import type { Page } from "playwright";
+import { skillsFields, skillsLabels } from "./field-map.ts";
 
 // Only choose exact employer-provided options or explicitly labeled text fields.
 export async function fillWorkdaySkills(page: Page, skills: string[]) {
@@ -27,13 +28,13 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   if (!values.length) return result;
   const section = page
     .locator(
-      '[data-automation-id="skillsSection"], [data-automation-id="formField-skills"], section:has(> h2:text-is("Skills")), fieldset:has(> legend:text-is("Skills"))',
+      skillsFields.get("section")!,
     )
     .first();
   if (!(await section.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["skills: section not visible"] };
   const tokens = section.locator(
-    '[data-automation-id="selectedItem"], [data-skill-token]',
+    skillsFields.get("tokens")!,
   );
   const saved = await tokens.evaluateAll((nodes) =>
     nodes.map((node) =>
@@ -56,11 +57,11 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   for (const index of duplicates.reverse()) {
     const remove = tokens
       .nth(index)
-      .locator('[data-automation-id="DELETE_charm"], button')
+      .locator(skillsFields.get("remove")!)
       .first();
     if (await remove.count()) await remove.click({ timeout: 2000 });
   }
-  const text = section.getByLabel(/^skills\s*\*?$/i).first();
+  const text = section.getByLabel(skillsLabels.text).first();
   if (
     (await text.isVisible().catch(() => false)) &&
     (await text.getAttribute("role")) !== "combobox" &&
@@ -76,17 +77,17 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   }
   let search = section
     .locator(
-      'input[role="combobox"], input[aria-autocomplete], input[data-automation-id="searchBox"], input[placeholder="Type to Add Skills"], input[aria-label="Type to Add Skills"]',
+      skillsFields.get("search")!,
     )
     .first();
   if (!(await search.isVisible().catch(() => false)))
-    search = section.getByLabel(/^Type to Add Skills$/i).first();
+    search = section.getByLabel(skillsLabels.search).first();
   if (!(await search.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["skills: no supported input"] };
   for (const skill of values) {
     const selected = section
       .locator(
-        '[data-automation-id="selectedItem"], [data-automation-id="selectedItemList"] [data-automation-id="promptOption"], [data-skill-token]',
+        skillsFields.get("selected")!,
       )
       .getByText(skill, { exact: true });
     if (selectedNames.has(skill.toLowerCase()) || (await selected.count())) {
@@ -101,7 +102,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
         .getByRole("option", { name: skill, exact: true })
         .or(
           page
-            .locator('[data-automation-id="promptOption"]')
+            .locator(skillsFields.get("option")!)
             .getByText(skill, { exact: true }),
         )
         .or(checkbox)
