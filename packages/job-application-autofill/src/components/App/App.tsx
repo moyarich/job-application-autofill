@@ -1,6 +1,6 @@
 import { ResumeView } from "../ResumeView/ResumeView";
 import "./App.css";
-import { ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
 import { useApplication } from "../../utils/application/useApplication";
 import { ResumeParser } from "../ResumeParser/ResumeParser";
 import { CandidateProfile } from "../CandidateProfile/CandidateProfile";
@@ -12,6 +12,37 @@ import { ContactImportReview } from "../ContactImportReview/ContactImportReview"
 import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
 import { ContactManager } from "../ContactManager/ContactManager";
 import { ResumeManager } from "../ResumeManager/ResumeManager";
+const pageHeaders = {
+  applications: {
+    title: "Applications",
+    description: "Organize your job search and keep every application on track.",
+  },
+  resumes: {
+    title: "Resumes",
+    description: "Your experience, tailored for every opportunity. Manage all your resume versions here.",
+  },
+  view: {
+    title: "View resume",
+    description: "Review your resume and export it in the format you need.",
+  },
+  profile: {
+    title: "Resume editor",
+    description: "Manage your contact details, experience, and resume versions.",
+  },
+  parser: {
+    title: "Import a resume",
+    description: "Bring in a PDF, Word document, or resume JSON to get started.",
+  },
+  personal: {
+    title: "Profile",
+    description: "Manage your saved contact details and the profile you are working with.",
+  },
+  workspace: {
+    title: "Profiles & resumes",
+    description: "Manage profiles and the resumes associated with each profile.",
+  },
+} as const;
+
 export function App() {
   const controller = useApplication();
   const { applicationId, tab, jobs, hydrated, message, setMessage } =
@@ -30,7 +61,26 @@ export function App() {
     <div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
-        {!applicationId && <WorkspaceHeader controller={controller} />}
+        {!applicationId && (
+          <WorkspaceHeader
+            {...pageHeaders[tab as keyof typeof pageHeaders]}
+            actions={
+              tab === "applications" ? (
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() =>
+                    document.getElementById("add-application")?.scrollIntoView({
+                      behavior: "smooth",
+                    })
+                  }
+                >
+                  Add application <ArrowRight size={16} />
+                </button>
+              ) : undefined
+            }
+          />
+        )}
         {message && (
           <div className="notice" role="status">
             {message}
