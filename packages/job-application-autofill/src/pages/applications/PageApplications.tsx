@@ -1,11 +1,15 @@
 import { ArrowRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
-import { ApplicationReview } from "../../components/ApplicationReview/ApplicationReview";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
+import { useJobTracker } from "../../hooks/useJobTracker";
+import { openApplication } from "../../utils/application/openApplication";
 
-export function PageApplications({ controller }: { controller: ReturnType<typeof useApplication> }) {
-  const { jobs } = controller;
+export function PageApplications({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const tracker = useJobTracker(workspace);
+  const { jobs } = workspace;
+  const prepareJob = (job: (typeof jobs)[number]) => openApplication(job, workspace.activeProfileId, workspace.activeResumeId);
+  const controller = { ...workspace, ...tracker, prepareJob };
   return (
     <>
       <WorkspaceHeader
@@ -34,7 +38,6 @@ export function PageApplications({ controller }: { controller: ReturnType<typeof
         <div className="stat"><span><MessageCircle size={15} aria-hidden="true" /> Interviews</span>
           <strong>{jobs.filter((job) => job.status === "interview").length}</strong></div>
       </section>
-      <ApplicationReview controller={controller} />
       <Opportunities controller={controller} />
     </>
   );

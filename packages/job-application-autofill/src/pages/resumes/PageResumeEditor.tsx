@@ -1,8 +1,12 @@
 import { CandidateProfile } from "../../components/CandidateProfile/CandidateProfile";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
+import { useResumeImport } from "../../hooks/useResumeImport";
+import { ContactImportReview } from "../../components/ContactImportReview/ContactImportReview";
 
-export function PageResumeEditor({ controller }: { controller: ReturnType<typeof useApplication> }) {
+export function PageResumeEditor({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const importing = useResumeImport(workspace);
+  const controller = { ...workspace, ...importing };
   return (
     <>
       <WorkspaceHeader
@@ -10,6 +14,7 @@ export function PageResumeEditor({ controller }: { controller: ReturnType<typeof
         description="Manage your contact details, experience, and resume versions."
       />
       <CandidateProfile controller={controller} />
+      <ContactImportReview controller={controller} />
     </>
   );
 }

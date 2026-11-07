@@ -1,10 +1,9 @@
 import "./App.css";
 import { ArrowUpRight } from "lucide-react";
-import { useApplication } from "../../hooks/useApplication";
-import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
+import { useWorkspace } from "../../hooks/useWorkspace";
 import { Sidebar } from "../Sidebar/Sidebar";
-import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 import { PageApplications } from "../../pages/applications/PageApplications";
+import { PageApplicationReview } from "../../pages/applications/PageApplicationReview";
 import { PageResumes } from "../../pages/resumes/PageResumes";
 import { PageResumeEditor } from "../../pages/resumes/PageResumeEditor";
 import { PageResumeView } from "../../pages/resumes/PageResumeView";
@@ -13,8 +12,8 @@ import { PageProfile } from "../../pages/profile/PageProfile";
 import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
 
 export function App() {
-  const controller = useApplication();
-  const { applicationId, tab, hydrated, message, setMessage } = controller;
+  const workspace = useWorkspace();
+  const { applicationId, tab, hydrated, message, setMessage } = workspace;
 
   if (!hydrated)
     return (
@@ -41,23 +40,22 @@ export function App() {
             </button>
           </div>
         )}
-        {!applicationId && <ContactImportReview controller={controller} />}
         {applicationId ? (
-          <ApplicationReview controller={controller} />
+          <PageApplicationReview workspace={workspace} />
         ) : tab === "applications" ? (
-          <PageApplications controller={controller} />
+          <PageApplications workspace={workspace} />
         ) : tab === "parser" ? (
-          <PageResumeImport controller={controller} />
+          <PageResumeImport workspace={workspace} />
         ) : tab === "view" ? (
-          <PageResumeView controller={controller} />
+          <PageResumeView workspace={workspace} />
         ) : tab === "resumes" ? (
-          <PageResumes controller={controller} />
+          <PageResumes workspace={workspace} />
         ) : tab === "personal" ? (
-          <PageProfile controller={controller} />
+          <PageProfile workspace={workspace} />
         ) : tab === "workspace" ? (
-          <PageWorkspace controller={controller} />
+          <PageWorkspace workspace={workspace} />
         ) : (
-          <PageResumeEditor controller={controller} />
+          <PageResumeEditor workspace={workspace} />
         )}
         <footer>
           Review all application details before submitting.
