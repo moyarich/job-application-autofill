@@ -53,5 +53,4 @@ including databases already containing `profile_contact.extra_json`.
 Never edit an applied migration; add another numbered SQL file and register it
 in the runner. There is no duplicate `schema.sql` file.
 
-The root `store.ts` retains its existing public entry point while the
-database implementation lives in `src/database/store.ts`.
+Import persistence from `src/database/store.ts` directly. No compatibility entry point is provided.
