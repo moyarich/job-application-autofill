@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/store.ts";
+import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/src/database/store.ts";
 
 test("local people may be renamed or deleted but default person is protected", () => {
   const db = openStore(":memory:");
