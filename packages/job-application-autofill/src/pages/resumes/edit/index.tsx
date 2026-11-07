@@ -1,6 +1,6 @@
-import { CandidateProfile } from "../components/CandidateProfile/CandidateProfile";
-import { WorkspaceHeader } from "../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../utils/application/useApplication";
+import { CandidateProfile } from "../../components/CandidateProfile/CandidateProfile";
+import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
+import type { ApplicationController } from "../../utils/application/useApplication";
 
 export function ResumeEditorPage({ controller }: { controller: ApplicationController }) {
   return (

@@ -24,18 +24,18 @@ describe("workspace header actions", () => {
     expect(app).not.toContain("<WorkspaceHeader");
     expect(app).not.toContain("pageHeaders");
     expect(app).not.toContain("Add application");
-    const applications = source(pages + "ApplicationsPage.tsx");
+    const applications = source(pages + "applications/index.tsx");
     expect(applications).toContain("Add application");
     expect(applications).toContain('title="Applications"');
-    for (const name of [
-      "ResumesPage",
-      "ResumeEditorPage",
-      "ResumeViewPage",
-      "ResumeImportPage",
-      "ProfilePage",
-      "WorkspacePage",
+    for (const path of [
+      "resumes/index.tsx",
+      "resumes/edit/index.tsx",
+      "resumes/view/index.tsx",
+      "resumes/import/index.tsx",
+      "profile/index.tsx",
+      "workspace/index.tsx",
     ]) {
-      const page = source(pages + name + ".tsx");
+      const page = source(pages + path);
       expect(page).toContain("<WorkspaceHeader");
       expect(page).not.toContain("actions={");
       expect(page).not.toContain("Add application");
