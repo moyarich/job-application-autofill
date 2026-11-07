@@ -20,7 +20,7 @@ describe("workspace header actions", () => {
   });
 
   it("defines page-specific actions inside pages rather than the app shell", () => {
-    const app = source("packages/job-application-autofill/src/components/App/App.tsx");
+    const app = source("packages/job-application-autofill/src/App.tsx");
     expect(app).not.toContain("<WorkspaceHeader");
     expect(app).not.toContain("pageHeaders");
     expect(app).not.toContain("Add application");
@@ -33,6 +33,7 @@ describe("workspace header actions", () => {
       "resumes/PageResumeView.tsx",
       "resumes/PageResumeImport.tsx",
       "profile/PageProfile.tsx",
+      "contacts/PageContacts.tsx",
       "workspace/PageWorkspace.tsx",
     ]) {
       const page = source(pages + path);
