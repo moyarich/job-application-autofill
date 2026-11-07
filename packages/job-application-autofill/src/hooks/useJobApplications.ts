@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobApplication } from "../index";
-import { readJobs, saveJobs } from "../utils/api/client";
+import { readJobs, saveJob, deleteJob } from "../utils/api/client";
 
 /** Applications have their own list, revision, and save queue. No resume state. */
 export function useJobApplications({
@@ -40,8 +40,23 @@ export function useJobApplications({
     if (blocked.current) throw new Error("Application updates could not be saved.");
     const signature = JSON.stringify(jobs);
     if (signature === savedRef.current) return;
-    const result = await saveJobs(profileId, { revision: revisionRef.current, jobs });
-    revisionRef.current = result.revision;
+    const previous = JSON.parse(savedRef.current || "[]") as JobApplication[];
+    const before = new Map(previous.map((job) => [job.id, job]));
+    const after = new Map(jobs.map((job) => [job.id, job]));
+    for (const job of jobs) {
+      if (JSON.stringify(before.get(job.id)) === JSON.stringify(job)) continue;
+      const result = await saveJob(profileId, { revision: revisionRef.current, job });
+      revisionRef.current = result.revision;
+      before.set(job.id, job);
+      savedRef.current = JSON.stringify([...before.values()]);
+    }
+    for (const previousJob of previous) {
+      if (after.has(previousJob.id)) continue;
+      const result = await deleteJob(profileId, previousJob.id, revisionRef.current);
+      revisionRef.current = result.revision;
+      before.delete(previousJob.id);
+      savedRef.current = JSON.stringify([...before.values()]);
+    }
     savedRef.current = signature;
   }
 

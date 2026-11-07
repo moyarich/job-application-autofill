@@ -39,7 +39,7 @@ describe("independent persistence endpoints", () => {
       expect((await api(request("/api/profile-contacts"))).body).toEqual({ contacts: [] });
 
       expect((await api(request("/api/jobs", "PUT", {
-        revision: 0, jobs: [job],
+        revision: 0, job,
       }))).status).toBe(200);
       expect((await api(request(contentPath))).body).toMatchObject({
         revision: 1, profile, contactId: null,
@@ -79,17 +79,32 @@ describe("independent persistence endpoints", () => {
       const resumeId = store.listResumes(DEFAULT_PROFILE_ID)[0].id;
       store.saveResumeContent({ revision: 0, profile, contactId: null }, DEFAULT_PROFILE_ID, resumeId);
       const other = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
-      store.saveJobList({ revision: 0, jobs: [job, other] }, DEFAULT_PROFILE_ID);
+      store.saveJobList({ revision: 0, job }, DEFAULT_PROFILE_ID);
       expect((await api(request("/api/jobs/" + job.id + "/status", "POST", {
         status: "interview",
       }))).status).toBe(200);
       const jobs = (await api(request("/api/jobs"))).body as {
         revision: number; jobs: typeof job[];
       };
-      expect(jobs.revision).toBe(2);
+      expect(jobs.revision).toBe(3);
       expect(jobs.jobs.find((item) => item.id === job.id)?.status).toBe("interview");
       expect(jobs.jobs.find((item) => item.id === other.id)?.status).toBe("saved");
       expect(store.getResumeContent(DEFAULT_PROFILE_ID, resumeId).revision).toBe(1);
+    } finally { store.close(); }
+  });
+
+  it("upserts and deletes individual jobs without touching other records", async () => {
+    const store = openStore(":memory:");
+    try {
+      const api = createApiHandler(store, { origin: "http://localhost" });
+      const second = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
+      expect((await api(request("/api/jobs", "PUT", { revision: 0, job }))).status).toBe(200);
+      expect((await api(request("/api/jobs", "PUT", { revision: 1, job: second }))).status).toBe(200);
+      expect((await api(request("/api/jobs", "PUT", { revision: 2, job: { ...job, notes: "Edited" } }))).status).toBe(200);
+      expect((await api(request("/api/jobs"))).body).toMatchObject({ revision: 3, jobs: expect.arrayContaining([second, { ...job, notes: "Edited" }]) });
+      expect((await api(request("/api/jobs/" + job.id, "DELETE", { revision: 3 }))).status).toBe(200);
+      expect((await api(request("/api/jobs"))).body).toEqual({ revision: 4, jobs: [second] });
+      expect((await api(request("/api/jobs", "PUT", { revision: 2, job }))).status).toBe(409);
     } finally { store.close(); }
   });
 });

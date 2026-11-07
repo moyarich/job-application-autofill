@@ -168,7 +168,7 @@ export function openStore(
   const { insertProfile, insertState, selectProfile, listProfileRows } = createProfilesStatements(db);
   const { insertContact, updateContact, selectContact, listContactRows, getDefaultContact } = createContactsStatements(db);
   const { insertResume, listResumeRows, selectResume } = createResumesStatements(db);
-  const { getRevision, getJobs, insertJob, deleteJobs } = createApplicationsStatements(db);
+  const { getRevision, getJobs } = createApplicationsStatements(db);
   function contactValues(contact: CandidateProfile["contact"]) {
     return [
       ...REQUIRED_CONTACT_KEYS.map((key) => contact[key]),
@@ -674,12 +674,12 @@ export function openStore(
     };
   }
 
-  function saveJobList(raw: unknown, profileId = DEFAULT_PROFILE_ID) {
+  function updateJobRecord(raw: unknown, profileId = DEFAULT_PROFILE_ID) {
     const owner = requireProfile(profileId);
     if (!raw || typeof raw !== "object" || Array.isArray(raw))
-      throw new Error("Invalid applications update.");
+      throw new Error("Invalid application update.");
     const payload = raw as Record<string, unknown>;
-    const jobs = validateJobs(payload.jobs);
+    const [job] = validateJobs([payload.job]);
     const revision = payload.revision;
     if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
       throw new Error("Expected a nonnegative applications revision.");
@@ -691,18 +691,45 @@ export function openStore(
         error.code = "STALE_STATE";
         throw error;
       }
-      deleteJobs.run(owner);
-      for (const job of jobs) {
-        const association = job as JobRecord & { resumeId?: string | null };
-        const selectedResume = association.resumeId ?? null;
-        if (selectedResume) requireResume(owner, selectedResume);
-        insertJob.run(owner, job.id, selectedResume, job.company, job.role,
-          job.url, job.status, job.createdAt, job.notes);
-      }
-      db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?")
-        .run(current + 1, owner);
+      const association = job as JobRecord & { resumeId?: string | null };
+      const selectedResume = association.resumeId ?? null;
+      if (selectedResume) requireResume(owner, selectedResume);
+      db.prepare(`INSERT INTO applications(profile_id,id,resume_id,company,role,url,status,created_at,notes)
+        VALUES (?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(profile_id,id) DO UPDATE SET
+        resume_id=excluded.resume_id,company=excluded.company,role=excluded.role,
+        url=excluded.url,status=excluded.status,created_at=excluded.created_at,notes=excluded.notes`)
+        .run(owner, job.id, selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
+      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
       db.exec("COMMIT");
       return { revision: current + 1 };
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  function deleteJobRecord(jobId: string, raw: unknown, profileId = DEFAULT_PROFILE_ID) {
+    const owner = requireProfile(profileId);
+    const id = validId(jobId);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      throw new Error("Invalid application deletion.");
+    const revision = (raw as Record<string, unknown>).revision;
+    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+      throw new Error("Expected a nonnegative applications revision.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const current = (getRevision.get(owner) as { revision: number }).revision;
+      if (current !== revision) {
+        const error = new Error("Applications changed in another tab. Reload to avoid overwriting them.") as Error & { code?: string };
+        error.code = "STALE_STATE";
+        throw error;
+      }
+      const deleted = db.prepare("DELETE FROM applications WHERE profile_id=? AND id=?").run(owner, id);
+      if (!deleted.changes) throw new Error("Application not found.");
+      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
+      db.exec("COMMIT");
+      return { revision: current + 1, deleted: true };
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
@@ -748,7 +775,8 @@ export function openStore(
     getResumeContent,
     saveResumeContent,
     getJobList,
-    saveJobList,
+    updateJobRecord,
+    deleteJobRecord,
     setJobStatus,
     close: () => db.close(),
   };
