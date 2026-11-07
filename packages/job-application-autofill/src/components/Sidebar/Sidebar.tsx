@@ -77,7 +77,7 @@ export function Sidebar() {
                 <NavLink
                   key={path}
                   to={{ pathname: path, search: pageSearch }}
-                  end={path === "/resumes" && !/^\/resumes\/(?:edit|view)/.test(location.pathname)}
+                  end={path === routes.resumes && location.pathname !== routes.resumeEditor && location.pathname !== routes.resumeView}
                   className={({ isActive }) =>
                     isActive ? "nav active" : "nav"
                   }
