@@ -1,6 +1,6 @@
 import "./App.css";
 import { ArrowUpRight } from "lucide-react";
-import { useApplication } from "../../utils/application/useApplication";
+import { useApplication } from "../../hooks/useApplication";
 import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";

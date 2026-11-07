@@ -15,7 +15,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 /** Keep incomplete comma-separated text while persisting only complete skill values. */
 function SkillsInput({
   skills,
@@ -59,7 +59,7 @@ function SkillsInput({
 export function CandidateProfile({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const {
     importRef,

@@ -3,11 +3,11 @@ import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 export function Opportunities({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const {
     addJob,

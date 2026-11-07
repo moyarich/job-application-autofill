@@ -14,7 +14,7 @@ import {
   Files,
   Link2,
 } from "lucide-react";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 import "./ResumeManager.css";
 
 type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
@@ -22,7 +22,7 @@ type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
 export function ResumeManager({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const {
     resumeVersions,

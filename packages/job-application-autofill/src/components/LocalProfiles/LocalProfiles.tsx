@@ -1,8 +1,8 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 
-export function LocalProfiles({ controller }: { controller: ApplicationController }) {
+export function LocalProfiles({ controller }: { controller: ReturnType<typeof useApplication> }) {
   const { profiles,activeProfileId,switchProfile,createPerson,renamePerson,removePerson,
     applicationId,applyBusy,session } = controller;
   const locked = Boolean(applicationId || applyBusy || session);

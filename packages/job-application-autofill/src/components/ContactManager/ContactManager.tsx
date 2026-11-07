@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { CandidateProfile } from "../../index";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 import {
   addProfileContact,
   updateProfileContact,
@@ -30,7 +30,7 @@ const values = (entry: Contact) =>
 export function ContactManager({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const { contacts, resumeVersions, activeProfileId, flushPending } =
     controller;
