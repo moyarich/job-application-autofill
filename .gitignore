@@ -17,6 +17,7 @@ playwright-report/
 test-results/
 
 # Generated output
+/output/
 dist/
 build/
 out/
