@@ -70,6 +70,20 @@ export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaul
   }), "Could not list local profiles.");
 }
 
+export async function createLocalProfile(name: string): Promise<LocalProfile> {
+  return requestApi("/api/profiles", { name });
+}
+export async function renameLocalProfile(profileId: string, name: string): Promise<LocalProfile> {
+  return decodeResponse(await fetch("/api/profiles/" + encodeURIComponent(profileId), {
+    method: "PATCH", headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
+    body: JSON.stringify({ name }),
+  }), "Could not rename profile.");
+}
+export async function deleteLocalProfile(profileId: string): Promise<void> {
+  await decodeResponse(await fetch("/api/profiles/" + encodeURIComponent(profileId), {
+    method: "DELETE", headers: profileHeaders(profileId),
+  }), "Could not delete profile.");
+}
 export async function readResumes(profileId: string): Promise<ResumeVersion[]> {
   const result = await decodeResponse<{ resumes: ResumeVersion[] }>(
     await fetch("/api/resumes", { headers: profileHeaders(profileId), cache: "no-store" }),
