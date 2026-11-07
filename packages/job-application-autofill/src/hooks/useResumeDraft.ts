@@ -27,7 +27,14 @@ export function useResumeDraft({
 
   useEffect(() => {
     setHydrated(false);
-    if (!enabled || !resumeId) return;
+    if (!enabled || !resumeId) {
+      setProfile(structuredClone(emptyCandidate));
+      setContactId(null);
+      revisionRef.current = 0;
+      savedRef.current = "";
+      blockedRef.current = false;
+      return;
+    }
     let cancelled = false;
     readResumeContent(profileId, resumeId).then((result) => {
       if (cancelled) return;
