@@ -4,7 +4,7 @@ import { createApplication, type ApplicationStatus } from "../index";
 import { changeJobStatus } from "../utils/application/changeJobStatus";
 import type { JobTrackerData } from "../utils/application/job-tracker-data";
 export function useJobTracker(workspace: JobTrackerData) {
-  const { jobs, setJobs, applicationId, activeProfileId, activeResumeId, setMessage } = workspace;
+  const { jobs, setJobs, setMessage } = workspace;
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [search, setSearch] = useState("");
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
