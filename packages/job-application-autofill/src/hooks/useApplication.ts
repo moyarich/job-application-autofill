@@ -15,15 +15,8 @@ import {
   readState,
   saveState,
   readProfiles,
-  createLocalProfile,
-  renameLocalProfile,
-  deleteLocalProfile,
-  createResumeVersion,
-  renameResumeVersion,
-  deleteResumeVersion,
   DEFAULT_PROFILE_ID,
   ACTIVE_PROFILE_STORAGE_KEY,
-  resolveImportedContact,
   chooseDefaultContact,
   addProfileContact,
   type LocalProfile,
@@ -31,7 +24,6 @@ import {
   type ProfileContact,
   type ContactChoice,
 } from "../utils/api/client";
-import { filePayload } from "../utils/files/resume-files";
 import { createApplicationReviewActions } from "../utils/application/review-actions";
 import { createResumeImportActions } from "../utils/resumes/import-actions";
 import { createProfileResumeActions } from "../utils/resumes/library-actions";
