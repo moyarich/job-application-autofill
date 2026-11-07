@@ -14,9 +14,10 @@ describe("SQLite application data persistence", () => {
   it("rejects stale revisions without changing saved data", () => {
     const db=openStore(":memory:");
     try {
-      db.saveSnapshot({revision:0,profile:example,jobs:[job]});
-      expect(()=>db.saveSnapshot({revision:0,profile:example,jobs:[]})).toThrow(/another tab/);
-      expect(db.getSnapshot().jobs).toEqual([job]);
+      db.saveResumeContent({revision:0,profile:example,contactId:null});
+      db.saveJobList({revision:0,jobs:[job]});
+      expect(()=>db.saveJobList({revision:0,jobs:[]})).toThrow(/another tab/);
+      expect(db.getJobList().jobs).toEqual([job]);
     } finally { db.close(); }
   });
   

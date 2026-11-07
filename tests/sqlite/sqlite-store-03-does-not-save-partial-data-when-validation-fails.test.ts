@@ -15,10 +15,12 @@ describe("SQLite application data persistence", () => {
   it("does not save partial data when validation fails", () => {
     const db=openStore(":memory:");
     try {
-      db.saveSnapshot({revision:0,profile:example,jobs:[job]});
-      expect(()=>db.saveSnapshot({revision:1,profile:example,jobs:[{...job,status:"invalid"}]})).toThrow(/status/);
-      expect(()=>db.saveSnapshot({revision:1,profile:{bad:true},jobs:[]})).toThrow();
-      expect(db.getSnapshot()).toMatchObject({revision:1,profile:example,jobs:[job]});
+      db.saveResumeContent({revision:0,profile:example,contactId:null});
+      db.saveJobList({revision:0,jobs:[job]});
+      expect(()=>db.saveJobList({revision:1,jobs:[{...job,status:"invalid"}]})).toThrow(/status/);
+      expect(()=>db.saveResumeContent({revision:1,profile:{bad:true},contactId:null})).toThrow();
+      expect(db.getResumeContent()).toMatchObject({revision:1,profile:example});
+      expect(db.getJobList()).toMatchObject({revision:1,jobs:[job]});
     } finally { db.close(); }
   });
   

@@ -16,9 +16,10 @@ describe("SQLite application data persistence", () => {
   it("handles an explicit empty application list", () => {
     const db=openStore(":memory:");
     try {
-      db.saveSnapshot({revision:0,profile:example,jobs:[job]});
-      db.saveSnapshot({revision:1,profile:example,jobs:[]});
-      expect(db.getSnapshot().jobs).toEqual([]);
+      db.saveResumeContent({revision:0,profile:example,contactId:null});
+      db.saveJobList({revision:0,jobs:[job]});
+      db.saveJobList({revision:1,jobs:[]});
+      expect(db.getJobList().jobs).toEqual([]);
     } finally { db.close(); }
   });
 });

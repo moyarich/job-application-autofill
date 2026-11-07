@@ -15,13 +15,16 @@ describe("SQLite application data persistence", () => {
     const path=join(dir,"data.sqlite");
     try {
       const first=openStore(path);
-      expect(first.getSnapshot()).toMatchObject({revision:0,profile:null,jobs:[]});
-      expect(first.saveSnapshot({revision:0,profile:example,jobs:[job]})).toEqual({revision:1});
+      expect(first.getResumeContent()).toMatchObject({revision:0,profile:null});
+      expect(first.getJobList()).toMatchObject({revision:0,jobs:[]});
+      expect(first.saveResumeContent({revision:0,profile:example,contactId:null})).toEqual({revision:1});
+      expect(first.saveJobList({revision:0,jobs:[job]})).toEqual({revision:1});
       first.close();
       const reopened=openStore(path);
-      expect(reopened.getSnapshot()).toMatchObject({revision:1,profile:example,jobs:[job]});
-      expect(reopened.saveSnapshot({revision:1,profile:example,jobs:[{...job,status:"interview",notes:"Updated"}]})).toEqual({revision:2});
-      expect(reopened.getSnapshot().jobs[0].notes).toBe("Updated");
+      expect(reopened.getResumeContent()).toMatchObject({revision:1,profile:example});
+      expect(reopened.getJobList()).toMatchObject({revision:1,jobs:[job]});
+      expect(reopened.saveJobList({revision:1,jobs:[{...job,status:"interview",notes:"Updated"}]})).toEqual({revision:2});
+      expect(reopened.getJobList().jobs[0].notes).toBe("Updated");
       reopened.close();
     } finally { rmSync(dir,{recursive:true,force:true}); }
   });
