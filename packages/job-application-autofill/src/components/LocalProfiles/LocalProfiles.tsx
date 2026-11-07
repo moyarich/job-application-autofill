@@ -1,11 +1,11 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
 
-export function LocalProfiles({ controller }: { controller: ReturnType<typeof useApplication> }) {
+export function LocalProfiles({ controller }: { controller: ReturnType<typeof useWorkspace> }) {
   const { profiles,activeProfileId,switchProfile,createPerson,renamePerson,removePerson,
-    applicationId,applyBusy,session } = controller;
-  const locked = Boolean(applicationId || applyBusy || session);
+    applicationId } = controller;
+  const locked = Boolean(applicationId);
   return (
     <div className="local-profiles">
       <label htmlFor="local-person">Current profile</label>

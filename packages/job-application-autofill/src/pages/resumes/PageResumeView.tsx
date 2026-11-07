@@ -1,8 +1,9 @@
 import { ResumeView } from "../../components/ResumeView/ResumeView";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
 
-export function PageResumeView({ controller }: { controller: ReturnType<typeof useApplication> }) {
+export function PageResumeView({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const controller = workspace;
   return (
     <>
       <WorkspaceHeader

@@ -14,7 +14,7 @@ import {
   Files,
   Link2,
 } from "lucide-react";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
 import "./ResumeManager.css";
 
 type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
@@ -22,7 +22,7 @@ type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
 export function ResumeManager({
   controller,
 }: {
-  controller: ReturnType<typeof useApplication>;
+  controller: ReturnType<typeof useWorkspace>;
 }) {
   const {
     resumeVersions,
@@ -33,11 +33,9 @@ export function ResumeManager({
     removeResume,
     openResume,
     exportResumeVersion,
-    applyBusy,
     applicationId,
-    session,
   } = controller;
-  const locked = Boolean(applicationId || applyBusy || session);
+  const locked = Boolean(applicationId);
   const [search, setSearch] = useState("");
   const visibleResumes = resumeVersions.filter((resume) =>
     resume.name.toLowerCase().includes(search.toLowerCase()),
