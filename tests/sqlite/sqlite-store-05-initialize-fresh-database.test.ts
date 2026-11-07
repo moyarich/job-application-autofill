@@ -28,8 +28,8 @@ test("fresh database creates a profile and unlinked draft resume without placeho
 
     db = openStore(file);
     snapshot = db.getResumeContent(DEFAULT_PROFILE_ID);
-    expect(snapshot.resumes).toHaveLength(1);
-    expect(snapshot.contacts).toHaveLength(0);
+    expect(db.listResumes(DEFAULT_PROFILE_ID)).toHaveLength(1);
+    expect(db.listContacts(DEFAULT_PROFILE_ID)).toHaveLength(0);
     expect(snapshot.contactId).toBeNull();
     expect(snapshot.profile!.contact.email).toBe("");
     expect(snapshot.profile!.contact.firstName).toBe(draft.contact.firstName);

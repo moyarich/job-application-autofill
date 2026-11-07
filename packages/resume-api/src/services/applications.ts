@@ -5,7 +5,7 @@ import { employerAccountIdentity } from "../../../job-sites/employer-account.ts"
 import { prepareApplication } from "../../../job-sites/automation.ts";
 
 export function accountForJob(store: Store, profileId: string, jobId: string) {
-  const job = store.getSnapshot(profileId).jobs.find(item => item.id === jobId);
+  const job = store.getJobList(profileId).jobs.find(item => item.id === jobId);
   if (!job) return null;
   const identity = employerAccountIdentity(job.url, job.company);
   return identity
@@ -24,7 +24,7 @@ export async function prepareSavedApplication(
   resumeId: string | undefined,
   payload: Record<string, unknown>,
 ): Promise<PrepareResult> {
-  const savedJob = store.getSnapshot(profileId, resumeId).jobs.find(job => job.id === payload.jobId);
+  const savedJob = store.getJobList(profileId).jobs.find(job => job.id === payload.jobId);
   if (!savedJob || savedJob.url !== payload.jobUrl)
     throw new Error("Application does not belong to the selected profile.");
   const profile = validateResume(payload.profile);

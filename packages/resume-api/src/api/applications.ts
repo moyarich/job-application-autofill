@@ -61,7 +61,7 @@ export const handleApplications: RouteHandler = async ({ req, url, store, profil
         if (body.password != null && typeof body.password !== "string")
           throw new Error("Invalid account password.");
         const job = store
-          .getSnapshot(profileId)
+          .getJobList(profileId)
           .jobs.find((item) => item.id === getApplication(id).jobId);
         if (!job) throw new Error("Job does not belong to this profile.");
         const updated = await prepareApplicationAccount(
@@ -90,7 +90,7 @@ export const handleApplications: RouteHandler = async ({ req, url, store, profil
         return reply(200,
           await continueApplication(
             id,
-            store.getSnapshot(profileId, resumeIdHeader).profile ?? undefined,
+            store.getResumeContent(profileId, resumeIdHeader).profile ?? undefined,
           ),
         );
       if (req.method === "POST" && action === "paste") {
