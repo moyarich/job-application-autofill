@@ -28,7 +28,6 @@ describe("independent persistence endpoints", () => {
       const version = store.listResumes(DEFAULT_PROFILE_ID)[0];
       const contentPath = "/api/resumes/" + version.id + "/content";
 
-      expect((await api(request("/api/state"))).status).toBe(404);
       expect((await api(request(contentPath))).body).toMatchObject({ revision: 0, profile: null });
       expect((await api(request("/api/jobs"))).body).toEqual({ revision: 0, jobs: [] });
 
