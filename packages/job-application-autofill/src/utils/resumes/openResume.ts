@@ -1,3 +1,4 @@
+import { resumePath } from "../../routes";
 import type { ProfileResumeActionsContext } from "./library-context";
 import { navigateTo } from "./navigateTo";
 
@@ -7,7 +8,7 @@ export function createOpenResume(context: ProfileResumeActionsContext) {
     if (applicationId || applyBusy || sessionActive) return;
     try {
       await flushPending();
-      navigateTo(activeProfileId, resumeId, "/resumes/" + mode);
+      navigateTo(activeProfileId, resumeId, resumePath(mode));
     } catch (error) {
       setMessage(String(error));
     }
