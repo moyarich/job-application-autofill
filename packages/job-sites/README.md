@@ -49,19 +49,19 @@ Each site declares only the actions it supports with `menuItems: [{ id, label, s
 ## Provider-owned field maps
 
 Workday's contact field definitions live in `workday/contact/field-map.ts` as a
-`Map<WorkdayContactField, FieldLocatorConfig>`. `core/field-matcher.ts`
-resolves accessible-label candidates in priority order, followed by optional
-**verified** CSS fallbacks. To support a changed employer label, add a
+`Map<WorkdayContactField, FieldLocatorConfig>`. The contact-local
+`workday/contact/contact.ts` handler resolves accessible-label candidates in
+priority order, followed by optional **verified** CSS fallbacks. To support a changed employer label, add a
 provider-specific label alternative and a Playwright fixture instead of editing
 the filling algorithm.
 
-The matcher never chooses the first of multiple matches, never targets hidden,
+The contact handler never chooses the first of multiple matches, never targets hidden,
 disabled, read-only, password or file inputs, and the Workday autofiller does not
 overwrite conflicting existing values. Missing or ambiguous fields are reported
 for manual review. Maps only locate controls; the site adapter remains
 responsible for form workflow, selects, uploads, and navigation.
 
-Other ATS adapters currently do not implement the same contact autofill step.
+There is no shared field matcher. Other ATS adapters currently do not implement the same contact autofill step.
 Do not add speculative provider selector maps until those steps and fixtures
 exist. These fixtures are synthetic DOMs; they do not prove live employer
 compatibility.

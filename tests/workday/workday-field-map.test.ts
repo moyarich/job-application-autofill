@@ -1,8 +1,7 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { findMappedField } from "../../packages/job-sites/core/field-matcher.ts";
-import { workdayContactFields } from "../../packages/job-sites/workday/field-map.ts";
-import { fillWorkdayContact } from "../../packages/job-sites/workday/contact.ts";
+import { workdayContactFields } from "../../packages/job-sites/workday/contact/field-map.ts";
+import { fillWorkdayContact, findMappedField } from "../../packages/job-sites/workday/contact/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("Workday map supports alternate labels without changing the autofill code", async () => {
@@ -70,7 +69,7 @@ test("missing, ambiguous, and conflicting Workday fields are left for review", a
   }
 });
 
-test("shared matcher supports a verified CSS fallback and rejects unsafe controls", async () => {
+test("Workday contact matcher supports a verified CSS fallback and rejects unsafe controls", async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();

@@ -1,7 +1,7 @@
-import type { Page } from "playwright";
+import type { Page, Locator } from "playwright";
 import type { CandidateProfile } from "../../../resume/src/types.ts";
 import type { AutofillResult } from "../../types.ts";
-import { findMappedField } from "../../core/field-matcher.ts";
+import type { FieldLocatorConfig } from "./field-map.ts";
 import { workdayContactFields } from "./field-map.ts";
 
 /**
@@ -37,4 +37,40 @@ export async function fillWorkdayContact(page: Page, profile: CandidateProfile):
     }
   }
   return { filled, missing };
+}
+
+/** Contact-local locator resolution; not a cross-provider abstraction. */
+export async function findMappedField<Key extends string>(
+  page: Page,
+  fields: ReadonlyMap<Key, FieldLocatorConfig>,
+  key: Key,
+): Promise<Locator | null> {
+  const config = fields.get(key);
+  if (!config) return null;
+
+  const candidates: Locator[] = [
+    ...config.labels.map((label) => page.getByLabel(label, { exact: true })),
+    ...(config.selectors ?? []).map((selector) => page.locator(selector)),
+  ];
+  for (const candidate of candidates) {
+    const count = await candidate.count().catch(() => 0);
+    if (count > 1) return null; // Ambiguity must be reviewed, not worked around.
+    if (count !== 1) continue;
+    if (!(await candidate.isVisible().catch(() => false))) continue;
+    if (!(await candidate.isEnabled().catch(() => false))) continue;
+
+    const editable = await candidate.evaluate((node) => {
+      const tag = node.tagName;
+      if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return false;
+      if (tag === "INPUT") {
+        const input = node as HTMLInputElement;
+        if (["hidden", "password", "file", "checkbox", "radio", "submit"].includes(input.type)) return false;
+        if (input.readOnly) return false;
+      }
+      if (tag === "TEXTAREA" && (node as HTMLTextAreaElement).readOnly) return false;
+      return true;
+    }).catch(() => false);
+    if (editable) return candidate;
+  }
+  return null;
 }

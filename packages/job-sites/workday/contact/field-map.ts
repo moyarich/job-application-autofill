@@ -1,5 +1,8 @@
 import type { CandidateProfile } from "../../../resume/src/types.ts";
-import type { FieldLocatorConfig } from "../../core/field-matcher.ts";
+export type FieldLocatorConfig = {
+  labels: readonly RegExp[];
+  selectors?: readonly string[];
+};
 
 /**
  * Workday-specific contact labels. Update this map when a verified employer
