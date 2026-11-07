@@ -236,6 +236,7 @@ export function openStore(
           json: string | null;
           createdAt: string;
           updatedAt: string;
+          revision: number;
         }
       | undefined;
     if (!row)
@@ -598,45 +599,30 @@ export function openStore(
       employerKey,
     ) as EmployerAccount;
   }
-  function getSnapshot(profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
+  /** Resume content has its own revision, independent of applications. */
+  function getResumeContent(profileId = DEFAULT_PROFILE_ID, resumeId?: string) {
     const owner = requireProfile(profileId);
-    const resumes = listResumes(owner);
-    const selectedId = resumeId ?? resumes[0]?.id;
-    if (!selectedId) throw new Error("No resume exists for profile.");
-    const selected = requireResume(owner, selectedId);
-    const contacts = listContacts(owner);
-    const selectedContact = contacts.find(
-      (item) => item.id === selected.contactId,
-    );
-    const defaultContact = contacts.find((item) => item.isDefault);
-    if (selected.contactId && !selectedContact)
+    const id = resumeId ?? listResumes(owner)[0]?.id;
+    if (!id) throw new Error("No resume exists for profile.");
+    const row = requireResume(owner, id);
+    const contact = row.contactId
+      ? decodeContact(selectContact.get(owner, row.contactId))
+      : null;
+    if (row.contactId && !contact)
       throw new Error("Selected resume contact not found.");
-    const contact = selectedContact
-      ? (Object.fromEntries(
-          CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""]),
-        ) as CandidateProfile["contact"])
-      : null;
-    const document = selected.json
-      ? (JSON.parse(selected.json) as CandidateProfile)
-      : null;
+    const document = row.json ? validateResume(JSON.parse(row.json)) : null;
     return {
-      revision: (getRevision.get(owner) as { revision: number }).revision,
-      contact,
-      contactId: selected.contactId,
-      defaultContactId: defaultContact?.id ?? null,
-      contacts,
+      resumeId: row.id,
+      revision: row.revision,
+      contactId: row.contactId,
       profile: document
         ? { ...document, contact: contact ?? document.contact }
         : null,
-      jobs: (
-        getJobs.all(owner) as (JobRecord & { resumeId: string | null })[]
-      ).map(({ resumeId, ...job }) => (resumeId ? { ...job, resumeId } : job)),
-      resumeId: selected.id,
-      resumes,
     };
   }
-  function saveSnapshot(
-    snapshot: unknown,
+
+  function saveResumeContent(
+    raw: unknown,
     profileId = DEFAULT_PROFILE_ID,
     resumeId?: string,
   ) {
@@ -644,85 +630,95 @@ export function openStore(
     const id = resumeId ?? listResumes(owner)[0]?.id;
     if (!id) throw new Error("No resume selected.");
     requireResume(owner, id);
-    if (!snapshot || typeof snapshot !== "object")
-      throw new Error("Invalid state.");
-    const state = snapshot as Record<string, unknown>;
-    const candidate =
-      state.profile == null ? null : validateResume(state.profile);
-    const jobs = validateJobs(state.jobs);
-    const contactId =
-      state.contactId == null || state.contactId === ""
-        ? null
-        : validId(String(state.contactId));
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      throw new Error("Invalid resume update.");
+    const payload = raw as Record<string, unknown>;
+    const candidate = payload.profile == null ? null : validateResume(payload.profile);
+    const contactId = payload.contactId == null || payload.contactId === ""
+      ? null : validId(String(payload.contactId));
     if (contactId && !decodeContact(selectContact.get(owner, contactId)))
       throw new Error("Contact does not belong to selected profile.");
-    const contact =
-      state.contact == null
-        ? (candidate?.contact ?? null)
-        : validateContact(state.contact);
-    if (
-      contact &&
-      candidate &&
-      CONTACT_KEYS.some((key) => contact[key] !== candidate.contact[key])
-    )
-      throw new Error("Resume contact must match its selected contact record.");
-    const revision = state.revision;
-    if (
-      typeof revision !== "number" ||
-      !Number.isSafeInteger(revision) ||
-      revision < 0
-    )
-      throw new Error("Expected a nonnegative revision.");
+    const revision = payload.revision;
+    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+      throw new Error("Expected a nonnegative resume revision.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const current = requireResume(owner, id).revision;
+      if (current !== revision) {
+        const error = new Error("Resume changed in another tab. Reload to avoid overwriting it.") as Error & { code?: string };
+        error.code = "STALE_STATE";
+        throw error;
+      }
+      const content = candidate
+        ? JSON.stringify(contactId ? { ...candidate, contact: emptyContact() } : candidate)
+        : null;
+      db.prepare("UPDATE resumes SET contact_id=?,content_json=?,content_revision=?,updated_at=? WHERE profile_id=? AND id=?")
+        .run(contactId, content, current + 1, now(), owner, id);
+      db.exec("COMMIT");
+      return { revision: current + 1 };
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  function getJobList(profileId = DEFAULT_PROFILE_ID) {
+    const owner = requireProfile(profileId);
+    return {
+      revision: (getRevision.get(owner) as { revision: number }).revision,
+      jobs: (getJobs.all(owner) as (JobRecord & { resumeId: string | null })[])
+        .map(({ resumeId, ...job }) => (resumeId ? { ...job, resumeId } : job)),
+    };
+  }
+
+  function saveJobList(raw: unknown, profileId = DEFAULT_PROFILE_ID) {
+    const owner = requireProfile(profileId);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      throw new Error("Invalid applications update.");
+    const payload = raw as Record<string, unknown>;
+    const jobs = validateJobs(payload.jobs);
+    const revision = payload.revision;
+    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+      throw new Error("Expected a nonnegative applications revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
       const current = (getRevision.get(owner) as { revision: number }).revision;
       if (current !== revision) {
-        const error = new Error(
-          "Data changed in another tab. Reload to avoid overwriting it.",
-        ) as Error & { code?: string };
+        const error = new Error("Applications changed in another tab. Reload to avoid overwriting them.") as Error & { code?: string };
         error.code = "STALE_STATE";
         throw error;
       }
-      if (contact && contactId) {
-        if (!isUsableContact(contact))
-          throw new Error(
-            "Contact requires first name, last name, and a valid email.",
-          );
-        updateContact.run(...contactValues(contact), owner, contactId);
-      }
-      // Draft resumes retain their incomplete contact in their own content JSON.
-      // Linked resumes derive contact exclusively from their selected contact record.
-      const content = candidate
-        ? JSON.stringify(
-            contactId ? { ...candidate, contact: emptyContact() } : candidate,
-          )
-        : null;
-      db.prepare(
-        "UPDATE resumes SET contact_id=?,content_json=?,updated_at=? WHERE profile_id=? AND id=?",
-      ).run(contactId, content, now(), owner, id);
       deleteJobs.run(owner);
       for (const job of jobs) {
-        const resume = job as JobRecord & { resumeId?: string | null };
-        const jobResumeId = resume.resumeId ?? null;
-        if (jobResumeId) requireResume(owner, jobResumeId);
-        insertJob.run(
-          owner,
-          job.id,
-          jobResumeId,
-          job.company,
-          job.role,
-          job.url,
-          job.status,
-          job.createdAt,
-          job.notes,
-        );
+        const association = job as JobRecord & { resumeId?: string | null };
+        const selectedResume = association.resumeId ?? null;
+        if (selectedResume) requireResume(owner, selectedResume);
+        insertJob.run(owner, job.id, selectedResume, job.company, job.role,
+          job.url, job.status, job.createdAt, job.notes);
       }
-      db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?").run(
-        current + 1,
-        owner,
-      );
+      db.prepare("UPDATE profile_state SET revision=? WHERE profile_id=?")
+        .run(current + 1, owner);
       db.exec("COMMIT");
       return { revision: current + 1 };
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  /** Update only the chosen application; never rewrite resume content or other jobs. */
+  function setJobStatus(profileId: string, jobId: string, status: string) {
+    const owner = requireProfile(profileId);
+    const id = validId(jobId);
+    if (!statuses.has(status)) throw new Error("Invalid job status.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const updated = db.prepare("UPDATE applications SET status=? WHERE profile_id=? AND id=?")
+        .run(status, owner, id);
+      if (!updated.changes) throw new Error("Application not found.");
+      db.prepare("UPDATE profile_state SET revision=revision+1 WHERE profile_id=?").run(owner);
+      db.exec("COMMIT");
+      return { updated: true };
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
@@ -746,8 +742,11 @@ export function openStore(
     getOrCreateEmployerAccount,
     listAccounts,
     setEmployerAccountStatus,
-    getSnapshot,
-    saveSnapshot,
+    getResumeContent,
+    saveResumeContent,
+    getJobList,
+    saveJobList,
+    setJobStatus,
     close: () => db.close(),
   };
 }

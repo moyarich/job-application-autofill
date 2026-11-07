@@ -4,6 +4,7 @@ import type { DatabaseSync } from "node:sqlite";
 const migrations = [
   { id: "001_initial", file: "001_initial.sql" },
   { id: "002_contact_extras", file: "002_contact_extras.sql" },
+  { id: "003_resume_revision", file: "003_resume_revision.sql" },
 ] as const;
 
 /**
