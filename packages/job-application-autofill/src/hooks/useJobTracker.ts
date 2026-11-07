@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type React from "react";
 import { createApplication, type ApplicationStatus } from "../index";
-import { requestApi } from "../utils/api/client";
-import type { useWorkspace } from "./useWorkspace";
-export function useJobTracker(workspace: ReturnType<typeof useWorkspace>) {
+import { changeJobStatus } from "../utils/application/changeJobStatus";
+import type { JobTrackerData } from "../utils/application/job-tracker-data";
+export function useJobTracker(workspace: JobTrackerData) {
   const { jobs, setJobs, applicationId, activeProfileId, activeResumeId, setMessage } = workspace;
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [search, setSearch] = useState("");
@@ -38,16 +38,7 @@ export function useJobTracker(workspace: ReturnType<typeof useWorkspace>) {
     }
   }
   function changeJob(id: string, status: ApplicationStatus) {
-    if (applicationId)
-      void requestApi(
-        "/api/jobs/" + id + "/status",
-        { status },
-        activeProfileId,
-        activeResumeId ?? undefined,
-      ).catch((error) => setMessage(String(error)));
-    setJobs((items) =>
-      items.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
+    changeJobStatus(id, status, workspace);
   }
 
   return { newJob, setNewJob, search, setSearch, notesJobId, setNotesJobId,

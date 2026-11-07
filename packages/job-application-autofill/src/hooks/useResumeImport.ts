@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import type { CandidateProfile } from "../index";
 type ContactKey = keyof CandidateProfile["contact"];
 import type { ContactChoice } from "../utils/api/client";
-import type { useWorkspace } from "./useWorkspace";
+import type { ResumeImportData } from "../utils/resumes/import-data";
 import { createOfferImport } from "../utils/resumes/offerImport";
 import { createApplyImportedContent } from "../utils/resumes/applyImportedContent";
 import { createConfirmImport } from "../utils/resumes/confirmImport";
@@ -10,7 +10,7 @@ import { createCancelImport } from "../utils/resumes/cancelImport";
 import { createImportProfile } from "../utils/resumes/importProfile";
 import { createChooseResume } from "../utils/resumes/chooseResume";
 import { createParseResume } from "../utils/resumes/parseResume";
-export function useResumeImport(workspace: ReturnType<typeof useWorkspace>) {
+export function useResumeImport(workspace: ResumeImportData) {
   const { profile, contactId, activeProfileId, activeResumeId, contactKeys,
     flushPending, setTab, setMessage, setProfile, setContactId } = workspace;
   const { setContacts, setDefaultContactId } = workspace;

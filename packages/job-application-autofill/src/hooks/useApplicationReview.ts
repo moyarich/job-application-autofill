@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { ApplySession } from "../utils/application/types";
-import type { useWorkspace } from "./useWorkspace";
-import type { useJobTracker } from "./useJobTracker";
+import type { ApplicationReviewData } from "../utils/application/review-data";
 import { createPrepareJob } from "../utils/application/prepareJob";
 import { createFillCustomQuestions } from "../utils/application/fillCustomQuestions";
 import { createPrepareAccountSignUp } from "../utils/application/prepareAccountSignUp";
 import { createSetEmployerAccountStatus } from "../utils/application/setEmployerAccountStatus";
 import { createContinueAfterChallenge } from "../utils/application/continueAfterChallenge";
 import { createFinalizeApplication } from "../utils/application/finalizeApplication";
-export function useApplicationReview(workspace: ReturnType<typeof useWorkspace>, tracker: ReturnType<typeof useJobTracker>) {
+export function useApplicationReview(workspace: ApplicationReviewData) {
   const { applicationId, activeProfileId, activeResumeId, profile, contactId, errors,
     jobs, hydrated, setTab, setMessage } = workspace;
-  const { changeJob } = tracker;
+  const { changeJob } = workspace;
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const autoStarted = useRef(false);
   const [applyBusy, setApplyBusy] = useState(false);
