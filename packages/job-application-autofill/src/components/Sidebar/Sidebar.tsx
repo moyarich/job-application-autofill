@@ -9,24 +9,25 @@ import {
   X,
 } from "lucide-react";
 import "./Sidebar.css";
+import { routes } from "../../routes";
 
 const menuGroups = [
   {
     label: "Job search",
     pages: [
-      { path: "/applications", label: "Applications", icon: BriefcaseBusiness },
+      { path: routes.applications, label: "Applications", icon: BriefcaseBusiness },
     ],
   },
   {
     label: "Resumes",
     pages: [
-      { path: "/resumes", label: "Resumes", icon: FileText },
-      { path: "/resumes/import", label: "Import resume", icon: FileUp },
+      { path: routes.resumes, label: "Resumes", icon: FileText },
+      { path: routes.resumeImport, label: "Import resume", icon: FileUp },
     ],
   },
   {
     label: "Profile",
-    pages: [{ path: "/profile", label: "Profile & contacts", icon: UserRound }],
+    pages: [{ path: routes.profile, label: "Profile & contacts", icon: UserRound }],
   },
 ] as const;
 
