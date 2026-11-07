@@ -9,6 +9,6 @@ test("local people may be renamed or deleted but default person is protected", (
     expect(db.listProfiles().find(row => row.id === person.id)?.name).toBe("John Smith");
     expect(() => db.deleteProfile(DEFAULT_PROFILE_ID)).toThrow(/default profile/i);
     db.deleteProfile(person.id);
-    expect(() => db.getSnapshot(person.id)).toThrow(/not found/i);
+    expect(() => db.getJobList(person.id)).toThrow(/not found/i);
   } finally { db.close(); }
 });

@@ -7,9 +7,9 @@ test("a resume version from another person cannot be loaded, changed, or deleted
     const alice = db.createProfile("Alice");
     const bob = db.createProfile("Bob");
     const aliceResume = db.listResumes(alice.id)[0];
-    expect(() => db.getSnapshot(bob.id, aliceResume.id)).toThrow(/not found/i);
+    expect(() => db.getResumeContent(bob.id, aliceResume.id)).toThrow(/not found/i);
     expect(() => db.renameResume(bob.id, aliceResume.id, "Stolen")).toThrow(/not found/i);
     expect(() => db.deleteResume(bob.id, aliceResume.id)).toThrow(/not found/i);
-    expect(() => db.saveSnapshot({ revision: 0, profile: null, jobs: [] }, bob.id, aliceResume.id)).toThrow(/not found/i);
+    expect(() => db.saveResumeContent({ revision: 0, profile: null, contactId: null }, bob.id, aliceResume.id)).toThrow(/not found/i);
   } finally { db.close(); }
 });

@@ -14,16 +14,16 @@ test("draft resumes preserve independent content without inventing contacts", ()
     primary.experience[0].jobTitle = "Software Engineer";
     cloud.experience[0].jobTitle = "Cloud Engineer";
     cloud.contact.email = "cloud@example.com";
-    db.saveSnapshot({revision:0,profile:primary,jobs:[]},DEFAULT_PROFILE_ID,first.id);
-    db.saveSnapshot({revision:1,profile:cloud,jobs:[]},DEFAULT_PROFILE_ID,second.id);
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,first.id).profile!.experience[0].jobTitle).toBe("Software Engineer");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,second.id).profile!.experience[0].jobTitle).toBe("Cloud Engineer");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,first.id).profile!.contact.email).toBe(sample.contact.email);
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,second.id).profile!.contact.email).toBe("cloud@example.com");
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,first.id).contactId).toBeNull();
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID,second.id).contactId).toBeNull();
+    db.saveResumeContent({revision:0,profile:primary,contactId:null},DEFAULT_PROFILE_ID,first.id);
+    db.saveResumeContent({revision:0,profile:cloud,contactId:null},DEFAULT_PROFILE_ID,second.id);
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,first.id).profile!.experience[0].jobTitle).toBe("Software Engineer");
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,second.id).profile!.experience[0].jobTitle).toBe("Cloud Engineer");
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,first.id).profile!.contact.email).toBe(sample.contact.email);
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,second.id).profile!.contact.email).toBe("cloud@example.com");
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,first.id).contactId).toBeNull();
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID,second.id).contactId).toBeNull();
     expect(db.listContacts(DEFAULT_PROFILE_ID)).toEqual([]);
     const other = db.createProfile("Other person");
-    expect(db.getSnapshot(other.id).contact).toBeNull();
+    expect(db.getResumeContent(other.id).profile).toBeNull();
   } finally { db.close(); }
 });
