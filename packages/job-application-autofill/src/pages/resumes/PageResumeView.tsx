@@ -1,3 +1,4 @@
+import { NoResume } from "../../components/NoResume/NoResume";
 import { ResumeView } from "../../components/ResumeView/ResumeView";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -22,7 +23,8 @@ export function PageResumeView() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated && draft.resumeHydrated;
+    selection.hydrated && contacts.contactsHydrated &&
+    (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
     await contacts.flushContacts();
@@ -46,7 +48,7 @@ export function PageResumeView() {
           title="View resume"
           description="Review your resume and export it in the format you need."
         />
-        <ResumeView controller={controller} />
+        {selection.activeResumeId ? <ResumeView controller={controller} /> : <NoResume />}
       </>
     </PageStatus>
   );

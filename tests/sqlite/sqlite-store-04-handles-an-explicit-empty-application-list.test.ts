@@ -16,6 +16,7 @@ describe("SQLite application data persistence", () => {
   it("handles an explicit empty application list", () => {
     const db=openStore(":memory:");
     try {
+      db.createResume("00000000-0000-4000-8000-000000000001", "Test resume");
       db.saveResumeContent({revision:0,profile:example,contactId:null});
       db.updateJobRecord({revision:0,job});
       db.deleteJobRecord(job.id,{revision:1});

@@ -25,7 +25,7 @@ describe("independent persistence endpoints", () => {
     const store = openStore(":memory:");
     try {
       const api = createApiHandler(store, { origin: "http://localhost" });
-      const version = store.listResumes(DEFAULT_PROFILE_ID)[0];
+      const version = store.createResume(DEFAULT_PROFILE_ID, "Test resume");
       const contentPath = "/api/resumes/" + version.id + "/content";
 
       expect((await api(request(contentPath))).body).toMatchObject({ revision: 0, profile: null });
@@ -75,7 +75,7 @@ describe("independent persistence endpoints", () => {
     const store = openStore(":memory:");
     try {
       const api = createApiHandler(store, { origin: "http://localhost" });
-      const resumeId = store.listResumes(DEFAULT_PROFILE_ID)[0].id;
+      const resumeId = store.createResume(DEFAULT_PROFILE_ID, "Test resume").id;
       store.saveResumeContent({ revision: 0, profile, contactId: null }, DEFAULT_PROFILE_ID, resumeId);
       const other = { ...job, id: "214b88fe-4b66-4abe-917a-45c95d07ac01" };
       store.updateJobRecord({ revision: 0, job }, DEFAULT_PROFILE_ID);

@@ -36,20 +36,20 @@ export function useProfileSelection() {
       const wanted = selectedId === activeProfileId && requestedResumeId &&
         resumes.some((item) => item.id === requestedResumeId)
         ? requestedResumeId : resumes[0]?.id;
-      if (!wanted) throw new Error("No resume exists for profile.");
       if (cancelled) return;
       if (selectedId !== activeProfileId ||
           (requestedResumeId && wanted !== requestedResumeId)) {
         localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedId);
         const params = new URLSearchParams(location.search);
         params.set("profile", selectedId);
-        params.set("resume", wanted);
+        if (wanted) params.set("resume", wanted);
+        else params.delete("resume");
         navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
         return;
       }
       setProfiles(available.profiles);
       setResumeVersions(resumes);
-      setActiveResumeId(wanted);
+      setActiveResumeId(wanted ?? null);
       localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedId);
       setHydrated(true);
     }).catch((error) => {
