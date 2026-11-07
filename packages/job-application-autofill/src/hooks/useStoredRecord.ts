@@ -6,8 +6,13 @@ import {
   type CandidateProfile, type JobApplication,
 } from "../index";
 import {
-  readState,
-  saveState,
+  readResumeContent,
+  saveResumeContent,
+  readJobs,
+  saveJobs,
+  readResumes,
+  readContacts,
+  updateProfileContact,
   readProfiles,
   DEFAULT_PROFILE_ID,
   ACTIVE_PROFILE_STORAGE_KEY,
@@ -51,186 +56,174 @@ export function useStoredRecord() {
   const [hydrated, setHydrated] = useState(false);
   const revisionRef = useRef(0);
   const savedRef = useRef("");
+  const savedJobsRef = useRef("");
+  const savedContactRef = useRef("");
+  const jobsRevisionRef = useRef(0);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const blockedRef = useRef(false);
   const [message, setMessage] = useState("");
+  // Each route owns its own data instance; the server remains authoritative.
   useEffect(() => {
     let cancelled = false;
-    // The browser can retain a profile/resume ID after a fresh database is created.
-    // Resolve the profile against the database before requesting its resume.
     readProfiles()
       .then(async (available) => {
         const selectedProfileId = available.profiles.some(
           (item) => item.id === activeProfileId,
-        )
-          ? activeProfileId
-          : available.defaultProfileId;
+        ) ? activeProfileId : available.defaultProfileId;
         const profileChanged = selectedProfileId !== activeProfileId;
-        const state = await readState(
-          selectedProfileId,
-          profileChanged ? undefined : requestedResumeId,
-        ).catch(async (error) => {
-          if (profileChanged || !requestedResumeId) throw error;
-          return readState(selectedProfileId);
-        });
+        const resumes = await readResumes(selectedProfileId);
+        const chosen = !profileChanged && requestedResumeId &&
+          resumes.some((item) => item.id === requestedResumeId)
+          ? requestedResumeId : resumes[0]?.id;
+        if (!chosen) throw new Error("No resume exists for profile.");
         if (cancelled) return;
-        if (
-          profileChanged ||
-          (requestedResumeId && state.resumeId !== requestedResumeId)
-        ) {
+        if (profileChanged || (requestedResumeId && chosen !== requestedResumeId)) {
           localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedProfileId);
           const next = new URLSearchParams(location.search);
           next.set("profile", selectedProfileId);
-          next.set("resume", state.resumeId);
-          navigate(
-            { pathname: location.pathname, search: next.toString() },
-            { replace: true },
-          );
+          next.set("resume", chosen);
+          navigate({ pathname: location.pathname, search: next.toString() }, { replace: true });
           return;
         }
-        return { available, state };
+        const [resume, contacts, applications] = await Promise.all([
+          readResumeContent(selectedProfileId, chosen),
+          readContacts(selectedProfileId),
+          readJobs(selectedProfileId),
+        ]);
+        return { available, resumes, resume, contacts, applications };
       })
       .then((result) => {
         if (!result || cancelled) return;
-        const { available, state } = result;
+        const { available, resumes, resume, contacts, applications } = result;
         setProfiles(available.profiles);
-        setResumeVersions(state.resumes);
-        setActiveResumeId(state.resumeId);
+        setResumeVersions(resumes);
+        setActiveResumeId(resume.resumeId);
         localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, activeProfileId);
-        if (cancelled) return;
-        const value = state.profile
-          ? parseCandidateJson(JSON.stringify(state.profile))
-          : {
-              ...structuredClone(emptyCandidate),
-              contact: state.contact ?? structuredClone(emptyCandidate.contact),
-            };
+        const selectedContact = contacts.find((c) => c.id === resume.contactId);
+        const contact = selectedContact ?? structuredClone(emptyCandidate.contact);
+        const value = resume.profile
+          ? parseCandidateJson(JSON.stringify(resume.profile))
+          : { ...structuredClone(emptyCandidate), contact };
         setProfile(value);
-        setContacts(state.contacts);
-        setContactId(state.contactId);
-        setDefaultContactId(state.defaultContactId);
-        setJobs(state.jobs);
-        revisionRef.current = state.revision;
-        savedRef.current = JSON.stringify({
-          profile: value,
-          contact: value.contact,
-          contactId: state.contactId,
-          jobs: state.jobs,
-        });
+        setContacts(contacts);
+        setContactId(resume.contactId);
+        setDefaultContactId(contacts.find((c) => c.isDefault)?.id ?? null);
+        setJobs(applications.jobs);
+        revisionRef.current = resume.revision;
+        jobsRevisionRef.current = applications.revision;
+        savedRef.current = JSON.stringify({ profile: value, contactId: resume.contactId });
+        savedJobsRef.current = JSON.stringify(applications.jobs);
+        savedContactRef.current = resume.contactId ? JSON.stringify(value.contact) : "";
         setHydrated(true);
       })
       .catch((error) => {
-        if (!cancelled)
-          setMessage(
-            "We couldn’t load your saved information. Check the connection and try again. " +
-              String(error),
-          );
+        if (!cancelled) setMessage(
+          "We couldn’t load your saved information. Check the connection and try again. " +
+          String(error),
+        );
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [activeProfileId, requestedResumeId]);
+
+  async function persistChanges() {
+    if (blockedRef.current || !activeResumeId) return;
+    const resumeSignature = JSON.stringify({ profile, contactId });
+    const jobsSignature = JSON.stringify(jobs);
+    const contactSignature = contactId ? JSON.stringify(profile.contact) : "";
+
+    // Contact records are updated only through the contact API, never a resume write.
+    if (contactId && contactSignature !== savedContactRef.current) {
+      const selected = contacts.find((item) => item.id === contactId);
+      if (!selected) throw new Error("Selected contact no longer exists.");
+      await updateProfileContact(activeProfileId, contactId, selected.name, profile.contact);
+      savedContactRef.current = contactSignature;
+    }
+    if (resumeSignature !== savedRef.current) {
+      const result = await saveResumeContent(activeProfileId, activeResumeId, {
+        revision: revisionRef.current, profile, contactId,
+      });
+      revisionRef.current = result.revision;
+      savedRef.current = resumeSignature;
+    }
+    if (jobsSignature !== savedJobsRef.current) {
+      const result = await saveJobs(activeProfileId, {
+        revision: jobsRevisionRef.current, jobs,
+      });
+      jobsRevisionRef.current = result.revision;
+      savedJobsRef.current = jobsSignature;
+    }
+  }
+
   useEffect(() => {
     if (!hydrated || blockedRef.current || applicationId) return;
-    const state = { profile, contact: profile.contact, contactId, jobs };
-    const signature = JSON.stringify(state);
-    if (signature === savedRef.current) return;
+    if (JSON.stringify({ profile, contactId }) === savedRef.current &&
+        JSON.stringify(jobs) === savedJobsRef.current &&
+        (!contactId || JSON.stringify(profile.contact) === savedContactRef.current))
+      return;
     const timer = setTimeout(() => {
-      saveQueueRef.current = saveQueueRef.current
-        .then(async () => {
-          if (blockedRef.current) return;
-          const saved = await saveState(
-            {
-              ...state,
-              revision: revisionRef.current,
-            },
-            activeProfileId,
-            activeResumeId!,
-          );
-          revisionRef.current = saved.revision;
-          savedRef.current = signature;
-        })
+      saveQueueRef.current = saveQueueRef.current.then(persistChanges)
         .catch((error) => {
           blockedRef.current = true;
           setMessage(
-            "Your changes could not be saved: " +
-              String(error) +
-              " Reload to restore your last saved changes.",
+            "Your changes could not be saved: " + String(error) +
+            " Reload to restore your last saved changes.",
           );
         });
     }, 350);
     saveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
+  }, [hydrated, profile, contactId, contacts, jobs, activeProfileId, activeResumeId, applicationId]);
 
   useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
-      if (
-        JSON.stringify({
-          profile,
-          contact: profile.contact,
-          contactId,
-          jobs,
-        }) !== savedRef.current
-      )
+      if (JSON.stringify({ profile, contactId }) !== savedRef.current ||
+          JSON.stringify(jobs) !== savedJobsRef.current ||
+          (contactId && JSON.stringify(profile.contact) !== savedContactRef.current))
         return;
-      void readState(activeProfileId, activeResumeId ?? undefined)
-        .then((state) => {
-          revisionRef.current = state.revision;
-          const nextProfile = state.profile
-            ? parseCandidateJson(JSON.stringify(state.profile))
-            : {
-                ...structuredClone(emptyCandidate),
-                contact:
-                  state.contact ?? structuredClone(emptyCandidate.contact),
-              };
-          savedRef.current = JSON.stringify({
-            profile: nextProfile,
-            contact: nextProfile.contact,
-            contactId: state.contactId,
-            jobs: state.jobs,
-          });
-          setContacts(state.contacts);
-          setContactId(state.contactId);
-          setDefaultContactId(state.defaultContactId);
-          setProfile(nextProfile);
-          setJobs(state.jobs);
-        })
-        .catch(() => {});
+      void Promise.all([
+        readResumeContent(activeProfileId, activeResumeId!),
+        readContacts(activeProfileId),
+        readJobs(activeProfileId),
+      ]).then(([resume, contacts, applications]) => {
+        const contact = contacts.find((item) => item.id === resume.contactId);
+        const value = resume.profile
+          ? parseCandidateJson(JSON.stringify(resume.profile))
+          : { ...structuredClone(emptyCandidate),
+              contact: contact ?? structuredClone(emptyCandidate.contact) };
+        revisionRef.current = resume.revision;
+        jobsRevisionRef.current = applications.revision;
+        savedRef.current = JSON.stringify({ profile: value, contactId: resume.contactId });
+        savedJobsRef.current = JSON.stringify(applications.jobs);
+        savedContactRef.current = resume.contactId ? JSON.stringify(value.contact) : "";
+        setContacts(contacts);
+        setContactId(resume.contactId);
+        setDefaultContactId(contacts.find((item) => item.isDefault)?.id ?? null);
+        setProfile(value);
+        setJobs(applications.jobs);
+      }).catch(() => {});
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [
-    applicationId,
-    hydrated,
-    profile,
-    contactId,
-    jobs,
-    activeProfileId,
-    activeResumeId,
-  ]);
+  }, [applicationId, hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
+
   const errors = validateCandidate(profile);
   // Persist the source version before switching; pending debounce callbacks cannot
   // write into the destination profile because they capture explicit IDs.
   async function flushPending() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await saveQueueRef.current;
-    if (blockedRef.current)
-      throw new Error(
-        "The current changes could not be saved. Resolve that error before switching.",
-      );
-    const current = { profile, contact: profile.contact, contactId, jobs };
-    const signature = JSON.stringify(current);
-    if (signature !== savedRef.current) {
-      const saved = await saveState(
-        { ...current, revision: revisionRef.current },
-        activeProfileId,
-        activeResumeId!,
-      );
-      revisionRef.current = saved.revision;
-      savedRef.current = signature;
+    if (blockedRef.current) throw new Error(
+      "The current changes could not be saved. Resolve that error before switching.",
+    );
+    try {
+      await persistChanges();
+    } catch (error) {
+      blockedRef.current = true;
+      throw error;
     }
   }
+
   return {
     applicationId, tab, setTab, activeProfileId, activeResumeId,
     profiles, setProfiles, resumeVersions, setResumeVersions,
@@ -238,7 +231,7 @@ export function useStoredRecord() {
     contacts, setContacts, contactId, setContactId,
     defaultContactId, setDefaultContactId, contactKeys,
     selectedContact, defaultContact, hydrated, message, setMessage,
-    revisionRef, savedRef, saveQueueRef, blockedRef,
+    revisionRef, jobsRevisionRef, savedRef, savedJobsRef, saveQueueRef, blockedRef,
     errors, flushPending,
   };
 }
