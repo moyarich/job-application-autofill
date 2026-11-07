@@ -1,4 +1,4 @@
-import type { ApplicationReviewData } from "../controller-types";
+import type { ApplicationReviewData } from "../feature-props";
 import { routes } from "../../routes";
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";

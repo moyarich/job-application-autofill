@@ -1,4 +1,4 @@
-import type { TrackerData } from "../controller-types";
+import type { TrackerData } from "../feature-props";
 import "./Opportunities.css";
 import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";

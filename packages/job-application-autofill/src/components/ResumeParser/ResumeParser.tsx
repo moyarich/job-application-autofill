@@ -1,4 +1,4 @@
-import type { ResumeImportData } from "../controller-types";
+import type { ResumeImportData } from "../feature-props";
 import "./ResumeParser.css";
 
 

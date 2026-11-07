@@ -1,4 +1,4 @@
-import type { StoredRecord } from "../controller-types";
+import type { ResumeSectionsData } from "../feature-props";
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
 import type { CandidateProfile } from "../../index";
@@ -182,7 +182,7 @@ const sectionFields: Field<{ heading: string; content: string }>[] = [
 export function ResumeSections({
   controller,
 }: {
-  controller: StoredRecord;
+  controller: ResumeSectionsData;
 }) {
   const { profile, setProfile } = controller;
   return (

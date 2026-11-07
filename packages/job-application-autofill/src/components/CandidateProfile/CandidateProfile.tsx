@@ -1,4 +1,4 @@
-import type { ResumeEditorData } from "../controller-types";
+import type { ResumeEditorData } from "../feature-props";
 import { useEffect, useRef, useState } from "react";
 import {
   resumeExportFormats,

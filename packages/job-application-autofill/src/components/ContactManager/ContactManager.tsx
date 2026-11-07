@@ -1,4 +1,4 @@
-import type { StoredRecord } from "../controller-types";
+import type { ContactManagerData } from "../feature-props";
 import { useState, type FormEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { CandidateProfile } from "../../index";
@@ -31,7 +31,7 @@ const values = (entry: Contact) =>
 export function ContactManager({
   controller,
 }: {
-  controller: StoredRecord;
+  controller: ContactManagerData;
 }) {
   const { contacts, resumeVersions, activeProfileId, flushPending } =
     controller;

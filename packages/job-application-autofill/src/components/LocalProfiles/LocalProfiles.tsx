@@ -1,4 +1,4 @@
-import type { ResumeLibraryData } from "../controller-types";
+import type { ResumeLibraryData } from "../feature-props";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
 

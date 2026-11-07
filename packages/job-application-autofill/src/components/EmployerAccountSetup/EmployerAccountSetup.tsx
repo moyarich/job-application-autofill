@@ -1,4 +1,4 @@
-import type { ApplicationReviewData } from "../controller-types";
+import type { ApplicationReviewData } from "../feature-props";
 import { generateAccountPassword, accountPasswordValid } from "../../utils/profile/password";
 import { useState } from "react";
 
