@@ -3,7 +3,7 @@ import { LocalProfiles } from "../../components/LocalProfiles/LocalProfiles";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import type { ApplicationController } from "../../utils/application/useApplication";
 
-export function ProfilePage({ controller }: { controller: ApplicationController }) {
+export function Profile({ controller }: { controller: ApplicationController }) {
   return (
     <>
       <WorkspaceHeader

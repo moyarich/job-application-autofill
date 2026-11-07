@@ -2,7 +2,7 @@ import { ResumeParser } from "../../../components/ResumeParser/ResumeParser";
 import { WorkspaceHeader } from "../../../components/WorkspaceHeader/WorkspaceHeader";
 import type { ApplicationController } from "../../../utils/application/useApplication";
 
-export function ResumeImportPage({ controller }: { controller: ApplicationController }) {
+export function ResumeImport({ controller }: { controller: ApplicationController }) {
   return (
     <>
       <WorkspaceHeader

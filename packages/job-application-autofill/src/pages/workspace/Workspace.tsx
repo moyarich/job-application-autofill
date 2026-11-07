@@ -4,7 +4,7 @@ import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import type { ApplicationController } from "../../utils/application/useApplication";
 
-export function WorkspacePage({ controller }: { controller: ApplicationController }) {
+export function Workspace({ controller }: { controller: ApplicationController }) {
   return (
     <>
       <WorkspaceHeader
