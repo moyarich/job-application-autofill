@@ -100,7 +100,13 @@ export function useStoredRecord() {
         setActiveResumeId(resume.resumeId);
         localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, activeProfileId);
         const selectedContact = contacts.find((c) => c.id === resume.contactId);
-        const contact = selectedContact ?? structuredClone(emptyCandidate.contact);
+        const contact = selectedContact
+          ? Object.fromEntries(
+              Object.entries(selectedContact).filter(([key]) =>
+                !["id", "profileId", "name", "isDefault"].includes(key),
+              ),
+            ) as CandidateProfile["contact"]
+          : structuredClone(emptyCandidate.contact);
         const value = resume.profile
           ? parseCandidateJson(JSON.stringify(resume.profile))
           : { ...structuredClone(emptyCandidate), contact };
@@ -186,7 +192,12 @@ export function useStoredRecord() {
         readContacts(activeProfileId),
         readJobs(activeProfileId),
       ]).then(([resume, contacts, applications]) => {
-        const contact = contacts.find((item) => item.id === resume.contactId);
+        const selectedContact = contacts.find((item) => item.id === resume.contactId);
+        const contact = selectedContact
+          ? Object.fromEntries(Object.entries(selectedContact).filter(([key]) =>
+              !["id", "profileId", "name", "isDefault"].includes(key),
+            )) as CandidateProfile["contact"]
+          : structuredClone(emptyCandidate.contact);
         const value = resume.profile
           ? parseCandidateJson(JSON.stringify(resume.profile))
           : { ...structuredClone(emptyCandidate),
