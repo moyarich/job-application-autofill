@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { openStore } from "../../packages/resume-api/store.ts";
+import { openStore } from "../../packages/resume-api/src/database/store.ts";
 
 test("a resume version from another person cannot be loaded, changed, or deleted", () => {
   const db = openStore(":memory:");
