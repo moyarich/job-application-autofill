@@ -49,8 +49,8 @@ describe("centralized application routes", () => {
     expect(applicationReviewPath("job a/b")).toBe("/apply/job%20a%2Fb");
   });
 
-  it("does not redefine application paths in the router or workspace hook", () => {
+  it("does not redefine application paths in the router or stored-record hook", () => {
     expect(source("router.tsx")).not.toMatch(/path:\s*["']\//);
-    expect(source("hooks/useWorkspace.ts")).not.toContain('location.pathname === "/');
+    expect(source("hooks/useStoredRecord.ts")).not.toContain('location.pathname === "/');
   });
 });

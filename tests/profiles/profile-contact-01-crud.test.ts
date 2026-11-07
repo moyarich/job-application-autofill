@@ -148,7 +148,7 @@ test("contacts with only some address fields still produce valid resume snapshot
     const resume = db.createResume(DEFAULT_PROFILE_ID, "Linked");
     const snapshot = db.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
     db.saveResumeContent(
-      { revision: snapshot.revision, profile: { ...sample, contact: db.listContacts(DEFAULT_PROFILE_ID)[0] }, contactId: snapshot.contactId },
+      { revision: snapshot.revision, profile: { ...sample, contact: { ...sample.contact, city: "Chicago" } }, contactId: snapshot.contactId },
       DEFAULT_PROFILE_ID,
       resume.id,
     );

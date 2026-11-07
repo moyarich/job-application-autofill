@@ -21,7 +21,7 @@ describe("SQLite versioned migrations", () => {
       const db = new DatabaseSync(path);
       try {
         const versions = db.prepare("SELECT id FROM schema_migrations ORDER BY id").all();
-        expect(versions.map(v => v.id)).toEqual(["001_initial", "002_contact_extras"]);
+        expect(versions.map(v => v.id)).toEqual(["001_initial", "002_contact_extras", "003_resume_revision"]);
       } finally { db.close(); }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -39,7 +39,7 @@ describe("SQLite versioned migrations", () => {
       migrateDatabase(db);
       const columns = db.prepare("PRAGMA table_info(profile_contact)").all() as {name:string}[];
       expect(columns.filter(c => c.name === "extra_json")).toHaveLength(1);
-      expect(db.prepare("SELECT COUNT(*) AS total FROM schema_migrations").get()).toMatchObject({ total: 2 });
+      expect(db.prepare("SELECT COUNT(*) AS total FROM schema_migrations").get()).toMatchObject({ total: 3 });
     } finally { db.close(); }
   });
 });
