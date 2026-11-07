@@ -1,8 +1,8 @@
-import { ContactManager } from "../components/ContactManager/ContactManager";
-import { LocalProfiles } from "../components/LocalProfiles/LocalProfiles";
-import { ResumeManager } from "../components/ResumeManager/ResumeManager";
-import { WorkspaceHeader } from "../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../utils/application/useApplication";
+import { ContactManager } from "../../components/ContactManager/ContactManager";
+import { LocalProfiles } from "../../components/LocalProfiles/LocalProfiles";
+import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
+import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
+import type { ApplicationController } from "../../utils/application/useApplication";
 
 export function WorkspacePage({ controller }: { controller: ApplicationController }) {
   return (
