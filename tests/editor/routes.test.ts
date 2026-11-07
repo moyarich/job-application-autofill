@@ -19,6 +19,7 @@ describe("centralized application routes", () => {
     expect(pageRoutes).toEqual([
       routes.applications,
       routes.profile,
+      routes.contacts,
       routes.resumes,
       routes.resumeEditor,
       routes.resumeView,
@@ -27,6 +28,23 @@ describe("centralized application routes", () => {
     ]);
     expect(routes.applicationReview).toBe("/apply/:applicationId");
     expect(routes.applicationViewer).toBe("/application-viewer.html");
+    expect(routes.contacts).toBe("/contacts");
+  });
+
+  it("renders profile and contact management on separate routes", () => {
+    const profile = source("pages/profile/PageProfile.tsx");
+    const contacts = source("pages/contacts/PageContacts.tsx");
+    const sidebar = source("components/Sidebar/Sidebar.tsx");
+    const app = source("App.tsx");
+    expect(profile).toContain("<LocalProfiles");
+    expect(profile).not.toContain("ContactManager");
+    expect(profile).not.toContain("useProfileContacts");
+    expect(contacts).toContain("<ContactManager");
+    expect(contacts).not.toContain("LocalProfiles");
+    expect(sidebar).toContain("routes.contacts");
+    expect(sidebar).toContain("routes.profile");
+    expect(app).toContain("<PageContacts");
+    expect(tabForPath(routes.contacts)).toBe("contacts");
   });
 
   it("does not retain legacy resume redirects", () => {

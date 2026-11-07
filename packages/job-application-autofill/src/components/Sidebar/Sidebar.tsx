@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router";
 import {
   BriefcaseBusiness,
+  ContactRound,
   FileText,
   FileUp,
   Menu,
@@ -27,7 +28,10 @@ const menuGroups = [
   },
   {
     label: "Profile",
-    pages: [{ path: routes.profile, label: "Profile & contacts", icon: UserRound }],
+    pages: [
+      { path: routes.profile, label: "Profiles", icon: UserRound },
+      { path: routes.contacts, label: "Contacts", icon: ContactRound },
+    ],
   },
 ] as const;
 
