@@ -1,12 +1,16 @@
 import { ContactManager } from "../../components/ContactManager/ContactManager";
 import { LocalProfiles } from "../../components/LocalProfiles/LocalProfiles";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useWorkspace } from "../../hooks/useWorkspace";
+import { useStoredRecord } from "../../hooks/useStoredRecord";
+import { PageStatus } from "../../components/App/PageStatus";
+import { createResumeCommands } from "../../utils/resumes/commands";
 
-export function PageProfile({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
-  const controller = workspace;
+export function PageProfile() {
+  const record = useStoredRecord();
+  const controller = { ...record, ...createResumeCommands(record) };
   return (
-    <>
+    <PageStatus {...record}>
+      <>
       <WorkspaceHeader
         title="Profile"
         description="Manage your saved contact details and the profile you are working with."
@@ -19,6 +23,7 @@ export function PageProfile({ workspace }: { workspace: ReturnType<typeof useWor
         <LocalProfiles controller={controller} />
       </section>
       <ContactManager controller={controller} />
-    </>
+      </>
+    </PageStatus>
   );
 }
