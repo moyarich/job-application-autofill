@@ -2,9 +2,10 @@ import { ContactManager } from "../../components/ContactManager/ContactManager";
 import { LocalProfiles } from "../../components/LocalProfiles/LocalProfiles";
 import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
 
-export function PageWorkspace({ controller }: { controller: ReturnType<typeof useApplication> }) {
+export function PageWorkspace({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const controller = workspace;
   return (
     <>
       <WorkspaceHeader

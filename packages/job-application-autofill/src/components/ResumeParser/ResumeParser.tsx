@@ -1,9 +1,10 @@
 import "./ResumeParser.css";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
+import type { useResumeImport } from "../../hooks/useResumeImport";
 export function ResumeParser({
   controller,
 }: {
-  controller: ReturnType<typeof useApplication>;
+  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useResumeImport>;
 }) {
   const {
     resumeRef,

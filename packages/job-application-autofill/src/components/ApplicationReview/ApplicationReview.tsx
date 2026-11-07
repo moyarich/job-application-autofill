@@ -1,11 +1,12 @@
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
 import { AutomationPillMenu, type AutomationAction } from "../AutomationPillMenu/AutomationPillMenu";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
+import type { useApplicationReview } from "../../hooks/useApplicationReview";
 export function ApplicationReview({
   controller,
 }: {
-  controller: ReturnType<typeof useApplication>;
+  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useApplicationReview>;
 }) {
   const {
     applicationId,

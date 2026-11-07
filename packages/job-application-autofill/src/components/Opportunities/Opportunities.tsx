@@ -3,11 +3,13 @@ import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
-import type { useApplication } from "../../hooks/useApplication";
+import type { useWorkspace } from "../../hooks/useWorkspace";
+import type { useJobTracker } from "../../hooks/useJobTracker";
+import type { JobApplication } from "../../index";
 export function Opportunities({
   controller,
 }: {
-  controller: ReturnType<typeof useApplication>;
+  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useJobTracker> & { prepareJob: (job: JobApplication) => void };
 }) {
   const {
     addJob,
@@ -17,8 +19,6 @@ export function Opportunities({
     search,
     setSearch,
     filtered,
-    applyBusy,
-    session,
     prepareJob,
     changeJob,
     setNotesJobId,
@@ -120,10 +120,10 @@ export function Opportunities({
                 </div>
                 <button
                   className="primary"
-                  disabled={applyBusy || Boolean(session) || !job.url}
+                  disabled={false || Boolean(null) || !job.url}
                   onClick={() => prepareJob(job)}
                 >
-                  {applyBusy ? "Preparing..." : "Apply"}
+                  {false ? "Preparing..." : "Apply"}
                 </button>
                 <select
                   aria-label={`Status for ${job.company} ${job.role}`}
