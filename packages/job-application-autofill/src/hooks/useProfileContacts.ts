@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import type { CandidateProfile } from "../index";
 import {
   readContacts, updateProfileContact, type ProfileContact,
 } from "../utils/api/client";
 
-const contactValues = (entry: ProfileContact) => {
+const contactValues = (entry: ProfileContact): CandidateProfile["contact"] => {
   return Object.fromEntries(Object.entries(entry).filter(([key]) =>
     !["id", "profileId", "name", "isDefault"].includes(key),
-  )) as ProfileContact;
+  )) as CandidateProfile["contact"];
 };
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });
