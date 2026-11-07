@@ -1,10 +1,9 @@
 import type { ResumeImportActionsContext, OfferImport } from "./import-context";
 import { parseCandidateJson } from "../../index";
-import type { CandidateProfile } from "../../index";
 import type React from "react";
 
 export function createImportProfile(context: ResumeImportActionsContext & { offerImport: OfferImport }) {
-  const { profile, setMessage, offerImport } = context;
+  const { setMessage, offerImport } = context;
   async function importProfile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
