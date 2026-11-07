@@ -68,6 +68,17 @@ test("all resume sections can be edited and saved, with a separate profile page"
   await expect(
     page.getByRole("heading", { name: "Resume editor", exact: true }),
   ).toBeVisible();
+  const skillsEditor = page.getByRole("textbox", {
+    name: "Skills (comma-separated)",
+    exact: true,
+  });
+  await skillsEditor.fill("React,");
+  await expect(skillsEditor).toHaveValue("React,");
+  await expect.poll(() => profile.skills).toEqual(["React"]);
+  await skillsEditor.press("End");
+  await skillsEditor.type(" AWS, TypeScript");
+  await expect(skillsEditor).toHaveValue("React, AWS, TypeScript");
+  await expect.poll(() => profile.skills).toEqual(["React", "AWS", "TypeScript"]);
   await expect(page.getByLabel("Institution", { exact: true })).toHaveValue(
     "DeVry University",
   );
