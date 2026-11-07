@@ -7,8 +7,8 @@ import { fillWorkdayExperience } from "./experience/experience.ts";
 import { fillWorkdayEducation } from "./education/education.ts";
 import { fillWorkdaySkills } from "./skills/skills.ts";
 import { retryWorkdayResumeUpload } from "./resume/resume.ts";
-import { resumeFields } from "./resume/field-map.ts";
-import { skillsFields } from "./skills/field-map.ts";
+import { resumeFields } from "./resume/selectors.ts";
+import { skillsFields } from "./skills/selectors.ts";
 import { discoverQuestions, fillQuestionAnswers } from "../index.ts";
 
 async function has(page: Page, pattern: RegExp): Promise<boolean> {
@@ -47,7 +47,7 @@ export const workdaySteps = [
     id: "workday.skills",
     matches: async ({ page, profile }) => profile.skills.length > 0 &&
       (await has(page, /^Skills$/i) ||
-       await page.locator(skillsFields.get("section")!).first().isVisible().catch(() => false)),
+       await page.locator(skillsFields.section).first().isVisible().catch(() => false)),
     run: async ({ page, profile }) => {
       const r = await fillWorkdaySkills(page, profile.skills);
       return { filled: r.filled, missing: r.unresolved };
@@ -57,7 +57,7 @@ export const workdaySteps = [
     id: "workday.resume",
     matches: async ({ page, pendingResume, resumeFile }) =>
       Boolean(pendingResume || resumeFile) &&
-      page.locator(resumeFields.get("upload")!).count().then((count) => count > 0).catch(() => false),
+      page.locator(resumeFields.upload).count().then((count) => count > 0).catch(() => false),
     run: async (context: JobSiteStepContext): Promise<JobSiteStepResult> => {
       const { page } = context;
       let { pendingResume, resumeFile } = context;
@@ -68,7 +68,7 @@ export const workdaySteps = [
         await writeFile(filename, pendingResume.buffer, { mode: 0o600 });
         resumeFile = filename;
         try {
-          await page.locator(resumeFields.get("upload")!).first().setInputFiles(filename, { timeout: 3000 });
+          await page.locator(resumeFields.upload).first().setInputFiles(filename, { timeout: 3000 });
           filled.push("resume");
           pendingResume = null;
           resumeUploadUrls = [...resumeUploadUrls, page.url()];

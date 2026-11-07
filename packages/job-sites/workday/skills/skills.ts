@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { skillsFields, skillsLabels } from "./field-map.ts";
+import { skillsFields, skillsLabels } from "./selectors.ts";
 
 // Only choose exact employer-provided options or explicitly labeled text fields.
 export async function fillWorkdaySkills(page: Page, skills: string[]) {
@@ -28,13 +28,13 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   if (!values.length) return result;
   const section = page
     .locator(
-      skillsFields.get("section")!,
+      skillsFields.section,
     )
     .first();
   if (!(await section.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["skills: section not visible"] };
   const tokens = section.locator(
-    skillsFields.get("tokens")!,
+    skillsFields.tokens,
   );
   const saved = await tokens.evaluateAll((nodes) =>
     nodes.map((node) =>
@@ -57,7 +57,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   for (const index of duplicates.reverse()) {
     const remove = tokens
       .nth(index)
-      .locator(skillsFields.get("remove")!)
+      .locator(skillsFields.remove)
       .first();
     if (await remove.count()) await remove.click({ timeout: 2000 });
   }
@@ -77,7 +77,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   }
   let search = section
     .locator(
-      skillsFields.get("search")!,
+      skillsFields.search,
     )
     .first();
   if (!(await search.isVisible().catch(() => false)))
@@ -87,7 +87,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
   for (const skill of values) {
     const selected = section
       .locator(
-        skillsFields.get("selected")!,
+        skillsFields.selected,
       )
       .getByText(skill, { exact: true });
     if (selectedNames.has(skill.toLowerCase()) || (await selected.count())) {
@@ -102,7 +102,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
         .getByRole("option", { name: skill, exact: true })
         .or(
           page
-            .locator(skillsFields.get("option")!)
+            .locator(skillsFields.option)
             .getByText(skill, { exact: true }),
         )
         .or(checkbox)

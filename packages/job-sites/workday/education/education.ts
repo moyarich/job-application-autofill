@@ -1,6 +1,6 @@
 import type { Page } from "playwright";
 import type { CandidateProfile } from "../../../resume/src/types.ts";
-import { educationFields, educationSelectors } from "./field-map.ts";
+import { educationFields, educationSelectors } from "./selectors.ts";
 
 export async function fillWorkdayEducation(
   page: Page,
@@ -11,14 +11,14 @@ export async function fillWorkdayEducation(
     unresolved: [],
   };
   if (!entries.length) return result;
-  const heading = page.getByText(educationFields.get("heading")!, { exact: true }).first();
+  const heading = page.getByText(educationFields.heading, { exact: true }).first();
   if (!(await heading.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["education: section not visible"] };
   const section = heading.locator("xpath=ancestor::*[.//button][1]");
   for (const [i, entry] of entries.entries()) {
     const key = `education[${i}]`;
     const rows = section
-      .getByText(educationFields.get("row")!, { exact: true })
+      .getByText(educationFields.row, { exact: true })
       .locator("xpath=ancestor::*[.//input][1]");
     // Workday's numbered education cards keep school controls local to each entry.
     let target = null;
@@ -26,7 +26,7 @@ export async function fillWorkdayEducation(
       const school = rows
         .nth(j)
         .getByLabel(
-          educationFields.get("institution")!,
+          educationFields.institution,
         )
         .first();
       const value = await school
@@ -41,7 +41,7 @@ export async function fillWorkdayEducation(
       const count = await rows.count();
       try {
         await section
-          .getByRole("button", { name: educationFields.get("add")! })
+          .getByRole("button", { name: educationFields.add })
           .last()
           .click({ timeout: 2000 });
         await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
@@ -55,13 +55,13 @@ export async function fillWorkdayEducation(
     const parts = entry.degree.split("|").map((value) => value.trim());
     for (const [label, value, name] of [
       [
-        educationFields.get("institution")!,
+        educationFields.institution,
         entry.institution,
         "institution",
       ],
-      [educationFields.get("degree")!, parts[0], "degree"],
+      [educationFields.degree, parts[0], "degree"],
       [
-        educationFields.get("fieldOfStudy")!,
+        educationFields.fieldOfStudy,
         entry.fieldOfStudy || parts[1],
         "fieldOfStudy",
       ],
@@ -104,7 +104,7 @@ export async function fillWorkdayEducation(
         ) {
           await input.click({ timeout: 2000 });
           await input.fill(value, { timeout: 700 }).catch(() => {});
-          const search = target.getByPlaceholder(educationFields.get("search")!).last();
+          const search = target.getByPlaceholder(educationFields.search).last();
           if (await search.isVisible().catch(() => false)) {
             await search.fill(value);
             await search.press("Enter");

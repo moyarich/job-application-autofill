@@ -9,7 +9,7 @@ export interface WorkExperienceEntry {
   endDate?: string | null;
   isCurrent: boolean;
 }
-import { SECTION, ROW, LABEL, DATE_FIELDS } from "./field-map.ts";
+import { SECTION, ROW, LABEL, DATE_FIELDS } from "./selectors.ts";
 
 async function input(row: Locator, key: keyof typeof LABEL) {
   const el = row.getByLabel(LABEL[key], { exact: true }).first();

@@ -1,8 +1,8 @@
 import type { Page, Locator } from "playwright";
 import type { CandidateProfile } from "../../../resume/src/types.ts";
 import type { AutofillResult } from "../../types.ts";
-import type { FieldLocatorConfig } from "./field-map.ts";
-import { workdayContactFields } from "./field-map.ts";
+import type { FieldLocatorConfig } from "./selectors.ts";
+import { workdayContactFields } from "./selectors.ts";
 
 /**
  * Contact fields chosen by the Workday adapter, not by the orchestrator.
@@ -12,7 +12,7 @@ export async function fillWorkdayContact(page: Page, profile: CandidateProfile):
   const filled: string[] = [];
   const missing: string[] = [];
 
-  for (const key of workdayContactFields.keys()) {
+  for (const key of Object.keys(workdayContactFields) as (keyof typeof workdayContactFields)[]) {
     const value = profile.contact[key];
     if (!value?.trim()) continue;
 
@@ -42,10 +42,10 @@ export async function fillWorkdayContact(page: Page, profile: CandidateProfile):
 /** Contact-local locator resolution; not a cross-provider abstraction. */
 export async function findMappedField<Key extends string>(
   page: Page,
-  fields: ReadonlyMap<Key, FieldLocatorConfig>,
+  fields: Readonly<Record<Key, FieldLocatorConfig>>,
   key: Key,
 ): Promise<Locator | null> {
-  const config = fields.get(key);
+  const config = fields[key];
   if (!config) return null;
 
   const candidates: Locator[] = [
