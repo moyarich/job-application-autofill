@@ -1,3 +1,4 @@
+import { resumeSwitchPath } from "../../routes";
 import type { ProfileResumeActionsContext } from "./library-context";
 import { navigateTo } from "./navigateTo";
 
@@ -8,13 +9,8 @@ export function createSwitchResume(context: ProfileResumeActionsContext) {
       return;
     try {
       await flushPending();
-      // Switching versions must not unexpectedly leave the resume editor/preview.
-      const destination =
-        pathname === "/resumes/edit" ||
-        pathname === "/resumes/view" ||
-        pathname === "/resumes"
-          ? pathname
-          : "/workspace";
+      // Preserve the current resume page when switching versions.
+      const destination = resumeSwitchPath(pathname);
       navigateTo(activeProfileId, next, destination);
     } catch (error) {
       setMessage(String(error));
