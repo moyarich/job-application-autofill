@@ -33,6 +33,15 @@ const menuGroups = [
 export function Sidebar() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Only profile/resume selection belongs across the application and resume pages.
+  // Don't propagate unrelated route parameters to other pages.
+  const currentParams = new URLSearchParams(location.search);
+  const pageParams = new URLSearchParams();
+  for (const key of ["profile", "resume"]) {
+    const value = currentParams.get(key);
+    if (value) pageParams.set(key, value);
+  }
+  const pageSearch = pageParams.toString();
   return (
     <aside className={menuOpen ? "sidebar sidebar-open" : "sidebar"}>
       <div className="sidebar-header">
@@ -66,7 +75,7 @@ export function Sidebar() {
               {group.pages.map(({ path, label, icon: Icon }) => (
                 <NavLink
                   key={path}
-                  to={{ pathname: path, search: location.search }}
+                  to={{ pathname: path, search: pageSearch }}
                   end={path === "/resumes" && !/^\/resumes\/(?:edit|view)/.test(location.pathname)}
                   className={({ isActive }) =>
                     isActive ? "nav active" : "nav"
