@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Page } from "playwright";
 import type { JobSiteStep, JobSiteStepContext, JobSiteStepResult } from "../types.ts";
-import { fillWorkdayContact } from "./contact.ts";
+import { fillWorkdayContact } from "./contact/contact.ts";
 import { fillWorkdayExperience } from "./experience.ts";
 import { fillWorkdayEducation } from "./education.ts";
 import { fillWorkdaySkills } from "./skills.ts";

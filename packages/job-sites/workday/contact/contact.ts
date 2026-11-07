@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
-import type { CandidateProfile } from "../../resume/src/types.ts";
-import type { AutofillResult } from "../types.ts";
-import { findMappedField } from "../core/field-matcher.ts";
+import type { CandidateProfile } from "../../../resume/src/types.ts";
+import type { AutofillResult } from "../../types.ts";
+import { findMappedField } from "../../core/field-matcher.ts";
 import { workdayContactFields } from "./field-map.ts";
 
 /**

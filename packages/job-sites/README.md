@@ -48,7 +48,7 @@ Each site declares only the actions it supports with `menuItems: [{ id, label, s
 
 ## Provider-owned field maps
 
-Workday's contact field definitions live in `workday/field-map.ts` as a
+Workday's contact field definitions live in `workday/contact/field-map.ts` as a
 `Map<WorkdayContactField, FieldLocatorConfig>`. `core/field-matcher.ts`
 resolves accessible-label candidates in priority order, followed by optional
 **verified** CSS fallbacks. To support a changed employer label, add a
