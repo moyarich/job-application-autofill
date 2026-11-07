@@ -19,7 +19,6 @@ import {
   type LocalProfile,
   type ResumeVersion,
   type ProfileContact,
-  type ContactChoice,
 } from "../utils/api/client";
 import { createSwitchProfile } from "../utils/resumes/switchProfile";
 import { createSwitchResume } from "../utils/resumes/switchResume";
@@ -170,7 +169,6 @@ export function useWorkspace() {
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const blockedRef = useRef(false);
   const [message, setMessage] = useState("");
-  const [parsePreview, setParsePreview] = useState("");
   useEffect(() => {
     let cancelled = false;
     // The browser can retain a profile/resume ID after a fresh database is created.
@@ -399,7 +397,7 @@ export function useWorkspace() {
   return {
     applicationId, tab, setTab, activeProfileId, activeResumeId,
     profiles, resumeVersions, profile, setProfile, jobs, setJobs,
-    contacts, contactId, defaultContactId, selectedContact, defaultContact,
+    contacts, setContacts, contactId, setContactId, defaultContactId, setDefaultContactId, selectedContact, defaultContact,
     editContact, chooseContact, markDefaultContact, saveContactRecord,
     hydrated, revisionRef, savedRef, saveQueueRef, blockedRef,
     message, setMessage, errors, contactKeys, flushPending,

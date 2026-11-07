@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import type { CandidateProfile } from "../index";
+type ContactKey = keyof CandidateProfile["contact"];
 import type { ContactChoice } from "../utils/api/client";
 import type { useWorkspace } from "./useWorkspace";
 import { createOfferImport } from "../utils/resumes/offerImport";
@@ -11,7 +12,7 @@ import { createChooseResume } from "../utils/resumes/chooseResume";
 import { createParseResume } from "../utils/resumes/parseResume";
 export function useResumeImport(workspace: ReturnType<typeof useWorkspace>) {
   const { profile, contactId, activeProfileId, activeResumeId, contactKeys,
-    flushPending, setTab, setMessage, setProfile } = workspace;
+    flushPending, setTab, setMessage, setProfile, setContactId } = workspace;
   const { setContacts, setDefaultContactId } = workspace;
   const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(
     null,
@@ -23,6 +24,7 @@ export function useResumeImport(workspace: ReturnType<typeof useWorkspace>) {
   const resumeRef = useRef<HTMLInputElement>(null);
   const [resume, setResume] = useState<File | null>(null);
   const [parseBusy, setParseBusy] = useState(false);
+  const [parsePreview, setParsePreview] = useState("");
   const conflictKeys = pendingImport
     ? contactKeys.filter(
         (key) =>
