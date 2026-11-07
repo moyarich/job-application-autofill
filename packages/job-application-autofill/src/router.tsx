@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { RouterProvider } from "react-router/dom";
-import { App } from "./components/App/App";
+import { App } from "./App";
 import { routes, pageRoutes } from "./routes";
 
 export const router = createBrowserRouter([

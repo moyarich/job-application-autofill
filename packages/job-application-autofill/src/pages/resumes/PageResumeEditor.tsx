@@ -4,7 +4,7 @@ import { useProfileSelection } from "../../hooks/useProfileSelection";
 import { useProfileContacts } from "../../hooks/useProfileContacts";
 import { useResumeDraft } from "../../hooks/useResumeDraft";
 import { contactKeys } from "../../utils/contacts/contact-context";
-import { PageStatus } from "../../components/App/PageStatus";
+import { PageStatus } from "../../components/PageStatus/PageStatus";
 import { useResumeImport } from "../../hooks/useResumeImport";
 import { createResumeCommands } from "../../utils/resumes/commands";
 import { createContactCommands } from "../../utils/contacts/commands";
@@ -14,42 +14,59 @@ import { ContactImportReview } from "../../components/ContactImportReview/Contac
 export function PageResumeEditor() {
   const selection = useProfileSelection();
   const contacts = useProfileContacts({
-    profileId: selection.activeProfileId, enabled: selection.hydrated,
+    profileId: selection.activeProfileId,
+    enabled: selection.hydrated,
     setMessage: selection.setMessage,
   });
   const draft = useResumeDraft({
-    profileId: selection.activeProfileId, resumeId: selection.activeResumeId,
+    profileId: selection.activeProfileId,
+    resumeId: selection.activeResumeId,
     enabled: selection.hydrated && contacts.contactsHydrated,
-    contacts: contacts.contacts, setMessage: selection.setMessage,
+    contacts: contacts.contacts,
+    setMessage: selection.setMessage,
     applicationId: selection.applicationId,
   });
-  const ready = selection.hydrated && contacts.contactsHydrated && draft.resumeHydrated;
+  const ready =
+    selection.hydrated && contacts.contactsHydrated && draft.resumeHydrated;
   const flushPending = async () => {
     await draft.flushResume();
     await contacts.flushContacts();
   };
   const record = {
-    ...selection, ...contacts, ...draft, contactKeys, flushPending,
+    ...selection,
+    ...contacts,
+    ...draft,
+    contactKeys,
+    flushPending,
     hydrated: ready,
-    selectedContact: contacts.contacts.find((item) => item.id === draft.contactId),
-    defaultContact: contacts.contacts.find((item) => item.id === contacts.defaultContactId),
+    selectedContact: contacts.contacts.find(
+      (item) => item.id === draft.contactId,
+    ),
+    defaultContact: contacts.contacts.find(
+      (item) => item.id === contacts.defaultContactId,
+    ),
   };
   const importing = useResumeImport(record);
   const controller = {
-    ...record, ...importing,
+    ...record,
+    ...importing,
     ...createResumeCommands(record),
     ...createContactCommands(record),
     exportResumePdf: createExportResumePdf(record),
   };
   return (
-    <PageStatus hydrated={ready} message={selection.message} setMessage={selection.setMessage}>
+    <PageStatus
+      hydrated={ready}
+      message={selection.message}
+      setMessage={selection.setMessage}
+    >
       <>
-      <WorkspaceHeader
-        title="Resume editor"
-        description="Manage your contact details, experience, and resume versions."
-      />
-      <CandidateProfile controller={controller} />
-      <ContactImportReview controller={controller} />
+        <WorkspaceHeader
+          title="Resume editor"
+          description="Manage your contact details, experience, and resume versions."
+        />
+        <CandidateProfile controller={controller} />
+        <ContactImportReview controller={controller} />
       </>
     </PageStatus>
   );

@@ -1,16 +1,16 @@
 import "./App.css";
 import { ArrowUpRight } from "lucide-react";
 import { useLocation, useParams } from "react-router";
-import { tabForPath } from "../../routes";
-import { Sidebar } from "../Sidebar/Sidebar";
-import { PageApplications } from "../../pages/applications/PageApplications";
-import { PageApplicationReview } from "../../pages/applications/PageApplicationReview";
-import { PageResumes } from "../../pages/resumes/PageResumes";
-import { PageResumeEditor } from "../../pages/resumes/PageResumeEditor";
-import { PageResumeView } from "../../pages/resumes/PageResumeView";
-import { PageResumeImport } from "../../pages/resumes/PageResumeImport";
-import { PageProfile } from "../../pages/profile/PageProfile";
-import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
+import { tabForPath } from "./routes";
+import { Sidebar } from "./components/Sidebar/Sidebar";
+import { PageApplications } from "./pages/applications/PageApplications";
+import { PageApplicationReview } from "./pages/applications/PageApplicationReview";
+import { PageResumes } from "./pages/resumes/PageResumes";
+import { PageResumeEditor } from "./pages/resumes/PageResumeEditor";
+import { PageResumeView } from "./pages/resumes/PageResumeView";
+import { PageResumeImport } from "./pages/resumes/PageResumeImport";
+import { PageProfile } from "./pages/profile/PageProfile";
+import { PageWorkspace } from "./pages/workspace/PageWorkspace";
 
 export function App() {
   const location = useLocation();

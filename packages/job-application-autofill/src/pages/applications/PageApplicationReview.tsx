@@ -5,34 +5,54 @@ import { useProfileSelection } from "../../hooks/useProfileSelection";
 import { useJobApplications } from "../../hooks/useJobApplications";
 import { useProfileContacts } from "../../hooks/useProfileContacts";
 import { useResumeDraft } from "../../hooks/useResumeDraft";
-import { PageStatus } from "../../components/App/PageStatus";
+import { PageStatus } from "../../components/PageStatus/PageStatus";
 
 export function PageApplicationReview() {
   const selection = useProfileSelection();
   const applications = useJobApplications({
-    profileId: selection.activeProfileId, enabled: selection.hydrated,
-    applicationId: selection.applicationId, setMessage: selection.setMessage,
+    profileId: selection.activeProfileId,
+    enabled: selection.hydrated,
+    applicationId: selection.applicationId,
+    setMessage: selection.setMessage,
   });
   const contacts = useProfileContacts({
-    profileId: selection.activeProfileId, enabled: selection.hydrated,
+    profileId: selection.activeProfileId,
+    enabled: selection.hydrated,
     setMessage: selection.setMessage,
   });
   const draft = useResumeDraft({
-    profileId: selection.activeProfileId, resumeId: selection.activeResumeId,
+    profileId: selection.activeProfileId,
+    resumeId: selection.activeResumeId,
     enabled: selection.hydrated && contacts.contactsHydrated,
-    contacts: contacts.contacts, setMessage: selection.setMessage,
+    contacts: contacts.contacts,
+    setMessage: selection.setMessage,
     applicationId: selection.applicationId,
   });
-  const ready = selection.hydrated && applications.jobsHydrated &&
-    contacts.contactsHydrated && draft.resumeHydrated;
-  const changeJob = (id: Parameters<typeof changeJobStatus>[0], status: Parameters<typeof changeJobStatus>[1]) =>
-    changeJobStatus(id, status, { ...selection, ...applications });
+  const ready =
+    selection.hydrated &&
+    applications.jobsHydrated &&
+    contacts.contactsHydrated &&
+    draft.resumeHydrated;
+  const changeJob = (
+    id: Parameters<typeof changeJobStatus>[0],
+    status: Parameters<typeof changeJobStatus>[1],
+  ) => changeJobStatus(id, status, { ...selection, ...applications });
   const review = useApplicationReview({
-    ...selection, ...applications, ...draft, changeJob, hydrated: ready,
+    ...selection,
+    ...applications,
+    ...draft,
+    changeJob,
+    hydrated: ready,
   });
   return (
-    <PageStatus hydrated={ready} message={selection.message} setMessage={selection.setMessage}>
-      <ApplicationReview controller={{ ...selection, ...applications, ...draft, ...review }} />
+    <PageStatus
+      hydrated={ready}
+      message={selection.message}
+      setMessage={selection.setMessage}
+    >
+      <ApplicationReview
+        controller={{ ...selection, ...applications, ...draft, ...review }}
+      />
     </PageStatus>
   );
 }
