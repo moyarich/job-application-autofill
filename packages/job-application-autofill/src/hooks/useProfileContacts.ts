@@ -4,8 +4,9 @@ import {
 } from "../utils/api/client";
 
 const contactValues = (entry: ProfileContact) => {
-  const { id: _id, profileId: _profileId, name: _name, isDefault: _isDefault, ...contact } = entry;
-  return contact;
+  return Object.fromEntries(Object.entries(entry).filter(([key]) =>
+    !["id", "profileId", "name", "isDefault"].includes(key),
+  )) as ProfileContact;
 };
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });

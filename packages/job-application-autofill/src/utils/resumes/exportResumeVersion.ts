@@ -4,7 +4,7 @@ import type { ResumeExportFormat } from "../files/export-resume";
 import { readResumeContent } from "../api/client";
 
 export function createExportResumeVersion(context: ProfileResumeActionsContext) {
-  const { activeProfileId, activeResumeId, profile, resumeVersions, flushPending, setMessage } = context;
+  const { activeProfileId, resumeVersions, flushPending, setMessage } = context;
   async function exportResumeVersion(
     resumeId: string,
     format: ResumeExportFormat,
@@ -13,11 +13,7 @@ export function createExportResumeVersion(context: ProfileResumeActionsContext) 
       await flushPending();
       const selected = resumeVersions.find((item) => item.id === resumeId);
       if (!selected) throw new Error("Resume no longer exists.");
-      const state =
-        resumeId === activeResumeId
-          ? null
-          : await readResumeContent(activeProfileId, resumeId);
-      const value = state ? state.profile : profile;
+      const { profile: value } = await readResumeContent(activeProfileId, resumeId);
       if (!value) throw new Error("This resume has no content to export.");
       await exportResume(
         value,

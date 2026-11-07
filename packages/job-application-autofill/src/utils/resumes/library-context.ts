@@ -9,7 +9,7 @@ export type ProfileResumeActionsContext = {
   activeProfileId: string;
   activeResumeId: string | null;
   pathname: string;
-  profile: CandidateProfile;
+  profile?: CandidateProfile;
   profiles: LocalProfile[];
   resumeVersions: ResumeVersion[];
   flushPending: () => Promise<void>;
