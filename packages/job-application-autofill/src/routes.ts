@@ -3,6 +3,7 @@ export const routes = {
   home: "/",
   applications: "/applications",
   applicationReview: "/apply/:applicationId",
+  applicationViewer: "/application-viewer.html",
   profile: "/profile",
   resumes: "/resumes",
   resumeEditor: "/resumes/edit",
