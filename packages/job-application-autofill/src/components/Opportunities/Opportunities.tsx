@@ -120,10 +120,10 @@ export function Opportunities({
                 </div>
                 <button
                   className="primary"
-                  disabled={false || Boolean(null) || !job.url}
+                  disabled={!job.url}
                   onClick={() => prepareJob(job)}
                 >
-                  {false ? "Preparing..." : "Apply"}
+                  Apply
                 </button>
                 <select
                   aria-label={`Status for ${job.company} ${job.role}`}
