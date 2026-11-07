@@ -1,7 +1,7 @@
 import type { ProfileResumeActionsContext } from "./library-context";
 import { exportResume } from "../files/export-resume";
 import type { ResumeExportFormat } from "../files/export-resume";
-import { readState } from "../api/client";
+import { readResumeContent } from "../api/client";
 
 export function createExportResumeVersion(context: ProfileResumeActionsContext) {
   const { activeProfileId, activeResumeId, profile, resumeVersions, flushPending, setMessage } = context;
@@ -16,7 +16,7 @@ export function createExportResumeVersion(context: ProfileResumeActionsContext) 
       const state =
         resumeId === activeResumeId
           ? null
-          : await readState(activeProfileId, resumeId);
+          : await readResumeContent(activeProfileId, resumeId);
       const value = state ? state.profile : profile;
       if (!value) throw new Error("This resume has no content to export.");
       await exportResume(
