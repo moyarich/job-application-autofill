@@ -28,7 +28,7 @@ function Entries<T extends object>({
   fields: Field<T>[];
   onChange: (items: T[]) => void;
   richTextSection?: string;
-  controller?: StoredRecord;
+  controller?: ResumeSectionsData;
 }) {
   return (
     <section
