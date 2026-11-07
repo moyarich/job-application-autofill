@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
-  createApplication,
   emptyCandidate,
   parseCandidateJson,
   validateCandidate,
   type CandidateProfile,
   type JobApplication,
-  type ApplicationStatus,
 } from "../index";
-import type { ApplySession } from "../utils/application/types";
 import {
   requestApi,
   readState,
@@ -24,19 +21,6 @@ import {
   type ProfileContact,
   type ContactChoice,
 } from "../utils/api/client";
-import { createPrepareJob } from "../utils/application/prepareJob";
-import { createFillCustomQuestions } from "../utils/application/fillCustomQuestions";
-import { createPrepareAccountSignUp } from "../utils/application/prepareAccountSignUp";
-import { createSetEmployerAccountStatus } from "../utils/application/setEmployerAccountStatus";
-import { createContinueAfterChallenge } from "../utils/application/continueAfterChallenge";
-import { createFinalizeApplication } from "../utils/application/finalizeApplication";
-import { createOfferImport } from "../utils/resumes/offerImport";
-import { createApplyImportedContent } from "../utils/resumes/applyImportedContent";
-import { createConfirmImport } from "../utils/resumes/confirmImport";
-import { createCancelImport } from "../utils/resumes/cancelImport";
-import { createImportProfile } from "../utils/resumes/importProfile";
-import { createChooseResume } from "../utils/resumes/chooseResume";
-import { createParseResume } from "../utils/resumes/parseResume";
 import { createSwitchProfile } from "../utils/resumes/switchProfile";
 import { createSwitchResume } from "../utils/resumes/switchResume";
 import { createCreatePerson } from "../utils/resumes/createPerson";
@@ -47,7 +31,7 @@ import { createOpenResume } from "../utils/resumes/openResume";
 import { createCreateResume } from "../utils/resumes/createResume";
 import { createRenameResume } from "../utils/resumes/renameResume";
 import { createRemoveResume } from "../utils/resumes/removeResume";
-export function useApplication() {
+export function useWorkspace() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
@@ -64,8 +48,6 @@ export function useApplication() {
     requestedResumeId ?? null,
   );
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [activeLoaded, setActiveLoaded] = useState(!applicationId);
-  const autoStarted = useRef(false);
   const tab =
     location.pathname === "/resumes/edit"
       ? "profile"
@@ -112,20 +94,7 @@ export function useApplication() {
   const [contacts, setContacts] = useState<ProfileContact[]>([]);
   const [contactId, setContactId] = useState<string | null>(null);
   const [defaultContactId, setDefaultContactId] = useState<string | null>(null);
-  const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(
-    null,
-  );
-  const [importChoices, setImportChoices] = useState<
-    Partial<Record<ContactKey, ContactChoice>>
-  >({});
   const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
-  const conflictKeys = pendingImport
-    ? contactKeys.filter(
-        (key) =>
-          (pendingImport.contact[key] || "").trim() !==
-          (profile.contact[key] || "").trim(),
-      )
-    : [];
   const selectedContact = contacts.find((item) => item.id === contactId);
   const defaultContact = contacts.find((item) => item.id === defaultContactId);
   function editContact(key: ContactKey, value: string) {
@@ -200,75 +169,8 @@ export function useApplication() {
   const savedRef = useRef("");
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const blockedRef = useRef(false);
-  const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
-  const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
-  const importRef = useRef<HTMLInputElement>(null);
-  const resumeRef = useRef<HTMLInputElement>(null);
-  const [resume, setResume] = useState<File | null>(null);
-  const [parseBusy, setParseBusy] = useState(false);
-  const [applyBusy, setApplyBusy] = useState(false);
-
   const [parsePreview, setParsePreview] = useState("");
-  const [session, setSession] = useState<ApplySession | null>(null);
-  const [reviewed, setReviewed] = useState(false);
-  const [questionAnswers, setQuestionAnswers] = useState<
-    Record<string, string>
-  >({});
-  const [notesJobId, setNotesJobId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!applicationId || session?.state !== "preparing") return;
-    let cancelled = false;
-    const timer = setInterval(() => {
-      fetch("/api/apply/" + session.id, {
-        headers: {
-          "X-Moya-Client": "dashboard",
-          "X-Profile-Id": activeProfileId,
-        },
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(
-              "Application session is unavailable. Reload to retry.",
-            );
-          return response.json();
-        })
-        .then((updated) => {
-          if (!cancelled) setSession(updated);
-        })
-        .catch((error) => {
-          if (!cancelled) setMessage(String(error));
-        });
-    }, 1000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [applicationId, session?.id, session?.state, activeProfileId]);
-  useEffect(() => {
-    let cancelled = false;
-    if (!applicationId) return;
-    fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {
-      headers: {
-        "X-Moya-Client": "dashboard",
-        "X-Profile-Id": activeProfileId,
-      },
-    })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((result) => {
-        if (!cancelled && result?.session)
-          setSession(result.session as ApplySession);
-      })
-      .catch(() => {
-        /* Local API might not be running. */
-      })
-      .finally(() => {
-        if (!cancelled) setActiveLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
   useEffect(() => {
     let cancelled = false;
     // The browser can retain a profile/resume ID after a fresh database is created.
@@ -378,19 +280,6 @@ export function useApplication() {
   }, [hydrated, profile, contactId, jobs, activeProfileId, activeResumeId]);
 
   useEffect(() => {
-    if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
-      return;
-    autoStarted.current = true;
-    if (session) return;
-    const job = jobs.find((item) => item.id === applicationId);
-    if (job) void prepareJob(job);
-    else
-      setMessage(
-        "Application not found. Return to the tracker and open the job again.",
-      );
-  }, [applicationId, hydrated, activeLoaded, jobs, session]);
-
-  useEffect(() => {
     if (applicationId || !hydrated) return;
     const refresh = () => {
       if (
@@ -438,47 +327,6 @@ export function useApplication() {
     activeResumeId,
   ]);
   const errors = validateCandidate(profile);
-  const filtered = jobs.filter((job) =>
-    (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
-  );
-
-  function addJob(event: React.FormEvent) {
-    event.preventDefault();
-    try {
-      const job = createApplication(newJob.company, newJob.role, newJob.url);
-      if (
-        jobs.some(
-          (item) =>
-            item.id === job.id ||
-            (item.company === job.company &&
-              item.role === job.role &&
-              item.url === job.url),
-        )
-      ) {
-        setMessage("This opportunity is already in your tracker.");
-        return;
-      }
-      setJobs((items) => [job, ...items]);
-      setNewJob({ company: "", role: "", url: "" });
-      setMessage(
-        "Job added. Select Apply on its row to start browser automation.",
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not add job");
-    }
-  }
-  function changeJob(id: string, status: ApplicationStatus) {
-    if (applicationId)
-      void requestApi(
-        "/api/jobs/" + id + "/status",
-        { status },
-        activeProfileId,
-        activeResumeId ?? undefined,
-      ).catch((error) => setMessage(String(error)));
-    setJobs((items) =>
-      items.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
-  }
   async function exportResumePdf() {
     try {
       const missing = validateCandidate(profile);
@@ -511,32 +359,6 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
-  const importContext = {
-    profile, contactId, activeProfileId, activeResumeId, contactKeys,
-    pendingImport, resume, flushPending, setTab, setMessage,
-    setImportChoices, setPendingImport, setContactId, setProfile,
-    setResume, setContacts, setDefaultContactId, setParseBusy, setParsePreview,
-  };
-  const applyImportedContent = createApplyImportedContent(importContext);
-  const offerImport = createOfferImport({ ...importContext, applyImportedContent });
-  const importProfile = createImportProfile({ ...importContext, offerImport });
-  const chooseResume = createChooseResume(importContext);
-  const parseResume = createParseResume({ ...importContext, offerImport });
-  const confirmImport = createConfirmImport({ ...importContext, applyImportedContent });
-  const cancelImport = createCancelImport(importContext);
-
-  const reviewContext = {
-    applicationId, activeProfileId, activeResumeId, profile, contactId,
-    errors, session, reviewed, questionAnswers, setTab, changeJob,
-    setMessage, setApplyBusy, setSession, setReviewed, setQuestionAnswers,
-  };
-  const prepareJob = createPrepareJob(reviewContext);
-  const fillCustomQuestions = createFillCustomQuestions(reviewContext);
-  const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
-  const setEmployerAccountStatus = createSetEmployerAccountStatus(reviewContext);
-  const continueAfterChallenge = createContinueAfterChallenge(reviewContext);
-  const finalizeApplication = createFinalizeApplication(reviewContext);
-
   // Persist the source version before switching; pending debounce callbacks cannot
   // write into the destination profile because they capture explicit IDs.
   async function flushPending() {
@@ -559,7 +381,7 @@ export function useApplication() {
     }
   }
   const libraryContext = {
-    applicationId, applyBusy, sessionActive: Boolean(session),
+    applicationId, applyBusy: false, sessionActive: false,
     activeProfileId, activeResumeId, pathname: location.pathname,
     profile, profiles, resumeVersions, flushPending, setMessage,
     setProfiles, setResumeVersions,
@@ -575,89 +397,14 @@ export function useApplication() {
   const renameResume = createRenameResume(libraryContext);
   const removeResume = createRemoveResume(libraryContext);
   return {
-    profiles,
-    activeProfileId,
-    resumeVersions,
-    activeResumeId,
-    switchProfile,
-    switchResume,
-    createPerson,
-    renamePerson,
-    removePerson,
-    createResume,
-    renameResume,
-    removeResume,
-    openResume,
-    exportResumeVersion,
-    flushPending,
-    applicationId,
-    activeLoaded,
-    setActiveLoaded,
-    autoStarted,
-    tab,
-    setTab,
-    profile,
-    setProfile,
-    contacts,
-    contactId,
-    defaultContactId,
-    selectedContact,
-    defaultContact,
-    editContact,
-    chooseContact,
-    markDefaultContact,
-    saveContactRecord,
-    pendingImport,
-    importChoices,
-    setImportChoices,
-    conflictKeys,
-    confirmImport,
-    cancelImport,
-    jobs,
-    setJobs,
-    hydrated,
-    setHydrated,
-    revisionRef,
-    savedRef,
-    saveQueueRef,
-    blockedRef,
-    newJob,
-    setNewJob,
-    search,
-    setSearch,
-    message,
-    setMessage,
-    importRef,
-    resumeRef,
-    resume,
-    setResume,
-    parseBusy,
-    setParseBusy,
-    applyBusy,
-    setApplyBusy,
-    parsePreview,
-    setParsePreview,
-    session,
-    setSession,
-    reviewed,
-    setReviewed,
-    questionAnswers,
-    setQuestionAnswers,
-    notesJobId,
-    setNotesJobId,
-    errors,
-    filtered,
-    addJob,
-    changeJob,
+    applicationId, tab, setTab, activeProfileId, activeResumeId,
+    profiles, resumeVersions, profile, setProfile, jobs, setJobs,
+    contacts, contactId, defaultContactId, selectedContact, defaultContact,
+    editContact, chooseContact, markDefaultContact, saveContactRecord,
+    hydrated, revisionRef, savedRef, saveQueueRef, blockedRef,
+    message, setMessage, errors, contactKeys, flushPending,
+    switchProfile, switchResume, createPerson, renamePerson, removePerson,
+    createResume, renameResume, removeResume, openResume, exportResumeVersion,
     exportResumePdf,
-    importProfile,
-    chooseResume,
-    parseResume,
-    prepareJob,
-    fillCustomQuestions,
-    continueAfterChallenge,
-    prepareAccountSignUp,
-    setEmployerAccountStatus,
-    finalizeApplication,
   };
 }
