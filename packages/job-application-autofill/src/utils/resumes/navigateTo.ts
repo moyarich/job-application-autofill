@@ -9,4 +9,4 @@ export function navigateTo(
   else url.searchParams.delete("resume");
   url.pathname = destination;
   window.location.assign(url.href);
-}\n
+}

@@ -24,9 +24,29 @@ import {
   type ProfileContact,
   type ContactChoice,
 } from "../utils/api/client";
-import { createApplicationReviewActions } from "../utils/application/review-actions";
-import { createResumeImportActions } from "../utils/resumes/import-actions";
-import { createProfileResumeActions } from "../utils/resumes/library-actions";
+import { createPrepareJob } from "../utils/application/prepareJob";
+import { createFillCustomQuestions } from "../utils/application/fillCustomQuestions";
+import { createPrepareAccountSignUp } from "../utils/application/prepareAccountSignUp";
+import { createSetEmployerAccountStatus } from "../utils/application/setEmployerAccountStatus";
+import { createContinueAfterChallenge } from "../utils/application/continueAfterChallenge";
+import { createFinalizeApplication } from "../utils/application/finalizeApplication";
+import { createOfferImport } from "../utils/resumes/offerImport";
+import { createApplyImportedContent } from "../utils/resumes/applyImportedContent";
+import { createConfirmImport } from "../utils/resumes/confirmImport";
+import { createCancelImport } from "../utils/resumes/cancelImport";
+import { createImportProfile } from "../utils/resumes/importProfile";
+import { createChooseResume } from "../utils/resumes/chooseResume";
+import { createParseResume } from "../utils/resumes/parseResume";
+import { createSwitchProfile } from "../utils/resumes/switchProfile";
+import { createSwitchResume } from "../utils/resumes/switchResume";
+import { createCreatePerson } from "../utils/resumes/createPerson";
+import { createRenamePerson } from "../utils/resumes/renamePerson";
+import { createRemovePerson } from "../utils/resumes/removePerson";
+import { createExportResumeVersion } from "../utils/resumes/exportResumeVersion";
+import { createOpenResume } from "../utils/resumes/openResume";
+import { createCreateResume } from "../utils/resumes/createResume";
+import { createRenameResume } from "../utils/resumes/renameResume";
+import { createRemoveResume } from "../utils/resumes/removeResume";
 export function useApplication() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -491,21 +511,31 @@ export function useApplication() {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
-  const { importProfile, chooseResume, parseResume, confirmImport, cancelImport } =
-    createResumeImportActions({
-      profile, contactId, activeProfileId, activeResumeId, contactKeys,
-      pendingImport, resume, flushPending, setTab, setMessage,
-      setImportChoices, setPendingImport, setContactId, setProfile,
-      setResume, setContacts, setDefaultContactId, setParseBusy, setParsePreview,
-    });
+  const importContext = {
+    profile, contactId, activeProfileId, activeResumeId, contactKeys,
+    pendingImport, resume, flushPending, setTab, setMessage,
+    setImportChoices, setPendingImport, setContactId, setProfile,
+    setResume, setContacts, setDefaultContactId, setParseBusy, setParsePreview,
+  };
+  const applyImportedContent = createApplyImportedContent(importContext);
+  const offerImport = createOfferImport({ ...importContext, applyImportedContent });
+  const importProfile = createImportProfile({ ...importContext, offerImport });
+  const chooseResume = createChooseResume(importContext);
+  const parseResume = createParseResume({ ...importContext, offerImport });
+  const confirmImport = createConfirmImport({ ...importContext, applyImportedContent });
+  const cancelImport = createCancelImport(importContext);
 
-  const { prepareJob, fillCustomQuestions, continueAfterChallenge,
-    prepareAccountSignUp, setEmployerAccountStatus, finalizeApplication } =
-    createApplicationReviewActions({
-      applicationId, activeProfileId, activeResumeId, profile, contactId,
-      errors, session, reviewed, questionAnswers, setTab, changeJob,
-      setMessage, setApplyBusy, setSession, setReviewed, setQuestionAnswers,
-    });
+  const reviewContext = {
+    applicationId, activeProfileId, activeResumeId, profile, contactId,
+    errors, session, reviewed, questionAnswers, setTab, changeJob,
+    setMessage, setApplyBusy, setSession, setReviewed, setQuestionAnswers,
+  };
+  const prepareJob = createPrepareJob(reviewContext);
+  const fillCustomQuestions = createFillCustomQuestions(reviewContext);
+  const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
+  const setEmployerAccountStatus = createSetEmployerAccountStatus(reviewContext);
+  const continueAfterChallenge = createContinueAfterChallenge(reviewContext);
+  const finalizeApplication = createFinalizeApplication(reviewContext);
 
   // Persist the source version before switching; pending debounce callbacks cannot
   // write into the destination profile because they capture explicit IDs.
@@ -528,14 +558,22 @@ export function useApplication() {
       savedRef.current = signature;
     }
   }
-  const { switchProfile, switchResume, createPerson, renamePerson,
-    removePerson, createResume, renameResume, removeResume,
-    openResume, exportResumeVersion } = createProfileResumeActions({
-      applicationId, applyBusy, sessionActive: Boolean(session),
-      activeProfileId, activeResumeId, pathname: location.pathname,
-      profile, profiles, resumeVersions, flushPending, setMessage,
-      setProfiles, setResumeVersions,
-    });
+  const libraryContext = {
+    applicationId, applyBusy, sessionActive: Boolean(session),
+    activeProfileId, activeResumeId, pathname: location.pathname,
+    profile, profiles, resumeVersions, flushPending, setMessage,
+    setProfiles, setResumeVersions,
+  };
+  const switchProfile = createSwitchProfile(libraryContext);
+  const switchResume = createSwitchResume(libraryContext);
+  const createPerson = createCreatePerson(libraryContext);
+  const renamePerson = createRenamePerson(libraryContext);
+  const removePerson = createRemovePerson(libraryContext);
+  const exportResumeVersion = createExportResumeVersion(libraryContext);
+  const openResume = createOpenResume(libraryContext);
+  const createResume = createCreateResume(libraryContext);
+  const renameResume = createRenameResume(libraryContext);
+  const removeResume = createRemoveResume(libraryContext);
   return {
     profiles,
     activeProfileId,
