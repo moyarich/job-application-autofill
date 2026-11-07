@@ -13,9 +13,13 @@ when swapping transports.
 
 ## SQLite tables
 
-Each table is defined independently in `src/database/tables/` and initialized
-in foreign-key dependency order by `src/database/schema.ts`. Resumes have
-per-resume revisions; applications have per-application revisions. There is
-no shared `profile_state`, schema versioning, or backward compatibility.
+Each table is defined independently in `src/database/tables/`. `schema.ts`
+initializes the version 1 schema in foreign-key dependency order and records
+the version using SQLite `user_version`. Version 1 is the complete starting
+schema for this new app, not a migration from older structures.
+
+Resumes have per-resume revisions; applications have per-application revisions.
+There is no shared `profile_state` table or legacy compatibility layer.
+Future schema changes can introduce new versions when needed.
 
 Import persistence from `src/database/store.ts` directly.

@@ -7,7 +7,7 @@ import { openStore } from "../../packages/resume-api/src/database/store.ts";
 import { initializeDatabase } from "../../packages/resume-api/src/database/schema.ts";
 
 describe("SQLite schema", () => {
-  it("initializes independent tables and persists records after reopening", () => {
+  it("initializes current independent tables and persists records after reopening", () => {
     const dir = mkdtempSync(join(tmpdir(), "resume-api-schema-"));
     const path = join(dir, "app.sqlite");
     try {
@@ -21,6 +21,7 @@ describe("SQLite schema", () => {
 
       const db = new DatabaseSync(path);
       try {
+        expect(db.prepare("PRAGMA user_version").get()).toMatchObject({ user_version: 1 });
         expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='profile_state'").get()).toBeUndefined();
         for (const [table, field] of [["applications", "revision"], ["resumes", "content_revision"], ["profile_contact", "extra_json"]]) {
           expect((db.prepare("PRAGMA table_info(" + table + ")").all() as { name: string }[])
@@ -30,7 +31,7 @@ describe("SQLite schema", () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
-  it("initializes the same current schema repeatedly without losing records", () => {
+  it("preserves existing data when initializing the current version again", () => {
     const db = new DatabaseSync(":memory:");
     try {
       initializeDatabase(db);
@@ -39,6 +40,7 @@ describe("SQLite schema", () => {
       initializeDatabase(db);
       expect(db.prepare("SELECT name FROM profiles WHERE id=?").get("test-profile"))
         .toMatchObject({ name: "Test" });
+      expect(db.prepare("PRAGMA user_version").get()).toMatchObject({ user_version: 1 });
     } finally { db.close(); }
   });
 });
