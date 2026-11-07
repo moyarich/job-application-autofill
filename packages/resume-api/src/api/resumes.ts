@@ -18,7 +18,7 @@ export const handleResumes: RouteHandler = async ({ req, url, store, profileId }
       );
     }
     const contentRoute = url.pathname.match(
-      /^\\/api\\/resumes\\/([0-9a-f-]{36})\\/content$/i,
+      /^\/api\/resumes\/([0-9a-f-]{36})\/content$/i,
     );
     if (contentRoute && req.method === "GET") {
       return reply(200, store.getResumeContent(profileId, contentRoute[1]));
