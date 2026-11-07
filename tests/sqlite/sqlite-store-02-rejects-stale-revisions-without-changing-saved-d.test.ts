@@ -15,8 +15,8 @@ describe("SQLite application data persistence", () => {
     const db=openStore(":memory:");
     try {
       db.saveResumeContent({revision:0,profile:example,contactId:null});
-      db.saveJobList({revision:0,jobs:[job]});
-      expect(()=>db.saveJobList({revision:0,jobs:[]})).toThrow(/another tab/);
+      db.updateJobRecord({revision:0,job});
+      expect(()=>db.updateJobRecord({revision:0,job})).toThrow(/another tab/);
       expect(db.getJobList().jobs).toEqual([job]);
     } finally { db.close(); }
   });
