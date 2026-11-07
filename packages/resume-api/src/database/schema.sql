@@ -14,20 +14,18 @@ CREATE TABLE IF NOT EXISTS profile_contact (
  linkedin TEXT NOT NULL DEFAULT '',
  github TEXT NOT NULL DEFAULT '',
  website TEXT NOT NULL DEFAULT '',
+ extra_json TEXT NOT NULL DEFAULT '{}',
  UNIQUE(profile_id,id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS one_default_contact_per_profile
  ON profile_contact(profile_id) WHERE is_default=1;
-CREATE TABLE IF NOT EXISTS profile_state (
- profile_id TEXT PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
- revision INTEGER NOT NULL DEFAULT 0
-);
 CREATE TABLE IF NOT EXISTS resumes (
  id TEXT PRIMARY KEY,
  profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
  contact_id TEXT,
  name TEXT NOT NULL,
  content_json TEXT,
+ content_revision INTEGER NOT NULL DEFAULT 0,
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL,
  FOREIGN KEY(profile_id, contact_id) REFERENCES profile_contact(profile_id,id)
@@ -46,6 +44,7 @@ CREATE TABLE IF NOT EXISTS applications (
  company TEXT NOT NULL, role TEXT NOT NULL, url TEXT NOT NULL,
  status TEXT NOT NULL CHECK(status IN ('saved','in_progress','ready_for_review','submitted','interview','rejected')),
  created_at TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
+ revision INTEGER NOT NULL DEFAULT 1,
  PRIMARY KEY(profile_id,id),
  FOREIGN KEY(resume_id) REFERENCES resumes(id) ON DELETE SET NULL
 );

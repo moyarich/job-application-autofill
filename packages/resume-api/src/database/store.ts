@@ -1,5 +1,5 @@
 import { openConnection } from "./connection.ts";
-import { migrateDatabase } from "./migrations.ts";
+import { initializeDatabase } from "./schema.ts";
 import { createProfilesStatements } from "./repositories/profiles.ts";
 import { createContactsStatements } from "./repositories/contacts.ts";
 import { createResumesStatements } from "./repositories/resumes.ts";
@@ -157,7 +157,7 @@ export function openStore(
   filePath = process.env.MOYA_DB_PATH || "data/moyaapply.sqlite",
 ) {
   const db = openConnection(filePath);
-  migrateDatabase(db);
+  initializeDatabase(db);
   function decodeContact(raw: unknown): ProfileContact | undefined {
     if (!raw) return undefined;
     const { extraJson, ...contact } = raw as Record<string, unknown>;

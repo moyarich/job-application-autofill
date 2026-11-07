@@ -4,7 +4,7 @@ This package has four boundaries:
 
 - `src/api/`: HTTP endpoint handlers returning normalized responses.
 - `src/services/`: application preparation and resume processing.
-- `src/database/`: SQLite connection, versioned `.sql` migrations, and domain query repositories.
+- `src/database/`: SQLite connection, the canonical `schema.sql`, and domain query repositories.
 - `src/server/`: transport-neutral request/response contract and a replaceable Node adapter.
 
 The executable `index.ts` is intentionally thin. No domain route imports
@@ -45,12 +45,10 @@ app.use(async (req, res) => {
 
 Express is not required by the package; the native Node adapter stays the default.
 
-## SQLite schema and upgrades
+## SQLite schema
 
-`src/database/migrations/*.sql` is the only schema source. `migrations.ts`
-tracks applied migrations in `schema_migrations` and adopts existing databases,
-including databases already containing `profile_contact.extra_json`.
-Never edit an applied migration; add another numbered SQL file and register it
-in the runner. There is no duplicate `schema.sql` file.
+`src/database/schema.sql` defines the current SQLite tables and fields. A fresh
+database is initialized once; databases with incompatible schemas are rejected.
+There are no schema upgrades, migration shims, or legacy state tables.
 
 Import persistence from `src/database/store.ts` directly. No compatibility entry point is provided.
