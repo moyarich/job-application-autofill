@@ -45,3 +45,26 @@ Adapters declare their own `steps` array of `{ id, matches(context), run(context
 ## Floating menu actions
 
 Each site declares only the actions it supports with `menuItems: [{ id, label, stepId }]`. The referenced `stepId` must be a site-owned `steps` entry; no section names or menu actions are enforced by shared code. The browser viewer loads the current session's menu from `GET /api/apply/:id/menu`, checks each action's `matches()` guard, and executes only explicitly selected actions via `POST /api/apply/:id/menu`. Missing steps are never auto-generated. Workday defines its own menu; other providers display no menu until they declare one. The floating pill is draggable by its handle and never submits an application.
+
+## Provider-owned field maps
+
+Workday's contact field definitions live in `workday/field-map.ts` as a
+`Map<WorkdayContactField, FieldLocatorConfig>`. `core/field-matcher.ts`
+resolves accessible-label candidates in priority order, followed by optional
+**verified** CSS fallbacks. To support a changed employer label, add a
+provider-specific label alternative and a Playwright fixture instead of editing
+the filling algorithm.
+
+The matcher never chooses the first of multiple matches, never targets hidden,
+disabled, read-only, password or file inputs, and the Workday autofiller does not
+overwrite conflicting existing values. Missing or ambiguous fields are reported
+for manual review. Maps only locate controls; the site adapter remains
+responsible for form workflow, selects, uploads, and navigation.
+
+Other ATS adapters currently do not implement the same contact autofill step.
+Do not add speculative provider selector maps until those steps and fixtures
+exist. These fixtures are synthetic DOMs; they do not prove live employer
+compatibility.
+
+Run the regression fixtures with
+`npx vitest run tests/workday/workday-field-map.test.ts`.
