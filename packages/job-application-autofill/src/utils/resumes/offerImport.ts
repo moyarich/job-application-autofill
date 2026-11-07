@@ -1,6 +1,5 @@
 import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
 import type { CandidateProfile } from "../../index";
-import type { Contact } from "./import-context";
 
 export function createOfferImport(context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent }) {
   const { profile, contactId, contactKeys, setMessage, setImportChoices, setPendingImport, applyImportedContent } = context;
