@@ -1,11 +1,10 @@
 import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
 import { resolveImportedContact } from "../api/client";
 import type { ContactChoice } from "../api/client";
-import type { CandidateProfile } from "../../index";
 import type { ContactKey } from "./import-context";
 
 export function createConfirmImport(context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent }) {
-  const { contactId, activeProfileId, activeResumeId, contactKeys, pendingImport, resume, flushPending, setMessage, setContacts, setDefaultContactId, applyImportedContent } = context;
+  const { activeProfileId, activeResumeId, contactKeys, pendingImport, flushPending, setMessage, setContacts, setDefaultContactId, applyImportedContent } = context;
   async function confirmImport(strategy: ContactChoice = "resume") {
     if (!pendingImport || !activeResumeId) return;
     try {
