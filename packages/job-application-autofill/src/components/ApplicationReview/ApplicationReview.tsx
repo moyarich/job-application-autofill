@@ -1,3 +1,4 @@
+import { routes } from "../../routes";
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
 import { AutomationPillMenu, type AutomationAction } from "../AutomationPillMenu/AutomationPillMenu";
@@ -28,7 +29,7 @@ export function ApplicationReview({
     <>
       {applicationId && (
         <div className="application-page-heading">
-          <a href={"/applications?profile=" + encodeURIComponent(activeProfileId) + (activeResumeId ? "&resume=" + encodeURIComponent(activeResumeId) : "")}>← Back to applications</a>
+          <a href={routes.applications + "?profile=" + encodeURIComponent(activeProfileId) + (activeResumeId ? "&resume=" + encodeURIComponent(activeResumeId) : "")}>← Back to applications</a>
           <h2>
             {jobs.find((job) => job.id === applicationId)?.role ||
               "Application"}
@@ -191,7 +192,7 @@ export function ApplicationReview({
                       <strong>Application preview</strong>
                       <a
                         className="browser-open"
-                        href={"/application-viewer.html?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
+                        href={routes.applicationViewer + "?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setReviewed(false)}
@@ -216,7 +217,7 @@ export function ApplicationReview({
                     <iframe
                       className="browser-viewer"
                       title="Interactive Playwright application browser"
-                      src={"/application-viewer.html?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
+                      src={routes.applicationViewer + "?session=" + session.id + "&profile=" + encodeURIComponent(activeProfileId)}
                       allow="clipboard-read; clipboard-write"
                       referrerPolicy="no-referrer"
                     />
