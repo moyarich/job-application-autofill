@@ -1,7 +1,7 @@
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
 import type { CandidateProfile } from "../../index";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 
 type Field<T> = {
   key: keyof T;
@@ -27,7 +27,7 @@ function Entries<T extends object>({
   fields: Field<T>[];
   onChange: (items: T[]) => void;
   richTextSection?: string;
-  controller?: ApplicationController;
+  controller?: ReturnType<typeof useApplication>;
 }) {
   return (
     <section
@@ -181,7 +181,7 @@ const sectionFields: Field<{ heading: string; content: string }>[] = [
 export function ResumeSections({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const { profile, setProfile } = controller;
   return (
