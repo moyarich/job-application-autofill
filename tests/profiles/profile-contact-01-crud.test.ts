@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   openStore,
   DEFAULT_PROFILE_ID,
-} from "../../packages/resume-api/store.ts";
+} from "../../packages/resume-api/src/database/store.ts";
 
 const sample = JSON.parse(
   readFileSync(
