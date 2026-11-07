@@ -9,7 +9,7 @@ export function createResumesStatements(db: DatabaseSync) {
     "SELECT id,name,contact_id AS contactId,created_at AS createdAt,updated_at AS updatedAt FROM resumes WHERE profile_id=? ORDER BY created_at,id",
   );
   const selectResume = db.prepare(
-    "SELECT id,name,contact_id AS contactId,content_json AS json,created_at AS createdAt,updated_at AS updatedAt FROM resumes WHERE id=? AND profile_id=?",
+    "SELECT id,name,contact_id AS contactId,content_json AS json,content_revision AS revision,created_at AS createdAt,updated_at AS updatedAt FROM resumes WHERE id=? AND profile_id=?",
   );
   return { insertResume, listResumeRows, selectResume };
 }

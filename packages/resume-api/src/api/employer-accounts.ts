@@ -18,7 +18,7 @@ export const handleEmployerAccounts: RouteHandler = async ({ req, url, store, pr
       if (payload.status !== "ready" && payload.status !== "setup_required")
         throw new Error("Invalid employer account status.");
       const job = store
-        .getSnapshot(profileId)
+        .getJobList(profileId)
         .jobs.find((item) => item.id === payload.jobId);
       if (!job)
         throw new Error("Job does not belong to the selected local profile.");

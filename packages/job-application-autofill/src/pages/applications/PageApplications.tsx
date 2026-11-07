@@ -1,13 +1,29 @@
 import { ArrowRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
-import { ApplicationReview } from "../../components/ApplicationReview/ApplicationReview";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import { useProfileSelection } from "../../hooks/useProfileSelection";
+import { useJobApplications } from "../../hooks/useJobApplications";
+import { PageStatus } from "../../components/App/PageStatus";
+import { useJobTracker } from "../../hooks/useJobTracker";
+import { openApplication } from "../../utils/application/openApplication";
 
-export function PageApplications({ controller }: { controller: ApplicationController }) {
-  const { jobs } = controller;
+export function PageApplications() {
+  const selection = useProfileSelection();
+  const applications = useJobApplications({
+    profileId: selection.activeProfileId,
+    enabled: selection.hydrated,
+    applicationId: selection.applicationId,
+    setMessage: selection.setMessage,
+  });
+  const tracker = useJobTracker({ ...selection, ...applications });
+  const { jobs } = applications;
+  const prepareJob = (job: (typeof jobs)[number]) =>
+    openApplication(job, selection.activeProfileId, selection.activeResumeId);
+  const controller = { ...selection, ...applications, ...tracker, prepareJob };
+  const ready = selection.hydrated && applications.jobsHydrated;
   return (
-    <>
+    <PageStatus hydrated={ready} message={selection.message} setMessage={selection.setMessage}>
+      <>
       <WorkspaceHeader
         title="Applications"
         description="Organize your job search and keep every application on track."
@@ -34,8 +50,8 @@ export function PageApplications({ controller }: { controller: ApplicationContro
         <div className="stat"><span><MessageCircle size={15} aria-hidden="true" /> Interviews</span>
           <strong>{jobs.filter((job) => job.status === "interview").length}</strong></div>
       </section>
-      <ApplicationReview controller={controller} />
       <Opportunities controller={controller} />
-    </>
+      </>
+    </PageStatus>
   );
 }

@@ -1,22 +1,13 @@
-import { createBrowserRouter, Navigate, useLocation } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { App } from "./components/App/App";
+import { routes, pageRoutes } from "./routes";
 
-function LegacyResumeRedirect({ to }: { to: string }) {
-  const location = useLocation();
-  return <Navigate to={{ pathname: to, search: location.search, hash: location.hash }} replace />;
-}
-
-const appRoutes = ["/applications", "/profile", "/resumes", "/resumes/edit", "/resumes/view", "/resumes/import", "/workspace"] as const;
 export const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/applications" replace /> },
-  ...appRoutes.map(path => ({path,element:<App />})),
-  { path: "/resume", element: <LegacyResumeRedirect to="/resumes" /> },
-  { path: "/resume/edit", element: <LegacyResumeRedirect to="/resumes/edit" /> },
-  { path: "/import", element: <LegacyResumeRedirect to="/resumes/import" /> },
-  { path: "/resume/import", element: <LegacyResumeRedirect to="/resumes/import" /> },
-  { path: "/apply/:applicationId", element: <App /> },
-  { path: "*", element: <Navigate to="/applications" replace /> },
+  { path: routes.home, element: <Navigate to={routes.applications} replace /> },
+  ...pageRoutes.map((path) => ({ path, element: <App /> })),
+  { path: routes.applicationReview, element: <App /> },
+  { path: routes.notFound, element: <Navigate to={routes.applications} replace /> },
 ]);
 
 export function AppRouter() {

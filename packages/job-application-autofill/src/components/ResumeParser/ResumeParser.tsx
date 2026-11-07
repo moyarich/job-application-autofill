@@ -1,9 +1,11 @@
+import type { ResumeImportData } from "../feature-props";
 import "./ResumeParser.css";
-import type { ApplicationController } from "../../utils/application/useApplication";
+
+
 export function ResumeParser({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ResumeImportData;
 }) {
   const {
     resumeRef,

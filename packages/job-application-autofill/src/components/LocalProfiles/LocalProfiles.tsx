@@ -1,11 +1,12 @@
+import type { ResumeLibraryData } from "../feature-props";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
-import type { ApplicationController } from "../../utils/application/useApplication";
 
-export function LocalProfiles({ controller }: { controller: ApplicationController }) {
+
+export function LocalProfiles({ controller }: { controller: ResumeLibraryData }) {
   const { profiles,activeProfileId,switchProfile,createPerson,renamePerson,removePerson,
-    applicationId,applyBusy,session } = controller;
-  const locked = Boolean(applicationId || applyBusy || session);
+    applicationId } = controller;
+  const locked = Boolean(applicationId);
   return (
     <div className="local-profiles">
       <label htmlFor="local-person">Current profile</label>

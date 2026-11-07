@@ -1,13 +1,16 @@
+import type { TrackerData } from "../feature-props";
 import "./Opportunities.css";
 import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
-import type { ApplicationController } from "../../utils/application/useApplication";
+
+
+
 export function Opportunities({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: TrackerData;
 }) {
   const {
     addJob,
@@ -17,8 +20,6 @@ export function Opportunities({
     search,
     setSearch,
     filtered,
-    applyBusy,
-    session,
     prepareJob,
     changeJob,
     setNotesJobId,
@@ -120,10 +121,10 @@ export function Opportunities({
                 </div>
                 <button
                   className="primary"
-                  disabled={applyBusy || Boolean(session) || !job.url}
+                  disabled={!job.url}
                   onClick={() => prepareJob(job)}
                 >
-                  {applyBusy ? "Preparing..." : "Apply"}
+                  Apply
                 </button>
                 <select
                   aria-label={`Status for ${job.company} ${job.role}`}

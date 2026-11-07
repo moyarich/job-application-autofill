@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { openStore } from "../../packages/resume-api/store.ts";
+import { openStore } from "../../packages/resume-api/src/database/store.ts";
 
 test("employer account setup status is isolated across people and tenant keys", () => {
   const db = openStore(":memory:");

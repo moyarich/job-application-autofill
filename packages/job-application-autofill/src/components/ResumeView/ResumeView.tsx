@@ -1,6 +1,7 @@
+import type { ResumeViewData } from "../feature-props";
 import { renderResumeHtml } from "@moyarich/resume/render-html";
 import { Pencil, ArrowLeft } from "lucide-react";
-import type { ApplicationController } from "../../utils/application/useApplication";
+
 import {
   resumeExportFormats,
   type ResumeExportFormat,
@@ -9,7 +10,7 @@ import "./ResumeView.css";
 export function ResumeView({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ResumeViewData;
 }) {
   const resume = controller.resumeVersions.find(
     (item) => item.id === controller.activeResumeId,

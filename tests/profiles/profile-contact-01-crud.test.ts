@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   openStore,
   DEFAULT_PROFILE_ID,
-} from "../../packages/resume-api/store.ts";
+} from "../../packages/resume-api/src/database/store.ts";
 
 const sample = JSON.parse(
   readFileSync(
@@ -70,7 +70,7 @@ test("profile contact CRUD preserves resume links and promotes next default", ()
     });
     expect(db.listContacts(DEFAULT_PROFILE_ID)).toHaveLength(1);
     expect(db.listContacts(DEFAULT_PROFILE_ID)[0].isDefault).toBeTruthy();
-    expect(db.getSnapshot(DEFAULT_PROFILE_ID, resume.id).contactId).toBe(
+    expect(db.getResumeContent(DEFAULT_PROFILE_ID, resume.id).contactId).toBe(
       first.id,
     );
   } finally {
@@ -95,9 +95,9 @@ test("structured contact details are shared with linked resumes and survive upda
     const saved = db.createContact(DEFAULT_PROFILE_ID, contact, "Personal");
     expect(db.listContacts(DEFAULT_PROFILE_ID)[0]).toMatchObject(contact);
     const resume = db.createResume(DEFAULT_PROFILE_ID, "Linked");
-    const snapshot = db.getSnapshot(DEFAULT_PROFILE_ID, resume.id);
-    db.saveSnapshot(
-      { ...snapshot, profile: { ...sample, contact } },
+    const snapshot = db.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
+    db.saveResumeContent(
+      { revision: snapshot.revision, profile: { ...sample, contact }, contactId: snapshot.contactId },
       DEFAULT_PROFILE_ID,
       resume.id,
     );
@@ -106,7 +106,7 @@ test("structured contact details are shared with linked resumes and survive upda
       city: "Evanston",
     });
     expect(
-      db.getSnapshot(DEFAULT_PROFILE_ID, resume.id).profile?.contact,
+      db.getResumeContent(DEFAULT_PROFILE_ID, resume.id).profile?.contact,
     ).toMatchObject({ ...contact, city: "Evanston" });
   } finally {
     db.close();
@@ -146,15 +146,15 @@ test("contacts with only some address fields still produce valid resume snapshot
       "Personal",
     );
     const resume = db.createResume(DEFAULT_PROFILE_ID, "Linked");
-    const snapshot = db.getSnapshot(DEFAULT_PROFILE_ID, resume.id);
-    db.saveSnapshot(
-      { ...snapshot, profile: { ...sample, contact: snapshot.contact } },
+    const snapshot = db.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
+    db.saveResumeContent(
+      { revision: snapshot.revision, profile: { ...sample, contact: { ...sample.contact, city: "Chicago" } }, contactId: snapshot.contactId },
       DEFAULT_PROFILE_ID,
       resume.id,
     );
     expect(() =>
-      db.saveSnapshot(
-        db.getSnapshot(DEFAULT_PROFILE_ID, resume.id),
+      db.saveResumeContent(
+        db.getResumeContent(DEFAULT_PROFILE_ID, resume.id),
         DEFAULT_PROFILE_ID,
         resume.id,
       ),

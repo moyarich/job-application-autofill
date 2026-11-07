@@ -45,34 +45,21 @@ test("application pages use separate UUIDs and restore only their own session", 
           ],
           defaultProfileId: personId,
         };
-      else if (url.pathname === "/api/state")
-        body = {
-          revision: 1,
-          profile,
-          contact: profile.contact,
-          contactId,
-          defaultContactId: contactId,
-          contacts: [
-            {
-              ...profile.contact,
-              id: contactId,
-              profileId: personId,
-              name: "Primary contact",
-              isDefault: true,
-            },
-          ],
-          jobs,
-          resumeId,
-          resumes: [
-            {
-              id: resumeId,
-              name: "Primary resume",
-              contactId,
-              createdAt: "2026-11-06T00:00:00Z",
-              updatedAt: "2026-11-06T00:00:00Z",
-            },
-          ],
-        };
+      else if (url.pathname === "/api/resumes")
+        body = { resumes: [{
+          id: resumeId, name: "Primary resume", contactId,
+          createdAt: "2026-11-06T00:00:00Z",
+          updatedAt: "2026-11-06T00:00:00Z",
+        }] };
+      else if (url.pathname === "/api/resumes/" + resumeId + "/content")
+        body = { revision: 1, profile, contactId, resumeId };
+      else if (url.pathname === "/api/profile-contacts")
+        body = { contacts: [{
+          ...profile.contact, id: contactId, profileId: personId,
+          name: "Primary contact", isDefault: true,
+        }] };
+      else if (url.pathname === "/api/jobs")
+        body = { revision: 1, jobs };
       else if (url.pathname === "/api/apply/active")
         body = {
           session: sessions.get(url.searchParams.get("jobId") || "") || null,
@@ -150,26 +137,17 @@ test("a restored preparing session updates without reopening the employer browse
           profiles: [{ id: person, name: "Default", createdAt: "2026-11-06" }],
           defaultProfileId: person,
         };
-      if (path === "/api/state")
-        json = {
-          revision: 1,
-          profile,
-          contact: profile.contact,
-          contactId: null,
-          defaultContactId: null,
-          contacts: [],
-          jobs: [job],
-          resumeId: resume,
-          resumes: [
-            {
-              id: resume,
-              name: "Resume",
-              contactId: null,
-              createdAt: "2026-11-06",
-              updatedAt: "2026-11-06",
-            },
-          ],
-        };
+      if (path === "/api/resumes")
+        json = { resumes: [{
+          id: resume, name: "Resume", contactId: null,
+          createdAt: "2026-11-06", updatedAt: "2026-11-06",
+        }] };
+      if (path === "/api/resumes/" + resume + "/content")
+        json = { revision: 1, profile, contactId: null, resumeId: resume };
+      if (path === "/api/profile-contacts")
+        json = { contacts: [] };
+      if (path === "/api/jobs")
+        json = { revision: 1, jobs: [job] };
       if (path === "/api/apply/active")
         json = {
           session: {

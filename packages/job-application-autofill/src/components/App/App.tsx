@@ -1,10 +1,10 @@
 import "./App.css";
 import { ArrowUpRight } from "lucide-react";
-import { useApplication } from "../../utils/application/useApplication";
-import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
+import { useLocation, useParams } from "react-router";
+import { tabForPath } from "../../routes";
 import { Sidebar } from "../Sidebar/Sidebar";
-import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
 import { PageApplications } from "../../pages/applications/PageApplications";
+import { PageApplicationReview } from "../../pages/applications/PageApplicationReview";
 import { PageResumes } from "../../pages/resumes/PageResumes";
 import { PageResumeEditor } from "../../pages/resumes/PageResumeEditor";
 import { PageResumeView } from "../../pages/resumes/PageResumeView";
@@ -13,51 +13,30 @@ import { PageProfile } from "../../pages/profile/PageProfile";
 import { PageWorkspace } from "../../pages/workspace/PageWorkspace";
 
 export function App() {
-  const controller = useApplication();
-  const { applicationId, tab, hydrated, message, setMessage } = controller;
-
-  if (!hydrated)
-    return (
-      <div className={applicationId ? "app application-page" : "app"}>
-        <main className="main">
-          <h1>Opening your workspace</h1>
-          <p>{message || "Loading your information..."}</p>
-        </main>
-      </div>
-    );
+  const location = useLocation();
+  const applicationId = useParams().applicationId ?? null;
+  const tab = tabForPath(location.pathname);
 
   return (
     <div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
-        {message && (
-          <div className="notice" role="status">
-            {message}
-            <button
-              onClick={() => setMessage("")}
-              aria-label="Dismiss notification"
-            >
-              ×
-            </button>
-          </div>
-        )}
-        {!applicationId && <ContactImportReview controller={controller} />}
         {applicationId ? (
-          <ApplicationReview controller={controller} />
+          <PageApplicationReview />
         ) : tab === "applications" ? (
-          <PageApplications controller={controller} />
+          <PageApplications />
         ) : tab === "parser" ? (
-          <PageResumeImport controller={controller} />
+          <PageResumeImport />
         ) : tab === "view" ? (
-          <PageResumeView controller={controller} />
+          <PageResumeView />
         ) : tab === "resumes" ? (
-          <PageResumes controller={controller} />
+          <PageResumes />
         ) : tab === "personal" ? (
-          <PageProfile controller={controller} />
+          <PageProfile />
         ) : tab === "workspace" ? (
-          <PageWorkspace controller={controller} />
+          <PageWorkspace />
         ) : (
-          <PageResumeEditor controller={controller} />
+          <PageResumeEditor />
         )}
         <footer>
           Review all application details before submitting.

@@ -1,3 +1,4 @@
+import type { ResumeLibraryData } from "../feature-props";
 import {
   resumeExportFormats,
   type ResumeExportFormat,
@@ -14,7 +15,7 @@ import {
   Files,
   Link2,
 } from "lucide-react";
-import type { ApplicationController } from "../../utils/application/useApplication";
+
 import "./ResumeManager.css";
 
 type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
@@ -22,7 +23,7 @@ type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
 export function ResumeManager({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ResumeLibraryData;
 }) {
   const {
     resumeVersions,
@@ -33,11 +34,9 @@ export function ResumeManager({
     removeResume,
     openResume,
     exportResumeVersion,
-    applyBusy,
     applicationId,
-    session,
   } = controller;
-  const locked = Boolean(applicationId || applyBusy || session);
+  const locked = Boolean(applicationId);
   const [search, setSearch] = useState("");
   const visibleResumes = resumeVersions.filter((resume) =>
     resume.name.toLowerCase().includes(search.toLowerCase()),

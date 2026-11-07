@@ -17,6 +17,21 @@ export const handleResumes: RouteHandler = async ({ req, url, store, profileId }
         ),
       );
     }
+    const contentRoute = url.pathname.match(
+      /^\/api\/resumes\/([0-9a-f-]{36})\/content$/i,
+    );
+    if (contentRoute && req.method === "GET") {
+      return reply(200, store.getResumeContent(profileId, contentRoute[1]));
+    }
+    if (contentRoute && req.method === "PUT") {
+      try {
+        return reply(200, store.saveResumeContent(await req.readJson(), profileId, contentRoute[1]));
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "STALE_STATE")
+          return reply(409, { error: error.message });
+        throw error;
+      }
+    }
     const resumeRoute = url.pathname.match(
       /^\/api\/resumes\/([0-9a-f-]{36})$/i,
     );

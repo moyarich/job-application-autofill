@@ -1,9 +1,10 @@
+import type { ApplicationReviewData } from "../feature-props";
 import { generateAccountPassword, accountPasswordValid } from "../../utils/profile/password";
 import { useState } from "react";
-import type { ApplicationController } from "../../utils/application/useApplication";
+
 import "./EmployerAccountSetup.css";
 
-export function EmployerAccountSetup({ controller }: { controller: ApplicationController }) {
+export function EmployerAccountSetup({ controller }: { controller: ApplicationReviewData }) {
   const { session, applyBusy, prepareAccountSignUp, setEmployerAccountStatus } = controller;
   const [password, setPassword] = useState("");
   const [generated, setGenerated] = useState(false);

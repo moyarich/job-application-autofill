@@ -2,11 +2,24 @@ import { ContactManager } from "../../components/ContactManager/ContactManager";
 import { LocalProfiles } from "../../components/LocalProfiles/LocalProfiles";
 import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import { useProfileSelection } from "../../hooks/useProfileSelection";
+import { useProfileContacts } from "../../hooks/useProfileContacts";
+import { PageStatus } from "../../components/App/PageStatus";
+import { createResumeCommands } from "../../utils/resumes/commands";
 
-export function PageWorkspace({ controller }: { controller: ApplicationController }) {
+export function PageWorkspace() {
+  const selection = useProfileSelection();
+  const contacts = useProfileContacts({
+    profileId: selection.activeProfileId, enabled: selection.hydrated,
+    setMessage: selection.setMessage,
+  });
+  const ready = selection.hydrated && contacts.contactsHydrated;
+  const flushPending = async () => { await contacts.flushContacts(); };
+  const record = { ...selection, ...contacts, flushPending, hydrated: ready };
+  const controller = { ...record, ...createResumeCommands(record) };
   return (
-    <>
+    <PageStatus hydrated={ready} message={selection.message} setMessage={selection.setMessage}>
+      <>
       <WorkspaceHeader
         title="Profiles & resumes"
         description="Manage profiles and the resumes associated with each profile."
@@ -20,6 +33,7 @@ export function PageWorkspace({ controller }: { controller: ApplicationControlle
       </section>
       <ResumeManager controller={controller} />
       <ContactManager controller={controller} />
-    </>
+      </>
+    </PageStatus>
   );
 }
