@@ -10,6 +10,7 @@ import { PageResumeEditor } from "./pages/resumes/PageResumeEditor";
 import { PageResumeView } from "./pages/resumes/PageResumeView";
 import { PageResumeImport } from "./pages/resumes/PageResumeImport";
 import { PageProfile } from "./pages/profile/PageProfile";
+import { PageContacts } from "./pages/contacts/PageContacts";
 import { PageWorkspace } from "./pages/workspace/PageWorkspace";
 
 export function App() {
@@ -33,6 +34,8 @@ export function App() {
           <PageResumes />
         ) : tab === "personal" ? (
           <PageProfile />
+        ) : tab === "contacts" ? (
+          <PageContacts />
         ) : tab === "workspace" ? (
           <PageWorkspace />
         ) : (

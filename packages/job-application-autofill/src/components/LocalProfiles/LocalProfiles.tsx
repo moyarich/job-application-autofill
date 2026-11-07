@@ -1,9 +1,14 @@
 import type { ResumeLibraryData } from "../feature-props";
+
+type ProfileManagerData = Pick<ResumeLibraryData,
+  "profiles" | "activeProfileId" | "switchProfile" | "createPerson" |
+  "renamePerson" | "removePerson" | "applicationId"
+>;
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
 
 
-export function LocalProfiles({ controller }: { controller: ResumeLibraryData }) {
+export function LocalProfiles({ controller }: { controller: ProfileManagerData }) {
   const { profiles,activeProfileId,switchProfile,createPerson,renamePerson,removePerson,
     applicationId } = controller;
   const locked = Boolean(applicationId);

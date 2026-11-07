@@ -5,6 +5,7 @@ export const routes = {
   applicationReview: "/apply/:applicationId",
   applicationViewer: "/application-viewer.html",
   profile: "/profile",
+  contacts: "/contacts",
   resumes: "/resumes",
   resumeEditor: "/resumes/edit",
   resumeView: "/resumes/view",
@@ -16,6 +17,7 @@ export const routes = {
 export const pageRoutes = [
   routes.applications,
   routes.profile,
+  routes.contacts,
   routes.resumes,
   routes.resumeEditor,
   routes.resumeView,
@@ -29,6 +31,7 @@ export type WorkspaceTab =
   | "view"
   | "resumes"
   | "personal"
+  | "contacts"
   | "parser"
   | "workspace";
 
@@ -38,6 +41,7 @@ export const tabRoutes: Record<WorkspaceTab, string> = {
   view: routes.resumeView,
   resumes: routes.resumes,
   personal: routes.profile,
+  contacts: routes.contacts,
   parser: routes.resumeImport,
   workspace: routes.workspace,
 };
