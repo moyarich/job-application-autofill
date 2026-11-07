@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 const source = (path: string) =>
   readFileSync(new URL("../../" + path, import.meta.url), "utf8");
 
+const pages = "packages/job-application-autofill/src/pages/";
+
 describe("workspace header actions", () => {
   it("is presentation-only and accepts optional actions from its page", () => {
     const header = source(
@@ -17,11 +19,26 @@ describe("workspace header actions", () => {
     expect(header).not.toContain("View applications");
   });
 
-  it("supplies only an applications action from the app page", () => {
+  it("defines page-specific actions inside pages rather than the app shell", () => {
     const app = source("packages/job-application-autofill/src/components/App/App.tsx");
-    expect(app).toContain("...pageHeaders[tab as keyof typeof pageHeaders]");
-    expect(app).toContain('tab === "applications" ? (');
-    expect(app).toContain("Add application");
-    expect(app).not.toContain("View applications <");
+    expect(app).not.toContain("<WorkspaceHeader");
+    expect(app).not.toContain("pageHeaders");
+    expect(app).not.toContain("Add application");
+    const applications = source(pages + "ApplicationsPage.tsx");
+    expect(applications).toContain("Add application");
+    expect(applications).toContain('title="Applications"');
+    for (const name of [
+      "ResumesPage",
+      "ResumeEditorPage",
+      "ResumeViewPage",
+      "ResumeImportPage",
+      "ProfilePage",
+      "WorkspacePage",
+    ]) {
+      const page = source(pages + name + ".tsx");
+      expect(page).toContain("<WorkspaceHeader");
+      expect(page).not.toContain("actions={");
+      expect(page).not.toContain("Add application");
+    }
   });
 });

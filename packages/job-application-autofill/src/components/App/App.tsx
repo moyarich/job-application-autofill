@@ -1,52 +1,20 @@
-import { ResumeView } from "../ResumeView/ResumeView";
 import "./App.css";
-import { ArrowRight, ArrowUpRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useApplication } from "../../utils/application/useApplication";
-import { ResumeParser } from "../ResumeParser/ResumeParser";
-import { CandidateProfile } from "../CandidateProfile/CandidateProfile";
 import { ApplicationReview } from "../ApplicationReview/ApplicationReview";
-import { Opportunities } from "../Opportunities/Opportunities";
 import { Sidebar } from "../Sidebar/Sidebar";
-import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader";
 import { ContactImportReview } from "../ContactImportReview/ContactImportReview";
-import { LocalProfiles } from "../LocalProfiles/LocalProfiles";
-import { ContactManager } from "../ContactManager/ContactManager";
-import { ResumeManager } from "../ResumeManager/ResumeManager";
-const pageHeaders = {
-  applications: {
-    title: "Applications",
-    description: "Organize your job search and keep every application on track.",
-  },
-  resumes: {
-    title: "Resumes",
-    description: "Your experience, tailored for every opportunity. Manage all your resume versions here.",
-  },
-  view: {
-    title: "View resume",
-    description: "Review your resume and export it in the format you need.",
-  },
-  profile: {
-    title: "Resume editor",
-    description: "Manage your contact details, experience, and resume versions.",
-  },
-  parser: {
-    title: "Import a resume",
-    description: "Bring in a PDF, Word document, or resume JSON to get started.",
-  },
-  personal: {
-    title: "Profile",
-    description: "Manage your saved contact details and the profile you are working with.",
-  },
-  workspace: {
-    title: "Profiles & resumes",
-    description: "Manage profiles and the resumes associated with each profile.",
-  },
-} as const;
+import { ApplicationsPage } from "../../pages/ApplicationsPage";
+import { ResumesPage } from "../../pages/ResumesPage";
+import { ResumeEditorPage } from "../../pages/ResumeEditorPage";
+import { ResumeViewPage } from "../../pages/ResumeViewPage";
+import { ResumeImportPage } from "../../pages/ResumeImportPage";
+import { ProfilePage } from "../../pages/ProfilePage";
+import { WorkspacePage } from "../../pages/WorkspacePage";
 
 export function App() {
   const controller = useApplication();
-  const { applicationId, tab, jobs, hydrated, message, setMessage } =
-    controller;
+  const { applicationId, tab, hydrated, message, setMessage } = controller;
 
   if (!hydrated)
     return (
@@ -57,30 +25,11 @@ export function App() {
         </main>
       </div>
     );
+
   return (
     <div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
-        {!applicationId && (
-          <WorkspaceHeader
-            {...pageHeaders[tab as keyof typeof pageHeaders]}
-            actions={
-              tab === "applications" ? (
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() =>
-                    document.getElementById("add-application")?.scrollIntoView({
-                      behavior: "smooth",
-                    })
-                  }
-                >
-                  Add application <ArrowRight size={16} />
-                </button>
-              ) : undefined
-            }
-          />
-        )}
         {message && (
           <div className="notice" role="status">
             {message}
@@ -93,50 +42,27 @@ export function App() {
           </div>
         )}
         {!applicationId && <ContactImportReview controller={controller} />}
-        {applicationId ? <ApplicationReview controller={controller} /> : tab === "applications" ? (
-          <>
-            <section className="stats" aria-label="Application overview">
-              <div className="stat"><span><ListChecks size={15} aria-hidden="true" /> Total applications</span><strong>{jobs.length}</strong></div>
-              <div className="stat"><span><Clock3 size={15} aria-hidden="true" /> In progress</span>
-                <strong>{jobs.filter(job => job.status === "in_progress" || job.status === "ready_for_review").length}</strong></div>
-              <div className="stat"><span><CheckCircle2 size={15} aria-hidden="true" /> Submitted</span>
-                <strong>{jobs.filter(job => job.status === "submitted").length}</strong></div>
-              <div className="stat"><span><MessageCircle size={15} aria-hidden="true" /> Interviews</span>
-                <strong>{jobs.filter(job => job.status === "interview").length}</strong></div>
-            </section>
-            <ApplicationReview controller={controller} />
-            <Opportunities controller={controller} />
-          </>
+        {applicationId ? (
+          <ApplicationReview controller={controller} />
+        ) : tab === "applications" ? (
+          <ApplicationsPage controller={controller} />
         ) : tab === "parser" ? (
-          <ResumeParser controller={controller} />
+          <ResumeImportPage controller={controller} />
         ) : tab === "view" ? (
-          <ResumeView controller={controller} />
+          <ResumeViewPage controller={controller} />
         ) : tab === "resumes" ? (
-          <ResumeManager controller={controller} />
+          <ResumesPage controller={controller} />
         ) : tab === "personal" ? (
-          <>
-            <section className="panel">
-              <div className="panel-title"><h2>Your profile</h2><p>Choose a profile and manage its saved contact details.</p></div>
-              <LocalProfiles controller={controller} />
-            </section>
-            <ContactManager controller={controller} />
-          </>
+          <ProfilePage controller={controller} />
         ) : tab === "workspace" ? (
-          <>
-          <section className="panel workspace-management">
-            <div className="panel-title">
-              <h2>Manage profiles and resumes</h2>
-              <p>Switch between profiles, create resume versions, and manage saved records.</p>
-            </div>
-            <LocalProfiles controller={controller} />
-          </section>
-          <ResumeManager controller={controller} />
-          <ContactManager controller={controller} />
-          </>
+          <WorkspacePage controller={controller} />
         ) : (
-          <CandidateProfile controller={controller} />
+          <ResumeEditorPage controller={controller} />
         )}
-        <footer>Review all application details before submitting. <ArrowUpRight size={13} aria-hidden="true" /></footer>
+        <footer>
+          Review all application details before submitting.
+          <ArrowUpRight size={13} aria-hidden="true" />
+        </footer>
       </main>
     </div>
   );
