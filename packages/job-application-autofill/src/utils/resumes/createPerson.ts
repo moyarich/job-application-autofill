@@ -3,7 +3,7 @@ import { createLocalProfile } from "../api/client";
 import { navigateTo } from "./navigateTo";
 
 export function createCreatePerson(context: ProfileResumeActionsContext) {
-  const { profile, flushPending, setMessage } = context;
+  const { flushPending, setMessage } = context;
   async function createPerson() {
     const value = window.prompt("Name for the new local profile");
     if (!value) return;
