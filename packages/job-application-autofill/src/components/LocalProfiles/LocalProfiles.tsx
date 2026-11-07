@@ -1,8 +1,9 @@
+import type { ResumeLibraryData } from "../controller-types";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import "./LocalProfiles.css";
-import type { useWorkspace } from "../../hooks/useWorkspace";
 
-export function LocalProfiles({ controller }: { controller: ReturnType<typeof useWorkspace> }) {
+
+export function LocalProfiles({ controller }: { controller: ResumeLibraryData }) {
   const { profiles,activeProfileId,switchProfile,createPerson,renamePerson,removePerson,
     applicationId } = controller;
   const locked = Boolean(applicationId);

@@ -1,3 +1,4 @@
+import type { ResumeLibraryData } from "../controller-types";
 import {
   resumeExportFormats,
   type ResumeExportFormat,
@@ -14,7 +15,7 @@ import {
   Files,
   Link2,
 } from "lucide-react";
-import type { useWorkspace } from "../../hooks/useWorkspace";
+
 import "./ResumeManager.css";
 
 type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
@@ -22,7 +23,7 @@ type FormMode = { action: "new" | "copy" | "rename"; resumeId?: string };
 export function ResumeManager({
   controller,
 }: {
-  controller: ReturnType<typeof useWorkspace>;
+  controller: ResumeLibraryData;
 }) {
   const {
     resumeVersions,

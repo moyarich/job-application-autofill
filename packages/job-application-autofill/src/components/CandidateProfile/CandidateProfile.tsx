@@ -1,3 +1,4 @@
+import type { ResumeEditorData } from "../controller-types";
 import { useEffect, useRef, useState } from "react";
 import {
   resumeExportFormats,
@@ -15,8 +16,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
-import type { useWorkspace } from "../../hooks/useWorkspace";
-import type { useResumeImport } from "../../hooks/useResumeImport";
+
+
 /** Keep incomplete comma-separated text while persisting only complete skill values. */
 function SkillsInput({
   skills,
@@ -60,7 +61,7 @@ function SkillsInput({
 export function CandidateProfile({
   controller,
 }: {
-  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useResumeImport>;
+  controller: ResumeEditorData;
 }) {
   const {
     importRef,

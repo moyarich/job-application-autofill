@@ -1,15 +1,16 @@
+import type { TrackerData } from "../controller-types";
 import "./Opportunities.css";
 import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
-import type { useWorkspace } from "../../hooks/useWorkspace";
-import type { useJobTracker } from "../../hooks/useJobTracker";
-import type { JobApplication } from "../../index";
+
+
+
 export function Opportunities({
   controller,
 }: {
-  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useJobTracker> & { prepareJob: (job: JobApplication) => void };
+  controller: TrackerData;
 }) {
   const {
     addJob,

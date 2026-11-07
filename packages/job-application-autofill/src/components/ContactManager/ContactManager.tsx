@@ -1,7 +1,8 @@
+import type { StoredRecord } from "../controller-types";
 import { useState, type FormEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { CandidateProfile } from "../../index";
-import type { useWorkspace } from "../../hooks/useWorkspace";
+
 import {
   addProfileContact,
   updateProfileContact,
@@ -30,7 +31,7 @@ const values = (entry: Contact) =>
 export function ContactManager({
   controller,
 }: {
-  controller: ReturnType<typeof useWorkspace>;
+  controller: StoredRecord;
 }) {
   const { contacts, resumeVersions, activeProfileId, flushPending } =
     controller;

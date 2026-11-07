@@ -1,9 +1,10 @@
+import type { ApplicationReviewData } from "../controller-types";
 import { generateAccountPassword, accountPasswordValid } from "../../utils/profile/password";
 import { useState } from "react";
-import type { useApplicationReview } from "../../hooks/useApplicationReview";
+
 import "./EmployerAccountSetup.css";
 
-export function EmployerAccountSetup({ controller }: { controller: ReturnType<typeof useApplicationReview> }) {
+export function EmployerAccountSetup({ controller }: { controller: ApplicationReviewData }) {
   const { session, applyBusy, prepareAccountSignUp, setEmployerAccountStatus } = controller;
   const [password, setPassword] = useState("");
   const [generated, setGenerated] = useState(false);

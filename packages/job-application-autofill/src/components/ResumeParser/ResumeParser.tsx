@@ -1,10 +1,11 @@
+import type { ResumeImportData } from "../controller-types";
 import "./ResumeParser.css";
-import type { useWorkspace } from "../../hooks/useWorkspace";
-import type { useResumeImport } from "../../hooks/useResumeImport";
+
+
 export function ResumeParser({
   controller,
 }: {
-  controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useResumeImport>;
+  controller: ResumeImportData;
 }) {
   const {
     resumeRef,

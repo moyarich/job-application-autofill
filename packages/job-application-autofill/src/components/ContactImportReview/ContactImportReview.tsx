@@ -1,17 +1,18 @@
+import type { ResumeImportData } from "../controller-types";
 import { useState } from "react";
 import { CheckCircle2, ContactRound, Info } from "lucide-react";
 import "./ContactImportReview.css";
-import type { useWorkspace } from "../../hooks/useWorkspace";
-import type { useResumeImport } from "../../hooks/useResumeImport";
+
+
 import type { ContactChoice } from "../../utils/api/client";
 import { fields } from "../../utils/profile/fields";
 
-export function ContactImportReview({ controller }: { controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useResumeImport> }) {
+export function ContactImportReview({ controller }: { controller: ResumeImportData }) {
   if (!controller.pendingImport) return null;
   return <ContactImportDecision key={JSON.stringify(controller.pendingImport)} controller={controller} />;
 }
 
-function ContactImportDecision({ controller }: { controller: ReturnType<typeof useWorkspace> & ReturnType<typeof useResumeImport> }) {
+function ContactImportDecision({ controller }: { controller: ResumeImportData }) {
   const { pendingImport, contactId, selectedContact, confirmImport, cancelImport } = controller;
   const [strategy, setStrategy] = useState<ContactChoice>("resume");
   if (!pendingImport) return null;
