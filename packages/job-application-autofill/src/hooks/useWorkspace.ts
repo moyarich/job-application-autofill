@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
+import { tabForPath, tabRoutes, type WorkspaceTab } from "../routes";
 import {
   emptyCandidate,
   parseCandidateJson,
@@ -47,42 +48,9 @@ export function useWorkspace() {
     requestedResumeId ?? null,
   );
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tab =
-    location.pathname === "/resumes/edit"
-      ? "profile"
-      : location.pathname === "/resumes/view"
-        ? "view"
-        : location.pathname === "/resumes"
-          ? "resumes"
-          : location.pathname === "/profile"
-            ? "personal"
-            : location.pathname === "/resumes/import"
-              ? "parser"
-              : location.pathname === "/workspace"
-                ? "workspace"
-                : "applications";
-  function setTab(
-    next:
-      | "applications"
-      | "profile"
-      | "personal"
-      | "parser"
-      | "workspace"
-      | "resumes",
-  ) {
-    navigate({
-      pathname:
-        next === "parser"
-          ? "/resumes/import"
-          : next === "profile"
-            ? "/resumes/edit"
-            : next === "resumes"
-              ? "/resumes"
-              : next === "personal"
-                ? "/profile"
-                : "/" + next,
-      search: location.search,
-    });
+  const tab = tabForPath(location.pathname);
+  function setTab(next: WorkspaceTab) {
+    navigate({ pathname: tabRoutes[next], search: location.search });
   }
   const [profile, setProfile] = useState<CandidateProfile>(() =>
     structuredClone(emptyCandidate),
