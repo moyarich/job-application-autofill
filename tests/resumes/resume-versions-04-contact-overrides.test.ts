@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/store.ts";
+import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/src/database/store.ts";
 
 const sample = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json",import.meta.url),"utf8"));
 

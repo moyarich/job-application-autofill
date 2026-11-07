@@ -2,7 +2,7 @@ import { test, expect } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/store.ts";
+import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/src/database/store.ts";
 
 test("fresh database creates a profile and unlinked draft resume without placeholder contacts", () => {
   const dir = mkdtempSync(join(tmpdir(),"moya-fresh-db-"));

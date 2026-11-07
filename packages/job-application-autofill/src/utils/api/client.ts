@@ -62,7 +62,7 @@ export type ResumeContent = {
   contactId: string | null;
   profile: CandidateProfile | null;
 };
-export type JobList = { revision: number; jobs: JobApplication[] };
+export type JobList = { jobs: JobApplication[]; revisions: Record<string, number> };
 
 export async function readProfiles(): Promise<{ profiles: LocalProfile[]; defaultProfileId: string }> {
   return decodeResponse(await fetch("/api/profiles", {
@@ -127,15 +127,26 @@ export async function readJobs(profileId: string): Promise<JobList> {
     "Could not load applications.",
   );
 }
-export async function saveJobs(
-  profileId: string, payload: { revision: number; jobs: JobApplication[] },
+export async function saveJob(
+  profileId: string, payload: { revision: number; job: JobApplication },
 ): Promise<{ revision: number }> {
   return decodeResponse<{ revision: number }>(
     await fetch("/api/jobs", {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
       body: JSON.stringify(payload),
-    }), "Could not save applications.",
+    }), "Could not save application.",
+  );
+}
+export async function deleteJob(
+  profileId: string, jobId: string, revision: number,
+): Promise<{ deleted: true }> {
+  return decodeResponse<{ revision: number; deleted: true }>(
+    await fetch("/api/jobs/" + encodeURIComponent(jobId), {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...profileHeaders(profileId) },
+      body: JSON.stringify({ revision }),
+    }), "Could not delete application.",
   );
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openStore } from "../../packages/resume-api/store.ts";
+import { openStore } from "../../packages/resume-api/src/database/store.ts";
 
 const example = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 const job = { id:"e8796d4c-828e-4634-aa60-ab39bc95e241",company:"Example",
@@ -16,14 +16,14 @@ describe("SQLite application data persistence", () => {
     try {
       const first=openStore(path);
       expect(first.getResumeContent()).toMatchObject({revision:0,profile:null});
-      expect(first.getJobList()).toMatchObject({revision:0,jobs:[]});
+      expect(first.getJobList()).toMatchObject({jobs:[],revisions:{}});
       expect(first.saveResumeContent({revision:0,profile:example,contactId:null})).toEqual({revision:1});
-      expect(first.saveJobList({revision:0,jobs:[job]})).toEqual({revision:1});
+      expect(first.updateJobRecord({revision:0,job})).toEqual({revision:1});
       first.close();
       const reopened=openStore(path);
       expect(reopened.getResumeContent()).toMatchObject({revision:1,profile:example});
-      expect(reopened.getJobList()).toMatchObject({revision:1,jobs:[job]});
-      expect(reopened.saveJobList({revision:1,jobs:[{...job,status:"interview",notes:"Updated"}]})).toEqual({revision:2});
+      expect(reopened.getJobList()).toMatchObject({jobs:[job],revisions:{[job.id]:1}});
+      expect(reopened.updateJobRecord({revision:1,job:{...job,status:"interview",notes:"Updated"}})).toEqual({revision:2});
       expect(reopened.getJobList().jobs[0].notes).toBe("Updated");
       reopened.close();
     } finally { rmSync(dir,{recursive:true,force:true}); }

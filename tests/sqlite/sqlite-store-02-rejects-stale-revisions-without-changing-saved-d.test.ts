@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 
-import { openStore } from "../../packages/resume-api/store.ts";
+import { openStore } from "../../packages/resume-api/src/database/store.ts";
 
 const example = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume-schema/resume.example.json", import.meta.url), "utf8"));
 const job = { id:"e8796d4c-828e-4634-aa60-ab39bc95e241",company:"Example",
@@ -15,8 +15,8 @@ describe("SQLite application data persistence", () => {
     const db=openStore(":memory:");
     try {
       db.saveResumeContent({revision:0,profile:example,contactId:null});
-      db.saveJobList({revision:0,jobs:[job]});
-      expect(()=>db.saveJobList({revision:0,jobs:[]})).toThrow(/another tab/);
+      db.updateJobRecord({revision:0,job});
+      expect(()=>db.updateJobRecord({revision:0,job})).toThrow(/another tab/);
       expect(db.getJobList().jobs).toEqual([job]);
     } finally { db.close(); }
   });

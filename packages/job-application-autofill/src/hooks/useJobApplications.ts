@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobApplication } from "../index";
-import { readJobs, saveJobs } from "../utils/api/client";
+import { readJobs, saveJob, deleteJob } from "../utils/api/client";
 
 /** Applications have their own list, revision, and save queue. No resume state. */
 export function useJobApplications({
@@ -13,7 +13,7 @@ export function useJobApplications({
 }) {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [jobsHydrated, setJobsHydrated] = useState(false);
-  const revisionRef = useRef(0);
+  const revisionsRef = useRef<Record<string, number>>({});
   const savedRef = useRef("");
   const queue = useRef<Promise<void>>(Promise.resolve());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,7 +26,7 @@ export function useJobApplications({
     readJobs(profileId).then((result) => {
       if (cancelled) return;
       setJobs(result.jobs);
-      revisionRef.current = result.revision;
+      revisionsRef.current = result.revisions;
       savedRef.current = JSON.stringify(result.jobs);
       blocked.current = false;
       setJobsHydrated(true);
@@ -40,8 +40,23 @@ export function useJobApplications({
     if (blocked.current) throw new Error("Application updates could not be saved.");
     const signature = JSON.stringify(jobs);
     if (signature === savedRef.current) return;
-    const result = await saveJobs(profileId, { revision: revisionRef.current, jobs });
-    revisionRef.current = result.revision;
+    const previous = JSON.parse(savedRef.current || "[]") as JobApplication[];
+    const before = new Map(previous.map((job) => [job.id, job]));
+    const after = new Map(jobs.map((job) => [job.id, job]));
+    for (const job of jobs) {
+      if (JSON.stringify(before.get(job.id)) === JSON.stringify(job)) continue;
+      const result = await saveJob(profileId, { revision: revisionsRef.current[job.id] ?? 0, job });
+      revisionsRef.current[job.id] = result.revision;
+      before.set(job.id, job);
+      savedRef.current = JSON.stringify([...before.values()]);
+    }
+    for (const previousJob of previous) {
+      if (after.has(previousJob.id)) continue;
+      await deleteJob(profileId, previousJob.id, revisionsRef.current[previousJob.id]);
+      delete revisionsRef.current[previousJob.id];
+      before.delete(previousJob.id);
+      savedRef.current = JSON.stringify([...before.values()]);
+    }
     savedRef.current = signature;
   }
 
