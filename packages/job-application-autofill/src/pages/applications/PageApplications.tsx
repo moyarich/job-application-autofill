@@ -2,9 +2,9 @@ import { ArrowRight, CheckCircle2, Clock3, ListChecks, MessageCircle } from "luc
 import { ApplicationReview } from "../../components/ApplicationReview/ApplicationReview";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 
-export function PageApplications({ controller }: { controller: ApplicationController }) {
+export function PageApplications({ controller }: { controller: ReturnType<typeof useApplication> }) {
   const { jobs } = controller;
   return (
     <>

@@ -1,8 +1,8 @@
 import { CandidateProfile } from "../../components/CandidateProfile/CandidateProfile";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 
-export function PageResumeEditor({ controller }: { controller: ApplicationController }) {
+export function PageResumeEditor({ controller }: { controller: ReturnType<typeof useApplication> }) {
   return (
     <>
       <WorkspaceHeader

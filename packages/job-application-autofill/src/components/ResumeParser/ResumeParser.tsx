@@ -1,9 +1,9 @@
 import "./ResumeParser.css";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 export function ResumeParser({
   controller,
 }: {
-  controller: ApplicationController;
+  controller: ReturnType<typeof useApplication>;
 }) {
   const {
     resumeRef,

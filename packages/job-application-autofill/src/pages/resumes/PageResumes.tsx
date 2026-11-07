@@ -1,8 +1,8 @@
 import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
-import type { ApplicationController } from "../../utils/application/useApplication";
+import type { useApplication } from "../../hooks/useApplication";
 
-export function PageResumes({ controller }: { controller: ApplicationController }) {
+export function PageResumes({ controller }: { controller: ReturnType<typeof useApplication> }) {
   return (
     <>
       <WorkspaceHeader
