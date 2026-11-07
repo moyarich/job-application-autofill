@@ -47,8 +47,7 @@ Express is not required by the package; the native Node adapter stays the defaul
 
 ## SQLite schema
 
-`src/database/schema.sql` defines the current SQLite tables and fields. A fresh
-database is initialized once; databases with incompatible schemas are rejected.
-There are no schema upgrades, migration shims, or legacy state tables.
+`src/database/schema.sql` defines the current SQLite tables and fields. Only the current schema is supported. Initialization uses the canonical table definitions;
+there is no schema versioning, historical migration chain, or compatibility code.
 
 Import persistence from `src/database/store.ts` directly. No compatibility entry point is provided.
