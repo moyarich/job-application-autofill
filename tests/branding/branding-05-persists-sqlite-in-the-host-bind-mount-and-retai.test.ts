@@ -13,7 +13,7 @@ describe("job-application-autofill application naming", () => {
   it("persists SQLite in the host bind mount and retains its database filename", () => {
     expect(source("docker-compose.yml")).toContain("name: moyaapply");
     expect(source("docker-compose.yml")).toContain("./sqlite-data:/app/data");
-    expect(source("packages/resume-api/store.ts")).toContain("data/moyaapply.sqlite");
+    expect(source("packages/resume-api/src/database/store.ts")).toContain("data/moyaapply.sqlite");
   });
   
 });

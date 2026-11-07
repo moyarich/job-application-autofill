@@ -277,7 +277,7 @@ export function ApplicationReview({
             ) : (
               <div className="application-loading" role="status">
                 <h3>Opening your application…</h3>
-                <p>Preparing your résumé and connecting to the employer.</p>
+                <p>Preparing your resume and connecting to the employer.</p>
               </div>
             )}
           </section>

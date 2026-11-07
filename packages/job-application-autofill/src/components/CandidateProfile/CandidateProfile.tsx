@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   resumeExportFormats,
   type ResumeExportFormat,
@@ -15,6 +16,46 @@ import {
 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
 import type { ApplicationController } from "../../utils/application/useApplication";
+/** Keep incomplete comma-separated text while persisting only complete skill values. */
+function SkillsInput({
+  skills,
+  onChange,
+}: {
+  skills: string[];
+  onChange: (skills: string[]) => void;
+}) {
+  const [draft, setDraft] = useState(() => skills.join(", "));
+  const lastEmitted = useRef(JSON.stringify(skills));
+
+  // Refresh the editor when skills change from an import or another section.
+  useEffect(() => {
+    const next = JSON.stringify(skills);
+    if (next !== lastEmitted.current) {
+      setDraft(skills.join(", "));
+      lastEmitted.current = next;
+    }
+  }, [skills]);
+
+  return (
+    <label className="wide-label">
+      Skills (comma-separated)
+      <textarea
+        rows={2}
+        value={draft}
+        onChange={(event) => {
+          const text = event.target.value;
+          const next = text.split(",").map((skill) => skill.trim()).filter(Boolean);
+          setDraft(text);
+          lastEmitted.current = JSON.stringify(next);
+          onChange(next);
+        }}
+        onBlur={() => setDraft(skills.join(", "))}
+        placeholder="React, AWS, TypeScript"
+      />
+    </label>
+  );
+}
+
 export function CandidateProfile({
   controller,
 }: {
@@ -239,24 +280,13 @@ export function CandidateProfile({
                 categories below.
               </p>
             </div>
-            <label className="wide-label">
-              Skills (comma-separated)
-              <textarea
-                rows={2}
-                value={profile.skills.join(", ")}
-                onChange={(e) =>
-                  setProfile((x) => ({
-                    ...x,
-                    skillGroups: [],
-                    skills: e.target.value
-                      .split(",")
-                      .map((v) => v.trim())
-                      .filter(Boolean),
-                  }))
-                }
-                placeholder="React, AWS, TypeScript"
-              />
-            </label>
+            <SkillsInput
+              key={controller.activeResumeId}
+              skills={profile.skills}
+              onChange={(skills) =>
+                setProfile((x) => ({ ...x, skillGroups: [], skills }))
+              }
+            />
           </section>
           <section
             className="panel resume-section-card employment-editor"

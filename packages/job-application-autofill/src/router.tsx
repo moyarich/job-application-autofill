@@ -1,4 +1,5 @@
-import { createBrowserRouter, Navigate, RouterProvider, useLocation } from "react-router";
+import { createBrowserRouter, Navigate, useLocation } from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { App } from "./components/App/App";
 
 function LegacyResumeRedirect({ to }: { to: string }) {

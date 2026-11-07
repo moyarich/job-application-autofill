@@ -898,7 +898,14 @@ export function useApplication() {
       return;
     try {
       await flushPending();
-      navigateTo(activeProfileId, next);
+      // Switching versions must not unexpectedly leave the resume editor/preview.
+      const destination =
+        location.pathname === "/resumes/edit" ||
+        location.pathname === "/resumes/view" ||
+        location.pathname === "/resumes"
+          ? location.pathname
+          : "/workspace";
+      navigateTo(activeProfileId, next, destination);
     } catch (error) {
       setMessage(String(error));
     }
