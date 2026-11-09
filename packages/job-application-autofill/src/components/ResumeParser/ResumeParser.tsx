@@ -82,7 +82,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
             aria-label="Choose resume document"
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={chooseResume}
-            disabled={parseBusy}
+            disabled={parseBusy || Boolean(pendingImport)}
           />
           <input
             ref={importRef}
@@ -97,13 +97,13 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
             className={`drop-zone${dragging ? " dragging" : ""}${resume ? " has-file" : ""}`}
             onDragOver={(event) => {
               event.preventDefault();
-              if (!parseBusy) setDragging(true);
+              if (!parseBusy && !pendingImport) setDragging(true);
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={(event) => {
               event.preventDefault();
               setDragging(false);
-              if (parseBusy) return;
+              if (parseBusy || pendingImport) return;
               const file = event.dataTransfer.files[0];
               if (!file) return;
               if (
@@ -134,7 +134,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
               <button
                 className="secondary"
                 type="button"
-                disabled={parseBusy}
+                disabled={parseBusy || Boolean(pendingImport)}
                 onClick={() => resumeRef.current?.click()}
               >
                 {resume ? "Choose another file" : "Browse files"}
@@ -143,7 +143,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
                 <button
                   className="secondary"
                   type="button"
-                  disabled={parseBusy}
+                  disabled={parseBusy || Boolean(pendingImport)}
                   aria-label="Remove selected file"
                   onClick={() => {
                     setResume(null);
@@ -156,7 +156,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
               )}
             </div>
           </div>
-          <button
+          {!pendingImport && <button
             className="primary parser-button"
             type="button"
             disabled={parseBusy || !resume}
@@ -167,9 +167,9 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
             ) : (
               <Upload size={17} />
             )}
-            {parseBusy ? "Importing…" : "Import resume"}
+            {parseBusy ? "Extracting…" : "Extract details"}
             {!parseBusy && <ArrowRight size={16} />}
-          </button>
+          </button>}
           {parseBusy && (
             <p className="import-helper" role="status">Extracting resume details…</p>
           )}
@@ -181,7 +181,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
             <button
               className="secondary"
               type="button"
-              disabled={parseBusy}
+              disabled={parseBusy || Boolean(pendingImport)}
               onClick={() => importRef.current?.click()}
             >
               Choose JSON file
