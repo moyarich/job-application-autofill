@@ -245,6 +245,35 @@ export function RichTextEditor({
               </span>
             )}
             onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                const current = Array.from(Editor.nodes(editor, {
+                  match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
+                  mode: "lowest",
+                })) as Array<[RichTextBlock, number[]]>;
+                const [entry] = current;
+                if (entry && entry[0].type !== "paragraph") {
+                  const [block] = entry;
+                  event.preventDefault();
+                  if (!Editor.string(editor, entry[1]).trim()) {
+                    Transforms.setNodes(editor, setListStyle(block, "paragraph"), { at: entry[1] });
+                  } else {
+                    editor.insertBreak();
+                    const next = Array.from(Editor.nodes(editor, {
+                      match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
+                      mode: "lowest",
+                    })) as Array<[RichTextBlock, number[]]>;
+                    const [newEntry] = next;
+                    if (newEntry) {
+                      const previousNumber = Number(block.prefix?.trim().match(/^(\\d+)[.)]/)?.[1] ?? 0);
+                      const prefix = block.type === "numbered"
+                        ? " ".repeat(listDepth(block)) + (previousNumber + 1) + ". "
+                        : block.prefix ?? "- ";
+                      Transforms.setNodes(editor, { type: block.type, prefix }, { at: newEntry[1] });
+                    }
+                  }
+                  return;
+                }
+              }
               if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey) {
                 const blocks = Array.from(Editor.nodes(editor, {
                   match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
