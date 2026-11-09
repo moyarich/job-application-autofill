@@ -26,10 +26,7 @@ export function ResumeParser({
   return (
     <section className="panel">
       <div className="panel-title">
-        <h2>Import resume</h2>
-        <p>
-          Choose a PDF or Word document to get started. Review the details before using them in an application.
-        </p>
+        <h2>Upload a resume file</h2>
       </div>
       <div className="parser-grid">
         <div className="parser-left">
@@ -68,7 +65,7 @@ export function ResumeParser({
             }}
           >
             <div className="upload-symbol">⇧</div>
-            <strong>{resume?.name || "Drag and drop your resume here"}</strong>
+            <strong>{resume?.name || "Drop a PDF or DOCX here"}</strong>
             <p>PDF or DOCX · 10 MB max</p>
             <button
               className="secondary"
@@ -88,23 +85,23 @@ export function ResumeParser({
           </button>
           <div className="json-import-panel">
             <p>
-              <strong>Have resume JSON?</strong> Import it into the selected resume. You can review contact details before saving.
+              <strong>Import from JSON</strong>
             </p>
             <button
               className="secondary"
               type="button"
               onClick={() => importRef.current?.click()}
             >
-              Import resume JSON
+              Choose JSON file
             </button>
           </div>
         </div>
         <div className="parsed-profile">
           <div className="parsed-title">
-            <strong>Resume details</strong>
+            <strong>Current resume details</strong>
             <div className="actions">
               <button className="secondary" onClick={() => setTab("profile")}>
-                Edit selected resume
+                Edit resume
               </button>
               <button className="secondary" onClick={exportResumePdf}>
                 Export PDF
@@ -135,7 +132,7 @@ export function ResumeParser({
       </div>
       {parsePreview && (
         <details className="text-preview">
-          <summary>View document text</summary>
+          <summary>View extracted text</summary>
           <pre>{parsePreview}</pre>
         </details>
       )}
