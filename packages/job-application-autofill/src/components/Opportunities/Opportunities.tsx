@@ -22,6 +22,7 @@ export function Opportunities({
     newJob,
     setNewJob,
     jobs,
+    resumeVersions,
     search,
     setSearch,
     prepareJob,
@@ -131,10 +132,25 @@ export function Opportunities({
                     </a>
                   )}
                 </div>
+                <label className="application-resume-selector">
+                  Resume
+                  <select
+                    aria-label={`Resume for ${job.role} at ${job.company}`}
+                    value={job.resumeId ?? ""}
+                    onChange={(event) => setJobs((items) => items.map((item) =>
+                      item.id === job.id ? { ...item, resumeId: event.target.value || null } : item
+                    ))}
+                  >
+                    <option value="">Select resume</option>
+                    {resumeVersions.map((resume) => (
+                      <option key={resume.id} value={resume.id}>{resume.name}</option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   className="primary"
-                  disabled={!job.url}
-                  onClick={() => prepareJob(job)}
+                  disabled={!job.url || !job.resumeId || !resumeVersions.some((resume) => resume.id === job.resumeId)}
+                  onClick={() => void prepareJob(job)}
                 >
                   Apply
                 </button>
