@@ -64,7 +64,8 @@ jobs:
           docker compose exec -T web sh -c 'test ! -e /opt/venv && ! command -v chromium && ! command -v Xvfb'
       - name: Report image sizes
         run: |
-          docker image ls job-application-autofill-api job-application-autofill-web
+          docker image ls job-application-autofill-api
+          docker image ls job-application-autofill-web
       - name: Smoke-test frontend, API and browser viewer
         run: |
           for i in $(seq 1 30); do
