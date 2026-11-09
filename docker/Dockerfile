@@ -20,56 +20,38 @@ FROM build AS web
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
 
-# Python 3.14.10 is the newest supported release for the OCR dependency stack.\n# ONNX Runtime does not currently publish Python 3.15 wheels.
-# Both bases use Debian bookworm, so the Node binary is ABI-compatible.
-FROM python:3.14.10-slim-bookworm AS api
+# Only the API needs headed/headless Chromium and the X11/noVNC viewer.
+FROM build AS api
 ENV DEBIAN_FRONTEND=noninteractive \
-    PYTHONUNBUFFERED=1 \
-    XKEYSYMDB=/etc/X11/XKeysymDB \
-    POETRY_VIRTUALENVS_IN_PROJECT=false \
-    POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
-
+    XKEYSYMDB=/etc/X11/XKeysymDB
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        xvfb x11vnc x11-xkb-utils xkb-data libx11-data fluxbox \
        novnc websockify \
        fonts-noto-core fonts-noto-cjk fonts-noto-extra fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
-
-# Copy Node 22 and npm from the slim Node stage instead of installing
-# a second complete browser/Node distribution in the API image.
-COPY --from=node-deps /usr/local/bin/node /usr/local/bin/node
-COPY --from=node-deps /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-
-WORKDIR /app
-COPY --from=node-deps /app /app
-
-# Install only Chromium (headed and headless) with Playwright-managed versions.
-# Browser dependencies are resolved against Debian bookworm, not Ubuntu Noble.
 RUN npx --no-install playwright install --with-deps chromium
-
-# Install the OCR environment only in the API image. Keep this above the
-# application COPY so editing React or API source never reinstalls Python.
-RUN python -m pip install --no-cache-dir "poetry==2.2.1"
-COPY packages/resume/pyproject.toml packages/resume/pyproject.toml
-COPY packages/resume/README.md packages/resume/README.md
-COPY packages/resume/poetry.lock packages/resume/poetry.lock
-RUN cd packages/resume \
-    && poetry config virtualenvs.create true \
-    && poetry install --only main --no-root \
-    && poetry env info --path > /tmp/moya-venv-path \
-    && test -f "$(cat /tmp/moya-venv-path)/pyvenv.cfg" \
-    && ln -s "$(cat /tmp/moya-venv-path)" /opt/venv \
-    && /opt/venv/bin/python -c "import sys; assert sys.prefix == '/opt/venv' and sys.version_info[:2] == (3, 14), (sys.prefix, sys.version)" \
-    && /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
-
-# Keep host-side X11 keyboard mappings and the runtime source available.
 COPY docker/XKeysymDB /etc/X11/XKeysymDB
-COPY . .
-COPY --from=build /app/packages/resume/dist /app/packages/resume/dist
 RUN chmod +x docker/start-review.sh
-
 EXPOSE 4177 6080
 CMD ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]
+
+# PDFium, RapidOCR, ONNX Runtime, and Python exist only in this image.
+# The OCR API uses a private Compose network and has no published host ports.
+FROM python:3.14.10-slim-bookworm AS ocr
+ENV PYTHONUNBUFFERED=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=false \
+    POETRY_VIRTUALENVS_PATH=/opt/poetry-venvs
+WORKDIR /app/packages/resume
+RUN python -m pip install --no-cache-dir "poetry==2.2.1"
+COPY packages/resume/pyproject.toml packages/resume/README.md packages/resume/poetry.lock ./
+RUN poetry config virtualenvs.create true \
+    && poetry install --only main --no-root \
+    && poetry env info --path > /tmp/moya-venv-path \
+    && ln -s "$(cat /tmp/moya-venv-path)" /opt/venv \
+    && /opt/venv/bin/python -c "import sys, pypdfium2, onnxruntime; from rapidocr import RapidOCR; from PIL import Image; assert sys.version_info[:2] == (3, 14)"
+COPY packages/resume/python/pdf_ocr.py packages/resume/python/ocr_service.py ./python/
+RUN useradd --system --uid 10001 --no-create-home ocr
+USER ocr
+EXPOSE 8765
+CMD ["/opt/venv/bin/python", "python/ocr_service.py"]
