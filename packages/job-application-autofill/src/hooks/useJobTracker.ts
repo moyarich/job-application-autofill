@@ -6,7 +6,7 @@ import { requestApi } from "../utils/api/client";
 import type { JobTrackerData } from "../utils/application/job-tracker-data";
 export function useJobTracker(workspace: JobTrackerData) {
   const { jobs, setJobs, setMessage, activeProfileId } = workspace;
-  const [newJob, setNewJob] = useState({ company: "", role: "", url: "", accountAction: "signup" as "signup" | "login" });
+  const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [jobDetails, setJobDetails] = useState<JobPostingDetails | null>(null);
   const [search, setSearch] = useState("");
   const [metadataBusy, setMetadataBusy] = useState(false);
@@ -61,7 +61,7 @@ export function useJobTracker(workspace: JobTrackerData) {
   function addJob(event: React.FormEvent) {
     event.preventDefault();
     try {
-      const job = { ...createApplication(newJob.company, newJob.role, jobDetails?.postingUrl || newJob.url), accountAction: newJob.accountAction, ...(jobDetails ? { details: jobDetails } : {}) };
+      const job = { ...createApplication(newJob.company, newJob.role, jobDetails?.postingUrl || newJob.url), accountAction: "signup" as const, ...(jobDetails ? { details: jobDetails } : {}) };
       if (
         jobs.some(
           (item) =>
@@ -75,7 +75,7 @@ export function useJobTracker(workspace: JobTrackerData) {
         return;
       }
       setJobs((items) => [job, ...items]);
-      setNewJob({ company: "", role: "", url: "", accountAction: "signup" });
+      setNewJob({ company: "", role: "", url: "" });
       autoFilled.current = { company: "", role: "" };
       setMetadataError("");
       setJobDetails(null);
