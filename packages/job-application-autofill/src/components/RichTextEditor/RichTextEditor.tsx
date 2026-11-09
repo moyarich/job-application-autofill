@@ -221,6 +221,9 @@ export function RichTextEditor({
                       ? "rich-text-numbered"
                       : "rich-text-paragraph"
                 }
+                data-level={element.type !== "paragraph"
+                  ? Math.floor(listDepth(element) / 4) % 3
+                  : undefined}
                 data-marker={element.type === "numbered"
                   ? (element.prefix?.trim().match(/^\\d+[.)]/)?.[0] ?? "1.")
                   : undefined}
