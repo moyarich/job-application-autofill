@@ -1,6 +1,6 @@
 import type { ResumeImportData } from "../feature-props";
 import { useState } from "react";
-import { CheckCircle2, ContactRound, Info } from "lucide-react";
+import { CheckCircle2, ContactRound } from "lucide-react";
 import "./ContactImportReview.css";
 
 
@@ -61,12 +61,7 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
             </label>
           ))}
         </fieldset>
-      ) : (
-        <p className="contact-import-explanation">
-          <Info size={16} aria-hidden="true" />
-          A contact is saved when a first name, last name, and email are available. Otherwise, the resume stays a draft.
-        </p>
-      )}
+      ) : null}
       <div className="actions contact-import-actions">
         <button className="primary" type="button" onClick={() => void confirmImport(hasLinkedContact ? strategy : "resume")}>
           Import resume
