@@ -3,7 +3,8 @@ import type { CandidateProfile } from "../types.js";
 const markdown = new MarkdownIt({ html: false, linkify: false, breaks: true });
 
 /** Render only safe Markdown; raw HTML stays visible text and unsafe links are rejected. */
-export const markdownToHtml = (text: string) => markdown.render(text);
+const sourceLists = (text: string) => text.replace(/^([ \t]*)[•●▪◦‣⁃]\s*/gm, "$1- ");
+export const markdownToHtml = (text: string) => markdown.render(sourceLists(text));
 export function markdownToPlainText(text: string): string {
   return markdown
     .parse(text, {})
@@ -76,7 +77,7 @@ export function markdownToEditor(
   text: string,
   bullets = false,
 ): RichTextDocument {
-  return text.split("\n").map((line) => {
+  return sourceLists(text).split("\n").map((line) => {
     const prefix = line.match(/^(\s*(?:[-*+] |\d+\. |#{1,6} |> ))/)?.[0] || "";
     const bullet = /^\s*(?:[-*+] |\d+\. )/.test(prefix);
     const children: RichTextLeaf[] = [];
@@ -143,10 +144,7 @@ export function editorToMarkdown(document: RichTextDocument): string {
     .join("\n");
 }
 
-function workDescription(description:string):string {
-  if (/^\s*(?:[-*+] |\d+\. |#{1,6} |> |```)/m.test(description)) return description;
-  return description.split(/\r?\n/).filter(line => line.trim()).map(line => "- " + line.replace(/^[•●▪◦‣⁃]\s*/, "")).join("\n");
-}
+
 
 /** Compose a portable Markdown document from the same structured resume fields. */
 export function resumeToMarkdown(profile: CandidateProfile): string {
@@ -193,7 +191,7 @@ export function resumeToMarkdown(profile: CandidateProfile): string {
                   .filter(Boolean)
                   .join(" – "),
               ],
-              workDescription(e.description),
+              e.description,
             ),
           )
           .join(""),

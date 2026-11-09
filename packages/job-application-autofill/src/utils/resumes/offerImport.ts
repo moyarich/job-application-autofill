@@ -2,19 +2,11 @@ import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-
 import type { CandidateProfile } from "../../index";
 
 export function createOfferImport(context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent }) {
-  const { profile, contactId, activeResumeId, contactKeys, setMessage, setImportChoices, setPendingImport, applyImportedContent } = context;
+  const { setMessage, setImportChoices, setPendingImport } = context;
   function offerImport(incoming: CandidateProfile) {
     setImportChoices({});
-    if (
-      !activeResumeId || contactKeys.some(
-        (key) =>
-          (incoming.contact[key] || "").trim() !==
-          (profile.contact[key] || "").trim(),
-      )
-    ) {
-      setPendingImport(incoming);
-      setMessage("Contact details extracted. Review them before importing.");
-    } else applyImportedContent(incoming, contactId, incoming.contact);
+    setPendingImport(incoming);
+    setMessage("Resume details extracted. Review them before importing.");
   }
   return offerImport;
 }

@@ -3,7 +3,7 @@ import {
   resumeExportFormats,
   type ResumeExportFormat,
 } from "../../utils/files/export-resume";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
   Copy,
   FilePenLine,
@@ -45,22 +45,6 @@ export function ResumeManager({
   const [name, setName] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-
-  const renameOpened = useRef(false);
-  useEffect(() => {
-    if (renameOpened.current) return;
-    const target = new URLSearchParams(window.location.search).get("rename");
-    if (!target) return;
-    const match = resumeVersions.find((resume) => resume.id === target);
-    if (!match) return;
-    renameOpened.current = true;
-    setForm({ action: "rename", resumeId: match.id });
-    setName(match.name);
-    setError("");
-    const url = new URL(window.location.href);
-    url.searchParams.delete("rename");
-    window.history.replaceState(window.history.state, "", url.href);
-  }, [resumeVersions]);
 
   function showForm(action: FormMode["action"], resumeId?: string) {
     const source = resumeVersions.find((item) => item.id === resumeId);

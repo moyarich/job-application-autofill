@@ -41,7 +41,6 @@ export function createConfirmImport(context: ResumeImportActionsContext & { appl
         url.search = "";
         url.searchParams.set("profile", activeProfileId);
         url.searchParams.set("resume", newResumeId);
-        url.searchParams.set("rename", newResumeId);
         window.location.assign(url.href);
         return;
       }

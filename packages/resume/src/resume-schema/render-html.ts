@@ -77,17 +77,7 @@ function entry(
   when: string,
   description: string,
 ) {
-  const details = description
-    ? markdownToHtml(
-        /^\s*(?:[-*+] |\d+\. |#{1,6} |> |```)/m.test(description)
-          ? description
-          : description
-              .split(/\r?\n/)
-              .filter((line) => line.trim())
-              .map((line) => "- " + line.replace(/^[•●▪◦‣⁃]\s*/, ""))
-              .join("\n"),
-      )
-    : "";
+  const details = description ? markdownToHtml(description) : "";
   return (
     "<article>" +
     el("h3", title) +

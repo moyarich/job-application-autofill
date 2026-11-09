@@ -19,7 +19,6 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
     importProfile,
     setMessage,
     setResume,
-    setProfile,
     resume,
     parseBusy,
     parseResume,
@@ -36,25 +35,55 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
   const name = [details.contact.firstName, details.contact.lastName]
     .filter(Boolean)
     .join(" ");
-  return (
-    <section className="panel resume-import" aria-label="Import resume">
-      {selected && <div className="import-destination">
-        <span className="import-file-icon">
-          <FileText size={22} aria-hidden="true" />
+  const showDetails = Boolean(
+    pendingImport || name || details.contact.email || details.skills.length,
+  );
+  if (pendingImport) {
+    return (
+      <section
+        className="panel import-extracted"
+        aria-label="Extraction complete"
+      >
+        <span className="import-extracted-icon">
+          <Check size={20} aria-hidden="true" />
         </span>
         <div>
-          <span className="import-eyebrow">Importing into</span>
-          <strong>{selected?.name ?? "Selected resume"}</strong>
+          <strong>Resume details extracted</strong>
+          <p>
+            {resume?.name ?? "Resume JSON"} · Review the details below to finish
+            importing.
+          </p>
         </div>
-        <button
-          className="secondary"
-          type="button"
-          onClick={() => setTab("resumes")}
-          disabled={parseBusy}
-        >
-          Change resume
-        </button>
-      </div>}
+        {parsePreview && (
+          <details className="import-extracted-text">
+            <summary>View extracted text</summary>
+            <pre>{parsePreview}</pre>
+          </details>
+        )}
+      </section>
+    );
+  }
+  return (
+    <section className="panel resume-import" aria-label="Import resume">
+      {selected && (
+        <div className="import-destination">
+          <span className="import-file-icon">
+            <FileText size={22} aria-hidden="true" />
+          </span>
+          <div>
+            <span className="import-eyebrow">Importing into</span>
+            <strong>{selected?.name ?? "Selected resume"}</strong>
+          </div>
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => setTab("resumes")}
+            disabled={parseBusy}
+          >
+            Change resume
+          </button>
+        </div>
+      )}
       <ol className="import-steps" aria-label="Import steps">
         <li aria-current={!resume ? "step" : undefined}>
           <span>{resume ? <Check size={14} /> : "1"}</span>Choose a file
@@ -70,7 +99,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
           <span>3</span>Review resume
         </li>
       </ol>
-      <div className="parser-grid">
+      <div className={`parser-grid${showDetails ? "" : " without-details"}`}>
         <div className="parser-left">
           <div className="import-section-heading">
             <h2>Upload a resume file</h2>
@@ -114,10 +143,6 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
                 return;
               }
               setResume(file);
-              setProfile((value) => ({
-                ...value,
-                source: { fileName: file.name },
-              }));
               setMessage("Resume ready to import.");
             }}
           >
@@ -156,22 +181,26 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
               )}
             </div>
           </div>
-          {!pendingImport && <button
-            className="primary parser-button"
-            type="button"
-            disabled={parseBusy || !resume}
-            onClick={parseResume}
-          >
-            {parseBusy ? (
-              <LoaderCircle size={17} className="import-spinner" />
-            ) : (
-              <Upload size={17} />
-            )}
-            {parseBusy ? "Extracting…" : "Extract details"}
-            {!parseBusy && <ArrowRight size={16} />}
-          </button>}
+          {!pendingImport && (
+            <button
+              className="primary parser-button"
+              type="button"
+              disabled={parseBusy || !resume}
+              onClick={parseResume}
+            >
+              {parseBusy ? (
+                <LoaderCircle size={17} className="import-spinner" />
+              ) : (
+                <Upload size={17} />
+              )}
+              {parseBusy ? "Extracting…" : "Extract details"}
+              {!parseBusy && <ArrowRight size={16} />}
+            </button>
+          )}
           {parseBusy && (
-            <p className="import-helper" role="status">Extracting resume details…</p>
+            <p className="import-helper" role="status">
+              Extracting resume details…
+            </p>
           )}
           <div className="json-import-panel">
             <FileJson size={23} aria-hidden="true" />
@@ -188,46 +217,50 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
             </button>
           </div>
         </div>
-        <aside className="parsed-profile" aria-label="Resume details">
-          <div className="parsed-title">
-            <span className="import-eyebrow">
-              {pendingImport ? "Imported details" : "Current resume"}
-            </span>
-            <h3>Resume details</h3>
-          </div>
-          <dl className="import-details">
-            <div>
-              <dt>Name</dt>
-              <dd>{name || "Not added yet"}</dd>
+        {showDetails && (
+          <aside className="parsed-profile" aria-label="Resume details">
+            <div className="parsed-title">
+              <span className="import-eyebrow">
+                {pendingImport ? "Imported details" : "Current resume"}
+              </span>
+              <h3>Resume details</h3>
             </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{details.contact.email || "Not added yet"}</dd>
-            </div>
-            <div>
-              <dt>Skills</dt>
-              <dd>
-                {details.skills.length ? (
-                  <div className="import-skills">
-                    {details.skills.map((skill, index) => (
-                      <span key={`${skill}-${index}`}>{skill}</span>
-                    ))}
-                  </div>
-                ) : (
-                  "No skills yet"
-                )}
-              </dd>
-            </div>
-          </dl>
-          {selected && <button
-            className="secondary"
-            type="button"
-            disabled={parseBusy}
-            onClick={() => setTab("profile")}
-          >
-            Open resume editor <ArrowRight size={15} />
-          </button>}
-        </aside>
+            <dl className="import-details">
+              <div>
+                <dt>Name</dt>
+                <dd>{name || "Not added yet"}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{details.contact.email || "Not added yet"}</dd>
+              </div>
+              <div>
+                <dt>Skills</dt>
+                <dd>
+                  {details.skills.length ? (
+                    <div className="import-skills">
+                      {details.skills.map((skill, index) => (
+                        <span key={`${skill}-${index}`}>{skill}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    "No skills yet"
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {selected && (
+              <button
+                className="secondary"
+                type="button"
+                disabled={parseBusy}
+                onClick={() => setTab("profile")}
+              >
+                Open resume editor <ArrowRight size={15} />
+              </button>
+            )}
+          </aside>
+        )}
       </div>
       {parsePreview && (
         <details className="text-preview">

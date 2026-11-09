@@ -1,5 +1,5 @@
-import { extractEmploymentHistory } from "./experience.js";
-import { getPdfPython, resumePackageDir } from "./python-runtime.js";
+import { extractEmploymentHistory } from "./experience.ts";
+import { getPdfPython, resumePackageDir } from "./python-runtime.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -253,9 +253,11 @@ function extractEducation(lines: string[] = []) {
       /^(Bachelor[^:]*|Master[^:]*|Associate[^:]*|Doctor[^:]*|PhD|B\.?S\.?|M\.?S\.?)(?::|\s+in\s+|$)\s*(.*)/i,
     );
     if (degree && entries.length) {
+      const parts = line.split(/\s*\|\s*/);
       Object.assign(entries.at(-1)!, {
-        degree: degree[1],
-        fieldOfStudy: degree[2],
+        degree: parts.length > 1 ? parts[0] : degree[1],
+        fieldOfStudy: parts.length > 1 ? parts[1] : degree[2],
+        ...(parts.length > 2 ? { location: parts.slice(2).join(" | ") } : {}),
       });
     } else if (/university|college|institute|school/i.test(line)) {
       const [institution, location = ""] = line.split(/\s+[-–—]\s+/);
@@ -276,6 +278,8 @@ function extractEducation(lines: string[] = []) {
   return entries;
 }
 export function extractProfile(text: string) {
+  // Some PDF fonts encode visible hyphens as control characters.
+  text = text.replaceAll("\u0002", "-").replaceAll("\u00ad", "-");
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -354,7 +358,9 @@ export function extractProfile(text: string) {
     skills: parsedSkills,
     education: extractEducation(sections.education),
     projects: [],
-    certifications: (sections.certifications || []).map((name) => ({
+    certifications: (sections.certifications || []).filter((name, index, lines) =>
+      !(index > 0 && /^Amazon Web Services(?:\s*\(AWS\))?$/i.test(name) && /^AWS Certified\b/i.test(lines[index - 1])),
+    ).map((name) => ({
       name,
       issuer: /^AWS Certified\b/i.test(name) ? "Amazon Web Services" : "",
       issuedDate: "",
