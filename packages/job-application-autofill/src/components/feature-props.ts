@@ -35,9 +35,7 @@ type ContactSelection = {
 export type ResumeEditorData = ResumeViewData & ContactCommands & Import & ContactSelection & {
   exportResumePdf: ReturnType<typeof createExportResumePdf>;
 };
-export type ResumeImportData = Selection & Contacts & Resume & Import & ContactSelection & Flush & {
-  exportResumePdf: ReturnType<typeof createExportResumePdf>;
-};
+export type ResumeImportData = Selection & Contacts & Resume & Import & ContactSelection & Flush;
 export type ApplicationReviewData = Selection & Jobs & Resume & Review;
 export type TrackerData = Selection & Jobs & Tracker & {
   prepareJob: (job: JobApplication) => void;
