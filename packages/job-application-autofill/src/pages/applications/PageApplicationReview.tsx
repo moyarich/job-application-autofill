@@ -6,8 +6,11 @@ import { useJobApplications } from "../../hooks/useJobApplications";
 import { useProfileContacts } from "../../hooks/useProfileContacts";
 import { useResumeDraft } from "../../hooks/useResumeDraft";
 import { PageStatus } from "../../components/PageStatus/PageStatus";
+import { readJobs, saveJob } from "../../utils/api/client";
+import { useNavigate } from "react-router";
 
 export function PageApplicationReview() {
+  const navigate = useNavigate();
   const selection = useProfileSelection();
   const applications = useJobApplications({
     profileId: selection.activeProfileId,
@@ -44,6 +47,30 @@ export function PageApplicationReview() {
     changeJob,
     hydrated: ready,
   });
+  async function chooseApplicationResume(resumeId: string) {
+    const job = applications.jobs.find((item) => item.id === selection.applicationId);
+    if (!job) return;
+    try {
+      if (resumeId && !selection.resumeVersions.some((item) => item.id === resumeId))
+        throw new Error("Resume not found in the active profile.");
+      const latest = await readJobs(selection.activeProfileId);
+      const current = latest.jobs.find((item) => item.id === job.id);
+      if (!current) throw new Error("Application no longer exists.");
+      const updated = { ...current, resumeId: resumeId || null };
+      await saveJob(selection.activeProfileId, {
+        revision: latest.revisions[job.id], job: updated,
+      });
+      applications.setJobs((items) => items.map((item) =>
+        item.id === job.id ? updated : item));
+      const params = new URLSearchParams(window.location.search);
+      params.set("profile", selection.activeProfileId);
+      if (resumeId) params.set("resume", resumeId);
+      else params.delete("resume");
+      navigate({ pathname: window.location.pathname, search: params.toString() });
+    } catch (error) {
+      selection.setMessage("Could not assign resume: " + String(error));
+    }
+  }
   return (
     <PageStatus
       hydrated={ready}
@@ -52,6 +79,7 @@ export function PageApplicationReview() {
     >
       <ApplicationReview
         controller={{ ...selection, ...applications, ...draft, ...review }}
+        onChooseResume={chooseApplicationResume}
       />
     </PageStatus>
   );
