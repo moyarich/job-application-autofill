@@ -36,7 +36,6 @@ export function PageApplications() {
       <>
         <WorkspaceHeader
           title="Applications"
-          description="Organize your job search and keep every application on track."
           actions={
             <button
               type="button"
