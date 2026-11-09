@@ -3,7 +3,7 @@ name: CI / PDF extraction and OCR
 on:
   pull_request:
     paths:
-      - "packages/resume/python/pdf_ocr.py"
+      - "packages/resume/python/**"
       - "packages/resume/python/test_pdf_ocr.py"
       - "packages/resume/pyproject.toml"
       - "packages/resume/poetry.lock"
@@ -42,7 +42,7 @@ jobs:
         run: poetry run python -c 'import sys; assert sys.version_info[:2] == (3, 14), sys.version'
       - name: Python syntax check
         working-directory: packages/resume
-        run: poetry run python -m compileall -q python/pdf_ocr.py python/test_pdf_ocr.py
+        run: poetry run python -m compileall -q python/pdf_ocr.py python/ocr_service.py python/test_pdf_ocr.py python/test_ocr_service.py
       - name: PDF parsing and scanned-page fallback tests
         working-directory: packages/resume
         run: poetry run python -m unittest discover -s python -p 'test_*.py' -v

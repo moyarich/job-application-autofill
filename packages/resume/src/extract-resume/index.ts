@@ -146,6 +146,32 @@ export async function extractResumeText(
   extension: "pdf" | "docx",
 ) {
   if (extension === "docx") return extractDocxText(buffer);
+  // Inside Docker, PDFium and RapidOCR run exclusively in the private OCR
+  // container. Preserve the existing local Python subprocess for standalone CLI.
+  const serviceUrl = process.env.OCR_SERVICE_URL?.trim();
+  if (serviceUrl) {
+    const endpoint = new URL("/extract", serviceUrl);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf" },
+      body: new Uint8Array(buffer),
+      signal: AbortSignal.timeout(120000),
+    });
+    const body: unknown = await response.json();
+    if (!body || typeof body !== "object") {
+      throw new Error("OCR service returned an invalid response.");
+    }
+    const result = body as { text?: unknown; error?: unknown };
+    if (!response.ok) {
+      throw new Error(
+        "PDF extraction failed: " +
+          (typeof result.error === "string" ? result.error : "OCR service error"),
+      );
+    }
+    if (typeof result.text !== "string" || !result.text.trim())
+      throw new Error("PDF extraction found no readable text.");
+    return result.text;
+  }
   // Python PDFium extracts selectable text and invokes RapidOCR only for scanned pages.
   const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
