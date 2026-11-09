@@ -36,7 +36,10 @@ export function useJobTracker(workspace: JobTrackerData) {
             role: !current.role.trim() || current.role === autoFilled.current.role
               ? details.role || current.role : current.role,
           };
-          autoFilled.current = { company: next.company, role: next.role };
+          autoFilled.current = {
+            company: next.company === details.company ? details.company : autoFilled.current.company,
+            role: next.role === details.role ? details.role : autoFilled.current.role,
+          };
           return next;
         });
         if (!details.company || !details.role)
