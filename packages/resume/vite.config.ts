@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // This package targets Node for its library/CLI output; avoid DOM-only exports.
+  resolve: { conditions: ["node"] },
   plugins: [
     {
       name: "executable-cli",
