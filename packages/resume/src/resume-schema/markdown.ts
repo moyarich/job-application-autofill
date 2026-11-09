@@ -142,6 +142,37 @@ export function shiftListIndent(
   return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
 }
 
+/**
+ * Number contiguous ordered lists separately at each indentation level.
+ * Nested lists do not interrupt numbering in their parent ordered list.
+ * The first explicit number in each sequence remains the starting number.
+ */
+export function renumberListBlocks(document: RichTextDocument): RichTextDocument {
+  const counters = new Map<number, number>();
+  return document.map((block) => {
+    if (block.type === "paragraph") {
+      counters.clear();
+      return block;
+    }
+    const depth = listDepth(block);
+    for (const level of counters.keys()) {
+      if (level > depth) counters.delete(level);
+    }
+    if (block.type === "bullet") {
+      counters.delete(depth);
+      return block;
+    }
+    const current = block.prefix?.trim() ?? "";
+    const match = current.match(/^(\d+)([.)])$/);
+    const next = counters.has(depth)
+      ? counters.get(depth)! + 1
+      : match ? Number(match[1]) : 1;
+    counters.set(depth, next);
+    const prefix = " ".repeat(depth) + next + (match?.[2] ?? ".") + " ";
+    return prefix === block.prefix ? block : { ...block, prefix };
+  });
+}
+
 export function editorToMarkdown(document: RichTextDocument): string {
   return document
     .map((block) => {
