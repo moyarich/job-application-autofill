@@ -18,12 +18,11 @@ services:
       DISPLAY: ":99"
       BROWSER_REVIEW_URL: "http://localhost:${MOYA_REVIEW_PORT:-6080}/vnc.html"
       WEB_VNC_PASSWORD: "${WEB_VNC_PASSWORD:?Set WEB_VNC_PASSWORD in .env before starting Docker Compose}"
-      WORKDAY_HOST: "${WORKDAY_HOST:-}"
+      WORKDAY_HOST: "${WORKDAY_HOST:-workday.wd5.myworkdayjobs.com}"
       WORKDAY_USERNAME: "${WORKDAY_USERNAME:-}"
       WORKDAY_USER_EMAIL: "${WORKDAY_USER_EMAIL:-}"
       WORKDAY_PASSWORD: "${WORKDAY_PASSWORD:-}"
       RESUME_SITE_PASSWORD: "${RESUME_SITE_PASSWORD:-}"
-      WORKDAY_SITE_HOST: "${WORKDAY_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
       CONTAINER_MODE: "true"
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
