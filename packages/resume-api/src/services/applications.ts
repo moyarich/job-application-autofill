@@ -27,6 +27,8 @@ export async function prepareSavedApplication(
   const savedJob = store.getJobList(profileId).jobs.find(job => job.id === payload.jobId);
   if (!savedJob || savedJob.url !== payload.jobUrl)
     throw new Error("Application does not belong to the selected profile.");
+  if (savedJob.resumeId && savedJob.resumeId !== resumeId)
+    throw new Error("The selected resume does not match this application. Reopen it with the assigned resume.");
   const profile = validateResume(payload.profile);
   const contact = profile.contact;
   if (!contact.firstName.trim() || !contact.lastName.trim() ||
