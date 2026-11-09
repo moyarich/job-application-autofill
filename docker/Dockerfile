@@ -20,9 +20,9 @@ FROM build AS web
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
 
-# Python 3.12 matches the OCR project's required Python >=3.12,<3.15.
+# Python 3.14.10 is the newest supported release for the OCR dependency stack.\n# ONNX Runtime does not currently publish Python 3.15 wheels.
 # Both bases use Debian bookworm, so the Node binary is ABI-compatible.
-FROM python:3.12-slim-bookworm AS api
+FROM python:3.14.10-slim-bookworm AS api
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     XKEYSYMDB=/etc/X11/XKeysymDB \
@@ -62,7 +62,7 @@ RUN cd packages/resume \
     && poetry env info --path > /tmp/moya-venv-path \
     && test -f "$(cat /tmp/moya-venv-path)/pyvenv.cfg" \
     && ln -s "$(cat /tmp/moya-venv-path)" /opt/venv \
-    && /opt/venv/bin/python -c "import sys; assert sys.prefix == '/opt/venv', (sys.prefix, sys.executable)" \
+    && /opt/venv/bin/python -c "import sys; assert sys.prefix == '/opt/venv' and sys.version_info[:2] == (3, 14), (sys.prefix, sys.version)" \
     && /opt/venv/bin/python -c "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image"
 
 # Keep host-side X11 keyboard mappings and the runtime source available.
