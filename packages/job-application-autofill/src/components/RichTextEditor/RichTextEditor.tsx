@@ -27,7 +27,7 @@ import {
   type RichTextBlock,
   type RichTextLeaf,
   type RichTextDocument,
-} from "@moyarich/resume/validate";
+} from "@moyarich/resume/editor";
 import "./RichTextEditor.css";
 
 declare module "slate" {

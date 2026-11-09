@@ -1,6 +1,5 @@
 import MarkdownIt from "markdown-it";
 import type { CandidateProfile } from "../types.js";
-import { parseInlineMarkdown, stringifyInlineMarkdown, markdownListLevels } from "./editor-markdown.ts";
 const markdown = new MarkdownIt({ html: false, linkify: false, breaks: true });
 // Markdown markers retain the visual style selected in the resume editor.
 markdown.renderer.rules.list_item_open = (tokens, index, options, _env, renderer) => {
@@ -12,7 +11,7 @@ markdown.renderer.rules.list_item_open = (tokens, index, options, _env, renderer
 };
 
 /** Render only safe Markdown; raw HTML stays visible text and unsafe links are rejected. */
-const sourceLists = (text: string) => text.replace(/^([ \t]*)([•●▪◦‣⁃])\s*/gm, (_match, indent: string, marker: string) => indent + (marker === "◦" ? "*" : marker === "▪" ? "+" : "-") + " ");
+export const sourceLists = (text: string) => text.replace(/^([ \t]*)([•●▪◦‣⁃])\s*/gm, (_match, indent: string, marker: string) => indent + (marker === "◦" ? "*" : marker === "▪" ? "+" : "-") + " ");
 export const markdownToHtml = (text: string) => markdown.render(sourceLists(text));
 export function markdownToPlainText(text: string): string {
   return markdown
@@ -67,122 +66,6 @@ export function resumeToPlainText(profile: CandidateProfile): CandidateProfile {
       : {}),
   };
 }
-
-export type RichTextLeaf = {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  code?: boolean;
-  href?: string;
-};
-export type RichTextBlock = {
-  type: "paragraph" | "bullet" | "numbered";
-  prefix?: string;
-  children: RichTextLeaf[];
-};
-export type RichTextDocument = RichTextBlock[];
-/** A deliberately small resume editor vocabulary, serialized into the existing Markdown string. */
-export function markdownToEditor(
-  text: string,
-  bullets = false,
-): RichTextDocument {
-  return sourceLists(text).split("\n").map((line) => {
-    const prefix = line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
-    const numbered = /^\s*\d+[.)] /.test(prefix);
-    const bullet = /^\s*[-*+] /.test(prefix);
-    const children = parseInlineMarkdown(line.slice(prefix.length));
-    return {
-      type: numbered ? "numbered" : bullet || bullets ? "bullet" : "paragraph",
-      prefix: prefix || (bullets ? "- " : ""),
-      children: children.length ? children : [{ text: "" }],
-    };
-  });
-}
-/** Keep each list marker and its indentation in the Markdown representation. */
-/** Resolve visual nesting from Markdown structure, including wide ordered markers. */
-export function listNestingLevels(document: RichTextDocument): number[] {
-  return markdownListLevels(editorToMarkdown(document), document.length);
-}
-
-export function listDepth(block: RichTextBlock): number {
-  return (block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0);
-}
-
-export function setListStyle(
-  block: RichTextBlock,
-  type: RichTextBlock["type"],
-): Pick<RichTextBlock, "type" | "prefix"> {
-  const indent = " ".repeat(listDepth(block));
-  if (type === "paragraph") return { type, prefix: "" };
-  const existing = block.prefix?.trim() ?? "";
-  const marker = type === "numbered"
-    ? (/^\d+[.)]$/.test(existing) ? existing : "1.")
-    : (/^[-*+]$/.test(existing) ? existing : "-");
-  return { type, prefix: indent + marker + " " };
-}
-
-/** Four spaces per level keeps mixed and numbered sublists portable. */
-export function shiftListIndent(
-  block: RichTextBlock,
-  direction: 1 | -1,
-): Pick<RichTextBlock, "type" | "prefix"> {
-  if (block.type === "paragraph") return { type: block.type, prefix: block.prefix ?? "" };
-  const depth = Math.max(0, listDepth(block) + direction * 4);
-  const marker = direction === 1 && block.type === "numbered"
-    ? "1."
-    : (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
-  return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
-}
-
-/**
- * Number contiguous ordered lists separately at each indentation level.
- * Nested lists do not interrupt numbering in their parent ordered list.
- * The first explicit number in each sequence remains the starting number.
- */
-export function renumberListBlocks(document: RichTextDocument): RichTextDocument {
-  const counters = new Map<number, number>();
-  return document.map((block) => {
-    if (block.type === "paragraph") {
-      counters.clear();
-      return block;
-    }
-    const depth = listDepth(block);
-    for (const level of counters.keys()) {
-      if (level > depth) counters.delete(level);
-    }
-    if (block.type === "bullet") {
-      counters.delete(depth);
-      return block;
-    }
-    const current = block.prefix?.trim() ?? "";
-    const match = current.match(/^(\d+)([.)])$/);
-    const next = counters.has(depth)
-      ? counters.get(depth)! + 1
-      : match ? Number(match[1]) : 1;
-    counters.set(depth, next);
-    const prefix = " ".repeat(depth) + next + (match?.[2] ?? ".") + " ";
-    return prefix === block.prefix ? block : { ...block, prefix };
-  });
-}
-
-export function editorToMarkdown(document: RichTextDocument): string {
-  return document
-    .map((block) => {
-      const contents = stringifyInlineMarkdown(block.children);
-      return (
-        (block.type === "bullet" || block.type === "numbered"
-          ? /^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix || "")
-            ? block.prefix
-            : block.type === "numbered" ? "1. " : "- "
-          : block.prefix && !/^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix)
-            ? block.prefix
-            : "") + contents
-      );
-    })
-    .join("\n");
-}
-
-
 
 /** Compose a portable Markdown document from the same structured resume fields. */
 export function resumeToMarkdown(profile: CandidateProfile): string {

@@ -21,6 +21,10 @@
     "./render-html": {
       "types": "./dist/resume-schema/render-html.d.ts",
       "import": "./dist/render-html.js"
+    },
+    "./editor": {
+      "types": "./dist/resume-schema/editor-markdown.d.ts",
+      "import": "./dist/editor.js"
     }
   },
   "files": [

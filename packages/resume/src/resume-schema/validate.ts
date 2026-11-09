@@ -168,16 +168,4 @@ export {
   markdownToPlainText,
   resumeToPlainText,
   resumeToMarkdown,
-  markdownToEditor,
-  editorToMarkdown,
-  listDepth,
-  listNestingLevels,
-  setListStyle,
-  shiftListIndent,
-  renumberListBlocks,
-} from "./markdown.ts";
-export type {
-  RichTextBlock,
-  RichTextLeaf,
-  RichTextDocument,
 } from "./markdown.ts";

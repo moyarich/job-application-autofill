@@ -4,6 +4,9 @@ import { renderResumeHtml } from "../../packages/resume/src/resume-schema/create
 import {
   markdownToPlainText,
   markdownToHtml,
+  resumeToPlainText,
+} from "../../packages/resume/src/resume-schema/markdown.ts";
+import {
   markdownToEditor,
   editorToMarkdown,
   listDepth,
@@ -11,8 +14,7 @@ import {
   setListStyle,
   shiftListIndent,
   renumberListBlocks,
-  resumeToPlainText,
-} from "../../packages/resume/src/resume-schema/markdown.ts";
+} from "../../packages/resume/src/resume-schema/editor-markdown.ts";
 const example = JSON.parse(
   readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"),
 );

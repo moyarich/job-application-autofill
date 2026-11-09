@@ -4,8 +4,6 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  // This package targets Node for its library/CLI output; avoid DOM-only exports.
-  resolve: { conditions: ["node"] },
   plugins: [
     {
       name: "executable-cli",
@@ -26,6 +24,7 @@ export default defineConfig({
         "create-pdf": resolve(import.meta.dirname, "src/resume-schema/create-pdf.ts"),
         "render-html": resolve(import.meta.dirname, "src/resume-schema/render-html.ts"),
         validate: resolve(import.meta.dirname, "src/resume-schema/validate.ts"),
+        editor: resolve(import.meta.dirname, "src/resume-schema/editor-markdown.ts"),
       },
       formats: ["es"],
       fileName: (_format, entryName) => `${entryName}.js`,
