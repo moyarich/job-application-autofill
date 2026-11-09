@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: job-application-autofill:local
+      target: api
+    image: job-application-autofill-api:local
     entrypoint: ["/app/docker/start-review.sh"]
     command: ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]
     environment:
@@ -44,10 +45,11 @@ services:
       - ./sqlite-data:/app/data
 
   web:
-    image: job-application-autofill:local
+    image: job-application-autofill-web:local
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: web
     command: ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
