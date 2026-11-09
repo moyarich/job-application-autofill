@@ -9,12 +9,12 @@ npm run dev
 The script runs:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --pull never
 ```
 
 The development override mounts the local checkout at `/app` in both the API and
 web containers, while keeping image-installed `node_modules` and the prebuilt
-`packages/resume/dist` available in container-managed volumes. The API and frontend share cached npm build layers. A third, dedicated Python 3.14 OCR image contains PDFium, RapidOCR and ONNX Runtime. Existing images and dependency volumes are reused on normal startup; missing images are built automatically by Compose.
+`packages/resume/dist` available in container-managed volumes. The API and frontend share cached npm build layers. A third, dedicated Python 3.14 OCR image contains PDFium, RapidOCR and ONNX Runtime. Existing images and dependency volumes are reused on normal startup. The launcher first builds locally named service images that are missing, then starts Compose with registry pulling disabled. It does not attempt to pull `job-application-autofill-*` images from Docker Hub.
 
 - The slim frontend image includes Node and Vite, **not** Python, Chromium, OCR, or noVNC. React/Vite changes update in the browser through HMR (polling enabled for Docker Desktop).
 - API TypeScript changes restart the Node process using `node --watch`.
@@ -26,7 +26,7 @@ web containers, while keeping image-installed `node_modules` and the prebuilt
   compiled `dist` output; that package is not independently watched in dev mode.
   The explicit rebuild command also refreshes `/app/packages/resume/dist`.
 
-Python 3.14 is the newest supported runtime for OCR today. Python 3.15 is stable, but ONNX Runtime has not published compatible CPython 3.15 wheels. The Poetry constraint remains `>=3.12,<3.15` to reflect supported interpreters.\n\n**First run:** Docker downloads the smaller Node 22 and Python 3.14.10 bookworm-slim base images. The API installs Chromium and its operating-system dependencies. The OCR image installs its own Python requirements separately. The Chromium download is still substantial, but neither the web nor the API image carries the heavy OCR stack. Subsequent starts reuse these images unless you explicitly rebuild or delete Docker's image cache.
+Python 3.14 is the newest supported runtime for OCR today. Python 3.15 is stable, but ONNX Runtime has not published compatible CPython 3.15 wheels. The Poetry constraint remains `>=3.12,<3.15` to reflect supported interpreters.\n\n**First run:** `npm run dev` builds the missing application images locally (pulling only the public base images needed by Dockerfile). No Docker registry login is required for the application image names.\n\n**First run:** Docker downloads the smaller Node 22 and Python 3.14.10 bookworm-slim base images. The API installs Chromium and its operating-system dependencies. The OCR image installs its own Python requirements separately. The Chromium download is still substantial, but neither the web nor the API image carries the heavy OCR stack. Subsequent starts reuse these images unless you explicitly rebuild or delete Docker's image cache.
 
 To inspect the resulting image sizes after building, run `docker image ls --filter reference='job-application-autofill-*'`.
 
