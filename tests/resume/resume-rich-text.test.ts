@@ -7,6 +7,7 @@ import {
   markdownToEditor,
   editorToMarkdown,
   listDepth,
+  listNestingLevels,
   setListStyle,
   shiftListIndent,
   renumberListBlocks,
@@ -124,4 +125,31 @@ it("updates numbering after list indentation changes", () => {
   expect(editorToMarkdown(renumberListBlocks(nested))).toBe(
     "1. First\n    1. Second\n2. Third",
   );
+});
+
+it("round-trips nested bold, italic, links and inline code through mdast", () => {
+  const source = "- **Built *accessible* workflows** with [React](https://react.dev) and `TypeScript`";
+  const document = markdownToEditor(source);
+  expect(document[0].type).toBe("bullet");
+  expect(document[0].children).toContainEqual({
+    text: "accessible", bold: true, italic: true,
+  });
+  expect(document[0].children).toContainEqual({
+    text: "React", href: "https://react.dev",
+  });
+  expect(document[0].children).toContainEqual({
+    text: "TypeScript", code: true,
+  });
+  expect(markdownToEditor(editorToMarkdown(document))).toEqual(document);
+});
+
+it("uses mdast to distinguish nesting levels in mixed lists", () => {
+  const source = [
+    "- Parent",
+    "    1. Ordered child",
+    "        - Grandchild",
+    "    2. Next child",
+    "- Another parent",
+  ].join("\n");
+  expect(listNestingLevels(markdownToEditor(source))).toEqual([0, 1, 2, 1, 0]);
 });
