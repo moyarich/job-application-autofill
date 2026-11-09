@@ -60,9 +60,12 @@ class OcrHandler(BaseHTTPRequestHandler):
             if filename is not None:
                 filename.unlink(missing_ok=True)
 
-    def log_message(self, format, *args):
-        # Avoid logging resume contents; standard request metadata only.
-        super().log_message(format, *args)
+    def log_request(self, code="-", size="-"):
+        # Docker polls /health every ten seconds. Keep successful probes quiet
+        # while preserving error responses and actual extraction request logs.
+        if self.command == "GET" and self.path == "/health" and code == 200:
+            return
+        super().log_request(code, size)
 
 
 if __name__ == "__main__":
