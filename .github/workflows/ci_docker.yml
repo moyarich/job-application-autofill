@@ -57,7 +57,7 @@ jobs:
       - name: Start application
         run: |
           mkdir -p sqlite-data
-          docker compose up -d --no-build
+          docker compose up -d --no-build --pull never
       - name: Verify Chromium and Python OCR are compartmentalized
         run: |
           docker compose exec -T api node -e 'const {chromium}=require("playwright"); (async()=>{const headed=await chromium.launch({headless:false}); await headed.close(); const headless=await chromium.launch({headless:true}); await headless.close()})().catch(e=>{console.error(e);process.exit(1)})'
