@@ -17,6 +17,8 @@ services:
       - --experimental-strip-types
       - packages/resume-api/index.ts
 
+  # OCR dependencies and models remain in the isolated container image.
+  # Rebuild after changing the Python worker or its Poetry dependencies.
   web:
     volumes:
       - .:/app
