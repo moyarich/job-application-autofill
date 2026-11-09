@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createEditor,
   Editor,
@@ -11,14 +11,15 @@ import {
   Slate,
   useSlate,
   withReact,
-  type ReactEditor,
+  ReactEditor,
 } from "slate-react";
 import { withHistory, type HistoryEditor } from "slate-history";
-import { Bold, Italic, List, ListOrdered, IndentIncrease, IndentDecrease, Undo2, Redo2 } from "lucide-react";
+import { ChevronDown, Bold, Italic, List, ListOrdered, IndentIncrease, IndentDecrease, Undo2, Redo2 } from "lucide-react";
 import {
   markdownToEditor,
   editorToMarkdown,
   listDepth,
+  listNestingLevels,
   setListStyle,
   shiftListIndent,
   renumberListBlocks,
@@ -51,6 +52,7 @@ function renumberEditor(editor: Editor) {
 
 function Toolbar({ label }: { label: string }) {
   const editor = useSlate();
+  const markerSelection = useRef<typeof editor.selection>(null);
   const marks = Editor.marks(editor);
   const toggle = (mark: "bold" | "italic") =>
     marks?.[mark]
@@ -113,6 +115,39 @@ function Toolbar({ label }: { label: string }) {
       >
         <List size={16} />
       </button>
+      <details className="rich-text-style-picker">
+        <summary aria-label="Bullet styles" title="Bullet styles"
+          onPointerDown={() => { markerSelection.current = editor.selection; }}>
+          <ChevronDown size={13} />
+        </summary>
+        <div className="rich-text-style-menu" role="group" aria-label="Choose bullet style">
+          {([
+            ["-", "Filled circle"],
+            ["*", "Hollow circle"],
+            ["+", "Square"],
+          ] as const).map(([marker, title]) => (
+            <button key={marker} type="button" aria-label={title}
+              aria-pressed={bullet && selected.some(([block]) => block.type === "bullet" && block.prefix?.trim() === marker)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                if (markerSelection.current) Transforms.select(editor, markerSelection.current);
+                if (!editor.selection) return;
+                Editor.withoutNormalizing(editor, () => {
+                  for (const [block, path] of selectedBlocks()) {
+                    Transforms.setNodes(editor, { type: "bullet", prefix: " ".repeat(listDepth(block)) + marker + " " }, { at: path });
+                  }
+                  renumberEditor(editor);
+                });
+                event.currentTarget.closest("details")?.removeAttribute("open");
+              }}>
+              <span className="rich-text-style-sample" aria-hidden="true">
+                {[0, 1, 2].map((row) => <span key={row}><b data-marker={marker} /><i /></span>)}
+              </span>
+              <span>{title}</span>
+            </button>
+          ))}
+        </div>
+      </details>
       <button
         type="button"
         aria-label="Numbered list"
@@ -178,6 +213,17 @@ export function RichTextEditor({
   const [sourceMode, setSourceMode] = useState(false);
   const [editor] = useState(() => withHistory(withReact(createEditor())));
   const initial = markdownToEditor(value, bullets);
+  const nestingLevels = listNestingLevels(initial);
+  const ancestorWidths: number[] = [];
+  const listOffsets = initial.map((block, index) => {
+    const level = nestingLevels[index] ?? 0;
+    ancestorWidths.length = level;
+    const offset = level * 24 + ancestorWidths.reduce((sum, width) => sum + width, 0);
+    ancestorWidths[level] = block.type === "numbered"
+      ? Math.max(0, (block.prefix?.trim().length ?? 2) - 2) * 8
+      : 0;
+    return offset;
+  });
   useEffect(() => {
     if (editorToMarkdown(editor.children as RichTextDocument) === value) return;
     editor.children = structuredClone(initial);
@@ -251,14 +297,18 @@ export function RichTextEditor({
                       ? "rich-text-numbered"
                       : "rich-text-paragraph"
                 }
+                data-bullet-style={element.type === "bullet" ? element.prefix?.trim() : undefined}
                 data-level={element.type !== "paragraph"
-                  ? Math.floor(listDepth(element) / 4) % 3
+                  ? (nestingLevels[ReactEditor.findPath(editor, element)[0]] ?? 0) % 3
                   : undefined}
                 data-marker={element.type === "numbered"
                   ? (element.prefix?.trim().match(/^\d+[.)]/)?.[0] ?? "1.")
                   : undefined}
                 style={element.type !== "paragraph"
-                  ? { marginLeft: listDepth(element) * 4 }
+                  ? {
+                      marginLeft: listOffsets[ReactEditor.findPath(editor, element)[0]] ?? 0,
+                      ...(element.type === "numbered" ? { paddingLeft: `${Math.max(3, (element.prefix?.trim().length ?? 2) + 1)}ch` } : {}),
+                    }
                   : undefined}
               >
                 {children}

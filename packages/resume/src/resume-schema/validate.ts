@@ -171,6 +171,7 @@ export {
   markdownToEditor,
   editorToMarkdown,
   listDepth,
+  listNestingLevels,
   setListStyle,
   shiftListIndent,
   renumberListBlocks,

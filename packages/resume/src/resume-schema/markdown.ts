@@ -1,9 +1,17 @@
 import MarkdownIt from "markdown-it";
 import type { CandidateProfile } from "../types.js";
 const markdown = new MarkdownIt({ html: false, linkify: false, breaks: true });
+// Markdown markers retain the visual style selected in the resume editor.
+markdown.renderer.rules.list_item_open = (tokens, index, options, _env, renderer) => {
+  const marker = tokens[index].markup;
+  if (marker === "*" || marker === "+") {
+    tokens[index].attrSet("style", `list-style-type: ${marker === "*" ? "circle" : "square"}`);
+  }
+  return renderer.renderToken(tokens, index, options);
+};
 
 /** Render only safe Markdown; raw HTML stays visible text and unsafe links are rejected. */
-const sourceLists = (text: string) => text.replace(/^([ \t]*)[•●▪◦‣⁃]\s*/gm, "$1- ");
+const sourceLists = (text: string) => text.replace(/^([ \t]*)([•●▪◦‣⁃])\s*/gm, (_match, indent: string, marker: string) => indent + (marker === "◦" ? "*" : marker === "▪" ? "+" : "-") + " ");
 export const markdownToHtml = (text: string) => markdown.render(sourceLists(text));
 export function markdownToPlainText(text: string): string {
   return markdown
@@ -114,6 +122,18 @@ export function markdownToEditor(
   });
 }
 /** Keep each list marker and its indentation in the Markdown representation. */
+/** Resolve visual nesting from Markdown structure, including wide ordered markers. */
+export function listNestingLevels(document: RichTextDocument): number[] {
+  const levels = document.map(() => 0);
+  let depth = 0;
+  for (const token of markdown.parse(editorToMarkdown(document), {})) {
+    if (token.type === "bullet_list_open" || token.type === "ordered_list_open") depth++;
+    else if (token.type === "bullet_list_close" || token.type === "ordered_list_close") depth--;
+    else if (token.type === "list_item_open" && token.map) levels[token.map[0]] = Math.max(0, depth - 1);
+  }
+  return levels;
+}
+
 export function listDepth(block: RichTextBlock): number {
   return (block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0);
 }
