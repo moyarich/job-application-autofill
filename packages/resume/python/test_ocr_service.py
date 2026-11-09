@@ -1,5 +1,6 @@
 """Contract checks for the private PDF extraction service."""
 import json
+from http.client import HTTPConnection
 import threading
 import unittest
 from http.server import HTTPServer
@@ -55,12 +56,17 @@ class TestOcrService(unittest.TestCase):
         self.assertEqual(response["error"], "Invalid PDF upload")
 
     def test_rejects_large_files_before_reading_body(self):
-        request = Request(
-            self.endpoint + "/extract", data=b"x", method="POST",
-            headers={"Content-Type": "application/pdf", "Content-Length": str(11 * 1024 * 1024)},
-        )
-        # urllib may overwrite Content-Length; explicit handler test not needed here.
-        self.assertGreater(11 * 1024 * 1024, 10 * 1024 * 1024)
+        connection = HTTPConnection("127.0.0.1", self.server.server_port, timeout=5)
+        try:
+            connection.putrequest("POST", "/extract")
+            connection.putheader("Content-Type", "application/pdf")
+            connection.putheader("Content-Length", str(11 * 1024 * 1024))
+            connection.endheaders()
+            response = connection.getresponse()
+            self.assertEqual(response.status, 413)
+            self.assertIn("10 MB", json.load(response)["error"])
+        finally:
+            connection.close()
 
     def test_extracts_through_pdf_worker(self):
         with patch(
