@@ -67,7 +67,12 @@ export function main() {
     console.log("Starting job-application-autofill: React, API, SQLite, Chromium and noVNC via Docker Compose.");
     console.log("Dashboard: http://localhost:" + (process.env.MOYA_WEB_PORT || "5173"));
     console.log("Browser viewer: http://localhost:" + (process.env.MOYA_REVIEW_PORT || "6080") + "/vnc.html");
-    const child = spawn("docker", ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "--build", "--renew-anon-volumes"], { cwd: root, stdio: "inherit", env: process.env });
+    const rebuild = process.argv.slice(2).includes("--build");
+    const unknown = process.argv.slice(2).filter((arg) => arg !== "--build");
+    if (unknown.length) throw new Error("Unknown argument: " + unknown.join(", ") + ". Use npm run dev -- --build to rebuild dependencies.");
+    if (rebuild) console.log("Rebuilding the Docker image and refreshing dependency volumes.");
+    const composeArgs = ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", ...(rebuild ? ["--build", "--renew-anon-volumes"] : [])];
+    const child = spawn("docker", composeArgs, { cwd: root, stdio: "inherit", env: process.env });
     for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => child.kill(signal));
     child.on("error", (error: Error) => { console.error("Could not launch Docker Compose:", error.message); process.exitCode = 1; });
     child.on("exit", (code, signal) => { process.exitCode = code ?? (signal ? 130 : 1); });

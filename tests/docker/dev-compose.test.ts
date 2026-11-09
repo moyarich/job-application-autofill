@@ -8,7 +8,9 @@ describe("Docker development configuration", () => {
   it("uses the development compose override for npm run dev", () => {
     const launcher = source("docker/dev.ts");
     expect(launcher).toContain('"docker-compose.dev.yml"');
-    expect(launcher).toContain('"up", "--build", "--renew-anon-volumes"');
+    expect(launcher).toContain('...(rebuild ? ["--build", "--renew-anon-volumes"] : [])');
+    expect(launcher).toContain('const rebuild = process.argv.slice(2).includes("--build")');
+    expect(launcher).not.toContain('"up", "--build", "--renew-anon-volumes"');
   });
 
   it("mounts local sources and restarts the API when code changes", () => {
