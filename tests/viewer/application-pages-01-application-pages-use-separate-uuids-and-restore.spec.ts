@@ -91,7 +91,8 @@ test("application pages use separate UUIDs and restore only their own session", 
     page.getByRole("button", { name: "Apply", exact: true }),
   ).toHaveCount(2);
   const firstWait = context.waitForEvent("page");
-  await page.getByRole("button", { name: "Apply", exact: true }).nth(0).click();
+  await page.locator("article.job").filter({ hasText: "Example A" })
+    .getByRole("button", { name: "Apply", exact: true }).click();
   const first = await firstWait;
   await expect(first).toHaveURL(new RegExp(jobs[0].id));
   await expect(first.getByText("Sign in for Example A").first()).toBeVisible();
@@ -99,7 +100,8 @@ test("application pages use separate UUIDs and restore only their own session", 
     first.getByRole("heading", { name: "Add an opportunity" }),
   ).toHaveCount(0);
   const secondWait = context.waitForEvent("page");
-  await page.getByRole("button", { name: "Apply", exact: true }).nth(1).click();
+  await page.locator("article.job").filter({ hasText: "Example B" })
+    .getByRole("button", { name: "Apply", exact: true }).click();
   const second = await secondWait;
   await expect(second).toHaveURL(new RegExp(jobs[1].id));
   await expect(second.getByText("Sign in for Example B").first()).toBeVisible();
