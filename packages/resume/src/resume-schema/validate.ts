@@ -170,6 +170,9 @@ export {
   resumeToMarkdown,
   markdownToEditor,
   editorToMarkdown,
+  listDepth,
+  setListStyle,
+  shiftListIndent,
 } from "./markdown.ts";
 export type {
   RichTextBlock,

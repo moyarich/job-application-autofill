@@ -67,7 +67,7 @@ export type RichTextLeaf = {
   href?: string;
 };
 export type RichTextBlock = {
-  type: "paragraph" | "bullet";
+  type: "paragraph" | "bullet" | "numbered";
   prefix?: string;
   children: RichTextLeaf[];
 };
@@ -78,8 +78,9 @@ export function markdownToEditor(
   bullets = false,
 ): RichTextDocument {
   return sourceLists(text).split("\n").map((line) => {
-    const prefix = line.match(/^(\s*(?:[-*+] |\d+\. |#{1,6} |> ))/)?.[0] || "";
-    const bullet = /^\s*(?:[-*+] |\d+\. )/.test(prefix);
+    const prefix = line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
+    const numbered = /^\s*\d+[.)] /.test(prefix);
+    const bullet = /^\s*[-*+] /.test(prefix);
     const children: RichTextLeaf[] = [];
     let bold = false,
       italic = false,
@@ -106,12 +107,41 @@ export function markdownToEditor(
       else if (token.type === "image") children.push({ text: token.content });
     }
     return {
-      type: bullet || bullets ? "bullet" : "paragraph",
+      type: numbered ? "numbered" : bullet || bullets ? "bullet" : "paragraph",
       prefix: prefix || (bullets ? "- " : ""),
       children: children.length ? children : [{ text: "" }],
     };
   });
 }
+/** Keep each list marker and its indentation in the Markdown representation. */
+export function listDepth(block: RichTextBlock): number {
+  return (block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0);
+}
+
+export function setListStyle(
+  block: RichTextBlock,
+  type: RichTextBlock["type"],
+): Pick<RichTextBlock, "type" | "prefix"> {
+  const indent = " ".repeat(listDepth(block));
+  if (type === "paragraph") return { type, prefix: "" };
+  const existing = block.prefix?.trim() ?? "";
+  const marker = type === "numbered"
+    ? (/^\d+[.)]$/.test(existing) ? existing : "1.")
+    : (/^[-*+]$/.test(existing) ? existing : "-");
+  return { type, prefix: indent + marker + " " };
+}
+
+/** Four spaces per level keeps mixed and numbered sublists portable. */
+export function shiftListIndent(
+  block: RichTextBlock,
+  direction: 1 | -1,
+): Pick<RichTextBlock, "type" | "prefix"> {
+  if (block.type === "paragraph") return { type: block.type, prefix: block.prefix ?? "" };
+  const depth = Math.max(0, listDepth(block) + direction * 4);
+  const marker = (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
+  return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
+}
+
 export function editorToMarkdown(document: RichTextDocument): string {
   return document
     .map((block) => {
@@ -132,11 +162,11 @@ export function editorToMarkdown(document: RichTextDocument): string {
         })
         .join("");
       return (
-        (block.type === "bullet"
-          ? /^\s*(?:[-*+] |\d+\. )/.test(block.prefix || "")
+        (block.type === "bullet" || block.type === "numbered"
+          ? /^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix || "")
             ? block.prefix
-            : "- "
-          : block.prefix && !/^\s*(?:[-*+] |\d+\. )/.test(block.prefix)
+            : block.type === "numbered" ? "1. " : "- "
+          : block.prefix && !/^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix)
             ? block.prefix
             : "") + contents
       );

@@ -116,3 +116,20 @@
   font-size: 12px;
   box-shadow: none;
 }
+
+.rich-text-numbered {
+  padding-left: 30px;
+  position: relative;
+  margin-bottom: 5px;
+}
+.rich-text-numbered::before {
+  content: attr(data-marker);
+  position: absolute;
+  left: 0;
+  color: #6d7da0;
+  font-variant-numeric: tabular-nums;
+}
+.rich-text-toolbar button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
