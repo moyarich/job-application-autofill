@@ -67,7 +67,41 @@ export function main() {
     console.log("Starting job-application-autofill: React, API, SQLite, Chromium and noVNC via Docker Compose.");
     console.log("Dashboard: http://localhost:" + (process.env.MOYA_WEB_PORT || "5173"));
     console.log("Browser viewer: http://localhost:" + (process.env.MOYA_REVIEW_PORT || "6080") + "/vnc.html");
-    const child = spawn("docker", ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "--build", "--renew-anon-volumes"], { cwd: root, stdio: "inherit", env: process.env });
+    const rebuild = process.argv.slice(2).includes("--build");
+    const unknown = process.argv.slice(2).filter((arg) => arg !== "--build");
+    if (unknown.length) throw new Error("Unknown argument: " + unknown.join(", ") + ". Use npm run dev -- --build to rebuild dependencies.");
+    const compose = ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml"];
+    // Docker Compose tries to pull a locally named image before building it
+    // when a service has both image: and build:. Resolve the configured images
+    // and build missing ones locally instead of contacting a registry.
+    const listed = spawnSync("docker", [...compose, "config", "--images"], {
+      cwd: root, encoding: "utf8", stdio: "pipe",
+    });
+    if (listed.error || listed.status !== 0) {
+      throw new Error("Could not inspect Docker Compose images: " +
+        (listed.stderr || listed.error?.message || "unknown error").trim());
+    }
+    const images = [...new Set(listed.stdout.split(/\r?\n/).map((name) => name.trim()).filter(Boolean))];
+    if (!images.length) throw new Error("Docker Compose did not define any service images.");
+    const missing = images.filter((name) => {
+      const inspected = spawnSync("docker", ["image", "inspect", name], {
+        cwd: root, stdio: "ignore",
+      });
+      return inspected.error || inspected.status !== 0;
+    });
+    if (rebuild || missing.length) {
+      console.log(rebuild
+        ? "Rebuilding local Docker images and refreshing dependency volumes."
+        : "Building missing local Docker images: " + missing.join(", "));
+      const built = spawnSync("docker", [...compose, "build"], { cwd: root, stdio: "inherit" });
+      if (built.error || built.status !== 0) {
+        throw new Error("Docker image build failed. Check the build output above.");
+      }
+    }
+    // Never pull application image names from Docker Hub. Base images are still
+    // downloaded by 'docker compose build' when genuinely needed.
+    const composeArgs = [...compose, "up", "--pull", "never", ...(rebuild ? ["--renew-anon-volumes"] : [])];
+    const child = spawn("docker", composeArgs, { cwd: root, stdio: "inherit", env: process.env });
     for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => child.kill(signal));
     child.on("error", (error: Error) => { console.error("Could not launch Docker Compose:", error.message); process.exitCode = 1; });
     child.on("exit", (code, signal) => { process.exitCode = code ?? (signal ? 130 : 1); });
