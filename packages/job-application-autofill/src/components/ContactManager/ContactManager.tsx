@@ -121,8 +121,7 @@ export function ContactManager({
       )}
       {contacts.length === 0 ? (
         <div className="contact-management-empty">
-          No contacts yet. Create one with a first name, last name and email, or
-          import a resume to add its contact details.
+          No contacts yet.
         </div>
       ) : (
         <div className="contact-management-list">

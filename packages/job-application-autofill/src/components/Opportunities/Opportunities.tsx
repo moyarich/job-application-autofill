@@ -110,8 +110,8 @@ export function Opportunities({
           {filtered.length === 0 ? (
             <div className="empty">
               {jobs.length === 0
-                ? "No applications yet. Add a job to get started."
-                : "No matching applications. Adjust your search or status filter."}
+                ? "No applications yet."
+                : "No matching applications."}
             </div>
           ) : (
             paginated.items.map((job) => (
@@ -192,7 +192,7 @@ export function Opportunities({
             ))
           )}
         </div>
-        <Pagination
+        {filtered.length > 0 && <Pagination
           page={paginated.page}
           pageCount={paginated.pageCount}
           start={paginated.start}
@@ -201,7 +201,7 @@ export function Opportunities({
           pageSize={pageSize}
           onPageChange={setPage}
           onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        />
+        />}
       </section>
     </>
   );
