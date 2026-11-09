@@ -18,7 +18,7 @@ export function createChooseResume(context: ResumeImportActionsContext) {
       source: { fileName: file?.name ?? "" },
     }));
     setMessage(
-      file ? "Resume selected. Click Parse resume to extract fields." : "",
+      file ? "Resume selected. Click Import resume to extract details." : "",
     );
   }
   return chooseResume;

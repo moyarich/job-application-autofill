@@ -1,3 +1,4 @@
+import { FileUp } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { createResumeVersion } from "../../utils/api/client";
 import { navigateTo } from "../../utils/resumes/navigateTo";
@@ -22,10 +23,15 @@ export function PageResumeImport() {
     if (creating || !name.trim()) return;
     setCreating(true);
     try {
-      const created = await createResumeVersion(selection.activeProfileId, name.trim());
+      const created = await createResumeVersion(
+        selection.activeProfileId,
+        name.trim(),
+      );
       navigateTo(selection.activeProfileId, created.id, routes.resumeImport);
     } catch (error) {
-      selection.setMessage(error instanceof Error ? error.message : "Could not create resume.");
+      selection.setMessage(
+        error instanceof Error ? error.message : "Could not create resume.",
+      );
     } finally {
       setCreating(false);
     }
@@ -44,7 +50,8 @@ export function PageResumeImport() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated &&
+    selection.hydrated &&
+    contacts.contactsHydrated &&
     (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
@@ -77,29 +84,46 @@ export function PageResumeImport() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Import a resume"
-        />
-        {selection.activeResumeId ? <ResumeParser controller={controller} /> : (
-          <section className="panel">
+        <WorkspaceHeader title="Import a resume" />
+        {selection.activeResumeId ? (
+          <ResumeParser controller={controller} />
+        ) : (
+          <section className="panel import-start">
+            <span className="import-file-icon">
+              <FileUp size={26} aria-hidden="true" />
+            </span>
             <div className="panel-title">
               <h2>Start your resume import</h2>
-              <p>Name your resume, then choose a PDF, Word document, or JSON file.</p>
+              <p>
+                Name your resume, then choose a PDF, Word document, or JSON
+                file.
+              </p>
             </div>
             <form onSubmit={(event) => void startImport(event)}>
               <label>
                 Resume name
-                <input required maxLength={80} value={name}
+                <input
+                  required
+                  maxLength={80}
+                  value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g. Software Engineer" disabled={creating} />
+                  placeholder="e.g. Software Engineer"
+                  disabled={creating}
+                />
               </label>
-              <button className="primary parser-button" type="submit" disabled={creating}>
+              <button
+                className="primary parser-button"
+                type="submit"
+                disabled={creating}
+              >
                 {creating ? "Creating…" : "Continue to import"}
               </button>
             </form>
           </section>
         )}
-        {selection.activeResumeId && <ContactImportReview controller={controller} />}
+        {selection.activeResumeId && (
+          <ContactImportReview controller={controller} />
+        )}
       </>
     </PageStatus>
   );
