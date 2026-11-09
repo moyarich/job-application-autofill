@@ -104,9 +104,20 @@ The JSON contains `contact`, `summary`, `experience`, `skills`, `education`, `pr
 
 ## Application résumé inputs: JSON + PDF
 
-The JSON résumé drives ATS autofill; a PDF résumé is attached to the employer's application. You can import a schema-valid résumé JSON directly without using OCR or the extractor. When clicking **Apply**, job-application-autofill attaches the uploaded PDF if one is available; otherwise it renders the current JSON to a PDF and attaches that generated file automatically. You can export and review the PDF separately before applying.
+When adding a job application, paste the public HTTPS posting URL first. Moya reads
+the employer's published job metadata (structured JobPosting data or page title)
+to suggest the role and company. Both fields are editable, and sites requiring
+sign-in may require manual entry.
 
-The PDF generator supports Latin text; if a résumé contains unsupported characters and no uploaded PDF is available, application preparation reports an error rather than attaching corrupted text. A file-input mismatch or custom upload widget still requires manual completion in the browser viewer. Final submission always requires explicit browser review and confirmation.
+Each tracked application has its own **Resume** selector. Choose a saved resume
+for that application before clicking **Apply**. Moya saves the resume association
+in SQLite, opens a review page showing the selected version, and waits for you
+to confirm **Open employer application**. Changing the active resume elsewhere
+does not change the resume assigned to that application.
+
+The JSON résumé drives ATS autofill; a PDF résumé is attached to the employer's application. You can import a schema-valid résumé JSON directly without using OCR or the extractor. For an application, Moya generates a new PDF from the selected resume version's structured JSON, so the attached PDF matches the fields used for autofill. You can export and review the PDF separately before applying.
+
+If the selected resume contains unsupported characters during PDF generation, application preparation reports an error rather than attaching corrupted text. A file-input mismatch or custom upload widget still requires manual completion in the browser viewer. Final submission always requires explicit browser review and confirmation.
 
 ## Generate an ATS-friendly PDF from résumé JSON
 
