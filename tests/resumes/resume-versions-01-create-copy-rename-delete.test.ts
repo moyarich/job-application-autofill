@@ -7,7 +7,7 @@ const candidate = JSON.parse(readFileSync(new URL("../../packages/resume/src/res
 test("resume versions can be copied, named and deleted without changing the source", () => {
   const db = openStore(":memory:");
   try {
-    const primary = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const primary = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     db.saveResumeContent({ revision: 0, profile: candidate, contactId: null }, DEFAULT_PROFILE_ID, primary.id);
     const copy = db.createResume(DEFAULT_PROFILE_ID, "Platform Engineer", primary.id);
     expect(db.getResumeContent(DEFAULT_PROFILE_ID, copy.id).profile).toEqual(candidate);
@@ -16,14 +16,15 @@ test("resume versions can be copied, named and deleted without changing the sour
     expect(original.profile).toEqual(candidate);
     db.deleteResume(DEFAULT_PROFILE_ID, copy.id);
     expect(() => db.getResumeContent(DEFAULT_PROFILE_ID, copy.id)).toThrow(/not found/i);
-    expect(() => db.deleteResume(DEFAULT_PROFILE_ID, primary.id)).toThrow(/at least one/i);
+    db.deleteResume(DEFAULT_PROFILE_ID, primary.id);
+    expect(db.listResumes(DEFAULT_PROFILE_ID)).toEqual([]);
   } finally { db.close(); }
 });
 
 test("copying an unlinked draft keeps it unlinked even when a default contact exists", () => {
   const db = openStore(":memory:");
   try {
-    const draft = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const draft = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     db.saveResumeContent({revision:0,profile:candidate,contactId:null},DEFAULT_PROFILE_ID,draft.id);
     const saved = db.createContact(DEFAULT_PROFILE_ID,candidate.contact,"Default");
     expect(saved.isDefault).toBeTruthy();

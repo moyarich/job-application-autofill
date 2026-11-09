@@ -6,7 +6,7 @@ import { navigateTo } from "./navigateTo";
 export function createRemoveResume(context: ProfileResumeActionsContext) {
   const { applicationId, applyBusy, sessionActive, activeProfileId, activeResumeId, resumeVersions, flushPending, setMessage, setResumeVersions } = context;
   async function removeResume(resumeId: string) {
-    if (applicationId || applyBusy || sessionActive || resumeVersions.length <= 1)
+    if (applicationId || applyBusy || sessionActive)
       return;
     try {
       await flushPending();

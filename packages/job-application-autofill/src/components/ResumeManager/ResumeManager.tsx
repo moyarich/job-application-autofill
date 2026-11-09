@@ -87,7 +87,6 @@ export function ResumeManager({
     }
   }
   async function deleteRow(id: string, title: string) {
-    if (resumeVersions.length <= 1) return;
     if (
       !window.confirm(
         'Permanently delete resume "' + title + '"? This cannot be undone.',
@@ -252,12 +251,8 @@ export function ResumeManager({
                 <button
                   className="secondary resume-management-delete"
                   type="button"
-                  disabled={locked || pending || resumeVersions.length <= 1}
-                  title={
-                    resumeVersions.length <= 1
-                      ? "Each profile must keep at least one resume."
-                      : "Delete resume"
-                  }
+                  disabled={locked || pending}
+                  title="Delete resume"
                   onClick={() => void deleteRow(resume.id, resume.name)}
                 >
                   <Trash2 size={14} /> Delete
@@ -270,8 +265,10 @@ export function ResumeManager({
       {!visibleResumes.length && (
         <div className="resume-library-empty">
           <Search size={25} />
-          <h3>No resumes found</h3>
-          <p>Try another name or create a new resume.</p>
+          <h3>{resumeVersions.length === 0 ? "No resumes yet" : "No resumes found"}</h3>
+          <p>{resumeVersions.length === 0
+            ? "Create your first resume to get started."
+            : "Try another name or create a new resume."}</p>
         </div>
       )}
       {form && (

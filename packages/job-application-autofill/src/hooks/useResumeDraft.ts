@@ -26,9 +26,16 @@ export function useResumeDraft({
   const errors = validateCandidate(profile);
 
   useEffect(() => {
-    if (!enabled || !resumeId) return;
-    let cancelled = false;
     setHydrated(false);
+    if (!enabled || !resumeId) {
+      setProfile(structuredClone(emptyCandidate));
+      setContactId(null);
+      revisionRef.current = 0;
+      savedRef.current = "";
+      blockedRef.current = false;
+      return;
+    }
+    let cancelled = false;
     readResumeContent(profileId, resumeId).then((result) => {
       if (cancelled) return;
       const linked = contacts.find((item) => item.id === result.contactId);

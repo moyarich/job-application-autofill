@@ -209,15 +209,6 @@ export function openStore(
     try {
       const createdAt = now();
       insertProfile.run(DEFAULT_PROFILE_ID, "Default profile", createdAt);
-      insertResume.run(
-        randomUUID(),
-        DEFAULT_PROFILE_ID,
-        null,
-        "Primary resume",
-        null,
-        createdAt,
-        createdAt,
-      );
       db.exec("COMMIT");
     } catch (error) {
       db.exec("ROLLBACK");
@@ -265,15 +256,6 @@ export function openStore(
     db.exec("BEGIN IMMEDIATE");
     try {
       insertProfile.run(row.id, row.name, row.createdAt);
-      insertResume.run(
-        randomUUID(),
-        row.id,
-        null,
-        "Primary resume",
-        null,
-        row.createdAt,
-        row.createdAt,
-      );
       db.exec("COMMIT");
       return row;
     } catch (error) {
@@ -540,8 +522,6 @@ export function openStore(
   function deleteResume(profileId: string, resumeId: string) {
     const owner = requireProfile(profileId);
     requireResume(owner, resumeId);
-    if (listResumes(owner).length <= 1)
-      throw new Error("Keep at least one resume per profile.");
     db.prepare("DELETE FROM resumes WHERE id=? AND profile_id=?").run(
       resumeId,
       owner,
