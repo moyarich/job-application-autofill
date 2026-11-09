@@ -1,6 +1,11 @@
+import { useMemo, useState } from "react";
 import type { TrackerData } from "../feature-props";
+import { Pagination } from "../Pagination/Pagination";
+import { SearchInput } from "../SearchInput/SearchInput";
+import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";
+import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
+import { Download, FilePlus2, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -19,13 +24,19 @@ export function Opportunities({
     jobs,
     search,
     setSearch,
-    filtered,
     prepareJob,
     changeJob,
     setNotesJobId,
     notesJobId,
     setJobs,
   } = controller;
+  const [statusFilter, setStatusFilter] = useState<ApplicationFilter>("all");
+  const [sort, setSort] = useState<ApplicationSort>("newest");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const filtered = useMemo(() => searchApplications(jobs, search, statusFilter, sort), [jobs, search, statusFilter, sort]);
+  const paginated = paginateApplications(filtered, page, pageSize);
+  const updateSearch = (value: string) => { setSearch(value); setPage(1); };
   return (
     <>
       <section className="panel" id="add-application">
@@ -79,17 +90,18 @@ export function Opportunities({
             <p>Keep track of every stage, from saved to submitted.</p>
           </div>
           <div className="opportunity-controls">
-            <label className="search-control">
-              <span className="sr-only">Search applications</span>
-              <Search size={15} aria-hidden="true" />
-              <input
-                aria-label="Search applications"
-                className="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search applications"
-              />
-            </label>
+            <SearchInput
+              label="Search applications"
+              value={search}
+              onChange={updateSearch}
+              placeholder="Search company, role, notes…"
+            />
+            <ApplicationFilters
+              status={statusFilter}
+              sort={sort}
+              onStatusChange={(value) => { setStatusFilter(value); setPage(1); }}
+              onSortChange={(value) => { setSort(value); setPage(1); }}
+            />
             <button type="button" className="secondary"
               onClick={() => downloadJson("job-applications.json", jobs)}>
               <Download size={15} /> Export
@@ -99,10 +111,12 @@ export function Opportunities({
         <div className="job-list">
           {filtered.length === 0 ? (
             <div className="empty">
-              No matching applications. Try a different search or add a job.
+              {jobs.length === 0
+                ? "No applications yet. Add a job to get started."
+                : "No matching applications. Adjust your search or status filter."}
             </div>
           ) : (
-            filtered.map((job) => (
+            paginated.items.map((job) => (
               <article className="job" key={job.id}>
                 <div className="job-icon">
                   {job.company.slice(0, 1).toUpperCase()}
@@ -180,6 +194,16 @@ export function Opportunities({
             ))
           )}
         </div>
+        <Pagination
+          page={paginated.page}
+          pageCount={paginated.pageCount}
+          start={paginated.start}
+          end={paginated.end}
+          total={paginated.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
       </section>
     </>
   );

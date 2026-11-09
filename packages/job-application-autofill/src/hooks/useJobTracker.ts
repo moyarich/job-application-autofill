@@ -8,9 +8,6 @@ export function useJobTracker(workspace: JobTrackerData) {
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [search, setSearch] = useState("");
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
-  const filtered = jobs.filter((job) =>
-    (job.company + " " + job.role).toLowerCase().includes(search.toLowerCase()),
-  );
 
   function addJob(event: React.FormEvent) {
     event.preventDefault();
@@ -42,5 +39,5 @@ export function useJobTracker(workspace: JobTrackerData) {
   }
 
   return { newJob, setNewJob, search, setSearch, notesJobId, setNotesJobId,
-    filtered, addJob, changeJob };
+    addJob, changeJob };
 }
