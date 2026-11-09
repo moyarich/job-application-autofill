@@ -13,9 +13,19 @@
 .job-notes { flex-basis: 100%; margin: 4px 0 5px 56px; }
 .job-notes textarea { resize: vertical; }
 .empty { padding: 55px 20px; text-align: center; color: #8996a8; font-size: 13px; line-height: 1.6; }
-.opportunity-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.applications-heading { display: flex; flex-direction: column; gap: 18px; }
+.opportunity-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; width: 100%; }
+.opportunity-controls .search-input { max-width: none; }
+.opportunity-controls .select-filter { flex: 0 0 190px; min-width: 0; }
+.opportunity-controls > button { margin-left: auto; }
 @media(max-width: 1180px) { .add-form { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media(max-width: 700px) { .add-form { grid-template-columns: 1fr; } .job select { max-width: 100%; } .job-notes { margin-left: 0; } .opportunity-controls { align-items: stretch; flex-direction: column; } }
-
-.opportunity-controls { min-width: 0; }
-@media(max-width: 700px) { .opportunity-controls > button { justify-content: center; } }
+@media(max-width: 700px) {
+  .add-form { grid-template-columns: 1fr; }
+  .job select { max-width: 100%; }
+  .job-notes { margin-left: 0; }
+  .opportunity-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opportunity-controls .search-input { grid-column: 1 / -1; min-width: 0; }
+  .opportunity-controls .select-filter { width: 100%; }
+  .opportunity-controls > button { grid-column: 1 / -1; width: 100%; margin-left: 0; }
+}
+@media(max-width: 400px) { .opportunity-controls { grid-template-columns: minmax(0, 1fr); } }
