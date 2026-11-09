@@ -14,7 +14,6 @@ export function workdayCredentials(
 ) {
   const destination = new URL(url);
   const host = (
-    env.WORKDAY_SITE_HOST ||
     env.WORKDAY_HOST ||
     "workday.wd5.myworkdayjobs.com"
   )
