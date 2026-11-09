@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import type { TrackerData } from "../feature-props";
 import { Pagination } from "../Pagination/Pagination";
+import { SearchInput } from "../SearchInput/SearchInput";
+import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";
 import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Search, Trash2, X } from "lucide-react";
+import { Download, FilePlus2, Trash2 } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -88,42 +90,18 @@ export function Opportunities({
             <p>Keep track of every stage, from saved to submitted.</p>
           </div>
           <div className="opportunity-controls">
-            <label className="search-control">
-              <span className="sr-only">Search applications</span>
-              <Search size={15} aria-hidden="true" />
-              <input
-                aria-label="Search applications"
-                className="search"
-                value={search}
-                onChange={(e) => updateSearch(e.target.value)}
-                placeholder="Search company, role, notes…"
-              />
-            </label>
-            {search && (
-              <button type="button" className="secondary opportunity-clear-search"
-                onClick={() => updateSearch("")} aria-label="Clear application search">
-                <X size={15} /> Clear
-              </button>
-            )}
-            <label className="opportunity-select-control">
-              <span className="sr-only">Filter applications by status</span>
-              <select aria-label="Filter applications by status" value={statusFilter}
-                onChange={(event) => { setStatusFilter(event.target.value as ApplicationFilter); setPage(1); }}>
-                <option value="all">All statuses</option>
-                {statuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
-              </select>
-            </label>
-            <label className="opportunity-select-control">
-              <span className="sr-only">Sort applications</span>
-              <select aria-label="Sort applications" value={sort}
-                onChange={(event) => { setSort(event.target.value as ApplicationSort); setPage(1); }}>
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="company">Company A–Z</option>
-                <option value="role">Role A–Z</option>
-                <option value="status">Status A–Z</option>
-              </select>
-            </label>
+            <SearchInput
+              label="Search applications"
+              value={search}
+              onChange={updateSearch}
+              placeholder="Search company, role, notes…"
+            />
+            <ApplicationFilters
+              status={statusFilter}
+              sort={sort}
+              onStatusChange={(value) => { setStatusFilter(value); setPage(1); }}
+              onSortChange={(value) => { setSort(value); setPage(1); }}
+            />
             <button type="button" className="secondary"
               onClick={() => downloadJson("job-applications.json", jobs)}>
               <Download size={15} /> Export

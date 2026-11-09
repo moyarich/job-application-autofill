@@ -1,5 +1,4 @@
 .add-form { display: grid; grid-template-columns: 1fr 1fr 1.4fr auto; gap: 13px; align-items: end; }
-.search { width: 240px; max-width: 100%; }
 .job-list { border-top: 1px solid var(--line); }
 .job { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; padding: 17px 1px; border-bottom: 1px solid #eef1f6; }
 .job:last-child { border-bottom: 0; }
@@ -16,18 +15,7 @@
 .empty { padding: 55px 20px; text-align: center; color: #8996a8; font-size: 13px; line-height: 1.6; }
 .opportunity-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media(max-width: 1180px) { .add-form { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media(max-width: 700px) { .add-form { grid-template-columns: 1fr; } .job select { max-width: 100%; } .job-notes { margin-left: 0; } .opportunity-controls { align-items: stretch; flex-direction: column; } .search { width: 100%; } }
+@media(max-width: 700px) { .add-form { grid-template-columns: 1fr; } .job select { max-width: 100%; } .job-notes { margin-left: 0; } .opportunity-controls { align-items: stretch; flex-direction: column; } }
 
-.search-control { display: flex; position: relative; align-items: center; }
-.search-control > svg { position: absolute; left: 12px; color: #8795ab; pointer-events: none; }
-.search-control .search { padding-left: 36px !important; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
-
-/* Search, status and sort controls stay usable as the viewport narrows. */
 .opportunity-controls { min-width: 0; }
-.opportunity-select-control select { max-width: 190px; font-size: 13px; }
-.opportunity-clear-search { white-space: nowrap; }
-@media (max-width: 700px) {
-  .opportunity-select-control, .opportunity-select-control select { width: 100%; max-width: none; }
-  .opportunity-controls > button { justify-content: center; }
-}
+@media(max-width: 700px) { .opportunity-controls > button { justify-content: center; } }
