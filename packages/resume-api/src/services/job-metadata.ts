@@ -125,8 +125,10 @@ export function parseJobMetadata(html: string): JobMetadata {
   const parts = pageTitle.split(/\s+(?:\||–|—|-)\s+/);
   const role = (parts[0] ?? "").replace(/\s+(?:Jobs?|Careers?|Apply Now)$/i, "").trim();
   const site = meta(html, "og:site_name");
-  const company = site && !/^(workday|linkedin|indeed|greenhouse|lever|jobs?|careers?)$/i.test(site)
-    ? site : parts.length > 1 ? parts[1].replace(/\s+(?:Jobs?|Careers?)$/i, "").trim() : "";
+  const generic = /^(workday|linkedin|indeed|greenhouse|lever|jobs?|careers?)$/i;
+  const titleCompany = parts.length > 1 ? parts[1].replace(/\s+(?:Jobs?|Careers?)$/i, "").trim() : "";
+  const company = site && !generic.test(site) ? site
+    : titleCompany && !generic.test(titleCompany) ? titleCompany : "";
   return { role: role.slice(0, 500), company: company.slice(0, 500) };
 }
 
