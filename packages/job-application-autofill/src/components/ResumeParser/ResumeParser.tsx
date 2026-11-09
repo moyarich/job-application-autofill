@@ -38,7 +38,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
     .join(" ");
   return (
     <section className="panel resume-import" aria-label="Import resume">
-      <div className="import-destination">
+      {selected && <div className="import-destination">
         <span className="import-file-icon">
           <FileText size={22} aria-hidden="true" />
         </span>
@@ -54,7 +54,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
         >
           Change resume
         </button>
-      </div>
+      </div>}
       <ol className="import-steps" aria-label="Import steps">
         <li aria-current={!resume ? "step" : undefined}>
           <span>{resume ? <Check size={14} /> : "1"}</span>Choose a file
@@ -219,14 +219,14 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
               </dd>
             </div>
           </dl>
-          <button
+          {selected && <button
             className="secondary"
             type="button"
             disabled={parseBusy}
             onClick={() => setTab("profile")}
           >
             Open resume editor <ArrowRight size={15} />
-          </button>
+          </button>}
         </aside>
       </div>
       {parsePreview && (
