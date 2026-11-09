@@ -6,6 +6,9 @@ import {
   markdownToHtml,
   markdownToEditor,
   editorToMarkdown,
+  listDepth,
+  setListStyle,
+  shiftListIndent,
   resumeToPlainText,
 } from "../../packages/resume/src/resume-schema/markdown.ts";
 const example = JSON.parse(
@@ -38,4 +41,34 @@ it("escapes raw HTML and rejects unsafe Markdown links", () => {
       "## Heading\n\n[Portfolio](https://example.com) and `code`\n\n- Item",
     ),
   ).toBe("Heading\nPortfolio and code\nItem");
+});
+
+it("preserves nesting and list kinds through Markdown editing", () => {
+  const input = [
+    "- Projects",
+    "    1. Design",
+    "        - Research",
+    "        - Prototyping",
+    "    2. Delivery",
+    "- Operations",
+  ].join("\n");
+  const blocks = markdownToEditor(input);
+  expect(blocks.map((block) => block.type)).toEqual([
+    "bullet", "numbered", "bullet", "bullet", "numbered", "bullet",
+  ]);
+  expect(blocks.map(listDepth)).toEqual([0, 4, 8, 8, 4, 0]);
+  expect(editorToMarkdown(blocks)).toBe(input);
+  expect(markdownToHtml(input)).toMatch(/<ol>[\s\S]*<ul>/);
+});
+
+it("supports indent, outdent, and changing bullet or numbered styles", () => {
+  const [root] = markdownToEditor("- First");
+  const nested = { ...root, ...shiftListIndent(root, 1) };
+  expect(editorToMarkdown([nested])).toBe("    - First");
+  const numbered = { ...nested, ...setListStyle(nested, "numbered") };
+  expect(editorToMarkdown([numbered])).toBe("    1. First");
+  const outdented = { ...numbered, ...shiftListIndent(numbered, -1) };
+  expect(editorToMarkdown([outdented])).toBe("1. First");
+  expect(editorToMarkdown([{ ...outdented, ...setListStyle(outdented, "paragraph") }]))
+    .toBe("First");
 });
