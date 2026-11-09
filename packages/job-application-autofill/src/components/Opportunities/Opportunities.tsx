@@ -1,6 +1,9 @@
+import { useMemo, useState } from "react";
 import type { TrackerData } from "../feature-props";
+import { Pagination } from "../Pagination/Pagination";
+import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Search, Trash2 } from "lucide-react";
+import { Download, FilePlus2, Search, Trash2, X } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -19,13 +22,19 @@ export function Opportunities({
     jobs,
     search,
     setSearch,
-    filtered,
     prepareJob,
     changeJob,
     setNotesJobId,
     notesJobId,
     setJobs,
   } = controller;
+  const [statusFilter, setStatusFilter] = useState<ApplicationFilter>("all");
+  const [sort, setSort] = useState<ApplicationSort>("newest");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const filtered = useMemo(() => searchApplications(jobs, search, statusFilter, sort), [jobs, search, statusFilter, sort]);
+  const paginated = paginateApplications(filtered, page, pageSize);
+  const updateSearch = (value: string) => { setSearch(value); setPage(1); };
   return (
     <>
       <section className="panel" id="add-application">
@@ -86,9 +95,34 @@ export function Opportunities({
                 aria-label="Search applications"
                 className="search"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search applications"
+                onChange={(e) => updateSearch(e.target.value)}
+                placeholder="Search company, role, notes…"
               />
+            </label>
+            {search && (
+              <button type="button" className="secondary opportunity-clear-search"
+                onClick={() => updateSearch("")} aria-label="Clear application search">
+                <X size={15} /> Clear
+              </button>
+            )}
+            <label className="opportunity-select-control">
+              <span className="sr-only">Filter applications by status</span>
+              <select aria-label="Filter applications by status" value={statusFilter}
+                onChange={(event) => { setStatusFilter(event.target.value as ApplicationFilter); setPage(1); }}>
+                <option value="all">All statuses</option>
+                {statuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
+              </select>
+            </label>
+            <label className="opportunity-select-control">
+              <span className="sr-only">Sort applications</span>
+              <select aria-label="Sort applications" value={sort}
+                onChange={(event) => { setSort(event.target.value as ApplicationSort); setPage(1); }}>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="company">Company A–Z</option>
+                <option value="role">Role A–Z</option>
+                <option value="status">Status A–Z</option>
+              </select>
             </label>
             <button type="button" className="secondary"
               onClick={() => downloadJson("job-applications.json", jobs)}>
@@ -99,10 +133,12 @@ export function Opportunities({
         <div className="job-list">
           {filtered.length === 0 ? (
             <div className="empty">
-              No matching applications. Try a different search or add a job.
+              {jobs.length === 0
+                ? "No applications yet. Add a job to get started."
+                : "No matching applications. Adjust your search or status filter."}
             </div>
           ) : (
-            filtered.map((job) => (
+            paginated.items.map((job) => (
               <article className="job" key={job.id}>
                 <div className="job-icon">
                   {job.company.slice(0, 1).toUpperCase()}
@@ -180,6 +216,16 @@ export function Opportunities({
             ))
           )}
         </div>
+        <Pagination
+          page={paginated.page}
+          pageCount={paginated.pageCount}
+          start={paginated.start}
+          end={paginated.end}
+          total={paginated.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
       </section>
     </>
   );

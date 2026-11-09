@@ -22,3 +22,12 @@
 .search-control > svg { position: absolute; left: 12px; color: #8795ab; pointer-events: none; }
 .search-control .search { padding-left: 36px !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+/* Search, status and sort controls stay usable as the viewport narrows. */
+.opportunity-controls { min-width: 0; }
+.opportunity-select-control select { max-width: 190px; font-size: 13px; }
+.opportunity-clear-search { white-space: nowrap; }
+@media (max-width: 700px) {
+  .opportunity-select-control, .opportunity-select-control select { width: 100%; max-width: none; }
+  .opportunity-controls > button { justify-content: center; }
+}
