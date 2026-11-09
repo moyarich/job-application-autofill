@@ -193,35 +193,22 @@ poetry run python -m unittest discover -s python -p 'test_*.py' -v
 
 To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend invokes `python3`. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.
 
-### Optional Workday sign-in from .env
+### Workday account automation from .env
 
-Set `WORKDAY_HOST`, `WORKDAY_USERNAME`, and `WORKDAY_PASSWORD` in the ignored
-root `.env` file for an existing employer account. `WORKDAY_USER_EMAIL` is accepted as a username alias; `WORKDAY_HOST` specifies the exact employer host. The legacy `RESUME_SITE_EMAIL` and `RESUME_SITE_PASSWORD` credential aliases remain supported. Copy the names from `.env.example`.
-The default tenant is `workday.wd5.myworkdayjobs.com`; credentials are never filled
-on another tenant or an external identity provider. Restart/recreate the API after
-editing credentials (`docker compose up -d --force-recreate api`).
+Set `WORKDAY_USERNAME` and `WORKDAY_PASSWORD` in the ignored root `.env` file.
+`WORKDAY_USER_EMAIL` is accepted as a username alias. The legacy
+`RESUME_SITE_EMAIL` and `RESUME_SITE_PASSWORD` aliases remain supported.
+The employer host comes from the saved job URL; no separate host variable is needed.
 
-When preparing an application, the server can open Workday's Apply / Autofill with
-Resume flow, select email sign-in, and attempt existing-account sign-in once per
-session. Credentials stay server-side and are not saved in candidate JSON or sent
-to the dashboard. The browser viewer still uses `WEB_VNC_PASSWORD`.
-On a sign-up form, the helper can prefill the configured email only. New passwords,
-terms acceptance, SSO, CAPTCHA, and verification codes require manual
-action in the viewer. No account is created automatically.
+Choose **Sign up** (the default) or **Log in** when adding a job. The automation
+uses the configured credentials on that job's Workday employer website, fills
+account fields, and continues signup/login. Verification and unrelated consent
+remain in the employer browser. Credentials are not stored in resume data or
+returned to the dashboard.
 
-## Workspace structure
-
-- `packages/resume-api`: HTTP API and SQLite persistence for every supported job site.
-- `packages/job-sites`: adapter registry, shared browser automation, and site modules.
-- `packages/job-sites/workday`: Workday fields, experience, sign-in and sign-up helpers.
-- `packages/resume`: schema, PDF export, extraction, Python worker, and both CLI commands.
-- `packages/job-application-autofill`: candidate profile and application state utilities.
-- `apps/playground`: separate documentation app.
-
-The server selects an adapter from the job URL. Shared orchestration is in
-`packages/job-sites/automation.ts`; only Workday-specific actions live under
-`packages/job-sites/workday/`. Greenhouse, Lever, Ashby and SmartRecruiters remain
-separate adapters. Environment-based authentication currently targets Workday.
+Recreate the API after editing credentials, using both Compose files for local
+development: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate api`.
+The browser viewer uses its separate `WEB_VNC_PASSWORD`.
 
 ### Application pages and viewer connection
 

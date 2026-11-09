@@ -34,7 +34,7 @@ export async function prepareEmployerSignUp(
     } catch { return false; }
   };
   if (!safe()) return unavailable;
-  const configured = identity.provider === "workday" ? workdayCredentials(page.url()) : null;
+  const configured = identity.provider === "workday" ? workdayCredentials(page.url(), process.env, { employerHost: identity.host }) : null;
   const signupPassword = password ?? configured?.password;
   const credentialSource = password ? "provided" as const : configured ? "configured" as const : "none" as const;
   const visible = async (locator: Locator) => locator.isVisible({ timeout: 500 }).catch(() => false);

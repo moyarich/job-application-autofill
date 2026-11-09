@@ -383,7 +383,9 @@ export async function prepareApplication({
       session.message =
         state === "login_required"
           ? session.signupPrepared?.state === "manual_required"
-            ? "Configured account details filled. Complete any verification or required consent shown in the employer browser."
+            ? session.signupPrepared.credentialSource === "none"
+              ? "Email filled. No usable configured password was available for this employer."
+              : "Account details filled. Complete any verification shown in the employer browser."
             : "Complete employer account sign-in or verification manually in the interactive browser viewer."
           : "Complete the security challenge manually in the interactive browser viewer.";
       return status(session);

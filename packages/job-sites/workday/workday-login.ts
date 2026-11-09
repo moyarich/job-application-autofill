@@ -7,22 +7,21 @@ export function workdayLoginFailureMessage(text: string): string | null {
     : null;
 }
 
-// Credentials are scoped to one employer tenant and never returned to the dashboard.
+// The saved application URL determines the employer; credentials never reach the dashboard.
 export function workdayCredentials(
   url: string,
   env: NodeJS.ProcessEnv = process.env,
+  { employerHost }: { employerHost?: string } = {},
 ) {
   const destination = new URL(url);
-  const host = (
-    env.WORKDAY_HOST ||
-    "workday.wd5.myworkdayjobs.com"
-  )
-    .trim()
-    .toLowerCase();
+  const selectedEmployer = employerHost?.toLowerCase();
+  const expectedHost = selectedEmployer || destination.hostname;
+  const authorized = destination.hostname === expectedHost &&
+    /^[a-z0-9-]+\.wd\d+\.myworkdayjobs\.com$/i.test(destination.hostname);
   if (
     destination.protocol !== "https:" ||
-    destination.hostname !== host ||
-    !host.endsWith(".myworkdayjobs.com") ||
+    !authorized ||
+    !destination.hostname.endsWith(".myworkdayjobs.com") ||
     destination.username ||
     destination.password
   )
@@ -56,13 +55,17 @@ export async function openWorkdayApplication(page: Page) {
 }
 
 export async function helpWorkdaySignIn(
-  session: { page: Page; loginAttempted?: boolean },
+  session: { page: Page; loginAttempted?: boolean; url?: string },
   env: NodeJS.ProcessEnv = process.env,
 ) {
   if (session.loginAttempted) return;
   const page = session.page;
+  const employerHost = new URL(session.url ?? page.url()).hostname;
+  const credentialsForPage = () => workdayCredentials(page.url(), env, {
+    employerHost,
+  });
   if (
-    workdayCredentials(page.url(), env) &&
+    credentialsForPage() &&
     (await page
       .getByRole("heading", { name: /^create (?:an? )?account$/i })
       .first()
@@ -81,8 +84,8 @@ export async function helpWorkdaySignIn(
       break;
     }
   }
-  if ((await helpWorkdaySignUp(page, env)).state === "manual_required") return;
-  if (session.loginAttempted || !workdayCredentials(page.url(), env)) return;
+  if ((await helpWorkdaySignUp(page, env, { employerHost })).state === "manual_required") return;
+  if (session.loginAttempted || !credentialsForPage()) return;
   const visible = async (locator: Locator) =>
     await locator.isVisible().catch(() => false);
   // Enter the application flow without creating an account or accepting terms.
@@ -106,7 +109,7 @@ export async function helpWorkdaySignIn(
   const email = page.getByLabel(/email(?: address)?/i).last();
   const password = page.getByLabel(/^password\s*\*?$/i).last();
   await password.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
-  const credentials = workdayCredentials(page.url(), env);
+  const credentials = credentialsForPage();
   const text = await page.locator("body").innerText();
   if (
     await visible(
@@ -146,7 +149,7 @@ export async function helpWorkdaySignIn(
   await email.fill(credentials.email);
   await password.fill(credentials.password);
   // Recheck the tenant immediately before submitting existing-account credentials.
-  if (!workdayCredentials(page.url(), env)) return;
+  if (!credentialsForPage()) return;
   await submit.click();
   await password.waitFor({ state: "hidden", timeout: 10000 }).catch(() => {});
 }
