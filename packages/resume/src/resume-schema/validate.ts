@@ -173,6 +173,7 @@ export {
   listDepth,
   setListStyle,
   shiftListIndent,
+  renumberListBlocks,
 } from "./markdown.ts";
 export type {
   RichTextBlock,
