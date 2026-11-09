@@ -84,14 +84,6 @@ export function Opportunities({
               placeholder="Detected from job posting"
             />
           </label>
-          <fieldset className="application-account-choice">
-            <legend>Employer account</legend>
-            <label><input type="radio" name="account-action" value="signup" checked={newJob.accountAction === "signup"}
-              onChange={() => setNewJob((current) => ({ ...current, accountAction: "signup" }))} /> Sign up</label>
-            <label><input type="radio" name="account-action" value="login" checked={newJob.accountAction === "login"}
-              onChange={() => setNewJob((current) => ({ ...current, accountAction: "login" }))} /> Log in</label>
-            <span>Uses your configured credentials.</span>
-          </fieldset>
           <button className="primary" type="submit" disabled={metadataBusy}>
             {metadataBusy ? <LoaderCircle size={15} className="application-spinner" /> : <FilePlus2 size={15} />} {metadataBusy ? "Reading posting…" : "Add application"}
           </button>
