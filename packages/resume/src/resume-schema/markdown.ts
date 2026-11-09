@@ -1,5 +1,6 @@
 import MarkdownIt from "markdown-it";
 import type { CandidateProfile } from "../types.js";
+import { parseInlineMarkdown, stringifyInlineMarkdown, markdownListLevels } from "./editor-markdown.ts";
 const markdown = new MarkdownIt({ html: false, linkify: false, breaks: true });
 // Markdown markers retain the visual style selected in the resume editor.
 markdown.renderer.rules.list_item_open = (tokens, index, options, _env, renderer) => {
@@ -89,31 +90,7 @@ export function markdownToEditor(
     const prefix = line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
     const numbered = /^\s*\d+[.)] /.test(prefix);
     const bullet = /^\s*[-*+] /.test(prefix);
-    const children: RichTextLeaf[] = [];
-    let bold = false,
-      italic = false,
-      href: string | undefined;
-    for (const token of markdown.parseInline(line.slice(prefix.length), {})[0]
-      ?.children || []) {
-      if (token.type === "strong_open") bold = true;
-      else if (token.type === "strong_close") bold = false;
-      else if (token.type === "em_open") italic = true;
-      else if (token.type === "em_close") italic = false;
-      else if (token.type === "link_open")
-        href = token.attrGet("href")
-          ? String(token.attrGet("href"))
-          : undefined;
-      else if (token.type === "link_close") href = undefined;
-      else if (token.type === "text" || token.type === "code_inline")
-        children.push({
-          text: token.content,
-          ...(bold ? { bold: true } : {}),
-          ...(italic ? { italic: true } : {}),
-          ...(href ? { href } : {}),
-          ...(token.type === "code_inline" ? { code: true } : {}),
-        });
-      else if (token.type === "image") children.push({ text: token.content });
-    }
+    const children = parseInlineMarkdown(line.slice(prefix.length));
     return {
       type: numbered ? "numbered" : bullet || bullets ? "bullet" : "paragraph",
       prefix: prefix || (bullets ? "- " : ""),
@@ -124,14 +101,7 @@ export function markdownToEditor(
 /** Keep each list marker and its indentation in the Markdown representation. */
 /** Resolve visual nesting from Markdown structure, including wide ordered markers. */
 export function listNestingLevels(document: RichTextDocument): number[] {
-  const levels = document.map(() => 0);
-  let depth = 0;
-  for (const token of markdown.parse(editorToMarkdown(document), {})) {
-    if (token.type === "bullet_list_open" || token.type === "ordered_list_open") depth++;
-    else if (token.type === "bullet_list_close" || token.type === "ordered_list_close") depth--;
-    else if (token.type === "list_item_open" && token.map) levels[token.map[0]] = Math.max(0, depth - 1);
-  }
-  return levels;
+  return markdownListLevels(editorToMarkdown(document), document.length);
 }
 
 export function listDepth(block: RichTextBlock): number {
@@ -198,22 +168,7 @@ export function renumberListBlocks(document: RichTextDocument): RichTextDocument
 export function editorToMarkdown(document: RichTextDocument): string {
   return document
     .map((block) => {
-      const contents = block.children
-        .map((leaf) => {
-          let text = leaf.text.replace(/([\\`*_[\]<>])/g, "\\$1");
-          if (leaf.code) text = "`" + leaf.text.replace(/`/g, "\\`") + "`";
-          if (leaf.bold && text) text = "**" + text + "**";
-          if (leaf.italic && text) text = "*" + text + "*";
-          if (leaf.href)
-            text =
-              "[" +
-              text +
-              "](" +
-              leaf.href.replace(/[()\s]/g, encodeURIComponent) +
-              ")";
-          return text;
-        })
-        .join("");
+      const contents = stringifyInlineMarkdown(block.children);
       return (
         (block.type === "bullet" || block.type === "numbered"
           ? /^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix || "")
