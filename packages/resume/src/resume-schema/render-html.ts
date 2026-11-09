@@ -186,7 +186,7 @@ export function renderResumeHtml(input: unknown) {
     h2 { font-size: 10.5pt; text-transform: uppercase; border-bottom: 0.5pt solid #666;
       margin: 14pt 0 6pt; padding-bottom: 4pt; break-after: avoid; }
     h3 { font-size: 10.5pt; margin: 0 0 2pt; break-after: avoid; }
-    p { margin: 0 0 5pt; white-space: pre-wrap; overflow-wrap: anywhere; }
+    p { margin: 0 0 5pt; overflow-wrap: anywhere; }
     article { margin-bottom: 9pt; break-inside: auto; }
     .contact, .links, .meta, .period { font-size: 9.5pt; overflow-wrap: anywhere; }
     .meta, .period { break-after: avoid; }
