@@ -7,13 +7,16 @@ import { AutomationPillMenu, type AutomationAction } from "../AutomationPillMenu
 
 export function ApplicationReview({
   controller,
+  onChooseResume,
 }: {
   controller: ApplicationReviewData;
+  onChooseResume: (resumeId: string) => Promise<void>;
 }) {
   const {
     applicationId,
     activeProfileId,
     activeResumeId,
+    resumeVersions,
     jobs,
     session,
     applyBusy,
@@ -41,11 +44,26 @@ export function ApplicationReview({
       {applicationId && !session && !applyBusy && (
         <section className="panel">
           <h3>Start this application</h3>
-          <p>Open the employer form with the selected resume and contact details.</p>
-          <button className="primary" onClick={() => {
-            const job = jobs.find(item => item.id === applicationId);
-            if (job) void controller.prepareJob(job);
-          }}>Open employer application</button>
+          <p>Select and confirm the resume to use for this application. The chosen version stays associated with this job.</p>
+          <label className="application-resume-selector">
+            Resume for this application
+            <select
+              aria-label="Resume for this application"
+              value={jobs.find((item) => item.id === applicationId)?.resumeId ?? ""}
+              onChange={(event) => void onChooseResume(event.target.value)}
+            >
+              <option value="">Select a resume</option>
+              {resumeVersions.map((resume) => (
+                <option key={resume.id} value={resume.id}>{resume.name}</option>
+              ))}
+            </select>
+          </label>
+          <button className="primary"
+            disabled={!activeResumeId || jobs.find((item) => item.id === applicationId)?.resumeId !== activeResumeId}
+            onClick={() => {
+              const job = jobs.find(item => item.id === applicationId);
+              if (job) void controller.prepareJob(job);
+            }}>Open employer application</button>
         </section>
       )}
       {applicationId && (session || applyBusy) && (
