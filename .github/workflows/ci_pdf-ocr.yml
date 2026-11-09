@@ -5,7 +5,7 @@ on:
     paths:
       - "packages/resume/python/pdf_ocr.py"
       - "packages/resume/python/test_pdf_ocr.py"
-      - "packages/resume/pyproject.toml"
+      - "packages/resume/pyproject.toml"\n      - "packages/resume/poetry.lock"
       - ".github/workflows/ci_pdf-ocr.yml"
   push:
     branches: [main]
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14.10"
           cache: pip
       - name: Install Poetry
         run: pipx install poetry
@@ -35,7 +35,7 @@ jobs:
         run: |
           poetry check --lock
           poetry install --with test --no-root
-      - name: Python syntax check
+      - name: Confirm Python 3.14 runtime\n        working-directory: packages/resume\n        run: poetry run python -c 'import sys; assert sys.version_info[:2] == (3, 14), sys.version'\n      - name: Python syntax check
         working-directory: packages/resume
         run: poetry run python -m compileall -q python/pdf_ocr.py python/test_pdf_ocr.py
       - name: PDF parsing and scanned-page fallback tests
