@@ -27,6 +27,7 @@ for (const width of [1440, 768, 375]) {
     await status.selectOption("submitted");
     await expect(page.getByText("Showing 1–1 of 1 application", { exact: true })).toBeVisible();
     await page.getByLabel("Search applications", { exact: true }).fill("no match");
-    await expect(page.getByText("No applications to show", { exact: true })).toBeVisible();
+    await expect(page.getByText("No matching applications.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Application pages" })).toHaveCount(0);
   });
 }
