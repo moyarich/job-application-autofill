@@ -78,13 +78,13 @@ jobs:
         run: docker compose exec -T api npx --no-install vitest run tests/ats
       - name: Verify SQLite persists after Compose shutdown and restart
         run: |
-          docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && printf "persistent" > /app/data/.ci-volume-marker'
-          test -f sqlite-data/moyaapply.sqlite
+          docker compose exec -T api sh -c 'test -f /app/data/job_application_autofill.sqlite && printf "persistent" > /app/data/.ci-volume-marker'
+          test -f sqlite-data/job_application_autofill.sqlite
           test "$(cat sqlite-data/.ci-volume-marker)" = persistent
           docker compose down
           docker compose up -d --no-build
-          docker compose exec -T api sh -c 'test -f /app/data/moyaapply.sqlite && test "$(cat /app/data/.ci-volume-marker)" = persistent'
-          test -f sqlite-data/moyaapply.sqlite
+          docker compose exec -T api sh -c 'test -f /app/data/job_application_autofill.sqlite && test "$(cat /app/data/.ci-volume-marker)" = persistent'
+          test -f sqlite-data/job_application_autofill.sqlite
           test "$(cat sqlite-data/.ci-volume-marker)" = persistent
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:5173/api/health | grep -q '"ok":true'; then
@@ -96,7 +96,7 @@ jobs:
           exit 1
       - name: Verify SQLite directory is ignored by Git and Docker builds
         run: |
-          git check-ignore -q sqlite-data/moyaapply.sqlite
+          git check-ignore -q sqlite-data/job_application_autofill.sqlite
           grep -qx 'sqlite-data/' .dockerignore
       - name: Container logs
         if: failure()

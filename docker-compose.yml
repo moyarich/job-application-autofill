@@ -1,4 +1,4 @@
-name: moyaapply
+name: job-application-autofill
 
 services:
   api:
@@ -7,7 +7,8 @@ services:
       dockerfile: docker/Dockerfile
     image: job-application-autofill:local
     entrypoint: ["/app/docker/start-review.sh"]
-    command: ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]
+    command:
+      ["node", "--experimental-strip-types", "packages/resume-api/index.ts"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
       AUTOFILL_PORT: "4177"
@@ -26,7 +27,7 @@ services:
       RESUME_SITE_HOST: "${RESUME_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
       CONTAINER_MODE: "true"
-      MOYA_DB_PATH: /app/data/moyaapply.sqlite
+      MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
     expose:
       - "4177"
     ports:
@@ -34,7 +35,13 @@ services:
     init: true
     shm_size: "1gb"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4177/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4177/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -48,7 +55,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
+    command:
+      ["npm", "run", "dev", "--workspace", "packages/job-application-autofill"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
       VITE_API_PROXY_TARGET: http://api:4177
