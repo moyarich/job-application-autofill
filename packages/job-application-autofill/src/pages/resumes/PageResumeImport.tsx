@@ -1,4 +1,8 @@
-import { NoResume } from "../../components/NoResume/NoResume";
+import { FileUp } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { createResumeVersion } from "../../utils/api/client";
+import { navigateTo } from "../../utils/resumes/navigateTo";
+import { routes } from "../../routes";
 import { ResumeParser } from "../../components/ResumeParser/ResumeParser";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -12,6 +16,26 @@ import { ContactImportReview } from "../../components/ContactImportReview/Contac
 
 export function PageResumeImport() {
   const selection = useProfileSelection();
+  const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
+  async function startImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (creating || !name.trim()) return;
+    setCreating(true);
+    try {
+      const created = await createResumeVersion(
+        selection.activeProfileId,
+        name.trim(),
+      );
+      navigateTo(selection.activeProfileId, created.id, routes.resumeImport);
+    } catch (error) {
+      selection.setMessage(
+        error instanceof Error ? error.message : "Could not create resume.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
   const contacts = useProfileContacts({
     profileId: selection.activeProfileId,
     enabled: selection.hydrated,
@@ -26,7 +50,8 @@ export function PageResumeImport() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated &&
+    selection.hydrated &&
+    contacts.contactsHydrated &&
     (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
@@ -59,11 +84,46 @@ export function PageResumeImport() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Import a resume"
-        />
-        {selection.activeResumeId ? <ResumeParser controller={controller} /> : <NoResume />}
-        {selection.activeResumeId && <ContactImportReview controller={controller} />}
+        <WorkspaceHeader title="Import a resume" />
+        {selection.activeResumeId ? (
+          <ResumeParser controller={controller} />
+        ) : (
+          <section className="panel import-start">
+            <span className="import-file-icon">
+              <FileUp size={26} aria-hidden="true" />
+            </span>
+            <div className="panel-title">
+              <h2>Start your resume import</h2>
+              <p>
+                Name your resume, then choose a PDF, Word document, or JSON
+                file.
+              </p>
+            </div>
+            <form onSubmit={(event) => void startImport(event)}>
+              <label>
+                Resume name
+                <input
+                  required
+                  maxLength={80}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="e.g. Software Engineer"
+                  disabled={creating}
+                />
+              </label>
+              <button
+                className="primary parser-button"
+                type="submit"
+                disabled={creating}
+              >
+                {creating ? "Creating…" : "Continue to import"}
+              </button>
+            </form>
+          </section>
+        )}
+        {selection.activeResumeId && (
+          <ContactImportReview controller={controller} />
+        )}
       </>
     </PageStatus>
   );

@@ -132,6 +132,9 @@ export function CandidateProfile({
           <span className="resume-autosave">Changes save automatically</span>
         </div>
         <div className="actions resume-export-actions">
+          <button type="button" className="secondary" onClick={() => controller.setTab("parser")}>
+            <FileUp size={15} /> Import PDF or Word
+          </button>
           <input
             ref={importRef}
             hidden
