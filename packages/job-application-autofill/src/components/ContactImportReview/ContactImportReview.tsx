@@ -31,7 +31,7 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
       <div className="contact-import-heading">
         <span className="contact-import-symbol"><ContactRound size={22} aria-hidden="true" /></span>
         <div>
-          <h2>{hasLinkedContact ? "Imported contact details" : "Imported contact details"}</h2>
+          <h2>Imported contact details</h2>
         </div>
       </div>
       <div className="imported-contact-preview">
@@ -64,12 +64,12 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
       ) : (
         <p className="contact-import-explanation">
           <Info size={16} aria-hidden="true" />
-          A contact is saved when a name and email are available. Otherwise, the resume stays a draft.
+          A contact is saved when a first name, last name, and email are available. Otherwise, the resume stays a draft.
         </p>
       )}
       <div className="actions contact-import-actions">
         <button className="primary" type="button" onClick={() => void confirmImport(hasLinkedContact ? strategy : "resume")}>
-          {hasLinkedContact ? "Import resume" : "Import resume"}
+          Import resume
         </button>
         <button className="secondary" type="button" onClick={cancelImport}>Cancel import</button>
       </div>
