@@ -27,7 +27,6 @@ export function PageResumes() {
       <>
         <WorkspaceHeader
           title="Resumes"
-          description="Your experience, tailored for every opportunity. Manage all your resume versions here."
         />
         <ResumeManager controller={controller} />
       </>

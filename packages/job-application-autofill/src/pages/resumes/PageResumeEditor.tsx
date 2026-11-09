@@ -65,7 +65,6 @@ export function PageResumeEditor() {
       <>
         <WorkspaceHeader
           title="Resume editor"
-          description="Manage your contact details, experience, and resume versions."
         />
         {selection.activeResumeId ? <CandidateProfile controller={controller} /> : <NoResume />}
         {selection.activeResumeId && <ContactImportReview controller={controller} />}

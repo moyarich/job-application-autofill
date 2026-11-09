@@ -18,12 +18,10 @@ export function PageProfile() {
       <>
         <WorkspaceHeader
           title="Profiles"
-          description="Choose, create, rename, and manage the profiles in your workspace."
         />
         <section className="panel">
           <div className="panel-title">
             <h2>Your profiles</h2>
-            <p>Manage profiles independently from saved contact details.</p>
           </div>
           <LocalProfiles controller={controller} />
         </section>

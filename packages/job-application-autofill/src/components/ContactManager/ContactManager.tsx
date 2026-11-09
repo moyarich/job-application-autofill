@@ -104,10 +104,6 @@ export function ContactManager({
       <div className="panel-title horizontal">
         <div>
           <h2>Saved contacts</h2>
-          <p>
-            Contact records belong to the current profile and can be reused
-            across resumes.
-          </p>
         </div>
         <button
           type="button"
@@ -125,8 +121,7 @@ export function ContactManager({
       )}
       {contacts.length === 0 ? (
         <div className="contact-management-empty">
-          No contacts yet. Create one with a first name, last name and email, or
-          import a resume to add its contact details.
+          No contacts yet.
         </div>
       ) : (
         <div className="contact-management-list">

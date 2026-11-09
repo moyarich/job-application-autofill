@@ -61,7 +61,6 @@ export function PageResumeImport() {
       <>
         <WorkspaceHeader
           title="Import a resume"
-          description="Bring in a PDF, Word document, or resume JSON to get started."
         />
         {selection.activeResumeId ? <ResumeParser controller={controller} /> : <NoResume />}
         {selection.activeResumeId && <ContactImportReview controller={controller} />}

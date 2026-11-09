@@ -112,10 +112,6 @@ export function ResumeManager({
       <div className="panel-title horizontal">
         <div>
           <h2>Resumes</h2>
-          <p>
-            Each resume has independent experience and skills. Create a blank
-            draft or duplicate an existing version.
-          </p>
         </div>
         <button
           className="primary"
@@ -266,9 +262,6 @@ export function ResumeManager({
         <div className="resume-library-empty">
           <Search size={25} />
           <h3>{resumeVersions.length === 0 ? "No resumes yet" : "No resumes found"}</h3>
-          <p>{resumeVersions.length === 0
-            ? "Create your first resume to get started."
-            : "Try another name or create a new resume."}</p>
         </div>
       )}
       {form && (

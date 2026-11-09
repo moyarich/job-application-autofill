@@ -3,7 +3,7 @@ import "./WorkspaceHeader.css";
 
 type WorkspaceHeaderProps = {
   title: string;
-  description: string;
+  description?: string;
   actions?: ReactNode;
 };
 
@@ -18,7 +18,7 @@ export function WorkspaceHeader({
       <div>
         <div className="eyebrow">Workspace / {title}</div>
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description && <p>{description}</p>}
       </div>
       {actions && <div className="actions">{actions}</div>}
     </header>

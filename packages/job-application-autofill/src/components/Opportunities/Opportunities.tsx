@@ -41,8 +41,7 @@ export function Opportunities({
     <>
       <section className="panel" id="add-application">
         <div className="panel-title">
-          <h2>Add an opportunity</h2>
-          <p>Save the details of a role you want to apply for.</p>
+          <h2>Add a job application</h2>
         </div>
         <form className="add-form" onSubmit={addJob}>
           <label>
@@ -86,8 +85,7 @@ export function Opportunities({
       <section className="panel" id="applications-list">
         <div className="panel-title horizontal">
           <div>
-            <h2>Applications</h2>
-            <p>Keep track of every stage, from saved to submitted.</p>
+            <h2>Your job applications</h2>
           </div>
           <div className="opportunity-controls">
             <SearchInput
@@ -112,8 +110,8 @@ export function Opportunities({
           {filtered.length === 0 ? (
             <div className="empty">
               {jobs.length === 0
-                ? "No applications yet. Add a job to get started."
-                : "No matching applications. Adjust your search or status filter."}
+                ? "No applications yet."
+                : "No matching applications."}
             </div>
           ) : (
             paginated.items.map((job) => (
@@ -194,7 +192,7 @@ export function Opportunities({
             ))
           )}
         </div>
-        <Pagination
+        {filtered.length > 0 && <Pagination
           page={paginated.page}
           pageCount={paginated.pageCount}
           start={paginated.start}
@@ -203,7 +201,7 @@ export function Opportunities({
           pageSize={pageSize}
           onPageChange={setPage}
           onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        />
+        />}
       </section>
     </>
   );
