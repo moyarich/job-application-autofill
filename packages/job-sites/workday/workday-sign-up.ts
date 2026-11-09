@@ -16,8 +16,8 @@ export async function helpWorkdaySignUp(
   const allowed = () => {
     const url = new URL(page.url());
     const host = (
+      env.WORKDAY_SITE_HOST ||
       env.WORKDAY_HOST ||
-      env.RESUME_SITE_HOST ||
       "workday.wd5.myworkdayjobs.com"
     )
       .trim()
