@@ -9,6 +9,7 @@ import {
   listDepth,
   setListStyle,
   shiftListIndent,
+  renumberListBlocks,
   resumeToPlainText,
 } from "../../packages/resume/src/resume-schema/markdown.ts";
 const example = JSON.parse(
@@ -71,4 +72,56 @@ it("supports indent, outdent, and changing bullet or numbered styles", () => {
   expect(editorToMarkdown([outdented])).toBe("1. First");
   expect(editorToMarkdown([{ ...outdented, ...setListStyle(outdented, "paragraph") }]))
     .toBe("First");
+});
+
+
+it("renumbers ordered lists independently at each nesting level", () => {
+  const changed = [
+    "1. Plan",
+    "    1. Draft",
+    "        - Research",
+    "    1. Review",
+    "2. Build",
+    "    - Implement",
+    "3. Release",
+  ].join("\n");
+  const result = editorToMarkdown(renumberListBlocks(markdownToEditor(changed)));
+  expect(result).toBe([
+    "1. Plan",
+    "    1. Draft",
+    "        - Research",
+    "    2. Review",
+    "2. Build",
+    "    - Implement",
+    "3. Release",
+  ].join("\n"));
+});
+
+it("starts a new numbered sequence after a paragraph or same-level bullets", () => {
+  const text = [
+    "3. First",
+    "3. Second",
+    "",
+    "1. Other",
+    "- Separate",
+    "1. New group",
+  ].join("\n");
+  expect(editorToMarkdown(renumberListBlocks(markdownToEditor(text)))).toBe([
+    "3. First",
+    "4. Second",
+    "",
+    "1. Other",
+    "- Separate",
+    "1. New group",
+  ].join("\n"));
+});
+
+it("updates numbering after list indentation changes", () => {
+  const original = markdownToEditor("1. First\n2. Second\n3. Third");
+  const nested = original.map((block, index) =>
+    index === 1 ? { ...block, ...shiftListIndent(block, 1) } : block,
+  );
+  expect(editorToMarkdown(renumberListBlocks(nested))).toBe(
+    "1. First\n    2. Second\n2. Third",
+  );
 });
