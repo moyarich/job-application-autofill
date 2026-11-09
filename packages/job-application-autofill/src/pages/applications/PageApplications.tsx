@@ -18,8 +18,7 @@ export function PageApplications() {
     setMessage: selection.setMessage,
   });
   const tracker = useJobTracker({ ...selection, ...applications });
-  const { jobs } = applications;
-  const prepareJob = async (job: (typeof jobs)[number]) => {
+  const prepareJob = async (job: (typeof applications.jobs)[number]) => {
     if (!job.resumeId) {
       selection.setMessage("Choose a resume for this application before applying.");
       return;
