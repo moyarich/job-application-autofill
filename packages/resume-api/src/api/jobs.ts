@@ -1,7 +1,12 @@
 import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
+import { lookupJobMetadata } from "../services/job-metadata.ts";
 
 export const handleJobs: RouteHandler = async ({ req, url, store, profileId }) => {
+  if (req.method === "POST" && url.pathname === "/api/jobs/metadata") {
+    const { jobUrl } = record(await req.readJson());
+    return reply(200, await lookupJobMetadata(jobUrl));
+  }
   if (req.method === "GET" && url.pathname === "/api/jobs")
     return reply(200, store.getJobList(profileId));
 
