@@ -23,8 +23,20 @@ export function PageApplications() {
   });
   const tracker = useJobTracker({ ...selection, ...applications });
   const { jobs } = applications;
-  const prepareJob = (job: (typeof jobs)[number]) =>
-    openApplication(job, selection.activeProfileId, selection.activeResumeId);
+  const prepareJob = async (job: (typeof jobs)[number]) => {
+    if (!job.resumeId) {
+      selection.setMessage("Choose a resume for this application before applying.");
+      return;
+    }
+    const target = window.open("about:blank", "application-" + job.id);
+    try {
+      await applications.flushJobs();
+      openApplication(job, selection.activeProfileId, job.resumeId, target);
+    } catch (error) {
+      target?.close();
+      selection.setMessage("Could not save selected resume: " + String(error));
+    }
+  };
   const controller = { ...selection, ...applications, ...tracker, prepareJob };
   const ready = selection.hydrated && applications.jobsHydrated;
   return (

@@ -1,4 +1,7 @@
 .add-form { display: grid; grid-template-columns: 1fr 1fr 1.4fr auto; gap: 13px; align-items: end; }
+.application-resume-selector { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.application-resume-selector select { min-width: 140px; }
+.job-metadata-status { margin: 9px 0 0; color: var(--muted); font-size: 12px; }
 .job-list { border-top: 1px solid var(--line); }
 .job { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; padding: 17px 1px; border-bottom: 1px solid #eef1f6; }
 .job:last-child { border-bottom: 0; }
@@ -29,3 +32,50 @@
   .opportunity-controls > button { grid-column: 1 / -1; width: 100%; margin-left: 0; }
 }
 @media(max-width: 400px) { .opportunity-controls { grid-template-columns: minmax(0, 1fr); } }
+.add-form { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.3fr) auto; }
+.add-form > label { min-width: 0; }
+.job { align-items: flex-start; gap: 12px; padding: 20px 0; }
+.job-info { flex-basis: calc(100% - 60px); }
+.job-info strong { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.job-actions { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 9px; width: calc(100% - 55px); margin-left: 55px; }
+.job-actions .application-resume-selector { flex: 1 1 240px; min-width: 0; }
+.job-actions .application-resume-selector select { max-width: none; width: 100%; min-width: 0; text-overflow: ellipsis; }
+.job-actions > select { width: auto; max-width: 180px; min-height: 41px; }
+.job-actions > .remove { align-self: center; }
+@media (max-width: 1180px) { .add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+ .add-form { grid-template-columns: minmax(0, 1fr); }
+ .job-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; margin-left: 0; }
+ .job-actions .application-resume-selector { grid-column: 1 / -1; }
+ .job-actions > select { width: 100%; max-width: none; }
+ .job-actions > .primary { grid-column: 1 / -1; }
+}
+.application-account-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; border: 0; padding: 0; margin: 0; grid-column: 1 / -1; }
+.application-account-choice legend { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.application-account-choice label { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; font-size: 13px; }
+.application-account-choice input { margin: 0; accent-color: var(--accent); }
+.application-account-choice > span { font-size: 12px; color: var(--muted); }
+.job-actions .application-account-selector { flex: 0 1 125px; }
+.add-form > button { justify-self: start; }
+@media (max-width: 700px) { .job-actions .application-account-selector { grid-column: auto; } .add-form > button { width: 100%; } }
+
+.add-form .application-account-choice { grid-row: 2; grid-column: 1 / -1; }
+.add-form > button { grid-column: 4; grid-row: 1; }
+@media (max-width: 1180px) { .add-form .application-account-choice { grid-row: auto; } .add-form > button { grid-column: auto; grid-row: auto; } }
+.job-intake { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.job-intake .job-url-field { grid-column: 1 / -1; }
+.job-url-field > span { display: flex; align-items: center; gap: 7px; }
+.job-intake .job-url-field input { padding: 13px 14px; font-size: 14px; }
+.job-intake .application-account-choice { grid-row: auto; grid-column: 1; align-self: end; }
+.job-intake > button { grid-row: auto; grid-column: 2; justify-self: end; }
+.detected-job-summary { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 15px; }
+.detected-job-facts { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
+.detected-job-facts > span, .job-location { display: inline-flex; align-items: center; gap: 5px; }
+.detected-job-summary details { margin-top: 14px; font-size: 12px; }
+.detected-job-summary summary { cursor: pointer; color: var(--accent); }
+.detected-job-summary > p { max-height: 280px; overflow: auto; margin-bottom: 0; white-space: pre-line; line-height: 1.7; color: var(--muted); }
+@media (max-width: 700px) { .job-intake { grid-template-columns: minmax(0, 1fr); } .job-intake .application-account-choice, .job-intake > button { grid-column: 1; } .job-intake > button { width: 100%; } }
+.job-salary { color: #277450 !important; font-weight: 650; }
+.saved-job-description { margin: 4px 0; font-size: 12px; }
+.saved-job-description summary { color: var(--accent); cursor: pointer; }
+.saved-job-description > p { margin: 8px 0; max-height: 260px; overflow: auto; white-space: pre-line; font-size: 12px; line-height: 1.7; color: var(--muted); }

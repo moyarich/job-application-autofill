@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { ApplySession } from "../utils/application/types";
 import type { ApplicationReviewData } from "../utils/application/review-data";
 import { createPrepareJob } from "../utils/application/prepareJob";
@@ -9,10 +9,9 @@ import { createContinueAfterChallenge } from "../utils/application/continueAfter
 import { createFinalizeApplication } from "../utils/application/finalizeApplication";
 export function useApplicationReview(workspace: ApplicationReviewData) {
   const { applicationId, activeProfileId, activeResumeId, profile, contactId, errors,
-    jobs, hydrated, setTab, setMessage } = workspace;
+    setTab, setMessage } = workspace;
   const { changeJob } = workspace;
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
-  const autoStarted = useRef(false);
   const [applyBusy, setApplyBusy] = useState(false);
 
   const [session, setSession] = useState<ApplySession | null>(null);
@@ -85,21 +84,10 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
   const continueAfterChallenge = createContinueAfterChallenge(reviewContext);
   const finalizeApplication = createFinalizeApplication(reviewContext);
 
-  useEffect(() => {
-    if (!applicationId || !hydrated || !activeLoaded || autoStarted.current)
-      return;
-    autoStarted.current = true;
-    if (session) return;
-    const job = jobs.find((item) => item.id === applicationId);
-    if (job) void prepareJob(job);
-    else
-      setMessage(
-        "Application not found. Return to the tracker and open the job again.",
-      );
-  }, [applicationId, hydrated, activeLoaded, jobs, session]);
 
 
-  return { applicationId, activeLoaded, setActiveLoaded, autoStarted,
+
+  return { applicationId, activeLoaded, setActiveLoaded,
     session, setSession, applyBusy, setApplyBusy, reviewed, setReviewed,
     questionAnswers, setQuestionAnswers, prepareJob, fillCustomQuestions,
     prepareAccountSignUp, setEmployerAccountStatus, continueAfterChallenge,

@@ -6,7 +6,7 @@ const env = {
   WORKDAY_PASSWORD: "test-only",
 };
 describe("Workday environment credentials", () => {
-  it("allows only the configured HTTPS employer tenant", () => {
+  it("allows only the selected HTTPS employer tenant", () => {
     expect(
       workdayCredentials("https://workday.wd5.myworkdayjobs.com/apply", env),
     ).toEqual({
@@ -20,6 +20,6 @@ describe("Workday environment credentials", () => {
       "https://accounts.google.com",
       "https://user:pass@workday.wd5.myworkdayjobs.com",
     ])
-      expect(workdayCredentials(url, env)).toBeNull();
+      expect(workdayCredentials(url, env, { employerHost: "workday.wd5.myworkdayjobs.com" })).toBeNull();
   });
 });

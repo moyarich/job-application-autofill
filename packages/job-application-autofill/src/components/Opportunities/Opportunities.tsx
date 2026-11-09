@@ -1,3 +1,4 @@
+import { JobDescription } from "../JobDescription/JobDescription";
 import { useMemo, useState } from "react";
 import type { TrackerData } from "../feature-props";
 import { Pagination } from "../Pagination/Pagination";
@@ -5,7 +6,7 @@ import { SearchInput } from "../SearchInput/SearchInput";
 import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";
 import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Trash2 } from "lucide-react";
+import { Download, FilePlus2, Trash2, Link2, MapPin, BriefcaseBusiness, LoaderCircle } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -21,7 +22,11 @@ export function Opportunities({
     addJob,
     newJob,
     setNewJob,
+    jobDetails,
+    metadataBusy,
+    metadataError,
     jobs,
+    resumeVersions,
     search,
     setSearch,
     prepareJob,
@@ -43,7 +48,19 @@ export function Opportunities({
         <div className="panel-title">
           <h2>Add a job application</h2>
         </div>
-        <form className="add-form" onSubmit={addJob}>
+        <form className="add-form job-intake" onSubmit={addJob}>
+          <label className="job-url-field">
+            <span><Link2 size={14} aria-hidden="true" /> Job posting URL</span>
+            <input
+              type="url"
+              required
+              value={newJob.url}
+              onChange={(e) =>
+                setNewJob((x) => ({ ...x, url: e.target.value }))
+              }
+              placeholder="https://company.example/jobs/..."
+            />
+          </label>
           <label>
             Company
             <input
@@ -52,7 +69,7 @@ export function Opportunities({
               onChange={(e) =>
                 setNewJob((x) => ({ ...x, company: e.target.value }))
               }
-              placeholder="Company name"
+              placeholder="Detected from job posting"
             />
           </label>
           <label>
@@ -63,24 +80,34 @@ export function Opportunities({
               onChange={(e) =>
                 setNewJob((x) => ({ ...x, role: e.target.value }))
               }
-              placeholder="Software Engineer"
+              placeholder="Detected from job posting"
             />
           </label>
-          <label>
-            Job URL
-            <input
-              type="url"
-              value={newJob.url}
-              onChange={(e) =>
-                setNewJob((x) => ({ ...x, url: e.target.value }))
-              }
-              placeholder="https://..."
-            />
-          </label>
-          <button className="primary" type="submit">
-            <FilePlus2 size={15} /> Add job
+          <fieldset className="application-account-choice">
+            <legend>Employer account</legend>
+            <label><input type="radio" name="account-action" value="signup" checked={newJob.accountAction === "signup"}
+              onChange={() => setNewJob((current) => ({ ...current, accountAction: "signup" }))} /> Sign up</label>
+            <label><input type="radio" name="account-action" value="login" checked={newJob.accountAction === "login"}
+              onChange={() => setNewJob((current) => ({ ...current, accountAction: "login" }))} /> Log in</label>
+            <span>Uses your configured credentials.</span>
+          </fieldset>
+          <button className="primary" type="submit" disabled={metadataBusy}>
+            {metadataBusy ? <LoaderCircle size={15} className="application-spinner" /> : <FilePlus2 size={15} />} {metadataBusy ? "Reading posting…" : "Add application"}
           </button>
+          {jobDetails && (jobDetails.location || jobDetails.description) && (
+            <div className="detected-job-summary">
+              <div className="detected-job-facts">
+                {jobDetails.location && <span><MapPin size={14} />{jobDetails.location}</span>}
+                {jobDetails.employmentType && <span><BriefcaseBusiness size={14} />{jobDetails.employmentType.replaceAll("_", " ")}</span>}
+                {jobDetails.requisitionId && <span>{jobDetails.requisitionId}</span>}
+                {jobDetails.salary && <span className="job-salary">{jobDetails.salary}</span>}
+              </div>
+              {jobDetails.description && <details><summary>View job description</summary><JobDescription content={jobDetails.description} /></details>}
+            </div>
+          )}
         </form>
+        {metadataBusy && <p className="job-metadata-status" role="status">Reading job posting…</p>}
+        {!metadataBusy && metadataError && <p className="job-metadata-status" role="status">{metadataError}</p>}
       </section>
       <section className="panel" id="applications-list">
         <div className="panel-title applications-heading">
@@ -125,16 +152,41 @@ export function Opportunities({
                     {job.company} ·{" "}
                     {new Date(job.createdAt).toLocaleDateString()}
                   </span>
+                  {job.details?.location && <span className="job-location"><MapPin size={12} aria-hidden="true" />{job.details.location}</span>}
+                  {job.details?.salary && <span className="job-salary">{job.details.salary}</span>}
+                  {job.details?.description && <details className="saved-job-description"><summary>Job description</summary><JobDescription content={job.details.description} /></details>}
                   {job.url && (
                     <a href={job.url} target="_blank" rel="noopener noreferrer">
                       View job posting
                     </a>
                   )}
                 </div>
+                <div className="job-actions">
+                <label className="application-resume-selector">
+                  Resume
+                  <select
+                    aria-label={`Resume for ${job.role} at ${job.company}`}
+                    value={job.resumeId ?? ""}
+                    onChange={(event) => setJobs((items) => items.map((item) =>
+                      item.id === job.id ? { ...item, resumeId: event.target.value || null } : item
+                    ))}
+                  >
+                    <option value="">Select resume</option>
+                    {resumeVersions.map((resume) => (
+                      <option key={resume.id} value={resume.id}>{resume.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="application-resume-selector application-account-selector">Account
+                  <select aria-label={`Account action for ${job.role} at ${job.company}`} value={job.accountAction ?? "signup"}
+                    onChange={(event) => setJobs((items) => items.map((item) => item.id === job.id ? { ...item, accountAction: event.target.value as "signup" | "login" } : item))}>
+                    <option value="signup">Sign up</option><option value="login">Log in</option>
+                  </select>
+                </label>
                 <button
                   className="primary"
-                  disabled={!job.url}
-                  onClick={() => prepareJob(job)}
+                  disabled={!job.url || !job.resumeId || !resumeVersions.some((resume) => resume.id === job.resumeId)}
+                  onClick={() => void prepareJob(job)}
                 >
                   Apply
                 </button>
@@ -169,6 +221,7 @@ export function Opportunities({
                 >
                   <Trash2 size={16} aria-hidden="true" />
                 </button>
+                </div>
                 {notesJobId === job.id && (
                   <label className="job-notes">
                     Application notes

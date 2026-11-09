@@ -1,24 +1,29 @@
+import { JobDescription } from "../JobDescription/JobDescription";
+import { ArrowLeft, ArrowUpRight, BriefcaseBusiness, MapPin, FileText, LoaderCircle } from "lucide-react";
 import type { ApplicationReviewData } from "../feature-props";
 import { routes } from "../../routes";
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
-import { AutomationPillMenu, type AutomationAction } from "../AutomationPillMenu/AutomationPillMenu";
 
 
 export function ApplicationReview({
   controller,
+  onChooseResume,
+  resumeBusy = false,
 }: {
   controller: ApplicationReviewData;
+  onChooseResume: (resumeId: string) => Promise<void>;
+  resumeBusy?: boolean;
 }) {
   const {
     applicationId,
     activeProfileId,
     activeResumeId,
+    resumeVersions,
     jobs,
     session,
     applyBusy,
     continueAfterChallenge,
-    prepareAccountSignUp,
     questionAnswers,
     setQuestionAnswers,
     fillCustomQuestions,
@@ -26,26 +31,56 @@ export function ApplicationReview({
     reviewed,
     finalizeApplication,
   } = controller;
+  const job = jobs.find((item) => item.id === applicationId);
+  const selectedResume = resumeVersions.find((item) => item.id === job?.resumeId);
+  let employerHost = "Employer website";
+  try { employerHost = new URL(session?.url || job?.url || "").hostname; } catch { /* No employer URL yet. */ }
   return (
     <>
       {applicationId && (
-        <div className="application-page-heading">
-          <a href={routes.applications + "?profile=" + encodeURIComponent(activeProfileId) + (activeResumeId ? "&resume=" + encodeURIComponent(activeResumeId) : "")}>← Back to applications</a>
-          <h2>
-            {jobs.find((job) => job.id === applicationId)?.role ||
-              "Application"}
-          </h2>
-          <p>{jobs.find((job) => job.id === applicationId)?.company}</p>
-        </div>
+        <header className="application-page-heading">
+          <a className="application-back" href={routes.applications + "?profile=" + encodeURIComponent(activeProfileId) + (activeResumeId ? "&resume=" + encodeURIComponent(activeResumeId) : "")}><ArrowLeft size={15} /> Applications</a>
+          <div className="application-title-row">
+            <span className="application-company-icon"><BriefcaseBusiness size={24} aria-hidden="true" /></span>
+            <div><p className="application-company-name">{job?.company || "Employer application"}</p><h1>{job?.role || "Application"}</h1></div>
+          </div>
+          <div className="application-context">
+            {job?.details?.location && <span><MapPin size={14} aria-hidden="true" />{job.details.location}</span>}
+            {job?.details?.requisitionId && <span>{job.details.requisitionId}</span>}
+            {job?.details?.salary && <span className="job-salary">{job.details.salary}</span>}
+            {selectedResume && <span><FileText size={14} aria-hidden="true" />{selectedResume.name}</span>}
+            {job?.url && <a href={job.url} target="_blank" rel="noopener noreferrer">View job posting <ArrowUpRight size={14} /></a>}
+          </div>
+        </header>
       )}
+      {job?.details?.description && <details className="application-job-description"><summary>About this role</summary><JobDescription content={job.details.description} /></details>}
       {applicationId && !session && !applyBusy && (
-        <section className="panel">
-          <h3>Start this application</h3>
-          <p>Open the employer form with the selected resume and contact details.</p>
-          <button className="primary" onClick={() => {
-            const job = jobs.find(item => item.id === applicationId);
-            if (job) void controller.prepareJob(job);
-          }}>Open employer application</button>
+        <section className="panel application-start">
+          <div className="application-start-heading"><span className="application-step">1</span><div><h2>Choose your resume</h2><p>Confirm the version to share with {job?.company || "this employer"}.</p></div></div>
+          <div className="application-start-controls">
+          <label className="application-resume-selector">
+            Resume for this application
+            <select
+              aria-label="Resume for this application"
+              disabled={resumeBusy}
+              value={jobs.find((item) => item.id === applicationId)?.resumeId ?? ""}
+              onChange={(event) => void onChooseResume(event.target.value)}
+            >
+              <option value="">Select a resume</option>
+              {resumeVersions.map((resume) => (
+                <option key={resume.id} value={resume.id}>{resume.name}</option>
+              ))}
+            </select>
+          </label>
+          <button className="primary"
+            disabled={resumeBusy || !activeResumeId || job?.resumeId !== activeResumeId}
+            onClick={() => {
+              const job = jobs.find(item => item.id === applicationId);
+              if (job) void controller.prepareJob(job);
+            }}>{resumeBusy ? "Saving resume…" : "Open employer application"}<ArrowUpRight size={16} /></button>
+          </div>
+          <p className="application-start-note">{job?.accountAction === "login" ? "Log in" : "Sign up"} using configured account details.</p>
+          <p className="application-start-note">Your application opens in an interactive browser. Review the filled details before submitting.</p>
         </section>
       )}
       {applicationId && (session || applyBusy) && (
@@ -55,38 +90,24 @@ export function ApplicationReview({
               <>
                 <div className="panel-title">
                   <h2>Application review</h2>
-                  <p>{session.message}</p>
+                  {session.state !== "login_required" && <p>{session.message}</p>}
                 </div>
-                <p>
-                  <strong>Status:</strong> {session.state.replaceAll("_", " ")}{" "}
-                  · {session.url}
-                </p>
-                {(session.state === "manual_intervention" ||
-                  session.state === "login_required") && (
-                  <div className="validation warning">
-                    {session.state === "login_required"
-                      ? "Sign in or create your account in the interactive browser viewer. Enter credentials and MFA codes only on the employer or identity provider website."
-                      : "Complete the security challenge in the interactive browser viewer."}
-                    <button
-                      className="secondary"
-                      disabled={applyBusy}
-                      onClick={continueAfterChallenge}
-                    >
-                      I've finished — continue
-                    </button>
+                <div className="application-session-meta">
+                  <span className="application-state" data-state={session.state}>{session.state.replaceAll("_", " ")}</span>
+                  <span className="application-employer-host">{employerHost}</span>
+                  {session.ats && <span className="application-ats">{session.ats}</span>}
+                </div>
+                {session.state === "login_required" && <EmployerAccountSetup controller={controller} />}
+                {session.state === "manual_intervention" && (
+                  <div className="validation warning">Complete the security check in the browser below.
+                    <button className="primary" disabled={applyBusy} onClick={continueAfterChallenge}>Continue</button>
                   </div>
                 )}
-                {session.state !== "preparing" && <EmployerAccountSetup controller={controller} />}
                 {session.state === "submission_unverified" && (
                   <p className="validation warning">
                     Submission was attempted but the employer did not show a
                     recognizable confirmation. Verify the result manually before
                     updating the job status.
-                  </p>
-                )}
-                {session.ats && (
-                  <p>
-                    <strong>ATS:</strong> {session.ats}
                   </p>
                 )}
                 {session.state === "ready_for_review" && (
@@ -232,27 +253,6 @@ export function ApplicationReview({
                     </label>
                   </div>
                 )}
-                {session.reviewUrl && (
-                  <AutomationPillMenu busy={applyBusy} status={session.ats ? "ATS: " + session.ats : "Application session connected"}
-                    actions={[
-                      { id: "detect", label: "Detect current page", description: "Dedicated page detection is not configured", available: false },
-                      { id: "register", label: "Create account", description: "Prepare employer registration fields",
-                        available: !applyBusy && session.state !== "preparing",
-                        onSelect: () => prepareAccountSignUp() },
-                      { id: "sign-in", label: "Sign in", description: "Sign in manually in the employer browser", available: false },
-                      { id: "contact", label: "Contact autofill", description: "A dedicated contact-only action is not configured", available: false },
-                      { id: "employment", label: "Employment autofill", description: "A dedicated employment-only action is not configured", available: false },
-                      { id: "education", label: "Education autofill", description: "A dedicated education-only action is not configured", available: false },
-                      { id: "resume", label: "Upload resume", description: "Upload runs during supported application autofill", available: false },
-                      { id: "questions", label: "Screening questions", description: "Fill the answers entered in Application review",
-                        available: !applyBusy && session.state === "ready_for_review" && Object.values(questionAnswers).some(Boolean),
-                        onSelect: fillCustomQuestions },
-                      { id: "next", label: "Autofill current step", description: "Rerun supported form automation on the open page",
-                        available: !applyBusy && ["ready_for_review", "login_required", "manual_intervention"].includes(session.state),
-                        onSelect: continueAfterChallenge },
-                    ] satisfies AutomationAction[]}
-                  />
-                )}
                 <div className="actions">
                   <button
                     disabled={
@@ -279,8 +279,8 @@ export function ApplicationReview({
               </>
             ) : (
               <div className="application-loading" role="status">
-                <h3>Opening your application…</h3>
-                <p>Preparing your resume and connecting to the employer.</p>
+                <LoaderCircle size={28} className="application-spinner" aria-hidden="true" />
+                <div><h3>Opening your application…</h3><p>Preparing your resume and connecting to the employer.</p></div>
               </div>
             )}
           </section>

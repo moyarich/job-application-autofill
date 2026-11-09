@@ -19,6 +19,10 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
       return;
     }
     if (session) return;
+    if (!activeResumeId || (job.resumeId && job.resumeId !== activeResumeId)) {
+      setMessage("Select the resume assigned to this application before starting.");
+      return;
+    }
     if (!job.url) {
       setMessage("Add a job URL before applying.");
       return;

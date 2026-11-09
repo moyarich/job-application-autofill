@@ -53,6 +53,7 @@ export interface CandidateProfile {
   source: { fileName: string };
 }
 
+export type JobPostingDetails = { salary?: string; location?: string; employmentType?: string; requisitionId?: string; description?: string; postingUrl?: string };
 export interface JobApplication {
   id: string;
   company: string;
@@ -61,6 +62,9 @@ export interface JobApplication {
   status: ApplicationStatus;
   createdAt: string;
   notes: string;
+  resumeId?: string | null;
+  accountAction?: "signup" | "login";
+  details?: JobPostingDetails;
 }
 
 export const emptyCandidate: CandidateProfile = {
