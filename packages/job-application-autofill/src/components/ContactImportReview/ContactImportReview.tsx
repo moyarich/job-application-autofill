@@ -31,10 +31,7 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
       <div className="contact-import-heading">
         <span className="contact-import-symbol"><ContactRound size={22} aria-hidden="true" /></span>
         <div>
-          <h2>{hasLinkedContact ? "Confirm imported contact" : "Contact found in your resume"}</h2>
-          <p>{hasLinkedContact
-            ? "Choose what to do with the contact details. The resume's experience, skills, and summary will be imported separately."
-            : "Review these details before adding them to this resume."}</p>
+          <h2>{hasLinkedContact ? "Imported contact details" : "Imported contact details"}</h2>
         </div>
       </div>
       <div className="imported-contact-preview">
@@ -49,7 +46,7 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
             ))}
           </dl>
         ) : (
-          <p>No contact information was found. You can still import the resume as a draft.</p>
+          <p>No contact details found. The resume can still be imported.</p>
         )}
       </div>
       {hasLinkedContact ? (
@@ -67,12 +64,12 @@ function ContactImportDecision({ controller }: { controller: ResumeImportData })
       ) : (
         <p className="contact-import-explanation">
           <Info size={16} aria-hidden="true" />
-          A new contact will be saved and linked to this resume when the required name and email details are available. Otherwise, the resume stays a draft. No other resume is changed.
+          A contact is saved when a name and email are available. Otherwise, the resume stays a draft.
         </p>
       )}
       <div className="actions contact-import-actions">
         <button className="primary" type="button" onClick={() => void confirmImport(hasLinkedContact ? strategy : "resume")}>
-          {hasLinkedContact ? "Confirm and import resume" : "Use these details"}
+          {hasLinkedContact ? "Import resume" : "Import resume"}
         </button>
         <button className="secondary" type="button" onClick={cancelImport}>Cancel import</button>
       </div>
