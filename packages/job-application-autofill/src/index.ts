@@ -61,6 +61,7 @@ export interface JobApplication {
   status: ApplicationStatus;
   createdAt: string;
   notes: string;
+  resumeId?: string | null;
 }
 
 export const emptyCandidate: CandidateProfile = {
