@@ -7,7 +7,7 @@ const sample = JSON.parse(readFileSync(new URL("../../packages/resume/src/resume
 test("draft resumes preserve independent content without inventing contacts", () => {
   const db = openStore(":memory:");
   try {
-    const first = db.listResumes(DEFAULT_PROFILE_ID)[0];
+    const first = db.createResume(DEFAULT_PROFILE_ID, "First resume");
     const second = db.createResume(DEFAULT_PROFILE_ID,"Cloud engineer");
     const primary = structuredClone(sample);
     const cloud = structuredClone(sample);
@@ -24,6 +24,6 @@ test("draft resumes preserve independent content without inventing contacts", ()
     expect(db.getResumeContent(DEFAULT_PROFILE_ID,second.id).contactId).toBeNull();
     expect(db.listContacts(DEFAULT_PROFILE_ID)).toEqual([]);
     const other = db.createProfile("Other person");
-    expect(db.getResumeContent(other.id).profile).toBeNull();
+    expect(db.listResumes(other.id)).toEqual([]);
   } finally { db.close(); }
 });

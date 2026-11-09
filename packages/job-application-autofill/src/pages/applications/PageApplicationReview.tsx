@@ -32,7 +32,7 @@ export function PageApplicationReview() {
     selection.hydrated &&
     applications.jobsHydrated &&
     contacts.contactsHydrated &&
-    draft.resumeHydrated;
+    (!selection.activeResumeId || draft.resumeHydrated);
   const changeJob = (
     id: Parameters<typeof changeJobStatus>[0],
     status: Parameters<typeof changeJobStatus>[1],
