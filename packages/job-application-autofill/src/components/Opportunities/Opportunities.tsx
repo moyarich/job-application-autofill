@@ -41,8 +41,7 @@ export function Opportunities({
     <>
       <section className="panel" id="add-application">
         <div className="panel-title">
-          <h2>Add an opportunity</h2>
-          <p>Save the details of a role you want to apply for.</p>
+          <h2>Add a job application</h2>
         </div>
         <form className="add-form" onSubmit={addJob}>
           <label>
@@ -86,8 +85,7 @@ export function Opportunities({
       <section className="panel" id="applications-list">
         <div className="panel-title horizontal">
           <div>
-            <h2>Applications</h2>
-            <p>Keep track of every stage, from saved to submitted.</p>
+            <h2>Your job applications</h2>
           </div>
           <div className="opportunity-controls">
             <SearchInput
