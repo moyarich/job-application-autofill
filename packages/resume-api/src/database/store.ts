@@ -154,7 +154,7 @@ function validateJobs(raw: unknown): JobRecord[] {
   });
 }
 export function openStore(
-  filePath = process.env.MOYA_DB_PATH || "data/moyaapply.sqlite",
+  filePath = process.env.MOYA_DB_PATH || "data/job_application_autofill.sqlite",
 ) {
   const db = openConnection(filePath);
   initializeDatabase(db);
