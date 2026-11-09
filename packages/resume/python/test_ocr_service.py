@@ -40,6 +40,18 @@ class TestOcrService(unittest.TestCase):
         status, response = self.request("GET", "/health")
         self.assertEqual((status, response), (200, {"ok": True}))
 
+    def test_successful_health_checks_do_not_spam_logs(self):
+        with patch.object(OcrHandler, "log_message") as log:
+            status, response = self.request("GET", "/health")
+        self.assertEqual((status, response), (200, {"ok": True}))
+        log.assert_not_called()
+
+    def test_failed_requests_are_still_logged(self):
+        with patch.object(OcrHandler, "log_message") as log:
+            status, _ = self.request("GET", "/missing")
+        self.assertEqual(status, 404)
+        log.assert_called_once()
+
     def test_only_pdf_content_type_is_accepted(self):
         status, _ = self.request(
             "POST", "/extract", b"%PDF-example",
