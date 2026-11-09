@@ -8,7 +8,7 @@ import {
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 it("tries configured login for new employer records and keeps a pending resume until an upload step", async () => {
-  vi.stubEnv("WORKDAY_SITE_HOST", "workday.wd5.myworkdayjobs.com");
+  vi.stubEnv("WORKDAY_HOST", "workday.wd5.myworkdayjobs.com");
   vi.stubEnv("WORKDAY_USER_EMAIL", "fixture@example.com");
   vi.stubEnv("WORKDAY_PASSWORD", "existing-fixture-password");
   const browser = await chromium.launch({ headless: true });
