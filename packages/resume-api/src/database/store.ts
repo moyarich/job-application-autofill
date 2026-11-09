@@ -89,6 +89,7 @@ type JobRecord = {
   status: string;
   createdAt: string;
   notes: string;
+  resumeId?: string | null;
 };
 const statuses = new Set([
   "saved",
