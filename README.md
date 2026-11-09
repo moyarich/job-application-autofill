@@ -185,7 +185,7 @@ To force a particular Python interpreter for the Node backend, set `PYTHON_EXECU
 ### Optional Workday sign-in from .env
 
 Set `WORKDAY_HOST`, `WORKDAY_USERNAME`, and `WORKDAY_PASSWORD` in the ignored
-root `.env` file for an existing employer account. `WORKDAY_USER_EMAIL` is accepted as a username alias; legacy `RESUME_SITE_HOST`, `RESUME_SITE_EMAIL`, and `RESUME_SITE_PASSWORD` remain supported. Copy the names from `.env.example`.
+root `.env` file for an existing employer account. `WORKDAY_USER_EMAIL` is accepted as a username alias; `WORKDAY_HOST` specifies the exact employer host. The legacy `RESUME_SITE_EMAIL` and `RESUME_SITE_PASSWORD` credential aliases remain supported. Copy the names from `.env.example`.
 The default tenant is `workday.wd5.myworkdayjobs.com`; credentials are never filled
 on another tenant or an external identity provider. Restart/recreate the API after
 editing credentials (`docker compose up -d --force-recreate api`).
