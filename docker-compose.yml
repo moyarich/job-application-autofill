@@ -23,7 +23,7 @@ services:
       WORKDAY_USER_EMAIL: "${WORKDAY_USER_EMAIL:-}"
       WORKDAY_PASSWORD: "${WORKDAY_PASSWORD:-}"
       RESUME_SITE_PASSWORD: "${RESUME_SITE_PASSWORD:-}"
-      RESUME_SITE_HOST: "${RESUME_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
+      WORKDAY_SITE_HOST: "${WORKDAY_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
       CONTAINER_MODE: "true"
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
