@@ -283,11 +283,11 @@ export function RichTextEditor({
                 const block = editor.children[blockPath[0]] as RichTextBlock | undefined;
                 if (block?.type === "paragraph") {
                   const typed = Editor.string(editor, blockPath);
-                  const marker = typed.match(/^([-*+]|\\d+[.)])$/);
+                  const marker = typed.match(/^([-*+]|\d+[.)])$/);
                   if (marker) {
                     event.preventDefault();
                     Transforms.delete(editor, { at: Editor.range(editor, blockPath) });
-                    const type = /^\\d/.test(marker[1]) ? "numbered" : "bullet";
+                    const type = /^\d/.test(marker[1]) ? "numbered" : "bullet";
                     Transforms.setNodes(editor, {
                       type,
                       prefix: marker[1] + " ",
