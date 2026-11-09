@@ -50,6 +50,7 @@ export async function prepareSavedApplication(
     jobUrl: payload.jobUrl, jobId: payload.jobId, profileId, profile, resume,
     company: savedJob.company,
     accountSetupRequired: employerAccount?.status === "setup_required",
+    accountAction: savedJob.accountAction ?? "signup",
   });
   return { ok: true, data: { ...prepared, employerAccount } };
 }

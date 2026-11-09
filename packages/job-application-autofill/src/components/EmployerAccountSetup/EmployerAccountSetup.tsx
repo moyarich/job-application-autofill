@@ -1,74 +1,40 @@
 import type { ApplicationReviewData } from "../feature-props";
-import { generateAccountPassword, accountPasswordValid } from "../../utils/profile/password";
 import { useState } from "react";
-
+import { ArrowRight, UserPlus } from "lucide-react";
 import "./EmployerAccountSetup.css";
 
 export function EmployerAccountSetup({ controller }: { controller: ApplicationReviewData }) {
-  const { session, applyBusy, prepareAccountSignUp, setEmployerAccountStatus } = controller;
+  const { session, applyBusy, prepareAccountSignUp, continueAfterChallenge } = controller;
   const [password, setPassword] = useState("");
-  const [generated, setGenerated] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [copyError,setCopyError] = useState("");
   if (!session?.employerAccount) return null;
   const account = session.employerAccount;
   const signup = session.signupPrepared;
-  function generatePassword() {
-    setPassword(generateAccountPassword());
-    setGenerated(true);
-    setCopied(false);
-  }
-  async function copyPassword() {
-    if (!password) return;
-    setCopyError("");
-    try { await navigator.clipboard.writeText(password); setCopied(true); }
-    catch { setCopied(false); setCopyError("Copy was blocked. Select Show, select the password, and copy it with your keyboard."); }
-  }
-  async function prepare() {
-    if ((generated && !copied) || (password && !accountPasswordValid(password))) return;
-    await prepareAccountSignUp(password || undefined);
-    // A one-time credential is never retained in the app's persistent state.
-    setPassword("");
-    setGenerated(false);
-    setCopied(false);
-  }
+  const prepared = signup?.state === "manual_required";
   return (
-    <section className="employer-account-panel">
-      <h3>Employer account — {account.employerName}</h3>
-      <p>{account.provider} · {account.host}</p>
-      {account.status === "ready" ? (
-        <p>Your account is ready. Sign in on the employer’s site when prompted.</p>
-      ) : (
-        <>
-          <p>This employer requires an account. We can help fill out supported signup forms; you’ll complete verification and confirm account creation.</p>
-          <label htmlFor="account-signup-password">Account password (optional)</label>
-          <div className="employer-account-password">
-            <input id="account-signup-password" type={visible ? "text" : "password"}
-              value={password} onChange={event => { setPassword(event.target.value); setGenerated(false); setCopied(false); }}
-              autoComplete="new-password" placeholder="Leave blank to use your password manager" />
-            <button type="button" disabled={applyBusy} onClick={generatePassword}>Generate</button>
-            <button type="button" disabled={!password || applyBusy} onClick={() => setVisible(v => !v)}>{visible ? "Hide" : "Show"}</button>
-            <button type="button" disabled={!password || applyBusy} onClick={() => void copyPassword()}>{copied ? "Copied" : "Copy"}</button>
-          </div>
-          {password && !accountPasswordValid(password) && <p className="validation warning">Use 12–128 characters including an uppercase letter, lowercase letter, number, and symbol, without spaces.</p>}
-          {copyError && <p role="alert" className="validation warning">{copyError}</p>}
-          {generated && !copied && <p className="validation warning">Copy and save the generated password in your password manager before preparing signup.</p>}
-          <button className="secondary" type="button" disabled={applyBusy || (generated && !copied) || (password.length > 0 && !accountPasswordValid(password))}
-            onClick={() => void prepare()}>Fill signup form</button>
-          {signup?.state === "manual_required" && (
-            <p>Prepared: {signup.filled.length ? signup.filled.join(", ") : "registration page opened"}. Finish any terms, verification, and final Create Account action in the employer browser.</p>
-          )}
-          {signup?.state === "unavailable" && <p className="validation warning">Registration autofill stopped: the browser is outside the original employer site.</p>}
-          <button className="secondary" type="button" disabled={applyBusy}
-            onClick={() => void setEmployerAccountStatus("ready")}>I've created this account</button>
-        </>
-      )}
-      {account.status === "ready" && (
-        <button className="secondary" type="button" disabled={applyBusy}
-          onClick={() => void setEmployerAccountStatus("setup_required")}>Account needs setup</button>
-      )}
-      <p>Your password is never saved here. Complete verification and account creation on the employer’s site.</p>
+    <section className="employer-account-panel" aria-label="Employer sign-in">
+      <div className="account-next-step">
+        <div><h3>{prepared ? "Finish account verification" : "Employer sign-in needs attention"}</h3>
+          <p>{prepared
+            ? "Review the filled details in the browser, complete verification, then continue."
+            : "Automation uses your configured credentials. Review the employer message in the browser below, then continue."}</p>
+        </div>
+        <div className="actions">
+          {!prepared && <button className="secondary" type="button" disabled={applyBusy} onClick={() => void prepareAccountSignUp()}><UserPlus size={16} /> Retry signup</button>}
+          <button className="primary" type="button" disabled={applyBusy} onClick={continueAfterChallenge}>Continue <ArrowRight size={16} /></button>
+        </div>
+      </div>
+      {signup?.credentialSource === "configured" && <p className="account-prepared-note">Configured account details filled on {account.host}.</p>}
+      {signup?.missing?.length ? <p className="account-prepared-note">Complete the remaining fields in the employer browser.</p> : null}
+      {signup?.state === "unavailable" && <p role="alert">Return to the employer website to fill account details.</p>}
+      <details className="account-other-password">
+        <summary>Use a different password</summary>
+        <label htmlFor="account-signup-password">Password for this signup
+          <input id="account-signup-password" type="password" value={password}
+            onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
+        </label>
+        <button className="secondary" type="button" disabled={applyBusy || password.length < 12 || password.length > 128}
+          onClick={async () => { await prepareAccountSignUp(password); setPassword(""); }}>Fill with this password</button>
+      </details>
     </section>
   );
 }

@@ -90,6 +90,8 @@ type JobRecord = {
   createdAt: string;
   notes: string;
   resumeId?: string | null;
+  accountAction?: "signup" | "login";
+  details?: Record<string, string>;
 };
 const statuses = new Set([
   "saved",
@@ -134,9 +136,18 @@ function validateJobs(raw: unknown): JobRecord[] {
         (typeof row.resumeId !== "string" ||
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.resumeId)))
       throw new Error("Invalid associated resume ID.");
+    if (row.accountAction !== undefined && row.accountAction !== "signup" && row.accountAction !== "login")
+      throw new Error("Invalid account action.");
     if (Object.keys(row).some(key => ![
-      "id", "company", "role", "url", "status", "createdAt", "notes", "resumeId",
+      "id", "company", "role", "url", "status", "createdAt", "notes", "resumeId", "accountAction", "details",
     ].includes(key))) throw new Error("Invalid job field.");
+    if (row.details !== undefined) {
+      if (!row.details || typeof row.details !== "object" || Array.isArray(row.details)) throw new Error("Invalid job details.");
+      for (const [key, value] of Object.entries(row.details)) {
+        if (!["location", "employmentType", "requisitionId", "description", "postingUrl", "salary"].includes(key) || typeof value !== "string" || value.length > (key === "description" ? 30000 : key === "postingUrl" ? 4000 : 500))
+          throw new Error("Invalid job details.");
+      }
+    }
     const job = row as JobRecord;
     if (!validId(job.id) || ids.has(job.id))
       throw new Error("Duplicate job identifier.");
@@ -654,10 +665,10 @@ export function openStore(
   function getJobList(profileId = DEFAULT_PROFILE_ID) {
     const owner = requireProfile(profileId);
     const revisions: Record<string, number> = {};
-    const jobs = (getJobs.all(owner) as (JobRecord & { resumeId: string | null; revision: number })[])
-      .map(({ resumeId, revision, ...job }) => {
+    const jobs = (getJobs.all(owner) as unknown as (JobRecord & { resumeId: string | null; accountAction: "signup" | "login" | null; detailsJson: string | null; revision: number })[])
+      .map(({ resumeId, accountAction, detailsJson, revision, ...job }): JobRecord => {
         revisions[job.id] = revision;
-        return resumeId ? { ...job, resumeId } : job;
+        return { ...job, ...(resumeId ? { resumeId } : {}), ...(accountAction ? { accountAction } : {}), ...(detailsJson ? { details: JSON.parse(detailsJson) } : {}) };
       });
     return { jobs, revisions };
   }
@@ -686,16 +697,16 @@ export function openStore(
       if ((existing?.revision ?? 0) !== revision || (!existing && revision !== 0))
         throw staleJob();
       if (existing) {
-        const updated = db.prepare(`UPDATE applications SET resume_id=?,company=?,role=?,url=?,
+        const updated = db.prepare(`UPDATE applications SET resume_id=?,account_action=?,details_json=?,company=?,role=?,url=?,
           status=?,created_at=?,notes=?,revision=revision+1
           WHERE profile_id=? AND id=? AND revision=?`)
-          .run(selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes,
+          .run(selectedResume, job.accountAction ?? null, job.details ? JSON.stringify(job.details) : null, job.company, job.role, job.url, job.status, job.createdAt, job.notes,
             owner, job.id, revision);
         if (!updated.changes) throw staleJob();
       } else {
-        db.prepare(`INSERT INTO applications(profile_id,id,resume_id,company,role,url,status,created_at,notes,revision)
-          VALUES (?,?,?,?,?,?,?,?,?,1)`)
-          .run(owner, job.id, selectedResume, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
+        db.prepare(`INSERT INTO applications(profile_id,id,resume_id,account_action,details_json,company,role,url,status,created_at,notes,revision)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,1)`)
+          .run(owner, job.id, selectedResume, job.accountAction ?? null, job.details ? JSON.stringify(job.details) : null, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
       }
       db.exec("COMMIT");
       return { revision: revision + 1 };

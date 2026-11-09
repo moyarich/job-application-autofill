@@ -39,6 +39,16 @@ init_vnc_auth() {
 # @exitcode 0 Xvfb started successfully.
 # @exitcode 1 Xvfb failed to start.
 start_xvfb() {
+  local display_number="${DISPLAY#:}"
+  display_number="${display_number%%.*}"
+  local lock_file="/tmp/.X${display_number}-lock"
+  if [[ -f "$lock_file" ]]; then
+    local previous_pid
+    previous_pid="$(tr -d '[:space:]' < "$lock_file")"
+    if [[ "$previous_pid" =~ ^[0-9]+$ ]] && ! kill -0 "$previous_pid" 2>/dev/null; then
+      rm -f "$lock_file" "/tmp/.X11-unix/X${display_number}"
+    fi
+  fi
   Xvfb "$DISPLAY" -screen 0 1600x1000x24 -nolisten tcp -ac &
   local pid=$!
 

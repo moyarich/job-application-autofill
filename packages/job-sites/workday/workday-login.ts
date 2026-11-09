@@ -69,14 +69,16 @@ export async function helpWorkdaySignIn(
       .isVisible()
       .catch(() => false))
   ) {
-    const existing = page.getByRole("link", { name: /^sign in$/i }).first();
-    if (await existing.isVisible().catch(() => false)) {
+    const existingChoices = [
+      page.getByRole("link", { name: /^sign in$/i }).last(),
+      page.getByRole("button", { name: /^sign in$/i }).last(),
+    ];
+    for (const existing of existingChoices) {
+      if (!(await existing.isVisible().catch(() => false))) continue;
       await existing.click();
-      await page
-        .getByRole("heading", { name: /^sign in$/i })
-        .first()
-        .waitFor({ state: "visible", timeout: 5000 })
-        .catch(() => {});
+      await page.getByRole("heading", { name: /^sign in$/i }).first()
+        .waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+      break;
     }
   }
   if ((await helpWorkdaySignUp(page, env)).state === "manual_required") return;

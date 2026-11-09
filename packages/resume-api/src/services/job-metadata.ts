@@ -1,8 +1,13 @@
+import { chromium } from "playwright";
+import TurndownService from "turndown";
+import { load } from "cheerio";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { request } from "node:https";
 
-export type JobMetadata = { company: string; role: string };
+export type JobMetadata = { company: string; role: string; details?: {
+  location?: string; employmentType?: string; requisitionId?: string; description?: string; postingUrl?: string; salary?: string;
+} };
 
 // Do not let a pasted application URL turn the local API into a proxy for
 // internal services, cloud metadata endpoints, or Docker/private addresses.
@@ -28,21 +33,24 @@ function jobUrl(raw: string): URL {
   return url;
 }
 
-async function readPage(url: URL, remainingRedirects = 2): Promise<string> {
+type Resource = { body: Buffer; contentType: string; cookies: string[] };
+async function readResource(url: URL, remainingRedirects = 2, browserHeaders: Record<string, string> = {}): Promise<Resource> {
   const addresses = await lookup(url.hostname, { all: true });
   if (!addresses.length || addresses.some((value) => !publicAddress(value.address)))
     throw new Error("Job URL must resolve to a public website.");
-  const address = addresses[0];
-  return new Promise<string>((resolve, reject) => {
+  const address = addresses.find((entry) => entry.family === 4) ?? addresses[0];
+  return new Promise<Resource>((resolve, reject) => {
     const req = request(url, {
       method: "GET",
+      family: address.family,
       timeout: 10000,
       lookup: (_hostname, _options, callback) =>
         callback(null, address.address, address.family),
       headers: {
         Accept: "text/html",
         "Accept-Encoding": "identity",
-        "User-Agent": "MoyaJobMetadata/1.0",
+        "User-Agent": browserHeaders["user-agent"] || "JobApplicationMetadata/1.0",
+        ...Object.fromEntries(Object.entries(browserHeaders).filter(([key]) => ["accept", "accept-language", "cookie", "x-calypso-csrf-token", "x-workday-tenant"].includes(key))),
       },
     }, (res) => {
       const status = res.statusCode ?? 0;
@@ -52,25 +60,25 @@ async function readPage(url: URL, remainingRedirects = 2): Promise<string> {
         let next: URL;
         try { next = jobUrl(new URL(res.headers.location, url).href); }
         catch { return reject(new Error("Job URL redirects to an unsafe destination.")); }
-        void readPage(next, remainingRedirects - 1).then(resolve, reject);
+        void readResource(next, remainingRedirects - 1).then(resolve, reject);
         return;
       }
-      if (status !== 200 || !String(res.headers["content-type"] ?? "").toLowerCase().includes("text/html")) {
+      if (status !== 200) {
         res.resume();
-        reject(new Error("The job posting did not return an HTML page."));
+        reject(new Error("The job posting resource could not be read."));
         return;
       }
       let size = 0;
       const chunks: Buffer[] = [];
       res.on("data", (chunk: Buffer) => {
         size += chunk.length;
-        if (size > 1024 * 1024) {
-          req.destroy(new Error("Job posting HTML exceeds 1 MB."));
+        if (size > 8 * 1024 * 1024) {
+          req.destroy(new Error("Job posting resource exceeds 8 MB."));
           return;
         }
         chunks.push(chunk);
       });
-      res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      res.on("end", () => resolve({ body: Buffer.concat(chunks), contentType: String(res.headers["content-type"] ?? "application/octet-stream"), cookies: res.headers["set-cookie"] ?? [] }));
       res.on("error", reject);
     });
     req.on("timeout", () => req.destroy(new Error("Job posting request timed out.")));
@@ -79,23 +87,61 @@ async function readPage(url: URL, remainingRedirects = 2): Promise<string> {
   });
 }
 
-const decode = (value: string) => value
-  .replace(/&(?:amp|quot|apos|lt|gt|nbsp|#(\d+)|#x([a-f\d]+));/gi, (match, decimal: string, hex: string) => {
-    if (decimal) return String.fromCodePoint(Number(decimal));
-    if (hex) return String.fromCodePoint(parseInt(hex, 16));
-    return ({ "&amp;": "&", "&quot;": '"', "&apos;": "'", "&lt;": "<", "&gt;": ">", "&nbsp;": " " } as Record<string, string>)[match.toLowerCase()] ?? match;
-  }).replace(/\s+/g, " ").trim();
+/** Read an anonymous rendered DOM; every request stays behind the public-address guard. */
+async function renderedPosting(url: URL): Promise<string> {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ serviceWorkers: "block", acceptDownloads: false });
+    await context.route("**/*", async (route) => {
+      const request = route.request();
+      if (request.method() !== "GET" || ["image", "media", "font"].includes(request.resourceType())) return route.abort();
+      try {
+        const resource = await readResource(jobUrl(request.url()), 2, await request.allHeaders());
+        await route.fulfill({ status: 200, contentType: resource.contentType, body: resource.body,
+          headers: { "access-control-allow-origin": url.origin, "access-control-allow-credentials": "true", ...(resource.cookies.length ? { "set-cookie": resource.cookies.join("\n") } : {}) },
+        });
+      } catch { await route.abort().catch(() => {}); }
+    });
+    const page = await context.newPage();
+    await page.goto(url.href, { waitUntil: "domcontentloaded", timeout: 30000 });
+    if (url.hostname.endsWith(".myworkdayjobs.com")) {
+      await page.locator('[data-automation-id="jobPostingDescription"]').waitFor({ state: "attached", timeout: 20000 });
+    }
+    return await page.content();
+  } finally { await browser.close(); }
+}
 
-function meta(html: string, key: string): string {
-  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
-    const attributes = Object.fromEntries(
-      [...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)]
-        .map((match) => [match[1].toLowerCase(), match[2] ?? match[3]]),
-    );
-    if (attributes.property?.toLowerCase() === key || attributes.name?.toLowerCase() === key)
-      return decode(attributes.content ?? "");
+const text = (value: unknown, limit = 500): string => typeof value === "string"
+  ? load(value, null, false).text().replace(/\s+/g, " ").trim().slice(0, limit) : "";
+
+const htmlToMarkdown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced" });
+
+function descriptionMarkdown(value: string): string {
+  const $ = load(value, null, false);
+  $("script,style,noscript,iframe,object,form").remove();
+  $("a").each((_index, element) => {
+    const link = $(element);
+    const href = link.attr("href") ?? "";
+    if (!/^(?:https?:|mailto:|\/|#)/i.test(href)) link.removeAttr("href");
+  });
+  return htmlToMarkdown.turndown($.html()).trim().slice(0, 30000);
+}
+
+/** Resolve a Workday activation/apply link to its public posting without using the activation token. */
+export function postingUrl(raw: string): URL {
+  let url = jobUrl(raw);
+  if (url.hostname.endsWith(".myworkdayjobs.com")) {
+    const redirect = url.searchParams.get("redirect");
+    if (redirect) {
+      const destination = jobUrl(new URL(redirect, url).href);
+      if (destination.origin !== url.origin || !destination.pathname.includes("/job/"))
+        throw new Error("The application link must point to a job on the same employer website.");
+      url = destination;
+    }
+    url.pathname = url.pathname.replace(/\/apply(?:\/.*)?$/, "");
+    url.search = "";
   }
-  return "";
+  return url;
 }
 
 function findPosting(value: unknown): Record<string, unknown> | undefined {
@@ -108,32 +154,75 @@ function findPosting(value: unknown): Record<string, unknown> | undefined {
   return findPosting(node["@graph"]);
 }
 
-export function parseJobMetadata(html: string): JobMetadata {
-  for (const script of html.matchAll(/<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try {
-      const posting = findPosting(JSON.parse(script[1]));
-      if (posting) {
-        const organization = posting.hiringOrganization as { name?: unknown } | undefined;
-        const role = typeof posting.title === "string" ? decode(posting.title) : "";
-        const company = typeof organization?.name === "string" ? decode(organization.name) : "";
-        if (role && company) return { role: role.slice(0, 500), company: company.slice(0, 500) };
-      }
-    } catch { /* Ignore invalid employer JSON-LD and continue with HTML metadata. */ }
+function salaryText(posting: Record<string, unknown> | undefined, description: string): string {
+  const raw = posting?.baseSalary ?? posting?.estimatedSalary;
+  const salary = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | undefined;
+  if (salary && typeof salary === "object") {
+    const value = salary.value;
+    const currency = text(salary.currency, 10);
+    if (typeof value === "number") return [currency, value.toLocaleString("en-US")].filter(Boolean).join(" ");
+    if (value && typeof value === "object") {
+      const quantity = value as Record<string, unknown>;
+      const amount = (number: unknown) => typeof number === "number" && Number.isFinite(number) ? number.toLocaleString("en-US") : "";
+      const range = quantity.minValue != null || quantity.maxValue != null
+        ? [amount(quantity.minValue), amount(quantity.maxValue)].filter(Boolean).join(" – ") : amount(quantity.value);
+      if (range) return [currency, range, text(quantity.unitText, 30) ? "per " + text(quantity.unitText, 30).toLowerCase() : ""].filter(Boolean).join(" ");
+    }
   }
-  const pageTitle = meta(html, "og:title") || meta(html, "twitter:title") ||
-    decode(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
-  const parts = pageTitle.split(/\s+(?:\||–|—|-)\s+/);
-  const role = (parts[0] ?? "").replace(/\s+(?:Jobs?|Careers?|Apply Now)$/i, "").trim();
-  const site = meta(html, "og:site_name");
+  const lines = description.split("\n").map(line => line.trim()).filter(Boolean);
+  for (let index = 0; index < lines.length; index++) {
+    if (!/salary|base pay|pay range|hourly rate|compensation range/i.test(lines[index])) continue;
+    const context = lines.slice(index, index + 2).join(" ");
+    const match = context.match(/(?:US\$|USD\s*|CAD\s*|\$|£|€)\s*[\d,]+(?:\.\d{1,2})?(?:\s*(?:USD|CAD|GBP|EUR))?(?:\s*[-–—]\s*(?:US\$|USD\s*|CAD\s*|\$|£|€)?\s*[\d,]+(?:\.\d{1,2})?(?:\s*(?:USD|CAD|GBP|EUR))?)?(?:\s*(?:per|\/)\s*(?:year|hour|month|annum)|\s*(?:annually|hourly))?/i);
+    if (match) return match[0].trim().slice(0, 500);
+  }
+  return "";
+}
+
+export function parseJobMetadata(html: string): JobMetadata {
+  const $ = load(html);
+  let posting: Record<string, unknown> | undefined;
+  for (const element of $("script[type='application/ld+json']").toArray()) {
+    try { posting = findPosting(JSON.parse($(element).text())); } catch { continue; }
+    if (posting) break;
+  }
+  const meta = (key: string) => $("meta").toArray().map((element) => $(element))
+    .find((element) => (element.attr("property") || element.attr("name"))?.toLowerCase() === key)?.attr("content") ?? "";
+  const pageTitle = text(meta("og:title") || meta("twitter:title") || $("title").text());
+  const titleParts = pageTitle.split(/\s+(?:\||–|—|-)\s+/);
+  const organization = posting?.hiringOrganization as { name?: unknown } | undefined;
+  const role = text(posting?.title) || text($("[data-automation-id='jobPostingHeader'],[itemprop='title'],main h1").first().text()) ||
+    (titleParts[0] ?? "").replace(/\s+(?:Jobs?|Careers?|Apply Now)$/i, "").trim();
   const generic = /^(workday|linkedin|indeed|greenhouse|lever|jobs?|careers?)$/i;
-  const titleCompany = parts.length > 1 ? parts[1].replace(/\s+(?:Jobs?|Careers?)$/i, "").trim() : "";
-  const company = site && !generic.test(site) ? site
-    : titleCompany && !generic.test(titleCompany) ? titleCompany : "";
-  return { role: role.slice(0, 500), company: company.slice(0, 500) };
+  const site = text(meta("og:site_name"));
+  const titleCompany = (titleParts[1] ?? "").replace(/\s+(?:Jobs?|Careers?)$/i, "").trim();
+  const company = text(organization?.name) || text($("[itemprop='hiringOrganization'],[data-automation-id='companyName']").first().text()) ||
+    (site && !generic.test(site) ? site : titleCompany && !generic.test(titleCompany) ? titleCompany : "");
+  const locationRecord = (Array.isArray(posting?.jobLocation) ? posting?.jobLocation[0] : posting?.jobLocation) as { address?: Record<string, unknown> } | undefined;
+  const address = locationRecord?.address;
+  const location = address ? [address.addressLocality, address.addressRegion].map(value => text(value)).filter(Boolean).join(", ") :
+    text($("[data-automation-id='locations'],[itemprop='jobLocation']").first().text());
+  const identifier = posting?.identifier as { value?: unknown } | undefined;
+  const requisitionId = text(identifier?.value) || text($("[data-automation-id='jobReqId']").first().text());
+  const employmentType = text(Array.isArray(posting?.employmentType) ? posting.employmentType.join(", ") : posting?.employmentType);
+  const descriptionHtml = $("[data-automation-id='jobPostingDescription'],[itemprop='description']").first().html();
+  const description = descriptionMarkdown(descriptionHtml ?? (typeof posting?.description === "string" ? posting.description : ""));
+  const salary = salaryText(posting, description);
+  const canonicalUrl = $("link[rel='canonical']").attr("href") ?? "";
+  const details = Object.fromEntries(Object.entries({ location, requisitionId, employmentType, description, salary, ...(canonicalUrl ? { postingUrl: canonicalUrl } : {}) }).filter(([, value]) => value));
+  return { role: role.slice(0, 500), company: company.slice(0, 500), ...(Object.keys(details).length ? { details } : {}) };
 }
 
 export async function lookupJobMetadata(raw: unknown): Promise<JobMetadata> {
-  if (typeof raw !== "string" || raw.length > 4000)
-    throw new Error("A job posting URL is required.");
-  return parseJobMetadata(await readPage(jobUrl(raw)));
+  if (typeof raw !== "string" || raw.length > 4000) throw new Error("A job posting URL is required.");
+  const url = postingUrl(raw);
+  const metadata = parseJobMetadata(await renderedPosting(url));
+  let canonical = url;
+  if (metadata.details?.postingUrl) {
+    try {
+      const candidate = jobUrl(new URL(metadata.details.postingUrl, url).href);
+      if (candidate.origin === url.origin && candidate.pathname.includes("/job/")) canonical = candidate;
+    } catch { /* Retain the validated posting address. */ }
+  }
+  return { ...metadata, details: { ...metadata.details, postingUrl: canonical.href } };
 }

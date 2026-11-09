@@ -1,32 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
-import { createApplication, type ApplicationStatus } from "../index";
+import { createApplication, type ApplicationStatus, type JobPostingDetails } from "../index";
 import { changeJobStatus } from "../utils/application/changeJobStatus";
 import { requestApi } from "../utils/api/client";
 import type { JobTrackerData } from "../utils/application/job-tracker-data";
 export function useJobTracker(workspace: JobTrackerData) {
   const { jobs, setJobs, setMessage, activeProfileId } = workspace;
-  const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
+  const [newJob, setNewJob] = useState({ company: "", role: "", url: "", accountAction: "signup" as "signup" | "login" });
+  const [jobDetails, setJobDetails] = useState<JobPostingDetails | null>(null);
   const [search, setSearch] = useState("");
   const [metadataBusy, setMetadataBusy] = useState(false);
   const [metadataError, setMetadataError] = useState("");
   const autoFilled = useRef({ company: "", role: "" });
   useEffect(() => {
     const url = newJob.url.trim();
+    setJobDetails(null);
     if (!/^https:\/\/[^\s/]+\.[^\s/]+/i.test(url)) {
       setMetadataError("");
       setMetadataBusy(false);
       return;
     }
+    setMetadataBusy(true);
     let cancelled = false;
     const timer = setTimeout(async () => {
       setMetadataBusy(true);
       setMetadataError("");
       try {
-        const details = await requestApi<{ company: string; role: string }>(
+        const details = await requestApi<{ company: string; role: string; details?: JobPostingDetails }>(
           "/api/jobs/metadata", { jobUrl: url }, activeProfileId,
         );
         if (cancelled) return;
+        setJobDetails(details.details ?? null);
         setNewJob((current) => {
           if (current.url.trim() !== url) return current;
           const next = {
@@ -57,7 +61,7 @@ export function useJobTracker(workspace: JobTrackerData) {
   function addJob(event: React.FormEvent) {
     event.preventDefault();
     try {
-      const job = createApplication(newJob.company, newJob.role, newJob.url);
+      const job = { ...createApplication(newJob.company, newJob.role, jobDetails?.postingUrl || newJob.url), accountAction: newJob.accountAction, ...(jobDetails ? { details: jobDetails } : {}) };
       if (
         jobs.some(
           (item) =>
@@ -71,9 +75,10 @@ export function useJobTracker(workspace: JobTrackerData) {
         return;
       }
       setJobs((items) => [job, ...items]);
-      setNewJob({ company: "", role: "", url: "" });
+      setNewJob({ company: "", role: "", url: "", accountAction: "signup" });
       autoFilled.current = { company: "", role: "" };
       setMetadataError("");
+      setJobDetails(null);
       setMessage(
         "Job added. Select Apply on its row to start browser automation.",
       );
@@ -85,6 +90,6 @@ export function useJobTracker(workspace: JobTrackerData) {
     changeJobStatus(id, status, workspace);
   }
 
-  return { newJob, setNewJob, metadataBusy, metadataError, search, setSearch, notesJobId, setNotesJobId,
+  return { jobDetails, newJob, setNewJob, metadataBusy, metadataError, search, setSearch, notesJobId, setNotesJobId,
     addJob, changeJob };
 }

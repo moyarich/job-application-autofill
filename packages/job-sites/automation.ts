@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { CandidateProfile } from "../resume/src/types.ts";
 import type { ApplicationQuestion } from "./index.ts";
+import { workdayCredentials } from "./workday/workday-login.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
 import { automateCurrentStep, listJobSiteMenu, executeJobSiteMenuItem } from "./core/orchestrator.ts";
@@ -52,6 +53,7 @@ type ApplicationPreparation = {
   resume?: ResumeAttachment;
   launchBrowser?: () => Promise<Browser>;
   accountSetupRequired?: boolean;
+  accountAction?: "signup" | "login";
   company?: string;
 };
 
@@ -237,7 +239,7 @@ export async function prepareApplicationAccount(
     session.url,
     company,
     session.profile,
-    { openRegistration: true, password },
+    { openRegistration: true, password, submitConfigured: true },
   );
   session.signupPrepared = result;
   if (result.state === "manual_required") {
@@ -287,6 +289,7 @@ export async function prepareApplication({
   launchBrowser = () =>
     chromium.launch({ headless: process.env.HEADLESS === "true" }),
   accountSetupRequired = false,
+  accountAction,
   company = "",
 }: ApplicationPreparation) {
   const url = validateUrl(jobUrl);
@@ -347,20 +350,26 @@ export async function prepareApplication({
     }
     if (adapter?.openApplication)
       await adapter.openApplication(page).catch(() => {});
-    if (adapter?.helpSignIn)
+    if (accountAction !== "signup" && adapter?.helpSignIn)
       await prepareSignIn(adapter, session).catch(() => {});
-    if (accountSetupRequired && company) {
+    if ((accountAction === "signup" || (!accountAction && accountSetupRequired)) && company) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,
         url,
         company,
         profile,
-        { openRegistration: false },
+        {
+          openRegistration: accountAction === "signup" || Boolean(workdayCredentials(page.url())) && formState(await page.locator("body").innerText().catch(() => ""), page.url()) === "login_required",
+          submitConfigured: true,
+        },
       ).catch(() => ({
         state: "not_required" as const,
         filled: [],
         missing: [],
       }));
+    }
+    if (session.signupPrepared?.submitted && adapter?.helpSignIn) {
+      await prepareSignIn(adapter, session).catch(() => {});
     }
     const text = (
       await page
@@ -374,7 +383,7 @@ export async function prepareApplication({
       session.message =
         state === "login_required"
           ? session.signupPrepared?.state === "manual_required"
-            ? "Account signup fields prepared. Finish password, legal terms and verification in the employer browser."
+            ? "Configured account details filled. Complete any verification or required consent shown in the employer browser."
             : "Complete employer account sign-in or verification manually in the interactive browser viewer."
           : "Complete the security challenge manually in the interactive browser viewer.";
       return status(session);

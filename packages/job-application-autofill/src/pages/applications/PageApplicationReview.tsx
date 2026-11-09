@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { ApplicationReview } from "../../components/ApplicationReview/ApplicationReview";
 import { changeJobStatus } from "../../utils/application/changeJobStatus";
 import { useApplicationReview } from "../../hooks/useApplicationReview";
@@ -11,6 +12,7 @@ import { useNavigate } from "react-router";
 
 export function PageApplicationReview() {
   const navigate = useNavigate();
+  const [resumeBusy, setResumeBusy] = useState(false);
   const selection = useProfileSelection();
   const applications = useJobApplications({
     profileId: selection.activeProfileId,
@@ -47,9 +49,21 @@ export function PageApplicationReview() {
     changeJob,
     hydrated: ready,
   });
+  const autoStart = new URLSearchParams(window.location.search).get("start") === "1";
+  const startAttempt = useRef("");
+  useEffect(() => {
+    if (!autoStart || !ready || !review.activeLoaded || review.session || review.applyBusy) return;
+    const job = applications.jobs.find((item) => item.id === selection.applicationId);
+    if (!job?.resumeId || job.resumeId !== selection.activeResumeId) return;
+    const key = job.id + ":" + job.resumeId;
+    if (startAttempt.current === key) return;
+    startAttempt.current = key;
+    void review.prepareJob(job);
+  }, [autoStart, ready, review.activeLoaded, review.session, review.applyBusy, applications.jobs, selection.applicationId, selection.activeResumeId]);
   async function chooseApplicationResume(resumeId: string) {
     const job = applications.jobs.find((item) => item.id === selection.applicationId);
-    if (!job) return;
+    if (!job || resumeBusy) return;
+    setResumeBusy(true);
     try {
       if (resumeId && !selection.resumeVersions.some((item) => item.id === resumeId))
         throw new Error("Resume not found in the active profile.");
@@ -69,6 +83,8 @@ export function PageApplicationReview() {
       navigate({ pathname: window.location.pathname, search: params.toString() });
     } catch (error) {
       selection.setMessage("Could not assign resume: " + String(error));
+    } finally {
+      setResumeBusy(false);
     }
   }
   return (
@@ -80,6 +96,7 @@ export function PageApplicationReview() {
       <ApplicationReview
         controller={{ ...selection, ...applications, ...draft, ...review }}
         onChooseResume={chooseApplicationResume}
+        resumeBusy={resumeBusy}
       />
     </PageStatus>
   );
