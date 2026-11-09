@@ -1,9 +1,17 @@
 import MarkdownIt from "markdown-it";
 import type { CandidateProfile } from "../types.js";
 const markdown = new MarkdownIt({ html: false, linkify: false, breaks: true });
+// Markdown markers retain the visual style selected in the resume editor.
+markdown.renderer.rules.list_item_open = (tokens, index, options, _env, renderer) => {
+  const marker = tokens[index].markup;
+  if (marker === "*" || marker === "+") {
+    tokens[index].attrSet("style", `list-style-type: ${marker === "*" ? "circle" : "square"}`);
+  }
+  return renderer.renderToken(tokens, index, options);
+};
 
 /** Render only safe Markdown; raw HTML stays visible text and unsafe links are rejected. */
-const sourceLists = (text: string) => text.replace(/^([ \t]*)[•●▪◦‣⁃]\s*/gm, "$1- ");
+export const sourceLists = (text: string) => text.replace(/^([ \t]*)([•●▪◦‣⁃])\s*/gm, (_match, indent: string, marker: string) => indent + (marker === "◦" ? "*" : marker === "▪" ? "+" : "-") + " ");
 export const markdownToHtml = (text: string) => markdown.render(sourceLists(text));
 export function markdownToPlainText(text: string): string {
   return markdown
@@ -58,123 +66,6 @@ export function resumeToPlainText(profile: CandidateProfile): CandidateProfile {
       : {}),
   };
 }
-
-export type RichTextLeaf = {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  code?: boolean;
-  href?: string;
-};
-export type RichTextBlock = {
-  type: "paragraph" | "bullet" | "numbered";
-  prefix?: string;
-  children: RichTextLeaf[];
-};
-export type RichTextDocument = RichTextBlock[];
-/** A deliberately small resume editor vocabulary, serialized into the existing Markdown string. */
-export function markdownToEditor(
-  text: string,
-  bullets = false,
-): RichTextDocument {
-  return sourceLists(text).split("\n").map((line) => {
-    const prefix = line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
-    const numbered = /^\s*\d+[.)] /.test(prefix);
-    const bullet = /^\s*[-*+] /.test(prefix);
-    const children: RichTextLeaf[] = [];
-    let bold = false,
-      italic = false,
-      href: string | undefined;
-    for (const token of markdown.parseInline(line.slice(prefix.length), {})[0]
-      ?.children || []) {
-      if (token.type === "strong_open") bold = true;
-      else if (token.type === "strong_close") bold = false;
-      else if (token.type === "em_open") italic = true;
-      else if (token.type === "em_close") italic = false;
-      else if (token.type === "link_open")
-        href = token.attrGet("href")
-          ? String(token.attrGet("href"))
-          : undefined;
-      else if (token.type === "link_close") href = undefined;
-      else if (token.type === "text" || token.type === "code_inline")
-        children.push({
-          text: token.content,
-          ...(bold ? { bold: true } : {}),
-          ...(italic ? { italic: true } : {}),
-          ...(href ? { href } : {}),
-          ...(token.type === "code_inline" ? { code: true } : {}),
-        });
-      else if (token.type === "image") children.push({ text: token.content });
-    }
-    return {
-      type: numbered ? "numbered" : bullet || bullets ? "bullet" : "paragraph",
-      prefix: prefix || (bullets ? "- " : ""),
-      children: children.length ? children : [{ text: "" }],
-    };
-  });
-}
-/** Keep each list marker and its indentation in the Markdown representation. */
-export function listDepth(block: RichTextBlock): number {
-  return (block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0);
-}
-
-export function setListStyle(
-  block: RichTextBlock,
-  type: RichTextBlock["type"],
-): Pick<RichTextBlock, "type" | "prefix"> {
-  const indent = " ".repeat(listDepth(block));
-  if (type === "paragraph") return { type, prefix: "" };
-  const existing = block.prefix?.trim() ?? "";
-  const marker = type === "numbered"
-    ? (/^\d+[.)]$/.test(existing) ? existing : "1.")
-    : (/^[-*+]$/.test(existing) ? existing : "-");
-  return { type, prefix: indent + marker + " " };
-}
-
-/** Four spaces per level keeps mixed and numbered sublists portable. */
-export function shiftListIndent(
-  block: RichTextBlock,
-  direction: 1 | -1,
-): Pick<RichTextBlock, "type" | "prefix"> {
-  if (block.type === "paragraph") return { type: block.type, prefix: block.prefix ?? "" };
-  const depth = Math.max(0, listDepth(block) + direction * 4);
-  const marker = (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
-  return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
-}
-
-export function editorToMarkdown(document: RichTextDocument): string {
-  return document
-    .map((block) => {
-      const contents = block.children
-        .map((leaf) => {
-          let text = leaf.text.replace(/([\\`*_[\]<>])/g, "\\$1");
-          if (leaf.code) text = "`" + leaf.text.replace(/`/g, "\\`") + "`";
-          if (leaf.bold && text) text = "**" + text + "**";
-          if (leaf.italic && text) text = "*" + text + "*";
-          if (leaf.href)
-            text =
-              "[" +
-              text +
-              "](" +
-              leaf.href.replace(/[()\s]/g, encodeURIComponent) +
-              ")";
-          return text;
-        })
-        .join("");
-      return (
-        (block.type === "bullet" || block.type === "numbered"
-          ? /^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix || "")
-            ? block.prefix
-            : block.type === "numbered" ? "1. " : "- "
-          : block.prefix && !/^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix)
-            ? block.prefix
-            : "") + contents
-      );
-    })
-    .join("\n");
-}
-
-
 
 /** Compose a portable Markdown document from the same structured resume fields. */
 export function resumeToMarkdown(profile: CandidateProfile): string {

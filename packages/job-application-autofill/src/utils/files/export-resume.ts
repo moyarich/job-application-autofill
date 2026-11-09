@@ -2,8 +2,8 @@ import type { CandidateProfile } from "../../index";
 import {
   resumeToMarkdown,
   markdownToPlainText,
-  markdownToEditor,
 } from "@moyarich/resume/validate";
+import { markdownToEditor } from "@moyarich/resume/editor";
 import { requestApi } from "../api/client";
 import { downloadJson, downloadText } from "./resume-files";
 export type ResumeExportFormat =

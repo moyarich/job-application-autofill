@@ -83,7 +83,7 @@ export function Opportunities({
         </form>
       </section>
       <section className="panel" id="applications-list">
-        <div className="panel-title horizontal">
+        <div className="panel-title applications-heading">
           <div>
             <h2>Your job applications</h2>
           </div>

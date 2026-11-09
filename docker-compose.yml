@@ -1,4 +1,4 @@
-name: moyaapply
+name: job-application-autofill
 
 services:
   api:
@@ -26,7 +26,7 @@ services:
       RESUME_SITE_HOST: "${RESUME_SITE_HOST:-workday.wd5.myworkdayjobs.com}"
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
       CONTAINER_MODE: "true"
-      MOYA_DB_PATH: /app/data/moyaapply.sqlite
+      MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
     expose:
       - "4177"
     ports:
