@@ -138,7 +138,9 @@ export function shiftListIndent(
 ): Pick<RichTextBlock, "type" | "prefix"> {
   if (block.type === "paragraph") return { type: block.type, prefix: block.prefix ?? "" };
   const depth = Math.max(0, listDepth(block) + direction * 4);
-  const marker = (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
+  const marker = direction === 1 && block.type === "numbered"
+    ? "1."
+    : (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
   return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
 }
 
