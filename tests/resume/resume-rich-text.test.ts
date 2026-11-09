@@ -122,6 +122,6 @@ it("updates numbering after list indentation changes", () => {
     index === 1 ? { ...block, ...shiftListIndent(block, 1) } : block,
   );
   expect(editorToMarkdown(renumberListBlocks(nested))).toBe(
-    "1. First\n    2. Second\n2. Third",
+    "1. First\n    1. Second\n2. Third",
   );
 });
