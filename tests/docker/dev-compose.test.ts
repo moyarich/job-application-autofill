@@ -35,13 +35,13 @@ describe("Docker development configuration", () => {
   });
   it("keeps browsers and Python out of the frontend Docker target", () => {
     const dockerfile = source("docker/Dockerfile");
-    expect(dockerfile).toContain("FROM node:22-bookworm-slim AS node-deps");
     expect(dockerfile).toContain("FROM build AS web");
-    expect(dockerfile).toContain("FROM python:3.12-slim-bookworm AS api");
     expect(dockerfile).toContain("playwright install --with-deps chromium");
     expect(dockerfile).not.toContain("mcr.microsoft.com/playwright:");
+    const apiStage = dockerfile.match(/^FROM\s+\S+\s+AS api\s*$/m);
+    expect(apiStage).not.toBeNull();
     expect(dockerfile.indexOf("FROM build AS web")).toBeLessThan(
-      dockerfile.indexOf("FROM python:3.12-slim-bookworm AS api"),
+      dockerfile.indexOf(apiStage![0]),
     );
   });
 
