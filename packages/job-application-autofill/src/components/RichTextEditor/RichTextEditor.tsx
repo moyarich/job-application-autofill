@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { isKeyHotkey } from "is-hotkey";
 import {
   createEditor,
   Editor,
@@ -328,7 +329,7 @@ export function RichTextEditor({
               </span>
             )}
             onKeyDown={(event) => {
-              if (event.key === " " && !event.ctrlKey && !event.metaKey && !event.altKey && editor.selection && Editor.isEnd(editor, editor.selection.anchor, editor.selection.anchor.path.slice(0, 1))) {
+              if (isKeyHotkey("space", event.nativeEvent) && editor.selection && Editor.isEnd(editor, editor.selection.anchor, editor.selection.anchor.path.slice(0, 1))) {
                 const blockPath = editor.selection.anchor.path.slice(0, 1);
                 const block = editor.children[blockPath[0]] as RichTextBlock | undefined;
                 if (block?.type === "paragraph") {
@@ -347,7 +348,7 @@ export function RichTextEditor({
                   }
                 }
               }
-              if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+              if (isKeyHotkey("enter", event.nativeEvent)) {
                 const current = Array.from(Editor.nodes(editor, {
                   match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
                   mode: "lowest",
@@ -376,7 +377,7 @@ export function RichTextEditor({
                   return;
                 }
               }
-              if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+              if (isKeyHotkey(["tab", "shift+tab"], event.nativeEvent)) {
                 const blocks = Array.from(Editor.nodes(editor, {
                   match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
                   mode: "lowest",
@@ -389,13 +390,11 @@ export function RichTextEditor({
                   return;
                 }
               }
-              if (!(event.ctrlKey || event.metaKey)) return;
-              const mark =
-                event.key.toLowerCase() === "b"
-                  ? "bold"
-                  : event.key.toLowerCase() === "i"
-                    ? "italic"
-                    : null;
+              const mark = isKeyHotkey("mod+b", event.nativeEvent)
+                ? "bold"
+                : isKeyHotkey("mod+i", event.nativeEvent)
+                  ? "italic"
+                  : null;
               if (mark) {
                 event.preventDefault();
                 if (Editor.marks(editor)?.[mark])
