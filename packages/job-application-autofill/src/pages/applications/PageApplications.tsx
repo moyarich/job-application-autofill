@@ -1,10 +1,5 @@
-import {
-  ArrowRight,
-  CheckCircle2,
-  Clock3,
-  ListChecks,
-  MessageCircle,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { Opportunities } from "../../components/Opportunities/Opportunities";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -14,6 +9,7 @@ import { useJobTracker } from "../../hooks/useJobTracker";
 import { openApplication } from "../../utils/application/openApplication";
 
 export function PageApplications() {
+  const [showAddForm, setShowAddForm] = useState(false);
   const selection = useProfileSelection();
   const applications = useJobApplications({
     profileId: selection.activeProfileId,
@@ -52,55 +48,13 @@ export function PageApplications() {
             <button
               type="button"
               className="primary"
-              onClick={() =>
-                document.getElementById("add-application")?.scrollIntoView({
-                  behavior: "smooth",
-                })
-              }
+              onClick={() => setShowAddForm((visible) => !visible)}
             >
-              Add application <ArrowRight size={16} />
+              <Plus size={16} /> Add application
             </button>
           }
         />
-        <section className="stats" aria-label="Application overview">
-          <div className="stat">
-            <span>
-              <ListChecks size={15} aria-hidden="true" /> Total applications
-            </span>
-            <strong>{jobs.length}</strong>
-          </div>
-          <div className="stat">
-            <span>
-              <Clock3 size={15} aria-hidden="true" /> In progress
-            </span>
-            <strong>
-              {
-                jobs.filter(
-                  (job) =>
-                    job.status === "in_progress" ||
-                    job.status === "ready_for_review",
-                ).length
-              }
-            </strong>
-          </div>
-          <div className="stat">
-            <span>
-              <CheckCircle2 size={15} aria-hidden="true" /> Submitted
-            </span>
-            <strong>
-              {jobs.filter((job) => job.status === "submitted").length}
-            </strong>
-          </div>
-          <div className="stat">
-            <span>
-              <MessageCircle size={15} aria-hidden="true" /> Interviews
-            </span>
-            <strong>
-              {jobs.filter((job) => job.status === "interview").length}
-            </strong>
-          </div>
-        </section>
-        <Opportunities controller={controller} />
+        <Opportunities controller={controller} showAddForm={showAddForm} onCloseAddForm={() => setShowAddForm(false)} />
       </>
     </PageStatus>
   );
