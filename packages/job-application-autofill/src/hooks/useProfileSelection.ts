@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { tabForPath, tabRoutes, type WorkspaceTab } from "../routes";
+import { routes, tabForPath, tabRoutes, type WorkspaceTab } from "../routes";
 import {
   ACTIVE_PROFILE_STORAGE_KEY, DEFAULT_PROFILE_ID,
   readProfiles, readResumes, type LocalProfile, type ResumeVersion,
@@ -33,7 +33,7 @@ export function useProfileSelection() {
       const selectedId = available.profiles.some((item) => item.id === activeProfileId)
         ? activeProfileId : available.defaultProfileId;
       const resumes = await readResumes(selectedId);
-      const wanted = selectedId === activeProfileId && requestedResumeId &&
+      const wanted = location.pathname === routes.resumeImport ? null : selectedId === activeProfileId && requestedResumeId &&
         resumes.some((item) => item.id === requestedResumeId)
         ? requestedResumeId : resumes[0]?.id;
       if (cancelled) return;
@@ -56,7 +56,7 @@ export function useProfileSelection() {
       if (!cancelled) setMessage("Could not load profiles and resumes: " + String(error));
     });
     return () => { cancelled = true; };
-  }, [activeProfileId, requestedResumeId]);
+  }, [activeProfileId, requestedResumeId, location.pathname]);
 
   return {
     applicationId, activeProfileId, activeResumeId, profiles, setProfiles,

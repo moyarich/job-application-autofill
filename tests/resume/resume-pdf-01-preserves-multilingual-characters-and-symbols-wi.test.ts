@@ -14,8 +14,8 @@ describe("Unicode resume PDF export", () => {
     multilingual.experience[0].description = "• Built distributed systems\n✓ Déployé sur AWS";
     const html = renderResumeHtml(multilingual);
     expect(html).toContain("李 小龍");
-    expect(html).toContain(multilingual.summary);
-    expect(html).toContain("<li>Built distributed systems</li>");
+    expect(html).toContain(multilingual.summary.replace(/^● /, ""));
+    expect(html).toContain("<li>Built distributed systems<br>");
     expect(html).toContain("✓ Déployé sur AWS");
     expect(html).toContain('charset="UTF-8"');
     expect(html).not.toContain("built-in Latin font");

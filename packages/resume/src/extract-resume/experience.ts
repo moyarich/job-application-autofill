@@ -62,7 +62,7 @@ function header(s: string | undefined) {
     !!s &&
     s.length < 160 &&
     !BULLET.test(s) &&
-    !/[.!?]$/.test(s) &&
+    (!/[.!?]$/.test(s) || /\b(?:Inc|LLC|Ltd|Corp|Co)\.$/i.test(s)) &&
     !/@|https?:/i.test(s) &&
     !END.test(s.replace(/[:：]$/, ""))
   );
@@ -108,7 +108,7 @@ function identity(lines: string[], fallbackCompany = "") {
 }
 export function extractEmploymentHistory(text: unknown) {
   if (typeof text !== "string") return [];
-  const all = text.split(/\r?\n/).map((x) => x.trim());
+  const all = text.replaceAll("\u0002", "-").replaceAll("\u00ad", "-").split(/\r?\n/).map((x) => x.trim());
   const start = all.findIndex((x) => BEGIN.test(x.replace(/[:：]$/, "")));
   if (start < 0) return [];
   const lines: string[] = [];
@@ -208,13 +208,32 @@ export function extractEmploymentHistory(text: unknown) {
 
 // PDF line breaks are visual wrapping; only source bullet markers start new items.
 function joinDescription(lines: string[]) {
-  if (!lines.some((line) => BULLET.test(line)))
-    return lines.filter(Boolean).join("\n");
+  if (!lines.some((line) => BULLET.test(line))) {
+    const paragraphs: string[] = [];
+    let paragraph = "";
+    for (const line of lines) {
+      const text = line.trim();
+      if (!text) {
+        if (paragraph) paragraphs.push(paragraph);
+        paragraph = "";
+        continue;
+      }
+      paragraph += (paragraph ? " " : "") + text;
+      // PDF text wraps at the page edge. End a responsibility at sentence
+      // punctuation, rather than turning each physical line into a Slate bullet.
+      if (/[.!?][”"')\]]?$/.test(text)) {
+        paragraphs.push(paragraph);
+        paragraph = "";
+      }
+    }
+    if (paragraph) paragraphs.push(paragraph);
+    return paragraphs.join("\n");
+  }
   const items: string[] = [];
   for (const line of lines) {
     if (!line.trim()) continue;
     if (BULLET.test(line) || !items.length)
-      items.push(line.replace(BULLET, "").trim());
+      items.push((BULLET.test(line) ? "- " : "") + line.replace(BULLET, "").trim());
     else items[items.length - 1] += " " + line.trim();
   }
   return items.join("\n");

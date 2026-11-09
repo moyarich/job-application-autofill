@@ -6,8 +6,10 @@ import {
 } from "../../utils/files/export-resume";
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import "./CandidateProfile.css";
-import { ResumeSections } from "./ResumeSections";
+import { ResumeSections, SkillCategories } from "./ResumeSections";
 import {
+  ChevronDown,
+  Pencil,
   FileText,
   FileUp,
   Plus,
@@ -16,7 +18,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { fields } from "../../utils/profile/fields";
-
 
 /** Keep incomplete comma-separated text while persisting only complete skill values. */
 function SkillsInput({
@@ -46,7 +47,10 @@ function SkillsInput({
         value={draft}
         onChange={(event) => {
           const text = event.target.value;
-          const next = text.split(",").map((skill) => skill.trim()).filter(Boolean);
+          const next = text
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter(Boolean);
           setDraft(text);
           lastEmitted.current = JSON.stringify(next);
           onChange(next);
@@ -64,8 +68,6 @@ export function CandidateProfile({
   controller: ResumeEditorData;
 }) {
   const {
-    importRef,
-    importProfile,
     profile,
     exportResumePdf,
     setProfile,
@@ -81,6 +83,31 @@ export function CandidateProfile({
   const currentResume = controller.resumeVersions.find(
     (item) => item.id === controller.activeResumeId,
   );
+  const [renaming, setRenaming] = useState(false);
+  const [resumeName, setResumeName] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameError, setRenameError] = useState("");
+  async function saveName(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!currentResume || renameBusy) return;
+    const title = resumeName.trim();
+    if (!title || title.length > 80) {
+      setRenameError("Use a name between 1 and 80 characters.");
+      return;
+    }
+    setRenameBusy(true);
+    setRenameError("");
+    try {
+      await controller.renameResume(currentResume.id, title);
+      setRenaming(false);
+    } catch (error) {
+      setRenameError(
+        error instanceof Error ? error.message : "Could not rename resume.",
+      );
+    } finally {
+      setRenameBusy(false);
+    }
+  }
   const sections = [
     [
       "contact",
@@ -90,7 +117,6 @@ export function CandidateProfile({
     ["summary", "Summary", profile.summary.trim() ? 1 : 0],
     ["skills", "Skills", profile.skills.length],
     ["experience", "Experience", profile.experience.length],
-    ["skill-categories", "Skill categories", profile.skillGroups?.length || 0],
     ["education", "Education", profile.education.length],
     ["certifications", "Certifications", profile.certifications.length],
     ["projects", "Projects", profile.projects.length],
@@ -119,9 +145,11 @@ export function CandidateProfile({
           <select
             id="editor-resume-version"
             value={controller.activeResumeId || ""}
-            onChange={(event) =>
-              void controller.switchResume(event.target.value)
-            }
+            disabled={renameBusy}
+            onChange={(event) => {
+              setRenaming(false);
+              void controller.switchResume(event.target.value);
+            }}
           >
             {controller.resumeVersions.map((item) => (
               <option key={item.id} value={item.id}>
@@ -132,22 +160,27 @@ export function CandidateProfile({
           <span className="resume-autosave">Changes save automatically</span>
         </div>
         <div className="actions resume-export-actions">
-          <button type="button" className="secondary" onClick={() => controller.setTab("parser")}>
-            <FileUp size={15} /> Import PDF or Word
+          <button
+            className="secondary"
+            type="button"
+            disabled={
+              !currentResume || Boolean(controller.applicationId) || renameBusy
+            }
+            aria-expanded={renaming}
+            onClick={() => {
+              setResumeName(currentResume?.name ?? "");
+              setRenameError("");
+              setRenaming(true);
+            }}
+          >
+            <Pencil size={15} /> Rename
           </button>
-          <input
-            ref={importRef}
-            hidden
-            type="file"
-            accept=".json,application/json"
-            onChange={importProfile}
-          />
           <button
             type="button"
             className="secondary"
-            onClick={() => importRef.current?.click()}
+            onClick={() => controller.setTab("parser")}
           >
-            <FileUp size={15} /> Import JSON
+            <FileUp size={15} /> Import
           </button>
           <select
             className="resume-export-select"
@@ -175,6 +208,36 @@ export function CandidateProfile({
           </button>
         </div>
       </header>
+      {renaming && currentResume && (
+        <form
+          className="resume-rename-form"
+          onSubmit={(event) => void saveName(event)}
+        >
+          <label htmlFor="editor-resume-name">
+            Resume name
+            <input
+              id="editor-resume-name"
+              required
+              maxLength={80}
+              value={resumeName}
+              disabled={renameBusy}
+              onChange={(event) => setResumeName(event.target.value)}
+            />
+          </label>
+          <button className="primary" type="submit" disabled={renameBusy}>
+            {renameBusy ? "Saving…" : "Save name"}
+          </button>
+          <button
+            className="secondary"
+            type="button"
+            disabled={renameBusy}
+            onClick={() => setRenaming(false)}
+          >
+            Cancel
+          </button>
+          {renameError && <p role="alert">{renameError}</p>}
+        </form>
+      )}
       <div className="resume-editor-layout">
         <nav className="resume-section-nav" aria-label="Resume sections">
           <div className="resume-nav-heading">
@@ -276,23 +339,41 @@ export function CandidateProfile({
               />
             </div>
           </section>
-          <section className="panel resume-section-card" id="resume-skills">
-            <div className="panel-title">
-              <span className="resume-eyebrow">03 / EXPERTISE</span>
-              <h2>Skills</h2>
-              <p>
-                Highlight your strengths. Editing this list replaces the skill
-                categories below.
-              </p>
-            </div>
-            <SkillsInput
-              key={controller.activeResumeId}
-              skills={profile.skills}
-              onChange={(skills) =>
-                setProfile((x) => ({ ...x, skillGroups: [], skills }))
-              }
-            />
-          </section>
+          {profile.skillGroups?.length ? (
+            <SkillCategories controller={controller} />
+          ) : (
+            <section className="panel resume-section-card" id="resume-skills">
+              <div className="panel-title">
+                <span className="resume-eyebrow">03 / EXPERTISE</span>
+                <h2>Skills</h2>
+                <p>
+                  Highlight your strengths in the order they appear on your PDF.
+                </p>
+              </div>
+              <SkillsInput
+                key={controller.activeResumeId}
+                skills={profile.skills}
+                onChange={(skills) => setProfile((x) => ({ ...x, skills }))}
+              />
+              <button
+                type="button"
+                className="secondary"
+                onClick={() =>
+                  setProfile((current) => ({
+                    ...current,
+                    skillGroups: [
+                      {
+                        heading: "General",
+                        content: current.skills.join(", "),
+                      },
+                    ],
+                  }))
+                }
+              >
+                Organize into categories
+              </button>
+            </section>
+          )}
           <section
             className="panel resume-section-card employment-editor"
             id="resume-experience"
@@ -329,8 +410,12 @@ export function CandidateProfile({
               </button>
             </div>
             {profile.experience.map((job, index) => (
-              <div className="employment-entry" key={index}>
-                <div className="resume-entry-heading">
+              <details
+                className="employment-entry resume-position"
+                key={controller.activeResumeId + "." + index}
+                open={index === 0}
+              >
+                <summary className="resume-entry-heading">
                   <span className="resume-entry-index">
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -341,7 +426,12 @@ export function CandidateProfile({
                       {job.isCurrent ? " · Current role" : ""}
                     </p>
                   </div>
-                </div>
+                  <ChevronDown
+                    size={17}
+                    className="resume-position-chevron"
+                    aria-hidden="true"
+                  />
+                </summary>
                 <div className="profile-grid">
                   {(
                     ["company", "jobTitle", "location", "startDate"] as const
@@ -414,7 +504,6 @@ export function CandidateProfile({
                   <RichTextEditor
                     key={controller.activeResumeId + ".experience." + index}
                     label="Highlights and responsibilities"
-                    bullets
                     value={job.description}
                     onChange={(e) =>
                       setProfile((x) => ({
@@ -438,7 +527,7 @@ export function CandidateProfile({
                 >
                   <Trash2 size={14} aria-hidden="true" /> Remove position
                 </button>
-              </div>
+              </details>
             ))}
           </section>
           <ResumeSections controller={controller} />

@@ -1,4 +1,6 @@
 import { FileUp } from "lucide-react";
+import { navigateTo } from "../../utils/resumes/navigateTo";
+import { routes } from "../../routes";
 import { ResumeManager } from "../../components/ResumeManager/ResumeManager";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
 import { useProfileSelection } from "../../hooks/useProfileSelection";
@@ -28,7 +30,7 @@ export function PageResumes() {
       <>
         <WorkspaceHeader
           title="Resumes"
-          actions={<button className="primary" type="button" onClick={() => selection.setTab("parser")}>
+          actions={<button className="primary" type="button" onClick={() => navigateTo(selection.activeProfileId, undefined, routes.resumeImport)}>
             <FileUp size={16} /> Import resume
           </button>}
         />

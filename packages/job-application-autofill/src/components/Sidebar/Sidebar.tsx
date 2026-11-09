@@ -80,7 +80,7 @@ export function Sidebar() {
               {group.pages.map(({ path, label, icon: Icon }) => (
                 <NavLink
                   key={path}
-                  to={{ pathname: path, search: pageSearch }}
+                  to={{ pathname: path, search: path === routes.resumeImport ? (pageParams.get("profile") ? `?profile=${encodeURIComponent(pageParams.get("profile")!)}` : "") : pageSearch }}
                   end={path === routes.resumes && location.pathname !== routes.resumeEditor && location.pathname !== routes.resumeView}
                   className={({ isActive }) =>
                     isActive ? "nav active" : "nav"

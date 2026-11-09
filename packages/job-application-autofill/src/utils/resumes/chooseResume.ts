@@ -2,7 +2,7 @@ import type { ResumeImportActionsContext } from "./import-context";
 import type React from "react";
 
 export function createChooseResume(context: ResumeImportActionsContext) {
-  const { setMessage, setProfile, setResume } = context;
+  const { setMessage, setResume } = context;
   function chooseResume(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     if (
@@ -13,12 +13,8 @@ export function createChooseResume(context: ResumeImportActionsContext) {
       return;
     }
     setResume(file);
-    setProfile((value) => ({
-      ...value,
-      source: { fileName: file?.name ?? "" },
-    }));
     setMessage(
-      file ? "Resume selected. Click Import resume to extract details." : "",
+      file ? "Resume selected. Click Extract details to extract details." : "",
     );
   }
   return chooseResume;

@@ -17,8 +17,8 @@ describe("structured PDF reading order", () => {
     expect(profile.summary).toBe("Builds reliable cloud software.");
     expect(profile.skills).toEqual(["Python", "HTML", "CSS", "React", "REST APIs", "WordPress"]);
     expect(profile.experience).toMatchObject([
-      {company:"Independent Software Consultant", jobTitle:"Senior Full-Stack Developer", startDate:"2011-08", endDate:null, description:"Develop applications"},
-      {company:"Acme Web Services", jobTitle:"Solution Developer", startDate:"2022-10", endDate:"2025-07", description:"Built APIs"}
+      {company:"Independent Software Consultant", jobTitle:"Senior Full-Stack Developer", startDate:"2011-08", endDate:null, description:"- Develop applications"},
+      {company:"Acme Web Services", jobTitle:"Solution Developer", startDate:"2022-10", endDate:"2025-07", description:"- Built APIs"}
     ]);
     expect(profile.education[0]).toMatchObject({institution:"Example University", degree:"Bachelor of Science", fieldOfStudy:"Computer Information Systems", location:"Chicago, IL"});
     expect(profile.certifications).toHaveLength(1);

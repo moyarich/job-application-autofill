@@ -32,7 +32,7 @@ Design Portfolio:
 https://example.com/design`);
   expect(validateResume(profile)).toEqual(profile);
   expect(profile.experience[0].description).toBe(
-    "Build reliable applications.\nMentor engineers.",
+    "- Build reliable applications.\n- Mentor engineers.",
   );
   expect(profile.experience[1].location).toBe("Customer Engineering");
   expect(profile.skillGroups).toEqual([
