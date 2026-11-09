@@ -21,7 +21,7 @@ export function Pagination({
   return (
     <nav className="pagination" aria-label="Application pages">
       <span className="pagination-summary" aria-live="polite">
-        {total === 0 ? "0 applications" : `Showing ${start}–${end} of ${total} applications`}
+        {total === 0 ? "No applications to show" : `Showing ${start}–${end} of ${total} ${total === 1 ? "application" : "applications"}`}
       </span>
       <label className="pagination-page-size">
         Rows per page

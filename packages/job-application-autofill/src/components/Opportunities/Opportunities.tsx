@@ -84,7 +84,7 @@ export function Opportunities({
         </form>
       </section>
       <section className="panel" id="applications-list">
-        <div className="panel-title horizontal">
+        <div className="panel-title applications-heading">
           <div>
             <h2>Applications</h2>
             <p>Keep track of every stage, from saved to submitted.</p>
