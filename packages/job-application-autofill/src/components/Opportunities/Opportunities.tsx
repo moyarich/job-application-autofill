@@ -21,6 +21,8 @@ export function Opportunities({
     addJob,
     newJob,
     setNewJob,
+    metadataBusy,
+    metadataError,
     jobs,
     resumeVersions,
     search,
@@ -46,6 +48,18 @@ export function Opportunities({
         </div>
         <form className="add-form" onSubmit={addJob}>
           <label>
+            Job URL
+            <input
+              type="url"
+              required
+              value={newJob.url}
+              onChange={(e) =>
+                setNewJob((x) => ({ ...x, url: e.target.value }))
+              }
+              placeholder="https://company.example/jobs/..."
+            />
+          </label>
+          <label>
             Company
             <input
               required
@@ -53,7 +67,7 @@ export function Opportunities({
               onChange={(e) =>
                 setNewJob((x) => ({ ...x, company: e.target.value }))
               }
-              placeholder="Company name"
+              placeholder="Detected from job posting"
             />
           </label>
           <label>
@@ -64,24 +78,15 @@ export function Opportunities({
               onChange={(e) =>
                 setNewJob((x) => ({ ...x, role: e.target.value }))
               }
-              placeholder="Software Engineer"
-            />
-          </label>
-          <label>
-            Job URL
-            <input
-              type="url"
-              value={newJob.url}
-              onChange={(e) =>
-                setNewJob((x) => ({ ...x, url: e.target.value }))
-              }
-              placeholder="https://..."
+              placeholder="Detected from job posting"
             />
           </label>
           <button className="primary" type="submit">
             <FilePlus2 size={15} /> Add job
           </button>
         </form>
+        {metadataBusy && <p className="job-metadata-status" role="status">Reading job posting…</p>}
+        {!metadataBusy && metadataError && <p className="job-metadata-status" role="status">{metadataError}</p>}
       </section>
       <section className="panel" id="applications-list">
         <div className="panel-title applications-heading">
