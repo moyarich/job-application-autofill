@@ -27,6 +27,22 @@ describe("Docker development configuration", () => {
   it("keeps the base compose image-based for deployment-like runs", () => {
     const base = source("docker-compose.yml");
     expect(base).toContain("dockerfile: docker/Dockerfile");
+    expect(base).toContain("target: api");
+    expect(base).toContain("target: web");
+    expect(base).toContain("image: job-application-autofill-api:local");
+    expect(base).toContain("image: job-application-autofill-web:local");
     expect(base).not.toContain("- .:/app");
   });
+  it("keeps browsers and Python out of the frontend Docker target", () => {
+    const dockerfile = source("docker/Dockerfile");
+    expect(dockerfile).toContain("FROM node:22-bookworm-slim AS node-deps");
+    expect(dockerfile).toContain("FROM build AS web");
+    expect(dockerfile).toContain("FROM python:3.12-slim-bookworm AS api");
+    expect(dockerfile).toContain("playwright install --with-deps chromium");
+    expect(dockerfile).not.toContain("mcr.microsoft.com/playwright:");
+    expect(dockerfile.indexOf("FROM build AS web")).toBeLessThan(
+      dockerfile.indexOf("FROM python:3.12-slim-bookworm AS api"),
+    );
+  });
+
 });
