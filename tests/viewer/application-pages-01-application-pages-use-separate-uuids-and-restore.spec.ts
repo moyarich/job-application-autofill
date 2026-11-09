@@ -28,6 +28,7 @@ test("application pages use separate UUIDs and restore only their own session", 
   const personId = "00000000-0000-4000-8000-000000000001";
   const resumeId = "00000000-0000-4000-8000-000000000002";
   const contactId = "00000000-0000-4000-8000-000000000003";
+  jobs.forEach((job) => { job.resumeId = resumeId; });
   await context.route(
     (url) => url.pathname.startsWith("/api/"),
     async (route) => {
@@ -95,6 +96,7 @@ test("application pages use separate UUIDs and restore only their own session", 
     .getByRole("button", { name: "Apply", exact: true }).click();
   const first = await firstWait;
   await expect(first).toHaveURL(new RegExp(jobs[0].id));
+  await first.getByRole("button", { name: "Open employer application" }).click();
   await expect(first.getByText("Sign in for Example A").first()).toBeVisible();
   await expect(
     first.getByRole("heading", { name: "Add an opportunity" }),
@@ -104,6 +106,7 @@ test("application pages use separate UUIDs and restore only their own session", 
     .getByRole("button", { name: "Apply", exact: true }).click();
   const second = await secondWait;
   await expect(second).toHaveURL(new RegExp(jobs[1].id));
+  await second.getByRole("button", { name: "Open employer application" }).click();
   await expect(second.getByText("Sign in for Example B").first()).toBeVisible();
   await first.reload();
   await expect(first.getByText("Sign in for Example A").first()).toBeVisible();
