@@ -21,6 +21,7 @@ import {
   listDepth,
   setListStyle,
   shiftListIndent,
+  renumberListBlocks,
   type RichTextBlock,
   type RichTextLeaf,
   type RichTextDocument,
@@ -33,6 +34,19 @@ declare module "slate" {
     Element: RichTextBlock;
     Text: RichTextLeaf;
   }
+}
+
+/** Update only changed list markers without replacing the editor selection or history. */
+function renumberEditor(editor: Editor) {
+  const blocks = editor.children as RichTextDocument;
+  const numbered = renumberListBlocks(blocks);
+  Editor.withoutNormalizing(editor, () => {
+    numbered.forEach((block, index) => {
+      if (block.prefix !== blocks[index]?.prefix) {
+        Transforms.setNodes(editor, { prefix: block.prefix }, { at: [index] });
+      }
+    });
+  });
 }
 
 function Toolbar({ label }: { label: string }) {
@@ -56,12 +70,14 @@ function Toolbar({ label }: { label: string }) {
     const reset = selected.every(([block]) => block.type === type);
     for (const [block, path] of selectedBlocks())
       Transforms.setNodes(editor, setListStyle(block, reset ? "paragraph" : type), { at: path });
+    renumberEditor(editor);
   };
   const indent = (direction: 1 | -1) => {
     for (const [block, path] of selectedBlocks()) {
       if (block.type !== "paragraph")
         Transforms.setNodes(editor, shiftListIndent(block, direction), { at: path });
     }
+    renumberEditor(editor);
   };
   return (
     <div
@@ -181,6 +197,20 @@ export function RichTextEditor({
             )
           )
             return;
+          const structural = editor.operations.some((operation) =>
+            operation.type === "insert_node" ||
+            operation.type === "remove_node" ||
+            operation.type === "merge_node" ||
+            operation.type === "split_node" ||
+            operation.type === "set_node",
+          );
+          if (structural) {
+            const blocks = editor.children as RichTextDocument;
+            if (renumberListBlocks(blocks).some((block, index) => block.prefix !== blocks[index]?.prefix)) {
+              renumberEditor(editor);
+              return;
+            }
+          }
           const document = structuredClone(nodes) as RichTextDocument;
           onChange(editorToMarkdown(document));
         }}
@@ -225,7 +255,7 @@ export function RichTextEditor({
                   ? Math.floor(listDepth(element) / 4) % 3
                   : undefined}
                 data-marker={element.type === "numbered"
-                  ? (element.prefix?.trim().match(/^\\d+[.)]/)?.[0] ?? "1.")
+                  ? (element.prefix?.trim().match(/^\d+[.)]/)?.[0] ?? "1.")
                   : undefined}
                 style={element.type !== "paragraph"
                   ? { marginLeft: listDepth(element) * 4 }
@@ -248,6 +278,25 @@ export function RichTextEditor({
               </span>
             )}
             onKeyDown={(event) => {
+              if (event.key === " " && !event.ctrlKey && !event.metaKey && !event.altKey && editor.selection && Editor.isEnd(editor, editor.selection.anchor, editor.selection.anchor.path.slice(0, 1))) {
+                const blockPath = editor.selection.anchor.path.slice(0, 1);
+                const block = editor.children[blockPath[0]] as RichTextBlock | undefined;
+                if (block?.type === "paragraph") {
+                  const typed = Editor.string(editor, blockPath);
+                  const marker = typed.match(/^([-*+]|\\d+[.)])$/);
+                  if (marker) {
+                    event.preventDefault();
+                    Transforms.delete(editor, { at: Editor.range(editor, blockPath) });
+                    const type = /^\\d/.test(marker[1]) ? "numbered" : "bullet";
+                    Transforms.setNodes(editor, {
+                      type,
+                      prefix: marker[1] + " ",
+                    }, { at: blockPath });
+                    renumberEditor(editor);
+                    return;
+                  }
+                }
+              }
               if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
                 const current = Array.from(Editor.nodes(editor, {
                   match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
@@ -267,7 +316,7 @@ export function RichTextEditor({
                     })) as Array<[RichTextBlock, number[]]>;
                     const [newEntry] = next;
                     if (newEntry) {
-                      const previousNumber = Number(block.prefix?.trim().match(/^(\\d+)[.)]/)?.[1] ?? 0);
+                      const previousNumber = Number(block.prefix?.trim().match(/^(\d+)[.)]/)?.[1] ?? 0);
                       const prefix = block.type === "numbered"
                         ? " ".repeat(listDepth(block)) + (previousNumber + 1) + ". "
                         : block.prefix ?? "- ";
