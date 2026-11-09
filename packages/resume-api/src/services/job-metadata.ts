@@ -9,7 +9,7 @@ export type JobMetadata = { company: string; role: string };
 function publicAddress(address: string): boolean {
   if (isIP(address) === 6) return /^[23][0-9a-f]{3}:/i.test(address);
   if (isIP(address) !== 4) return false;
-  const [a, b, c] = address.split(".").map(Number);
+  const [a, b] = address.split(".").map(Number);
   if (a === 0 || a === 10 || a === 127 || a >= 224 ||
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 169 && b === 254) ||
@@ -122,7 +122,7 @@ export function parseJobMetadata(html: string): JobMetadata {
   }
   const pageTitle = meta(html, "og:title") || meta(html, "twitter:title") ||
     decode(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
-  const parts = pageTitle.split(/\s+(?:\||–|—| - )\s+/);
+  const parts = pageTitle.split(/\s+(?:\||–|—|-)\s+/);
   const role = (parts[0] ?? "").replace(/\s+(?:Jobs?|Careers?|Apply Now)$/i, "").trim();
   const site = meta(html, "og:site_name");
   const company = site && !/^(workday|linkedin|indeed|greenhouse|lever|jobs?|careers?)$/i.test(site)
