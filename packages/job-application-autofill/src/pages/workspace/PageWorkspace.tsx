@@ -29,15 +29,10 @@ export function PageWorkspace() {
       <>
         <WorkspaceHeader
           title="Profiles & resumes"
-          description="Manage profiles and the resumes associated with each profile."
         />
         <section className="panel workspace-management">
           <div className="panel-title">
             <h2>Manage profiles and resumes</h2>
-            <p>
-              Switch between profiles, create resume versions, and manage saved
-              records.
-            </p>
           </div>
           <LocalProfiles controller={controller} />
         </section>

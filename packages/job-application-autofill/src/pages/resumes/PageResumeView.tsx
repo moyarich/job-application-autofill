@@ -46,7 +46,6 @@ export function PageResumeView() {
       <>
         <WorkspaceHeader
           title="View resume"
-          description="Review your resume and export it in the format you need."
         />
         {selection.activeResumeId ? <ResumeView controller={controller} /> : <NoResume />}
       </>

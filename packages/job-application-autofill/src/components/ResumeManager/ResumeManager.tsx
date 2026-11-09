@@ -112,10 +112,6 @@ export function ResumeManager({
       <div className="panel-title horizontal">
         <div>
           <h2>Resumes</h2>
-          <p>
-            Each resume has independent experience and skills. Create a blank
-            draft or duplicate an existing version.
-          </p>
         </div>
         <button
           className="primary"

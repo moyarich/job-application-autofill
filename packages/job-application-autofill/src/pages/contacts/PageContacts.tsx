@@ -27,7 +27,6 @@ export function PageContacts() {
       <>
         <WorkspaceHeader
           title="Contacts"
-          description="Manage reusable contact details for the selected profile."
         />
         <ContactManager controller={controller} />
       </>

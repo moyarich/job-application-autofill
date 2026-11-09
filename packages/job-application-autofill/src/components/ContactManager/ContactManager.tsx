@@ -104,10 +104,6 @@ export function ContactManager({
       <div className="panel-title horizontal">
         <div>
           <h2>Saved contacts</h2>
-          <p>
-            Contact records belong to the current profile and can be reused
-            across resumes.
-          </p>
         </div>
         <button
           type="button"
