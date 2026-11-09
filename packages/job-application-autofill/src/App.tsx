@@ -1,5 +1,4 @@
 import "./App.css";
-import { ArrowUpRight } from "lucide-react";
 import { useLocation, useParams } from "react-router";
 import { tabForPath } from "./routes";
 import { Sidebar } from "./components/Sidebar/Sidebar";
@@ -41,10 +40,6 @@ export function App() {
         ) : (
           <PageResumeEditor />
         )}
-        <footer>
-          Review all application details before submitting.
-          <ArrowUpRight size={13} aria-hidden="true" />
-        </footer>
       </main>
     </div>
   );
