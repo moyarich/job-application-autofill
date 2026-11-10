@@ -4,12 +4,13 @@ import {
   viewerRequest,
   type MenuItem,
   type ViewerSession,
+  viewerHeaders,
 } from "./api";
 
 export function useEmployerMenu(
   session: string,
   profile: string,
-  connected: boolean,
+  _connected: boolean,
   onClosed: () => void,
 ) {
   const [active, setActive] = useState<ViewerSession | null>(null);
@@ -67,12 +68,50 @@ export function useEmployerMenu(
     };
   }, []);
   useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    let reconnect: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
     void refresh();
-    const timer = setInterval(() => {
-      if (connected && !document.hidden) void refresh();
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [refresh, connected]);
+    async function connect() {
+      try {
+        const response = await fetch(base + "/events", {
+          headers: viewerHeaders(profile),
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok || !response.body)
+          throw new Error("Application updates are unavailable.");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (!stopped) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true }).replace(/\r/g, "");
+          // Only server notifications trigger a refresh; no status polling.
+          let boundary: number;
+          while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+            const event = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            if (event.split("\n").some((line) => line === "event: update"))
+              void refresh();
+          }
+          if (buffer.length > 16384) buffer = "";
+        }
+      } catch {
+        // The stream can drop during a browser/server restart.
+      }
+      if (!stopped)
+        reconnect = setTimeout(() => { void connect(); }, 2000);
+    }
+    void connect();
+    return () => {
+      stopped = true;
+      controller.abort();
+      if (reconnect) clearTimeout(reconnect);
+    };
+  }, [base, profile, session, refresh]);
   async function run(
     action: "continue" | "pause" | "close" | "menu",
     itemId?: string,
