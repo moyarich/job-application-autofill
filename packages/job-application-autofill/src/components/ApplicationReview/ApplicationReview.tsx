@@ -14,6 +14,7 @@ import { routes } from "../../routes";
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
 import { ScreeningAnswerDock } from "../ScreeningAnswerDock/ScreeningAnswerDock";
+import type { PreviousAnswer } from "../ScreeningAnswerDock/suggestions";
 
 export function ApplicationReview({
   controller,
@@ -39,15 +40,21 @@ export function ApplicationReview({
   } = controller;
   const [savingAnswers, setSavingAnswers] = useState(false);
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
+  const [previousAnswers, setPreviousAnswers] = useState<PreviousAnswer[]>([]);
   const [answerMessage, setAnswerMessage] = useState("");
   useEffect(() => {
+    setSavedAnswers({});
+    setPreviousAnswers([]);
     if (!applicationId) return;
     let cancelled = false;
     fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
       headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
     }).then((response) => response.ok ? response.json() : null)
-      .then((data: { answers?: Record<string, string> } | null) => {
-        if (!cancelled && data?.answers) setSavedAnswers(data.answers);
+      .then((data: { answers?: Record<string, string>; examples?: PreviousAnswer[] } | null) => {
+        if (!cancelled) {
+          setSavedAnswers(data?.answers ?? {});
+          setPreviousAnswers(data?.examples ?? []);
+        }
       }).catch(() => {});
     return () => { cancelled = true; };
   }, [applicationId, activeProfileId]);
@@ -256,7 +263,7 @@ export function ApplicationReview({
                   <div className="application-questions">
                     <div className="panel-title">
                       <h3>Employer questions</h3>
-                      <p>Answer any custom questions directly in the employer application below. Save the completed answers with this application; they are never reused for other jobs.</p>
+                      <p>Answer any custom questions directly in the employer application below. Save completed answers to this application. Previous answers are available as optional, labeled examples only.</p>
                     </div>
                     <div className="actions">
                       <button type="button" className="secondary"
@@ -290,6 +297,7 @@ export function ApplicationReview({
                       resumeId={activeResumeId ?? undefined}
                       questions={session.questions ?? []}
                       savedAnswers={savedAnswers}
+                      previousAnswers={previousAnswers}
                     />
                   )}
                 {session.reviewUrl && (
