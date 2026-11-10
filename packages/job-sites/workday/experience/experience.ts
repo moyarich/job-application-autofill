@@ -156,9 +156,9 @@ export async function fillWorkdayExperience(
           .locator("xpath=ancestor::*[.//input][1]");
     let row: Locator | null = null;
     let rowIndex = -1;
-    const normalized = (value: string) => value.trim().replace(/\\s+/g, " ").toLocaleLowerCase("en-US");
-    const employer = normalized(job.company);
-    const title = normalized(job.jobTitle);
+    const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
+    const employer = normalize(job.company);
+    const title = normalize(job.jobTitle);
     const exact: number[] = [];
     const partial: number[] = [];
     const vacant: number[] = [];
@@ -167,10 +167,9 @@ export async function fillWorkdayExperience(
       const candidate = rows.nth(j);
       const companyValue = await read(candidate, "company");
       const titleValue = await read(candidate, "jobTitle");
-      // An uninspectable record must never be treated as an empty record.
       if (companyValue === null || titleValue === null) continue;
-      const company = normalized(companyValue);
-      const role = normalized(titleValue);
+      const company = normalize(companyValue);
+      const role = normalize(titleValue);
       if (company === employer && role === title) exact.push(j);
       else if (!company && !role) vacant.push(j);
       else if ((company === employer && !role) || (role === title && !company))
@@ -184,4 +183,38 @@ export async function fillWorkdayExperience(
     else if (partial.length === 1) rowIndex = partial[0];
     else if (vacant.length) rowIndex = vacant[0];
     if (rowIndex >= 0) row = rows.nth(rowIndex);
-
+    if (!row) {
+      const button = section
+        .getByRole("button", {
+          name: /^(add|add another|add experience|add work experience)$/i,
+        })
+        .last();
+      if (!(await button.isVisible().catch(() => false))) {
+        result.unresolved.push(key + ": no add control");
+        continue;
+      }
+      const count = await rows.count();
+      try {
+        await button.click({ timeout: 2000 });
+        await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
+      } catch {
+        result.unresolved.push(key + ": could not add row");
+        continue;
+      }
+      row = rows.nth(count);
+      rowIndex = count;
+      if (
+        (await read(row, "company")) !== "" ||
+        (await read(row, "jobTitle")) !== ""
+      ) {
+        result.unresolved.push(key + ": new row occupied");
+        continue;
+      }
+    }
+    assignedRows.add(rowIndex);
+    const errors = await fillRow(row, job);
+    if (errors.length) result.unresolved.push(key + ": " + errors.join(", "));
+    else result.filled.push(key);
+  }
+  return result;
+}
