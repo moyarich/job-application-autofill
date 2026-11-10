@@ -29,6 +29,7 @@ export function ScreeningAnswerDock({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [imported, setImported] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [completed, setCompleted] = useState<string[]>([]);
@@ -39,7 +40,7 @@ export function ScreeningAnswerDock({
   );
   const eligible = questions.filter((question) => !blocked.test(question.label) && reusableQuestion(question.label));
   async function apply(label: string, answer: string) {
-    if (!answer.trim()) return;
+    if (!answer.trim() || (imported[label] && answer.trim() === imported[label].trim())) return;
     setBusy(label);
     setMessage("");
     try {
@@ -94,6 +95,7 @@ export function ScreeningAnswerDock({
                         <button type="button" className="secondary"
                           onClick={() => {
                             setDrafts((old) => ({ ...old, [key]: example.answer }));
+                            setImported((old) => ({ ...old, [key]: example.answer }));
                             setMessage("Copied into the draft only. Edit it for this role before filling.");
                           }}>
                           Adapt this response
@@ -105,7 +107,10 @@ export function ScreeningAnswerDock({
                 <textarea rows={3} value={answer} aria-label={"Suggested answer for " + key}
                   placeholder="Write a response specific to this role"
                   onChange={(event) => setDrafts((old) => ({ ...old, [key]: event.target.value }))}/>
-                <button type="button" className="secondary" disabled={!answer.trim() || busy !== null}
+                {imported[key] && answer.trim() === imported[key].trim() && (
+                  <small>Edit this imported response for the current job before filling.</small>
+                )}
+                <button type="button" className="secondary" disabled={!answer.trim() || busy !== null || Boolean(imported[key] && answer.trim() === imported[key].trim())}
                   onClick={() => void apply(key, answer)}>
                   {busy === key ? "Filling…" : completed.includes(key) ? "Fill again" : "Use this answer"}
                 </button>
@@ -120,6 +125,7 @@ export function ScreeningAnswerDock({
             questions={eligible.map((question) => question.label)}
             onAdapt={(question, answer) => {
               setDrafts((previous) => ({ ...previous, [question]: answer }));
+              setImported((previous) => ({ ...previous, [question]: answer }));
               setMessage("Example copied into a draft. Edit the response for this job before filling.");
             }}
           />
