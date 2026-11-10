@@ -5,7 +5,7 @@ import {
   type MenuItem,
   type ViewerSession,
 } from "./api";
-import { useApplicationEvents } from "./useApplicationEvents";
+import { useAutomationEvents } from "./useAutomationEvents";
 
 export function useEmployerMenu(
   session: string,
@@ -67,7 +67,7 @@ export function useEmployerMenu(
       mounted.current = false;
     };
   }, []);
-  useApplicationEvents(session, profile, refresh);
+  useAutomationEvents(session, profile, refresh);
   async function run(
     action: "continue" | "pause" | "close" | "menu",
     itemId?: string,
