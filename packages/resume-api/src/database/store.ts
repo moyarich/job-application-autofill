@@ -1,3 +1,4 @@
+import { reusableAnswer } from "../../../job-sites/screening-policy.ts";
 import { openConnection } from "./connection.ts";
 import { initializeDatabase } from "./schema.ts";
 import { createProfilesStatements } from "./repositories/profiles.ts";
@@ -910,10 +911,8 @@ export function openStore(
       applicationId: string; question: string; answer: string;
       updatedAt: string; company: string; role: string;
     }[];
-    // A previous version of the app may have captured a prohibited question.
-    return rows.filter(({ question }) =>
-      !/(?:password|passcode|verification|otp|social security|ssn|birth|credit card|bank|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif|agree|agreement|consent|arbitration|signature|non.disclosure|acknowledge|privacy policy|terms and conditions)/i.test(question)
-    );
+    return rows.filter(({ question, answer }) => reusableAnswer(question, answer));
+
   }
 
   /** Current answers and library examples are projections of the same SQLite table. */
@@ -953,8 +952,7 @@ export function openStore(
           throw new Error("Invalid question or answer.");
         // Only ordinary application-specific screening responses, not identity,
         // account credentials, medical/disability or voluntary demographic data.
-        if (/(?:password|passcode|verification|otp|social security|ssn|birth|credit card|bank|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif)/i.test(question))
-          continue;
+        if (!reusableAnswer(question, answer)) continue;
         statement.run(owner, id, question, answer, now());
       }
       db.exec("COMMIT");
