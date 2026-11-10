@@ -13,6 +13,7 @@ import type { ApplicationReviewData } from "../feature-props";
 import { routes } from "../../routes";
 import "./ApplicationReview.css";
 import { EmployerAccountSetup } from "../EmployerAccountSetup/EmployerAccountSetup";
+import { ScreeningAnswerDock } from "../ScreeningAnswerDock/ScreeningAnswerDock";
 
 export function ApplicationReview({
   controller,
@@ -281,6 +282,17 @@ export function ApplicationReview({
                     )}
                   </div>
                 )}
+                {session.state === "ready_for_review" && session.ats === "workday" &&
+                  session.questions?.length > 0 && (
+                    <ScreeningAnswerDock
+                      key={session.id}
+                      sessionId={session.id}
+                      profileId={activeProfileId}
+                      resumeId={activeResumeId ?? undefined}
+                      questions={session.questions}
+                      savedAnswers={savedAnswers}
+                    />
+                  )}
                 {session.reviewUrl && (
                   <div className="browser-review employer-application">
                     <div className="browser-review-header">
