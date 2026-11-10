@@ -16,7 +16,9 @@ export async function readNodeJson(req: IncomingMessage): Promise<unknown> {
 }
 
 /** This is the sole node:http adapter. Swap this file for Express/Fastify. */
-export function createNodeServer(handler: (req: ApiRequest) => Promise<ApiResponse>) {
+export function createNodeServer(
+  handler: (req: ApiRequest) => Promise<ApiResponse>,
+) {
   return createServer(async (request, response) => {
     const req: ApiRequest = {
       method: request.method || "GET",
@@ -32,13 +34,23 @@ export function createNodeServer(handler: (req: ApiRequest) => Promise<ApiRespon
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
       });
-      const body = contentType === "application/json" ? JSON.stringify(result.body) : result.body;
+      const body =
+        contentType === "application/json"
+          ? JSON.stringify(result.body)
+          : result.body;
       if (typeof body !== "string" && !Buffer.isBuffer(body))
         throw new Error("Unsupported response body.");
       response.end(body);
     } catch (error) {
-      response.writeHead(400, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-      response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Request failed" }));
+      response.writeHead(400, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      response.end(
+        JSON.stringify({
+          error: error instanceof Error ? error.message : "Request failed",
+        }),
+      );
     }
   });
 }

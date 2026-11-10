@@ -1,7 +1,10 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
 import { workdayContactFields } from "../../packages/job-sites/workday/contact/selectors.ts";
-import { fillWorkdayContact, findMappedField } from "../../packages/job-sites/workday/contact/contact.ts";
+import {
+  fillWorkdayContact,
+  findMappedField,
+} from "../../packages/job-sites/workday/contact/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("Workday selector object supports alternate labels without changing the autofill code", async () => {
@@ -78,7 +81,10 @@ test("Workday contact selector lookup supports a verified CSS fallback and rejec
       <input id="password" type="password" data-field="password">
     `);
     const rules = {
-      first: { labels: [/^not present$/i], selectors: ['[data-field="verified-first-name"]'] },
+      first: {
+        labels: [/^not present$/i],
+        selectors: ['[data-field="verified-first-name"]'],
+      },
       password: { labels: [], selectors: ['[data-field="password"]'] },
     };
     expect(await findMappedField(page, rules, "first")).not.toBeNull();

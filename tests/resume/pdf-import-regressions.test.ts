@@ -22,17 +22,33 @@ Bachelor of Science | Computer Information Systems | Chicago, IL
 CERTIFICATIONS
 AWS Certified Solutions Architect – Associate
 Amazon Web Services`);
-  expect(profile.experience.map(job => job.company)).toEqual(["Example Association", "Example Dental Supply LLC.", "City of Example"]);
-  expect(profile.experience[0].description).toBe("Built application integrations.");
-  expect(profile.experience[1]).toMatchObject({ jobTitle: "Senior Full-Stack Developer", startDate: "2013-04", endDate: "2021-02", description: "Built customer-facing applications." });
-  expect(profile.education[0]).toMatchObject({ institution: "Example University", degree: "Bachelor of Science", fieldOfStudy: "Computer Information Systems", location: "Chicago, IL" });
+  expect(profile.experience.map((job) => job.company)).toEqual([
+    "Example Association",
+    "Example Dental Supply LLC.",
+    "City of Example",
+  ]);
+  expect(profile.experience[0].description).toBe(
+    "Built application integrations.",
+  );
+  expect(profile.experience[1]).toMatchObject({
+    jobTitle: "Senior Full-Stack Developer",
+    startDate: "2013-04",
+    endDate: "2021-02",
+    description: "Built customer-facing applications.",
+  });
+  expect(profile.education[0]).toMatchObject({
+    institution: "Example University",
+    degree: "Bachelor of Science",
+    fieldOfStudy: "Computer Information Systems",
+    location: "Chicago, IL",
+  });
   expect(profile.certifications).toHaveLength(1);
   expect(profile.certifications[0].issuer).toBe("Amazon Web Services");
 });
 
-
 test("joins PDF line wrapping into complete responsibilities for Slate", async () => {
-  const { markdownToEditor } = await import("../../packages/resume/src/resume-schema/editor-markdown.ts");
+  const { markdownToEditor } =
+    await import("../../packages/resume/src/resume-schema/editor-markdown.ts");
   const parsed = extractProfile(`Ada Lovelace
 WORK EXPERIENCE
 Example Inc.
@@ -44,9 +60,11 @@ Partnered with business teams to modernize internal
 workflows and improve productivity.
 EDUCATION`);
   const description = parsed.experience[0].description;
-  expect(description).toBe("Designed applications using Python, React, JavaScript, TypeScript, MySQL, HTML, and CSS.\nPartnered with business teams to modernize internal workflows and improve productivity.");
+  expect(description).toBe(
+    "Designed applications using Python, React, JavaScript, TypeScript, MySQL, HTML, and CSS.\nPartnered with business teams to modernize internal workflows and improve productivity.",
+  );
   const nodes = markdownToEditor(description);
   expect(nodes).toHaveLength(2);
-  expect(nodes.every(node => node.type === "paragraph")).toBe(true);
+  expect(nodes.every((node) => node.type === "paragraph")).toBe(true);
   expect(nodes[0].children[0].text).toContain("TypeScript, MySQL");
 });

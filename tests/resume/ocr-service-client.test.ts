@@ -8,11 +8,12 @@ afterEach(() => {
 
 it("routes PDF extraction to the private OCR service without starting local Python", async () => {
   vi.stubEnv("OCR_SERVICE_URL", "http://ocr:8765");
-  const fetchMock = vi.fn(async () =>
-    new Response(
-      JSON.stringify({ text: "Ada Lovelace", ocrPages: [], pageCount: 1 }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    ),
+  const fetchMock = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({ text: "Ada Lovelace", ocrPages: [], pageCount: 1 }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
   );
   vi.stubGlobal("fetch", fetchMock);
   const input = Buffer.from("%PDF-1.4 test");

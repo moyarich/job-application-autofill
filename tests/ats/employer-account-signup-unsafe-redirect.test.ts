@@ -8,8 +8,18 @@ test("account automation never fills fields on a different host", async () => {
     url: () => "https://unrelated.example.com/signup",
     getByLabel: () => ({ first: () => ({ fill }) }),
   } as unknown as Page;
-  const result = await prepareEmployerSignUp(page, "https://acme.wd5.myworkdayjobs.com/Careers/job/42", "Acme",
-    { contact: { firstName: "Ada", lastName: "Lovelace", email: "ada@example.com" } } as never);
+  const result = await prepareEmployerSignUp(
+    page,
+    "https://acme.wd5.myworkdayjobs.com/Careers/job/42",
+    "Acme",
+    {
+      contact: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        email: "ada@example.com",
+      },
+    } as never,
+  );
   expect(result.state).toBe("unavailable");
   expect(fill).not.toHaveBeenCalled();
 });

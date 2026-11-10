@@ -11,8 +11,18 @@ import { createImportProfile } from "../utils/resumes/importProfile";
 import { createChooseResume } from "../utils/resumes/chooseResume";
 import { createParseResume } from "../utils/resumes/parseResume";
 export function useResumeImport(workspace: ResumeImportData) {
-  const { profile, contactId, activeProfileId, activeResumeId, contactKeys,
-    flushPending, setTab, setMessage, setProfile, setContactId } = workspace;
+  const {
+    profile,
+    contactId,
+    activeProfileId,
+    activeResumeId,
+    contactKeys,
+    flushPending,
+    setTab,
+    setMessage,
+    setProfile,
+    setContactId,
+  } = workspace;
   const { setContacts, setDefaultContactId } = workspace;
   const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(
     null,
@@ -33,22 +43,57 @@ export function useResumeImport(workspace: ResumeImportData) {
       )
     : [];
   const importContext = {
-    profile, contactId, activeProfileId, activeResumeId, contactKeys,
-    pendingImport, resume, flushPending, setTab, setMessage,
-    setImportChoices, setPendingImport, setContactId, setProfile,
-    setResume, setContacts, setDefaultContactId, setParseBusy, setParsePreview,
+    profile,
+    contactId,
+    activeProfileId,
+    activeResumeId,
+    contactKeys,
+    pendingImport,
+    resume,
+    flushPending,
+    setTab,
+    setMessage,
+    setImportChoices,
+    setPendingImport,
+    setContactId,
+    setProfile,
+    setResume,
+    setContacts,
+    setDefaultContactId,
+    setParseBusy,
+    setParsePreview,
   };
   const applyImportedContent = createApplyImportedContent(importContext);
-  const offerImport = createOfferImport({ ...importContext, applyImportedContent });
+  const offerImport = createOfferImport({
+    ...importContext,
+    applyImportedContent,
+  });
   const importProfile = createImportProfile({ ...importContext, offerImport });
   const chooseResume = createChooseResume(importContext);
   const parseResume = createParseResume({ ...importContext, offerImport });
-  const confirmImport = createConfirmImport({ ...importContext, applyImportedContent });
+  const confirmImport = createConfirmImport({
+    ...importContext,
+    applyImportedContent,
+  });
   const cancelImport = createCancelImport(importContext);
 
-
-  return { pendingImport, importChoices, setImportChoices, conflictKeys,
-    importRef, resumeRef, resume, setResume, parseBusy, setParseBusy,
-    parsePreview, setParsePreview, importProfile, chooseResume, parseResume,
-    confirmImport, cancelImport };
+  return {
+    pendingImport,
+    importChoices,
+    setImportChoices,
+    conflictKeys,
+    importRef,
+    resumeRef,
+    resume,
+    setResume,
+    parseBusy,
+    setParseBusy,
+    parsePreview,
+    setParsePreview,
+    importProfile,
+    chooseResume,
+    parseResume,
+    confirmImport,
+    cancelImport,
+  };
 }

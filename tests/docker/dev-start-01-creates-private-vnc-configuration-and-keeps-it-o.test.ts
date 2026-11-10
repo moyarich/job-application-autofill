@@ -9,12 +9,14 @@ describe("full development stack startup", () => {
     const dir = mkdtempSync(join(tmpdir(), "moya-dev-"));
     try {
       expect(setupEnv(dir, {}, () => "a1b2c3d4").generated).toBe("a1b2c3d4");
-      expect(parsePassword(readFileSync(join(dir, ".env"), "utf8"))).toBe("a1b2c3d4");
-      if (process.platform !== "win32") expect(statSync(join(dir, ".env")).mode & 0o077).toBe(0);
+      expect(parsePassword(readFileSync(join(dir, ".env"), "utf8"))).toBe(
+        "a1b2c3d4",
+      );
+      if (process.platform !== "win32")
+        expect(statSync(join(dir, ".env")).mode & 0o077).toBe(0);
       expect(setupEnv(dir, {}, () => "e1f2a3b4").generated).toBeNull();
-    } finally { rmSync(dir, { recursive: true, force: true }); }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
-  
-  
-  
 });

@@ -2,8 +2,17 @@ import type { ResumeImportActionsContext } from "./import-context";
 import type { CandidateProfile } from "../../index";
 import type { Contact } from "./import-context";
 
-export function createApplyImportedContent(context: ResumeImportActionsContext) {
-  const { setMessage, setImportChoices, setPendingImport, setContactId, setProfile, setResume } = context;
+export function createApplyImportedContent(
+  context: ResumeImportActionsContext,
+) {
+  const {
+    setMessage,
+    setImportChoices,
+    setPendingImport,
+    setContactId,
+    setProfile,
+    setResume,
+  } = context;
   function applyImportedContent(
     incoming: CandidateProfile,
     selectedId: string | null,

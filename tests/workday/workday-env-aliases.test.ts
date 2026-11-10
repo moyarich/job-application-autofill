@@ -8,10 +8,14 @@ it("reads WORKDAY credentials for the employer selected by the job URL", () => {
     RESUME_SITE_PASSWORD: "legacy-password",
   };
   expect(
-    workdayCredentials("https://uchicago.wd5.myworkdayjobs.com/login", env, { employerHost: "uchicago.wd5.myworkdayjobs.com" }),
+    workdayCredentials("https://uchicago.wd5.myworkdayjobs.com/login", env, {
+      employerHost: "uchicago.wd5.myworkdayjobs.com",
+    }),
   ).toEqual({ email: "fixture@example.com", password: "fixture-password" });
   expect(
-    workdayCredentials("https://workday.wd5.myworkdayjobs.com/login", env, { employerHost: "uchicago.wd5.myworkdayjobs.com" }),
+    workdayCredentials("https://workday.wd5.myworkdayjobs.com/login", env, {
+      employerHost: "uchicago.wd5.myworkdayjobs.com",
+    }),
   ).toBeNull();
   expect(
     workdayCredentials(

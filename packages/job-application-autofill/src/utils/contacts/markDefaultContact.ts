@@ -1,7 +1,14 @@
-import type { ContactActionsContext,  } from "./contact-context";
+import type { ContactActionsContext } from "./contact-context";
 import { chooseDefaultContact } from "../api/client";
 export function createMarkDefaultContact(context: ContactActionsContext) {
-  const { contactId, activeProfileId, flushPending, setContacts, setDefaultContactId, setMessage } = context;
+  const {
+    contactId,
+    activeProfileId,
+    flushPending,
+    setContacts,
+    setDefaultContactId,
+    setMessage,
+  } = context;
   async function markDefaultContact() {
     if (!contactId) return;
     try {

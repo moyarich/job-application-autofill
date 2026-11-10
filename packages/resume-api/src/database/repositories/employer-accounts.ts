@@ -14,5 +14,10 @@ export function createEmployerAccountsStatements(db: DatabaseSync) {
   const updateEmployerAccount = db.prepare(
     "UPDATE employer_accounts SET status=?,updated_at=? WHERE profile_id=? AND provider=? AND employer_key=?",
   );
-  return { getEmployerAccount, listEmployerAccounts, insertEmployerAccount, updateEmployerAccount };
+  return {
+    getEmployerAccount,
+    listEmployerAccounts,
+    insertEmployerAccount,
+    updateEmployerAccount,
+  };
 }

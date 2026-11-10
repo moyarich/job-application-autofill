@@ -28,7 +28,8 @@ export function PageResumeEditor() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated &&
+    selection.hydrated &&
+    contacts.contactsHydrated &&
     (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
@@ -63,11 +64,15 @@ export function PageResumeEditor() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Resume editor"
-        />
-        {selection.activeResumeId ? <CandidateProfile controller={controller} /> : <NoResume />}
-        {selection.activeResumeId && <ContactImportReview controller={controller} />}
+        <WorkspaceHeader title="Resume editor" />
+        {selection.activeResumeId ? (
+          <CandidateProfile controller={controller} />
+        ) : (
+          <NoResume />
+        )}
+        {selection.activeResumeId && (
+          <ContactImportReview controller={controller} />
+        )}
       </>
     </PageStatus>
   );

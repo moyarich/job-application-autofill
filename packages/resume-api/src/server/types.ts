@@ -18,8 +18,14 @@ export interface RouteContext {
   profileId: string;
   resumeIdHeader?: string;
 }
-export type RouteHandler = (context: RouteContext) => Promise<ApiResponse | undefined>;
-export function reply(status: number, body: unknown, contentType?: string): ApiResponse {
+export type RouteHandler = (
+  context: RouteContext,
+) => Promise<ApiResponse | undefined>;
+export function reply(
+  status: number,
+  body: unknown,
+  contentType?: string,
+): ApiResponse {
   return { status, body, contentType };
 }
 export function record(value: unknown): Record<string, unknown> {

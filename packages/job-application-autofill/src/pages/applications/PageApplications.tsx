@@ -20,7 +20,9 @@ export function PageApplications() {
   const tracker = useJobTracker({ ...selection, ...applications });
   const prepareJob = async (job: (typeof applications.jobs)[number]) => {
     if (!job.resumeId) {
-      selection.setMessage("Choose a resume for this application before applying.");
+      selection.setMessage(
+        "Choose a resume for this application before applying.",
+      );
       return;
     }
     const target = window.open("about:blank", "application-" + job.id);
@@ -53,7 +55,11 @@ export function PageApplications() {
             </button>
           }
         />
-        <Opportunities controller={controller} showAddForm={showAddForm} onCloseAddForm={() => setShowAddForm(false)} />
+        <Opportunities
+          controller={controller}
+          showAddForm={showAddForm}
+          onCloseAddForm={() => setShowAddForm(false)}
+        />
       </>
     </PageStatus>
   );

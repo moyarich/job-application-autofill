@@ -165,7 +165,9 @@ export async function extractResumeText(
     if (!response.ok) {
       throw new Error(
         "PDF extraction failed: " +
-          (typeof result.error === "string" ? result.error : "OCR service error"),
+          (typeof result.error === "string"
+            ? result.error
+            : "OCR service error"),
       );
     }
     if (typeof result.text !== "string" || !result.text.trim())
@@ -384,16 +386,23 @@ export function extractProfile(text: string) {
     skills: parsedSkills,
     education: extractEducation(sections.education),
     projects: [],
-    certifications: (sections.certifications || []).filter((name, index, lines) =>
-      !(index > 0 && /^Amazon Web Services(?:\s*\(AWS\))?$/i.test(name) && /^AWS Certified\b/i.test(lines[index - 1])),
-    ).map((name) => ({
-      name,
-      issuer: /^AWS Certified\b/i.test(name) ? "Amazon Web Services" : "",
-      issuedDate: "",
-      expirationDate: null,
-      credentialId: "",
-      url: "",
-    })),
+    certifications: (sections.certifications || [])
+      .filter(
+        (name, index, lines) =>
+          !(
+            index > 0 &&
+            /^Amazon Web Services(?:\s*\(AWS\))?$/i.test(name) &&
+            /^AWS Certified\b/i.test(lines[index - 1])
+          ),
+      )
+      .map((name) => ({
+        name,
+        issuer: /^AWS Certified\b/i.test(name) ? "Amazon Web Services" : "",
+        issuedDate: "",
+        expirationDate: null,
+        credentialId: "",
+        url: "",
+      })),
     languages: sections.languages || [],
     awards: sections.awards || [],
     source: { fileName: "" },

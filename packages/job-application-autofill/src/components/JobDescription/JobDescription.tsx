@@ -4,5 +4,10 @@ import "./JobDescription.css";
 
 export function JobDescription({ content }: { content: string }) {
   const html = useMemo(() => markdownToHtml(content), [content]);
-  return <div className="job-description" dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div
+      className="job-description"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }

@@ -7,11 +7,7 @@ import {
   type ResumeExportFormat,
 } from "../../utils/files/export-resume";
 import "./ResumeView.css";
-export function ResumeView({
-  controller,
-}: {
-  controller: ResumeViewData;
-}) {
+export function ResumeView({ controller }: { controller: ResumeViewData }) {
   const resume = controller.resumeVersions.find(
     (item) => item.id === controller.activeResumeId,
   );

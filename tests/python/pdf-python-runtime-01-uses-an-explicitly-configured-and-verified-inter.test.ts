@@ -16,9 +16,4 @@ describe("PDF Python environment resolution", () => {
     ).toBe("/opt/venv/bin/python");
     expect(calls).toHaveLength(1);
   });
-  
-  
-  
-  
-  
 });

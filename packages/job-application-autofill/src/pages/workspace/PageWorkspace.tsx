@@ -27,9 +27,7 @@ export function PageWorkspace() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Profiles & resumes"
-        />
+        <WorkspaceHeader title="Profiles & resumes" />
         <section className="panel workspace-management">
           <div className="panel-title">
             <h2>Manage profiles and resumes</h2>

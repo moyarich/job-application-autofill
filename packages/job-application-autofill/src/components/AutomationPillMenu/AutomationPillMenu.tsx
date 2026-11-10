@@ -1,14 +1,31 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowRight, BriefcaseBusiness, ChevronDown, ClipboardList, FileUp,
-  GraduationCap, ListChecks, LoaderCircle, LogIn, ScanSearch, Sparkles,
-  UserPlus, UserRound,
+  ArrowRight,
+  BriefcaseBusiness,
+  ChevronDown,
+  ClipboardList,
+  FileUp,
+  GraduationCap,
+  ListChecks,
+  LoaderCircle,
+  LogIn,
+  ScanSearch,
+  Sparkles,
+  UserPlus,
+  UserRound,
 } from "lucide-react";
 import "./AutomationPillMenu.css";
 
 export type AutomationActionId =
-  | "detect" | "register" | "sign-in" | "contact" | "employment"
-  | "education" | "resume" | "questions" | "next";
+  | "detect"
+  | "register"
+  | "sign-in"
+  | "contact"
+  | "employment"
+  | "education"
+  | "resume"
+  | "questions"
+  | "next";
 
 export type AutomationAction = {
   id: AutomationActionId;
@@ -31,7 +48,9 @@ const items = [
 ] as const;
 
 export function AutomationPillMenu({
-  actions, busy = false, status,
+  actions,
+  busy = false,
+  status,
 }: {
   actions: AutomationAction[];
   busy?: boolean;
@@ -51,7 +70,11 @@ export function AutomationPillMenu({
       }
     }
     function onPointerDown(event: PointerEvent) {
-      if (event.target instanceof Node && !container.current?.contains(event.target)) setOpen(false);
+      if (
+        event.target instanceof Node &&
+        !container.current?.contains(event.target)
+      )
+        setOpen(false);
     }
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
@@ -65,46 +88,104 @@ export function AutomationPillMenu({
     if (!action.available || !action.onSelect || busy || running) return;
     setRunning(action.id);
     setOpen(false);
-    try { await action.onSelect(); }
-    finally { setRunning(null); }
+    try {
+      await action.onSelect();
+    } finally {
+      setRunning(null);
+    }
   }
 
   return (
     <div className="automation-pill" ref={container}>
       {open && (
-        <section className="automation-pill-popover" aria-label="Playwright automation actions">
+        <section
+          className="automation-pill-popover"
+          aria-label="Playwright automation actions"
+        >
           <header className="automation-pill-header">
-            <span className="automation-pill-mark"><Sparkles size={18} aria-hidden="true" /></span>
-            <div><strong>Playwright Automation</strong><small>Choose an action for the current page</small></div>
+            <span className="automation-pill-mark">
+              <Sparkles size={18} aria-hidden="true" />
+            </span>
+            <div>
+              <strong>Playwright Automation</strong>
+              <small>Choose an action for the current page</small>
+            </div>
           </header>
-          {status && <div className="automation-pill-status" role="status">{status}</div>}
+          {status && (
+            <div className="automation-pill-status" role="status">
+              {status}
+            </div>
+          )}
           <div className="automation-pill-items">
             {items.map(({ id, label, icon: Icon }) => {
-              const action = actions.find(entry => entry.id === id);
-              const enabled = Boolean(action?.available && action.onSelect && !busy && !running);
+              const action = actions.find((entry) => entry.id === id);
+              const enabled = Boolean(
+                action?.available && action.onSelect && !busy && !running,
+              );
               return (
-                <button key={id} type="button" className="automation-pill-item"
-                  disabled={!enabled} onClick={() => action && void activate(action)}
-                  title={!action?.available ? "Not available for this session" : undefined}>
-                  <span className="automation-pill-item-icon"><Icon size={17} aria-hidden="true" /></span>
+                <button
+                  key={id}
+                  type="button"
+                  className="automation-pill-item"
+                  disabled={!enabled}
+                  onClick={() => action && void activate(action)}
+                  title={
+                    !action?.available
+                      ? "Not available for this session"
+                      : undefined
+                  }
+                >
+                  <span className="automation-pill-item-icon">
+                    <Icon size={17} aria-hidden="true" />
+                  </span>
                   <span className="automation-pill-item-text">
                     <strong>{action?.label ?? label}</strong>
-                    <small>{action?.description ?? "Requires a dedicated automation handler"}</small>
+                    <small>
+                      {action?.description ??
+                        "Requires a dedicated automation handler"}
+                    </small>
                   </span>
-                  {!action?.available && <span className="automation-pill-unavailable">Unavailable</span>}
+                  {!action?.available && (
+                    <span className="automation-pill-unavailable">
+                      Unavailable
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
-          <footer className="automation-pill-footnote"><ListChecks size={14} aria-hidden="true"/> Review fields before submitting. Automation never submits automatically.</footer>
+          <footer className="automation-pill-footnote">
+            <ListChecks size={14} aria-hidden="true" /> Review fields before
+            submitting. Automation never submits automatically.
+          </footer>
         </section>
       )}
-      <button ref={trigger} type="button" className="automation-pill-trigger"
-        aria-expanded={open} aria-haspopup="true" aria-label="Playwright Automation menu"
-        onClick={() => setOpen(previous => !previous)}>
-        {busy || running ? <LoaderCircle size={18} className="automation-pill-spin" aria-hidden="true" /> : <Sparkles size={19} aria-hidden="true" />}
+      <button
+        ref={trigger}
+        type="button"
+        className="automation-pill-trigger"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="Playwright Automation menu"
+        onClick={() => setOpen((previous) => !previous)}
+      >
+        {busy || running ? (
+          <LoaderCircle
+            size={18}
+            className="automation-pill-spin"
+            aria-hidden="true"
+          />
+        ) : (
+          <Sparkles size={19} aria-hidden="true" />
+        )}
         <span>Playwright Automation</span>
-        <ChevronDown size={16} className={open ? "automation-pill-chevron open" : "automation-pill-chevron"} aria-hidden="true" />
+        <ChevronDown
+          size={16}
+          className={
+            open ? "automation-pill-chevron open" : "automation-pill-chevron"
+          }
+          aria-hidden="true"
+        />
       </button>
     </div>
   );

@@ -30,9 +30,21 @@ export function PageResumes() {
       <>
         <WorkspaceHeader
           title="Resumes"
-          actions={<button className="primary" type="button" onClick={() => navigateTo(selection.activeProfileId, undefined, routes.resumeImport)}>
-            <FileUp size={16} /> Import resume
-          </button>}
+          actions={
+            <button
+              className="primary"
+              type="button"
+              onClick={() =>
+                navigateTo(
+                  selection.activeProfileId,
+                  undefined,
+                  routes.resumeImport,
+                )
+              }
+            >
+              <FileUp size={16} /> Import resume
+            </button>
+          }
         />
         <ResumeManager controller={controller} />
       </>

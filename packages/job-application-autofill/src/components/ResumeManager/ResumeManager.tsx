@@ -261,7 +261,11 @@ export function ResumeManager({
       {!visibleResumes.length && (
         <div className="resume-library-empty">
           <Search size={25} />
-          <h3>{resumeVersions.length === 0 ? "No resumes yet" : "No resumes found"}</h3>
+          <h3>
+            {resumeVersions.length === 0
+              ? "No resumes yet"
+              : "No resumes found"}
+          </h3>
         </div>
       )}
       {form && (

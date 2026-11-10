@@ -51,13 +51,9 @@ async function date(
     (await el.evaluate((node) => !["INPUT", "TEXTAREA"].includes(node.tagName)))
   ) {
     const field = row.locator(
-      key === "startDate"
-        ? DATE_FIELDS.startDate
-        : DATE_FIELDS.endDate,
+      key === "startDate" ? DATE_FIELDS.startDate : DATE_FIELDS.endDate,
     );
-    const month = field.locator(
-      DATE_FIELDS.month,
-    );
+    const month = field.locator(DATE_FIELDS.month);
     const year = field.locator(DATE_FIELDS.year);
     if (
       !match[2] ||

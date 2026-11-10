@@ -7,7 +7,10 @@ export const router = createBrowserRouter([
   { path: routes.home, element: <Navigate to={routes.applications} replace /> },
   ...pageRoutes.map((path) => ({ path, element: <App /> })),
   { path: routes.applicationReview, element: <App /> },
-  { path: routes.notFound, element: <Navigate to={routes.applications} replace /> },
+  {
+    path: routes.notFound,
+    element: <Navigate to={routes.applications} replace />,
+  },
 ]);
 
 export function AppRouter() {

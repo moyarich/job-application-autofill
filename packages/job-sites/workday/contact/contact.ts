@@ -8,11 +8,16 @@ import { workdayContactFields } from "./selectors.ts";
  * Contact fields chosen by the Workday adapter, not by the orchestrator.
  * Never overwrite conflicting values or confuse phone numbers with area codes.
  */
-export async function fillWorkdayContact(page: Page, profile: CandidateProfile): Promise<AutofillResult> {
+export async function fillWorkdayContact(
+  page: Page,
+  profile: CandidateProfile,
+): Promise<AutofillResult> {
   const filled: string[] = [];
   const missing: string[] = [];
 
-  for (const key of Object.keys(workdayContactFields) as (keyof typeof workdayContactFields)[]) {
+  for (const key of Object.keys(
+    workdayContactFields,
+  ) as (keyof typeof workdayContactFields)[]) {
     const value = profile.contact[key];
     if (!value?.trim()) continue;
 
@@ -26,9 +31,11 @@ export async function fillWorkdayContact(page: Page, profile: CandidateProfile):
       const current = await target.inputValue();
       if (tag === "SELECT") {
         if (current && current !== value) throw Error("conflicting selection");
-        if (!current) await target.selectOption({ label: value }, { timeout: 2000 });
+        if (!current)
+          await target.selectOption({ label: value }, { timeout: 2000 });
       } else {
-        if (current.trim() && current.trim() !== value.trim()) throw Error("conflicting value");
+        if (current.trim() && current.trim() !== value.trim())
+          throw Error("conflicting value");
         if (!current.trim()) await target.fill(value, { timeout: 2000 });
       }
       filled.push(key);
@@ -59,17 +66,30 @@ export async function findMappedField<Key extends string>(
     if (!(await candidate.isVisible().catch(() => false))) continue;
     if (!(await candidate.isEnabled().catch(() => false))) continue;
 
-    const editable = await candidate.evaluate((node) => {
-      const tag = node.tagName;
-      if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return false;
-      if (tag === "INPUT") {
-        const input = node as HTMLInputElement;
-        if (["hidden", "password", "file", "checkbox", "radio", "submit"].includes(input.type)) return false;
-        if (input.readOnly) return false;
-      }
-      if (tag === "TEXTAREA" && (node as HTMLTextAreaElement).readOnly) return false;
-      return true;
-    }).catch(() => false);
+    const editable = await candidate
+      .evaluate((node) => {
+        const tag = node.tagName;
+        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return false;
+        if (tag === "INPUT") {
+          const input = node as HTMLInputElement;
+          if (
+            [
+              "hidden",
+              "password",
+              "file",
+              "checkbox",
+              "radio",
+              "submit",
+            ].includes(input.type)
+          )
+            return false;
+          if (input.readOnly) return false;
+        }
+        if (tag === "TEXTAREA" && (node as HTMLTextAreaElement).readOnly)
+          return false;
+        return true;
+      })
+      .catch(() => false);
     if (editable) return candidate;
   }
   return null;

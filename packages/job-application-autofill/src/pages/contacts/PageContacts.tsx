@@ -25,9 +25,7 @@ export function PageContacts() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Contacts"
-        />
+        <WorkspaceHeader title="Contacts" />
         <ContactManager controller={controller} />
       </>
     </PageStatus>

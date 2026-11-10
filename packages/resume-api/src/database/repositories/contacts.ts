@@ -19,5 +19,11 @@ export function createContactsStatements(db: DatabaseSync) {
   const getDefaultContact = db.prepare(
     "SELECT id FROM profile_contact WHERE profile_id=? AND is_default=1",
   );
-  return { insertContact, updateContact, selectContact, listContactRows, getDefaultContact };
+  return {
+    insertContact,
+    updateContact,
+    selectContact,
+    listContactRows,
+    getDefaultContact,
+  };
 }

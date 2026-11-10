@@ -3,10 +3,22 @@ import { employerAccountIdentity } from "../../packages/job-sites/employer-accou
 
 test("a shared ATS keeps each company's account separate", () => {
   const cases = [
-    ["https://boards.greenhouse.io/companyone/jobs/100", "https://boards.greenhouse.io/companytwo/jobs/100"],
-    ["https://jobs.lever.co/companyone/100", "https://jobs.lever.co/companytwo/100"],
-    ["https://jobs.ashbyhq.com/companyone/100", "https://jobs.ashbyhq.com/companytwo/100"],
-    ["https://jobs.smartrecruiters.com/companyone/100", "https://jobs.smartrecruiters.com/companytwo/100"],
+    [
+      "https://boards.greenhouse.io/companyone/jobs/100",
+      "https://boards.greenhouse.io/companytwo/jobs/100",
+    ],
+    [
+      "https://jobs.lever.co/companyone/100",
+      "https://jobs.lever.co/companytwo/100",
+    ],
+    [
+      "https://jobs.ashbyhq.com/companyone/100",
+      "https://jobs.ashbyhq.com/companytwo/100",
+    ],
+    [
+      "https://jobs.smartrecruiters.com/companyone/100",
+      "https://jobs.smartrecruiters.com/companytwo/100",
+    ],
   ];
   for (const [firstUrl, secondUrl] of cases) {
     const one = employerAccountIdentity(firstUrl, "Company One");

@@ -1,12 +1,30 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { emptyCandidate, parseCandidateJson, validateCandidate, type CandidateProfile } from "../index";
 import {
-  readResumeContent, saveResumeContent, type ProfileContact,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import {
+  emptyCandidate,
+  parseCandidateJson,
+  validateCandidate,
+  type CandidateProfile,
+} from "../index";
+import {
+  readResumeContent,
+  saveResumeContent,
+  type ProfileContact,
 } from "../utils/api/client";
 
 /** Owns the selected resume's draft, revision and autosave; never writes contacts or jobs. */
 export function useResumeDraft({
-  profileId, resumeId, enabled, contacts, setMessage, applicationId,
+  profileId,
+  resumeId,
+  enabled,
+  contacts,
+  setMessage,
+  applicationId,
 }: {
   profileId: string;
   resumeId: string | null;
@@ -15,7 +33,9 @@ export function useResumeDraft({
   setMessage: Dispatch<SetStateAction<string>>;
   applicationId: string | null;
 }) {
-  const [profile, setProfile] = useState<CandidateProfile>(() => structuredClone(emptyCandidate));
+  const [profile, setProfile] = useState<CandidateProfile>(() =>
+    structuredClone(emptyCandidate),
+  );
   const [contactId, setContactId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const revisionRef = useRef(0);
@@ -36,27 +56,38 @@ export function useResumeDraft({
       return;
     }
     let cancelled = false;
-    readResumeContent(profileId, resumeId).then((result) => {
-      if (cancelled) return;
-      const linked = contacts.find((item) => item.id === result.contactId);
-      const contact = linked
-        ? Object.fromEntries(Object.entries(linked).filter(([key]) =>
-            !["id", "profileId", "name", "isDefault"].includes(key),
-          )) as CandidateProfile["contact"]
-        : structuredClone(emptyCandidate.contact);
-      const value = result.profile
-        ? parseCandidateJson(JSON.stringify(result.profile))
-        : { ...structuredClone(emptyCandidate), contact };
-      setProfile(value);
-      setContactId(result.contactId);
-      revisionRef.current = result.revision;
-      savedRef.current = JSON.stringify({ profile: value, contactId: result.contactId });
-      blockedRef.current = false;
-      setHydrated(true);
-    }).catch((error) => {
-      if (!cancelled) setMessage("Could not load resume content: " + String(error));
-    });
-    return () => { cancelled = true; };
+    readResumeContent(profileId, resumeId)
+      .then((result) => {
+        if (cancelled) return;
+        const linked = contacts.find((item) => item.id === result.contactId);
+        const contact = linked
+          ? (Object.fromEntries(
+              Object.entries(linked).filter(
+                ([key]) =>
+                  !["id", "profileId", "name", "isDefault"].includes(key),
+              ),
+            ) as CandidateProfile["contact"])
+          : structuredClone(emptyCandidate.contact);
+        const value = result.profile
+          ? parseCandidateJson(JSON.stringify(result.profile))
+          : { ...structuredClone(emptyCandidate), contact };
+        setProfile(value);
+        setContactId(result.contactId);
+        revisionRef.current = result.revision;
+        savedRef.current = JSON.stringify({
+          profile: value,
+          contactId: result.contactId,
+        });
+        blockedRef.current = false;
+        setHydrated(true);
+      })
+      .catch((error) => {
+        if (!cancelled)
+          setMessage("Could not load resume content: " + String(error));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [profileId, resumeId, enabled]);
 
   async function persistResume() {
@@ -64,7 +95,9 @@ export function useResumeDraft({
     const signature = JSON.stringify({ profile, contactId });
     if (signature === savedRef.current) return;
     const result = await saveResumeContent(profileId, resumeId, {
-      revision: revisionRef.current, profile, contactId,
+      revision: revisionRef.current,
+      profile,
+      contactId,
     });
     revisionRef.current = result.revision;
     savedRef.current = signature;
@@ -74,13 +107,16 @@ export function useResumeDraft({
     if (!hydrated || applicationId || blockedRef.current) return;
     if (JSON.stringify({ profile, contactId }) === savedRef.current) return;
     const current = setTimeout(() => {
-      saveQueueRef.current = saveQueueRef.current.then(persistResume).catch((error) => {
-        blockedRef.current = true;
-        setMessage(
-          "Your resume could not be saved: " + String(error) +
-          " Reload to restore your last saved changes.",
-        );
-      });
+      saveQueueRef.current = saveQueueRef.current
+        .then(persistResume)
+        .catch((error) => {
+          blockedRef.current = true;
+          setMessage(
+            "Your resume could not be saved: " +
+              String(error) +
+              " Reload to restore your last saved changes.",
+          );
+        });
     }, 350);
     saveTimerRef.current = current;
     return () => clearTimeout(current);
@@ -100,8 +136,16 @@ export function useResumeDraft({
   }
 
   return {
-    profile, setProfile, contactId, setContactId, errors,
-    resumeHydrated: hydrated, revisionRef, savedRef, saveQueueRef, blockedRef,
+    profile,
+    setProfile,
+    contactId,
+    setContactId,
+    errors,
+    resumeHydrated: hydrated,
+    revisionRef,
+    savedRef,
+    saveQueueRef,
+    blockedRef,
     flushResume,
   };
 }

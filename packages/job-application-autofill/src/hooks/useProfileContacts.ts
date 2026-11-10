@@ -1,20 +1,32 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { CandidateProfile } from "../index";
 import {
-  readContacts, updateProfileContact, type ProfileContact,
+  readContacts,
+  updateProfileContact,
+  type ProfileContact,
 } from "../utils/api/client";
 
 const contactValues = (entry: ProfileContact): CandidateProfile["contact"] => {
-  return Object.fromEntries(Object.entries(entry).filter(([key]) =>
-    !["id", "profileId", "name", "isDefault"].includes(key),
-  )) as CandidateProfile["contact"];
+  return Object.fromEntries(
+    Object.entries(entry).filter(
+      ([key]) => !["id", "profileId", "name", "isDefault"].includes(key),
+    ),
+  ) as CandidateProfile["contact"];
 };
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });
 
 /** Owns contact records and contact-record writes only. */
 export function useProfileContacts({
-  profileId, enabled, setMessage,
+  profileId,
+  enabled,
+  setMessage,
 }: {
   profileId: string;
   enabled: boolean;
@@ -32,17 +44,23 @@ export function useProfileContacts({
     if (!enabled) return;
     let cancelled = false;
     setHydrated(false);
-    readContacts(profileId).then((items) => {
-      if (cancelled) return;
-      saved.current = new Map(items.map((item) => [item.id, signature(item)]));
-      setContacts(items);
-      setDefaultContactId(items.find((item) => item.isDefault)?.id ?? null);
-      blocked.current = false;
-      setHydrated(true);
-    }).catch((error) => {
-      if (!cancelled) setMessage("Could not load contacts: " + String(error));
-    });
-    return () => { cancelled = true; };
+    readContacts(profileId)
+      .then((items) => {
+        if (cancelled) return;
+        saved.current = new Map(
+          items.map((item) => [item.id, signature(item)]),
+        );
+        setContacts(items);
+        setDefaultContactId(items.find((item) => item.isDefault)?.id ?? null);
+        blocked.current = false;
+        setHydrated(true);
+      })
+      .catch((error) => {
+        if (!cancelled) setMessage("Could not load contacts: " + String(error));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [profileId, enabled]);
 
   async function persistContacts() {
@@ -50,14 +68,22 @@ export function useProfileContacts({
     for (const item of contacts) {
       const next = signature(item);
       if (next === saved.current.get(item.id)) continue;
-      await updateProfileContact(profileId, item.id, item.name, contactValues(item));
+      await updateProfileContact(
+        profileId,
+        item.id,
+        item.name,
+        contactValues(item),
+      );
       saved.current.set(item.id, next);
     }
   }
 
   useEffect(() => {
     if (!hydrated || blocked.current) return;
-    if (!contacts.some((item) => signature(item) !== saved.current.get(item.id))) return;
+    if (
+      !contacts.some((item) => signature(item) !== saved.current.get(item.id))
+    )
+      return;
     const current = setTimeout(() => {
       queue.current = queue.current.then(persistContacts).catch((error) => {
         blocked.current = true;
@@ -76,7 +102,11 @@ export function useProfileContacts({
   }
 
   return {
-    contacts, setContacts, defaultContactId, setDefaultContactId,
-    contactsHydrated: hydrated, flushContacts,
+    contacts,
+    setContacts,
+    defaultContactId,
+    setDefaultContactId,
+    contactsHydrated: hydrated,
+    flushContacts,
   };
 }

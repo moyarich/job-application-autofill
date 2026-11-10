@@ -11,7 +11,10 @@ export type FieldLocatorConfig = {
  * Do not add generic CSS selectors without fixtures verifying their identity.
  * In particular, phone must never resolve to a country/area-code control.
  */
-export type WorkdayContactField = Extract<keyof CandidateProfile["contact"], string>;
+export type WorkdayContactField = Extract<
+  keyof CandidateProfile["contact"],
+  string
+>;
 
 export const workdayContactFields = {
   firstName: { labels: [/^first name\s*\*?$/i, /^given name\s*\*?$/i] },

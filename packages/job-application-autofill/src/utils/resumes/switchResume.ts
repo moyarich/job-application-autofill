@@ -3,7 +3,16 @@ import type { ProfileResumeActionsContext } from "./library-context";
 import { navigateTo } from "./navigateTo";
 
 export function createSwitchResume(context: ProfileResumeActionsContext) {
-  const { applicationId, applyBusy, sessionActive, activeProfileId, activeResumeId, pathname, flushPending, setMessage } = context;
+  const {
+    applicationId,
+    applyBusy,
+    sessionActive,
+    activeProfileId,
+    activeResumeId,
+    pathname,
+    flushPending,
+    setMessage,
+  } = context;
   async function switchResume(next: string) {
     if (applicationId || applyBusy || sessionActive || next === activeResumeId)
       return;

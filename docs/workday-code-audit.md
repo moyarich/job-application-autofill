@@ -12,17 +12,16 @@ Audited on the `fix/workday-env-credentials` branch, November 6, 2026.
 
 ## Provider-owned implementations
 
-| Module | Responsibility |
-| --- | --- |
-| `workday/index.ts` | Workday adapter registration data, hostnames, and common field mappings |
-| `workday/identity.ts` | Employer tenant key extraction |
-| `workday/steps.ts` | Coordination of Workday experience, education, skills, location exception and repeat upload |
-| `workday/experience.ts` | Work-history cards and date inputs |
-| `workday/education.ts` | Education controls |
-| `workday/skills.ts` | Skill selection and deduplication |
-| `workday/workday-login.ts` | Configured-host credentials, Workday sign-in and login diagnostics |
-| `workday/workday-sign-up.ts` | Prepopulate Workday registration email without submitting |
-
+| Module                       | Responsibility                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `workday/index.ts`           | Workday adapter registration data, hostnames, and common field mappings                     |
+| `workday/identity.ts`        | Employer tenant key extraction                                                              |
+| `workday/steps.ts`           | Coordination of Workday experience, education, skills, location exception and repeat upload |
+| `workday/experience.ts`      | Work-history cards and date inputs                                                          |
+| `workday/education.ts`       | Education controls                                                                          |
+| `workday/skills.ts`          | Skill selection and deduplication                                                           |
+| `workday/workday-login.ts`   | Configured-host credentials, Workday sign-in and login diagnostics                          |
+| `workday/workday-sign-up.ts` | Prepopulate Workday registration email without submitting                                   |
 
 ## Typed provider contract
 

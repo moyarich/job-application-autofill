@@ -53,7 +53,14 @@ export interface CandidateProfile {
   source: { fileName: string };
 }
 
-export type JobPostingDetails = { salary?: string; location?: string; employmentType?: string; requisitionId?: string; description?: string; postingUrl?: string };
+export type JobPostingDetails = {
+  salary?: string;
+  location?: string;
+  employmentType?: string;
+  requisitionId?: string;
+  description?: string;
+  postingUrl?: string;
+};
 export interface JobApplication {
   id: string;
   company: string;

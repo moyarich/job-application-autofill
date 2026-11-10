@@ -26,16 +26,10 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
       return true;
     });
   if (!values.length) return result;
-  const section = page
-    .locator(
-      skillsFields.section,
-    )
-    .first();
+  const section = page.locator(skillsFields.section).first();
   if (!(await section.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["skills: section not visible"] };
-  const tokens = section.locator(
-    skillsFields.tokens,
-  );
+  const tokens = section.locator(skillsFields.tokens);
   const saved = await tokens.evaluateAll((nodes) =>
     nodes.map((node) =>
       (
@@ -55,10 +49,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
     else if (key) selectedNames.add(key);
   }
   for (const index of duplicates.reverse()) {
-    const remove = tokens
-      .nth(index)
-      .locator(skillsFields.remove)
-      .first();
+    const remove = tokens.nth(index).locator(skillsFields.remove).first();
     if (await remove.count()) await remove.click({ timeout: 2000 });
   }
   const text = section.getByLabel(skillsLabels.text).first();
@@ -75,20 +66,14 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
       return result;
     }
   }
-  let search = section
-    .locator(
-      skillsFields.search,
-    )
-    .first();
+  let search = section.locator(skillsFields.search).first();
   if (!(await search.isVisible().catch(() => false)))
     search = section.getByLabel(skillsLabels.search).first();
   if (!(await search.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["skills: no supported input"] };
   for (const skill of values) {
     const selected = section
-      .locator(
-        skillsFields.selected,
-      )
+      .locator(skillsFields.selected)
       .getByText(skill, { exact: true });
     if (selectedNames.has(skill.toLowerCase()) || (await selected.count())) {
       result.filled.push("skill: " + skill);
@@ -100,11 +85,7 @@ export async function fillWorkdaySkills(page: Page, skills: string[]) {
       const checkbox = page.getByRole("checkbox", { name: skill, exact: true });
       const option = page
         .getByRole("option", { name: skill, exact: true })
-        .or(
-          page
-            .locator(skillsFields.option)
-            .getByText(skill, { exact: true }),
-        )
+        .or(page.locator(skillsFields.option).getByText(skill, { exact: true }))
         .or(checkbox)
         .first();
       await option

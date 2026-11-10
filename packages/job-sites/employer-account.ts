@@ -11,7 +11,10 @@ export type EmployerAccountIdentity = {
  * Identify the employer tenant, not the job or application.
  * Different employers sharing an ATS must not share an account.
  */
-export function employerAccountIdentity(jobUrl: string, company: string): EmployerAccountIdentity | null {
+export function employerAccountIdentity(
+  jobUrl: string,
+  company: string,
+): EmployerAccountIdentity | null {
   const url = new URL(jobUrl);
   if (url.protocol !== "https:" || url.username || url.password) return null;
   const adapter = adapterForUrl(jobUrl);
@@ -21,5 +24,10 @@ export function employerAccountIdentity(jobUrl: string, company: string): Employ
   if (!tenant || tenant.length > 250) return null;
   const name = company.trim().slice(0, 200);
   if (!name) return null;
-  return { provider: adapter.id, employerKey: tenant, employerName: name, host };
+  return {
+    provider: adapter.id,
+    employerKey: tenant,
+    employerName: name,
+    host,
+  };
 }

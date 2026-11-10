@@ -4,7 +4,5 @@
  */
 export function workdayEmployerTenant(host: string): string | undefined {
   const normalized = host.toLowerCase();
-  return normalized.endsWith(".myworkdayjobs.com")
-    ? normalized
-    : undefined;
+  return normalized.endsWith(".myworkdayjobs.com") ? normalized : undefined;
 }

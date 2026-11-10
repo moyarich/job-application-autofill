@@ -132,19 +132,60 @@ function validateJobs(raw: unknown): JobRecord[] {
     ])
       if (typeof row[key] !== "string")
         throw new Error("Invalid job field: " + key);
-    if ("resumeId" in row && row.resumeId != null &&
-        (typeof row.resumeId !== "string" ||
-          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.resumeId)))
+    if (
+      "resumeId" in row &&
+      row.resumeId != null &&
+      (typeof row.resumeId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          row.resumeId,
+        ))
+    )
       throw new Error("Invalid associated resume ID.");
-    if (row.accountAction !== undefined && row.accountAction !== "signup" && row.accountAction !== "login")
+    if (
+      row.accountAction !== undefined &&
+      row.accountAction !== "signup" &&
+      row.accountAction !== "login"
+    )
       throw new Error("Invalid account action.");
-    if (Object.keys(row).some(key => ![
-      "id", "company", "role", "url", "status", "createdAt", "notes", "resumeId", "accountAction", "details",
-    ].includes(key))) throw new Error("Invalid job field.");
+    if (
+      Object.keys(row).some(
+        (key) =>
+          ![
+            "id",
+            "company",
+            "role",
+            "url",
+            "status",
+            "createdAt",
+            "notes",
+            "resumeId",
+            "accountAction",
+            "details",
+          ].includes(key),
+      )
+    )
+      throw new Error("Invalid job field.");
     if (row.details !== undefined) {
-      if (!row.details || typeof row.details !== "object" || Array.isArray(row.details)) throw new Error("Invalid job details.");
+      if (
+        !row.details ||
+        typeof row.details !== "object" ||
+        Array.isArray(row.details)
+      )
+        throw new Error("Invalid job details.");
       for (const [key, value] of Object.entries(row.details)) {
-        if (!["location", "employmentType", "requisitionId", "description", "postingUrl", "salary"].includes(key) || typeof value !== "string" || value.length > (key === "description" ? 30000 : key === "postingUrl" ? 4000 : 500))
+        if (
+          ![
+            "location",
+            "employmentType",
+            "requisitionId",
+            "description",
+            "postingUrl",
+            "salary",
+          ].includes(key) ||
+          typeof value !== "string" ||
+          value.length >
+            (key === "description" ? 30000 : key === "postingUrl" ? 4000 : 500)
+        )
           throw new Error("Invalid job details.");
       }
     }
@@ -184,9 +225,17 @@ export function openStore(
     } as ProfileContact;
   }
   const now = () => new Date().toISOString();
-  const { insertProfile, selectProfile, listProfileRows } = createProfilesStatements(db);
-  const { insertContact, updateContact, selectContact, listContactRows, getDefaultContact } = createContactsStatements(db);
-  const { insertResume, listResumeRows, selectResume } = createResumesStatements(db);
+  const { insertProfile, selectProfile, listProfileRows } =
+    createProfilesStatements(db);
+  const {
+    insertContact,
+    updateContact,
+    selectContact,
+    listContactRows,
+    getDefaultContact,
+  } = createContactsStatements(db);
+  const { insertResume, listResumeRows, selectResume } =
+    createResumesStatements(db);
   const { getJobs, getJobRevision } = createApplicationsStatements(db);
   function contactValues(contact: CandidateProfile["contact"]) {
     return [
@@ -539,7 +588,12 @@ export function openStore(
       owner,
     );
   }
-  const { getEmployerAccount, listEmployerAccounts, insertEmployerAccount, updateEmployerAccount } = createEmployerAccountsStatements(db);
+  const {
+    getEmployerAccount,
+    listEmployerAccounts,
+    insertEmployerAccount,
+    updateEmployerAccount,
+  } = createEmployerAccountsStatements(db);
   function getOrCreateEmployerAccount(
     profileId: string,
     identity: {
@@ -606,7 +660,9 @@ export function openStore(
       ? decodeContact(selectContact.get(owner, row.contactId))
       : null;
     const contact = selectedContact
-      ? Object.fromEntries(CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""])) as CandidateProfile["contact"]
+      ? (Object.fromEntries(
+          CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""]),
+        ) as CandidateProfile["contact"])
       : null;
     if (row.contactId && !contact)
       throw new Error("Selected resume contact not found.");
@@ -633,27 +689,39 @@ export function openStore(
     if (!raw || typeof raw !== "object" || Array.isArray(raw))
       throw new Error("Invalid resume update.");
     const payload = raw as Record<string, unknown>;
-    const candidate = payload.profile == null ? null : validateResume(payload.profile);
-    const contactId = payload.contactId == null || payload.contactId === ""
-      ? null : validId(String(payload.contactId));
+    const candidate =
+      payload.profile == null ? null : validateResume(payload.profile);
+    const contactId =
+      payload.contactId == null || payload.contactId === ""
+        ? null
+        : validId(String(payload.contactId));
     if (contactId && !decodeContact(selectContact.get(owner, contactId)))
       throw new Error("Contact does not belong to selected profile.");
     const revision = payload.revision;
-    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+    if (
+      typeof revision !== "number" ||
+      !Number.isSafeInteger(revision) ||
+      revision < 0
+    )
       throw new Error("Expected a nonnegative resume revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
       const current = requireResume(owner, id).revision;
       if (current !== revision) {
-        const error = new Error("Resume changed in another tab. Reload to avoid overwriting it.") as Error & { code?: string };
+        const error = new Error(
+          "Resume changed in another tab. Reload to avoid overwriting it.",
+        ) as Error & { code?: string };
         error.code = "STALE_STATE";
         throw error;
       }
       const content = candidate
-        ? JSON.stringify(contactId ? { ...candidate, contact: emptyContact() } : candidate)
+        ? JSON.stringify(
+            contactId ? { ...candidate, contact: emptyContact() } : candidate,
+          )
         : null;
-      db.prepare("UPDATE resumes SET contact_id=?,content_json=?,content_revision=?,updated_at=? WHERE profile_id=? AND id=?")
-        .run(contactId, content, current + 1, now(), owner, id);
+      db.prepare(
+        "UPDATE resumes SET contact_id=?,content_json=?,content_revision=?,updated_at=? WHERE profile_id=? AND id=?",
+      ).run(contactId, content, current + 1, now(), owner, id);
       db.exec("COMMIT");
       return { revision: current + 1 };
     } catch (error) {
@@ -665,18 +733,42 @@ export function openStore(
   function getJobList(profileId = DEFAULT_PROFILE_ID) {
     const owner = requireProfile(profileId);
     const revisions: Record<string, number> = {};
-    const jobs = (getJobs.all(owner) as unknown as (JobRecord & { resumeId: string | null; accountAction: "signup" | "login" | null; detailsJson: string | null; revision: number })[])
-      .map(({ resumeId, accountAction, detailsJson, revision, ...job }): JobRecord => {
+    const jobs = (
+      getJobs.all(owner) as unknown as (JobRecord & {
+        resumeId: string | null;
+        accountAction: "signup" | "login" | null;
+        detailsJson: string | null;
+        revision: number;
+      })[]
+    ).map(
+      ({
+        resumeId,
+        accountAction,
+        detailsJson,
+        revision,
+        ...job
+      }): JobRecord => {
         revisions[job.id] = revision;
-        return { ...job, ...(resumeId ? { resumeId } : {}), ...(accountAction ? { accountAction } : {}), ...(detailsJson ? { details: JSON.parse(detailsJson) } : {}) };
-      });
+        return {
+          ...job,
+          ...(resumeId ? { resumeId } : {}),
+          ...(accountAction ? { accountAction } : {}),
+          ...(detailsJson ? { details: JSON.parse(detailsJson) } : {}),
+        };
+      },
+    );
     return { jobs, revisions };
   }
 
   function staleJob(): Error & { code: string } {
-    return Object.assign(new Error("This application changed in another tab. Reload before saving it."), {
-      code: "STALE_STATE",
-    });
+    return Object.assign(
+      new Error(
+        "This application changed in another tab. Reload before saving it.",
+      ),
+      {
+        code: "STALE_STATE",
+      },
+    );
   }
 
   function updateJobRecord(raw: unknown, profileId = DEFAULT_PROFILE_ID) {
@@ -686,27 +778,63 @@ export function openStore(
     const payload = raw as Record<string, unknown>;
     const [job] = validateJobs([payload.job]);
     const revision = payload.revision;
-    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+    if (
+      typeof revision !== "number" ||
+      !Number.isSafeInteger(revision) ||
+      revision < 0
+    )
       throw new Error("Expected a nonnegative application revision.");
     const association = job as JobRecord & { resumeId?: string | null };
     const selectedResume = association.resumeId ?? null;
     if (selectedResume) requireResume(owner, selectedResume);
     db.exec("BEGIN IMMEDIATE");
     try {
-      const existing = getJobRevision.get(owner, job.id) as { revision: number } | undefined;
-      if ((existing?.revision ?? 0) !== revision || (!existing && revision !== 0))
+      const existing = getJobRevision.get(owner, job.id) as
+        { revision: number } | undefined;
+      if (
+        (existing?.revision ?? 0) !== revision ||
+        (!existing && revision !== 0)
+      )
         throw staleJob();
       if (existing) {
-        const updated = db.prepare(`UPDATE applications SET resume_id=?,account_action=?,details_json=?,company=?,role=?,url=?,
+        const updated = db
+          .prepare(
+            `UPDATE applications SET resume_id=?,account_action=?,details_json=?,company=?,role=?,url=?,
           status=?,created_at=?,notes=?,revision=revision+1
-          WHERE profile_id=? AND id=? AND revision=?`)
-          .run(selectedResume, job.accountAction ?? null, job.details ? JSON.stringify(job.details) : null, job.company, job.role, job.url, job.status, job.createdAt, job.notes,
-            owner, job.id, revision);
+          WHERE profile_id=? AND id=? AND revision=?`,
+          )
+          .run(
+            selectedResume,
+            job.accountAction ?? null,
+            job.details ? JSON.stringify(job.details) : null,
+            job.company,
+            job.role,
+            job.url,
+            job.status,
+            job.createdAt,
+            job.notes,
+            owner,
+            job.id,
+            revision,
+          );
         if (!updated.changes) throw staleJob();
       } else {
-        db.prepare(`INSERT INTO applications(profile_id,id,resume_id,account_action,details_json,company,role,url,status,created_at,notes,revision)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,1)`)
-          .run(owner, job.id, selectedResume, job.accountAction ?? null, job.details ? JSON.stringify(job.details) : null, job.company, job.role, job.url, job.status, job.createdAt, job.notes);
+        db.prepare(
+          `INSERT INTO applications(profile_id,id,resume_id,account_action,details_json,company,role,url,status,created_at,notes,revision)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,1)`,
+        ).run(
+          owner,
+          job.id,
+          selectedResume,
+          job.accountAction ?? null,
+          job.details ? JSON.stringify(job.details) : null,
+          job.company,
+          job.role,
+          job.url,
+          job.status,
+          job.createdAt,
+          job.notes,
+        );
       }
       db.exec("COMMIT");
       return { revision: revision + 1 };
@@ -716,20 +844,32 @@ export function openStore(
     }
   }
 
-  function deleteJobRecord(jobId: string, raw: unknown, profileId = DEFAULT_PROFILE_ID) {
+  function deleteJobRecord(
+    jobId: string,
+    raw: unknown,
+    profileId = DEFAULT_PROFILE_ID,
+  ) {
     const owner = requireProfile(profileId);
     const id = validId(jobId);
     if (!raw || typeof raw !== "object" || Array.isArray(raw))
       throw new Error("Invalid application deletion.");
     const revision = (raw as Record<string, unknown>).revision;
-    if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0)
+    if (
+      typeof revision !== "number" ||
+      !Number.isSafeInteger(revision) ||
+      revision < 0
+    )
       throw new Error("Expected a nonnegative application revision.");
     db.exec("BEGIN IMMEDIATE");
     try {
-      const deleted = db.prepare("DELETE FROM applications WHERE profile_id=? AND id=? AND revision=?")
+      const deleted = db
+        .prepare(
+          "DELETE FROM applications WHERE profile_id=? AND id=? AND revision=?",
+        )
         .run(owner, id, revision);
       if (!deleted.changes) {
-        if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+        if (!getJobRevision.get(owner, id))
+          throw new Error("Application not found.");
         throw staleJob();
       }
       db.exec("COMMIT");
@@ -745,9 +885,11 @@ export function openStore(
     const owner = requireProfile(profileId);
     const id = validId(jobId);
     if (!statuses.has(status)) throw new Error("Invalid job status.");
-    const updated = db.prepare(
-      "UPDATE applications SET status=?,revision=revision+1 WHERE profile_id=? AND id=?",
-    ).run(status, owner, id);
+    const updated = db
+      .prepare(
+        "UPDATE applications SET status=?,revision=revision+1 WHERE profile_id=? AND id=?",
+      )
+      .run(status, owner, id);
     if (!updated.changes) throw new Error("Application not found.");
     return { updated: true };
   }

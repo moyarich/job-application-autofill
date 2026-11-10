@@ -58,7 +58,12 @@ it("preserves nesting and list kinds through Markdown editing", () => {
   ].join("\n");
   const blocks = markdownToEditor(input);
   expect(blocks.map((block) => block.type)).toEqual([
-    "bullet", "numbered", "bullet", "bullet", "numbered", "bullet",
+    "bullet",
+    "numbered",
+    "bullet",
+    "bullet",
+    "numbered",
+    "bullet",
   ]);
   expect(blocks.map(listDepth)).toEqual([0, 4, 8, 8, 4, 0]);
   expect(editorToMarkdown(blocks)).toBe(input);
@@ -73,10 +78,12 @@ it("supports indent, outdent, and changing bullet or numbered styles", () => {
   expect(editorToMarkdown([numbered])).toBe("    1. First");
   const outdented = { ...numbered, ...shiftListIndent(numbered, -1) };
   expect(editorToMarkdown([outdented])).toBe("1. First");
-  expect(editorToMarkdown([{ ...outdented, ...setListStyle(outdented, "paragraph") }]))
-    .toBe("First");
+  expect(
+    editorToMarkdown([
+      { ...outdented, ...setListStyle(outdented, "paragraph") },
+    ]),
+  ).toBe("First");
 });
-
 
 it("renumbers ordered lists independently at each nesting level", () => {
   const changed = [
@@ -88,16 +95,20 @@ it("renumbers ordered lists independently at each nesting level", () => {
     "    - Implement",
     "3. Release",
   ].join("\n");
-  const result = editorToMarkdown(renumberListBlocks(markdownToEditor(changed)));
-  expect(result).toBe([
-    "1. Plan",
-    "    1. Draft",
-    "        - Research",
-    "    2. Review",
-    "2. Build",
-    "    - Implement",
-    "3. Release",
-  ].join("\n"));
+  const result = editorToMarkdown(
+    renumberListBlocks(markdownToEditor(changed)),
+  );
+  expect(result).toBe(
+    [
+      "1. Plan",
+      "    1. Draft",
+      "        - Research",
+      "    2. Review",
+      "2. Build",
+      "    - Implement",
+      "3. Release",
+    ].join("\n"),
+  );
 });
 
 it("starts a new numbered sequence after a paragraph or same-level bullets", () => {
@@ -109,14 +120,16 @@ it("starts a new numbered sequence after a paragraph or same-level bullets", () 
     "- Separate",
     "1. New group",
   ].join("\n");
-  expect(editorToMarkdown(renumberListBlocks(markdownToEditor(text)))).toBe([
-    "3. First",
-    "4. Second",
-    "",
-    "1. Other",
-    "- Separate",
-    "1. New group",
-  ].join("\n"));
+  expect(editorToMarkdown(renumberListBlocks(markdownToEditor(text)))).toBe(
+    [
+      "3. First",
+      "4. Second",
+      "",
+      "1. Other",
+      "- Separate",
+      "1. New group",
+    ].join("\n"),
+  );
 });
 
 it("updates numbering after list indentation changes", () => {
@@ -130,17 +143,22 @@ it("updates numbering after list indentation changes", () => {
 });
 
 it("round-trips nested bold, italic, links and inline code through mdast", () => {
-  const source = "- **Built *accessible* workflows** with [React](https://react.dev) and `TypeScript`";
+  const source =
+    "- **Built *accessible* workflows** with [React](https://react.dev) and `TypeScript`";
   const document = markdownToEditor(source);
   expect(document[0].type).toBe("bullet");
   expect(document[0].children).toContainEqual({
-    text: "accessible", bold: true, italic: true,
+    text: "accessible",
+    bold: true,
+    italic: true,
   });
   expect(document[0].children).toContainEqual({
-    text: "React", href: "https://react.dev",
+    text: "React",
+    href: "https://react.dev",
   });
   expect(document[0].children).toContainEqual({
-    text: "TypeScript", code: true,
+    text: "TypeScript",
+    code: true,
   });
   expect(markdownToEditor(editorToMarkdown(document))).toEqual(document);
 });

@@ -14,7 +14,13 @@ export function changeJobStatus(
     setMessage: Dispatch<SetStateAction<string>>;
   },
 ) {
-  const { applicationId, activeProfileId, activeResumeId, setJobs, setMessage } = context;
+  const {
+    applicationId,
+    activeProfileId,
+    activeResumeId,
+    setJobs,
+    setMessage,
+  } = context;
   if (applicationId) {
     void requestApi(
       "/api/jobs/" + id + "/status",

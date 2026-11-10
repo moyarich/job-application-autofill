@@ -1,18 +1,43 @@
-import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
-import { createResumeVersion, deleteResumeVersion, resolveImportedContact, saveResumeContent } from "../api/client";
+import type {
+  ResumeImportActionsContext,
+  ApplyImportedContent,
+} from "./import-context";
+import {
+  createResumeVersion,
+  deleteResumeVersion,
+  resolveImportedContact,
+  saveResumeContent,
+} from "../api/client";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
 import type { ContactChoice } from "../api/client";
 import type { ContactKey } from "./import-context";
 
-export function createConfirmImport(context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent }) {
-  const { activeProfileId, activeResumeId, contactKeys, pendingImport, flushPending, setMessage, setContacts, setDefaultContactId, applyImportedContent } = context;
+export function createConfirmImport(
+  context: ResumeImportActionsContext & {
+    applyImportedContent: ApplyImportedContent;
+  },
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    contactKeys,
+    pendingImport,
+    flushPending,
+    setMessage,
+    setContacts,
+    setDefaultContactId,
+    applyImportedContent,
+  } = context;
   async function confirmImport(strategy: ContactChoice = "resume") {
     if (!pendingImport) return;
     let newResumeId: string | null = null;
     try {
       if (!activeResumeId) {
-        const created = await createResumeVersion(activeProfileId, defaultImportedResumeName(pendingImport));
+        const created = await createResumeVersion(
+          activeProfileId,
+          defaultImportedResumeName(pendingImport),
+        );
         newResumeId = created.id;
       } else {
         await flushPending();
@@ -47,7 +72,11 @@ export function createConfirmImport(context: ResumeImportActionsContext & { appl
       applyImportedContent(pendingImport, result.contactId, result.contact);
     } catch (error) {
       if (newResumeId) {
-        try { await deleteResumeVersion(activeProfileId, newResumeId); } catch { /* Preserve original error. */ }
+        try {
+          await deleteResumeVersion(activeProfileId, newResumeId);
+        } catch {
+          /* Preserve original error. */
+        }
       }
       setMessage(
         error instanceof Error ? error.message : "Could not import resume.",

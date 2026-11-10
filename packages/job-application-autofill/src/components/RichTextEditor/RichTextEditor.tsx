@@ -7,15 +7,19 @@ import {
   Transforms,
   type BaseEditor,
 } from "slate";
-import {
-  Editable,
-  Slate,
-  useSlate,
-  withReact,
-  ReactEditor,
-} from "slate-react";
+import { Editable, Slate, useSlate, withReact, ReactEditor } from "slate-react";
 import { withHistory, type HistoryEditor } from "slate-history";
-import { ChevronDown, Bold, Italic, List, ListOrdered, IndentIncrease, IndentDecrease, Undo2, Redo2 } from "lucide-react";
+import {
+  ChevronDown,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  IndentIncrease,
+  IndentDecrease,
+  Undo2,
+  Redo2,
+} from "lucide-react";
 import {
   markdownToEditor,
   editorToMarkdown,
@@ -59,26 +63,38 @@ function Toolbar({ label }: { label: string }) {
     marks?.[mark]
       ? Editor.removeMark(editor, mark)
       : Editor.addMark(editor, mark, true);
-  const selectedBlocks = () => Array.from(Editor.nodes(editor, {
-    at: editor.selection ?? undefined,
-    match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
-    mode: "lowest",
-  })) as Array<[RichTextBlock, number[]]>;
+  const selectedBlocks = () =>
+    Array.from(
+      Editor.nodes(editor, {
+        at: editor.selection ?? undefined,
+        match: (node) =>
+          Element.isElement(node) && Editor.isBlock(editor, node),
+        mode: "lowest",
+      }),
+    ) as Array<[RichTextBlock, number[]]>;
   const selected = editor.selection ? selectedBlocks() : [];
   const bullet = selected.some(([block]) => block.type === "bullet");
   const numbered = selected.some(([block]) => block.type === "numbered");
   const listSelected = selected.some(([block]) => block.type !== "paragraph");
-  const canOutdent = selected.some(([block]) => block.type !== "paragraph" && listDepth(block) > 0);
+  const canOutdent = selected.some(
+    ([block]) => block.type !== "paragraph" && listDepth(block) > 0,
+  );
   const toggleList = (type: "bullet" | "numbered") => {
     const reset = selected.every(([block]) => block.type === type);
     for (const [block, path] of selectedBlocks())
-      Transforms.setNodes(editor, setListStyle(block, reset ? "paragraph" : type), { at: path });
+      Transforms.setNodes(
+        editor,
+        setListStyle(block, reset ? "paragraph" : type),
+        { at: path },
+      );
     renumberEditor(editor);
   };
   const indent = (direction: 1 | -1) => {
     for (const [block, path] of selectedBlocks()) {
       if (block.type !== "paragraph")
-        Transforms.setNodes(editor, shiftListIndent(block, direction), { at: path });
+        Transforms.setNodes(editor, shiftListIndent(block, direction), {
+          at: path,
+        });
     }
     renumberEditor(editor);
   };
@@ -117,32 +133,66 @@ function Toolbar({ label }: { label: string }) {
         <List size={16} />
       </button>
       <details className="rich-text-style-picker">
-        <summary aria-label="Bullet styles" title="Bullet styles"
-          onPointerDown={() => { markerSelection.current = editor.selection; }}>
+        <summary
+          aria-label="Bullet styles"
+          title="Bullet styles"
+          onPointerDown={() => {
+            markerSelection.current = editor.selection;
+          }}
+        >
           <ChevronDown size={13} />
         </summary>
-        <div className="rich-text-style-menu" role="group" aria-label="Choose bullet style">
-          {([
-            ["-", "Filled circle"],
-            ["*", "Hollow circle"],
-            ["+", "Square"],
-          ] as const).map(([marker, title]) => (
-            <button key={marker} type="button" aria-label={title}
-              aria-pressed={bullet && selected.some(([block]) => block.type === "bullet" && block.prefix?.trim() === marker)}
+        <div
+          className="rich-text-style-menu"
+          role="group"
+          aria-label="Choose bullet style"
+        >
+          {(
+            [
+              ["-", "Filled circle"],
+              ["*", "Hollow circle"],
+              ["+", "Square"],
+            ] as const
+          ).map(([marker, title]) => (
+            <button
+              key={marker}
+              type="button"
+              aria-label={title}
+              aria-pressed={
+                bullet &&
+                selected.some(
+                  ([block]) =>
+                    block.type === "bullet" && block.prefix?.trim() === marker,
+                )
+              }
               onMouseDown={(event) => event.preventDefault()}
               onClick={(event) => {
-                if (markerSelection.current) Transforms.select(editor, markerSelection.current);
+                if (markerSelection.current)
+                  Transforms.select(editor, markerSelection.current);
                 if (!editor.selection) return;
                 Editor.withoutNormalizing(editor, () => {
                   for (const [block, path] of selectedBlocks()) {
-                    Transforms.setNodes(editor, { type: "bullet", prefix: " ".repeat(listDepth(block)) + marker + " " }, { at: path });
+                    Transforms.setNodes(
+                      editor,
+                      {
+                        type: "bullet",
+                        prefix: " ".repeat(listDepth(block)) + marker + " ",
+                      },
+                      { at: path },
+                    );
                   }
                   renumberEditor(editor);
                 });
                 event.currentTarget.closest("details")?.removeAttribute("open");
-              }}>
+              }}
+            >
               <span className="rich-text-style-sample" aria-hidden="true">
-                {[0, 1, 2].map((row) => <span key={row}><b data-marker={marker} /><i /></span>)}
+                {[0, 1, 2].map((row) => (
+                  <span key={row}>
+                    <b data-marker={marker} />
+                    <i />
+                  </span>
+                ))}
               </span>
               <span>{title}</span>
             </button>
@@ -219,10 +269,12 @@ export function RichTextEditor({
   const listOffsets = initial.map((block, index) => {
     const level = nestingLevels[index] ?? 0;
     ancestorWidths.length = level;
-    const offset = level * 24 + ancestorWidths.reduce((sum, width) => sum + width, 0);
-    ancestorWidths[level] = block.type === "numbered"
-      ? Math.max(0, (block.prefix?.trim().length ?? 2) - 2) * 8
-      : 0;
+    const offset =
+      level * 24 + ancestorWidths.reduce((sum, width) => sum + width, 0);
+    ancestorWidths[level] =
+      block.type === "numbered"
+        ? Math.max(0, (block.prefix?.trim().length ?? 2) - 2) * 8
+        : 0;
     return offset;
   });
   useEffect(() => {
@@ -244,16 +296,21 @@ export function RichTextEditor({
             )
           )
             return;
-          const structural = editor.operations.some((operation) =>
-            operation.type === "insert_node" ||
-            operation.type === "remove_node" ||
-            operation.type === "merge_node" ||
-            operation.type === "split_node" ||
-            operation.type === "set_node",
+          const structural = editor.operations.some(
+            (operation) =>
+              operation.type === "insert_node" ||
+              operation.type === "remove_node" ||
+              operation.type === "merge_node" ||
+              operation.type === "split_node" ||
+              operation.type === "set_node",
           );
           if (structural) {
             const blocks = editor.children as RichTextDocument;
-            if (renumberListBlocks(blocks).some((block, index) => block.prefix !== blocks[index]?.prefix)) {
+            if (
+              renumberListBlocks(blocks).some(
+                (block, index) => block.prefix !== blocks[index]?.prefix,
+              )
+            ) {
               renumberEditor(editor);
               return;
             }
@@ -298,19 +355,36 @@ export function RichTextEditor({
                       ? "rich-text-numbered"
                       : "rich-text-paragraph"
                 }
-                data-bullet-style={element.type === "bullet" ? element.prefix?.trim() : undefined}
-                data-level={element.type !== "paragraph"
-                  ? (nestingLevels[ReactEditor.findPath(editor, element)[0]] ?? 0) % 3
-                  : undefined}
-                data-marker={element.type === "numbered"
-                  ? (element.prefix?.trim().match(/^\d+[.)]/)?.[0] ?? "1.")
-                  : undefined}
-                style={element.type !== "paragraph"
-                  ? {
-                      marginLeft: listOffsets[ReactEditor.findPath(editor, element)[0]] ?? 0,
-                      ...(element.type === "numbered" ? { paddingLeft: `${Math.max(3, (element.prefix?.trim().length ?? 2) + 1)}ch` } : {}),
-                    }
-                  : undefined}
+                data-bullet-style={
+                  element.type === "bullet" ? element.prefix?.trim() : undefined
+                }
+                data-level={
+                  element.type !== "paragraph"
+                    ? (nestingLevels[
+                        ReactEditor.findPath(editor, element)[0]
+                      ] ?? 0) % 3
+                    : undefined
+                }
+                data-marker={
+                  element.type === "numbered"
+                    ? (element.prefix?.trim().match(/^\d+[.)]/)?.[0] ?? "1.")
+                    : undefined
+                }
+                style={
+                  element.type !== "paragraph"
+                    ? {
+                        marginLeft:
+                          listOffsets[
+                            ReactEditor.findPath(editor, element)[0]
+                          ] ?? 0,
+                        ...(element.type === "numbered"
+                          ? {
+                              paddingLeft: `${Math.max(3, (element.prefix?.trim().length ?? 2) + 1)}ch`,
+                            }
+                          : {}),
+                      }
+                    : undefined
+                }
               >
                 {children}
               </div>
@@ -329,64 +403,106 @@ export function RichTextEditor({
               </span>
             )}
             onKeyDown={(event) => {
-              if (isKeyHotkey("space", event.nativeEvent) && editor.selection && Editor.isEnd(editor, editor.selection.anchor, editor.selection.anchor.path.slice(0, 1))) {
+              if (
+                isKeyHotkey("space", event.nativeEvent) &&
+                editor.selection &&
+                Editor.isEnd(
+                  editor,
+                  editor.selection.anchor,
+                  editor.selection.anchor.path.slice(0, 1),
+                )
+              ) {
                 const blockPath = editor.selection.anchor.path.slice(0, 1);
-                const block = editor.children[blockPath[0]] as RichTextBlock | undefined;
+                const block = editor.children[blockPath[0]] as
+                  RichTextBlock | undefined;
                 if (block?.type === "paragraph") {
                   const typed = Editor.string(editor, blockPath);
                   const marker = typed.match(/^([-*+]|\d+[.)])$/);
                   if (marker) {
                     event.preventDefault();
-                    Transforms.delete(editor, { at: Editor.range(editor, blockPath) });
+                    Transforms.delete(editor, {
+                      at: Editor.range(editor, blockPath),
+                    });
                     const type = /^\d/.test(marker[1]) ? "numbered" : "bullet";
-                    Transforms.setNodes(editor, {
-                      type,
-                      prefix: marker[1] + " ",
-                    }, { at: blockPath });
+                    Transforms.setNodes(
+                      editor,
+                      {
+                        type,
+                        prefix: marker[1] + " ",
+                      },
+                      { at: blockPath },
+                    );
                     renumberEditor(editor);
                     return;
                   }
                 }
               }
               if (isKeyHotkey("enter", event.nativeEvent)) {
-                const current = Array.from(Editor.nodes(editor, {
-                  match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
-                  mode: "lowest",
-                })) as Array<[RichTextBlock, number[]]>;
+                const current = Array.from(
+                  Editor.nodes(editor, {
+                    match: (node) =>
+                      Element.isElement(node) && Editor.isBlock(editor, node),
+                    mode: "lowest",
+                  }),
+                ) as Array<[RichTextBlock, number[]]>;
                 const [entry] = current;
                 if (entry && entry[0].type !== "paragraph") {
                   const [block] = entry;
                   event.preventDefault();
                   if (!Editor.string(editor, entry[1]).trim()) {
-                    Transforms.setNodes(editor, setListStyle(block, "paragraph"), { at: entry[1] });
+                    Transforms.setNodes(
+                      editor,
+                      setListStyle(block, "paragraph"),
+                      { at: entry[1] },
+                    );
                   } else {
                     editor.insertBreak();
-                    const next = Array.from(Editor.nodes(editor, {
-                      match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
-                      mode: "lowest",
-                    })) as Array<[RichTextBlock, number[]]>;
+                    const next = Array.from(
+                      Editor.nodes(editor, {
+                        match: (node) =>
+                          Element.isElement(node) &&
+                          Editor.isBlock(editor, node),
+                        mode: "lowest",
+                      }),
+                    ) as Array<[RichTextBlock, number[]]>;
                     const [newEntry] = next;
                     if (newEntry) {
-                      const previousNumber = Number(block.prefix?.trim().match(/^(\d+)[.)]/)?.[1] ?? 0);
-                      const prefix = block.type === "numbered"
-                        ? " ".repeat(listDepth(block)) + (previousNumber + 1) + ". "
-                        : block.prefix ?? "- ";
-                      Transforms.setNodes(editor, { type: block.type, prefix }, { at: newEntry[1] });
+                      const previousNumber = Number(
+                        block.prefix?.trim().match(/^(\d+)[.)]/)?.[1] ?? 0,
+                      );
+                      const prefix =
+                        block.type === "numbered"
+                          ? " ".repeat(listDepth(block)) +
+                            (previousNumber + 1) +
+                            ". "
+                          : (block.prefix ?? "- ");
+                      Transforms.setNodes(
+                        editor,
+                        { type: block.type, prefix },
+                        { at: newEntry[1] },
+                      );
                     }
                   }
                   return;
                 }
               }
               if (isKeyHotkey(["tab", "shift+tab"], event.nativeEvent)) {
-                const blocks = Array.from(Editor.nodes(editor, {
-                  match: (node) => Element.isElement(node) && Editor.isBlock(editor, node),
-                  mode: "lowest",
-                })) as Array<[RichTextBlock, number[]]>;
+                const blocks = Array.from(
+                  Editor.nodes(editor, {
+                    match: (node) =>
+                      Element.isElement(node) && Editor.isBlock(editor, node),
+                    mode: "lowest",
+                  }),
+                ) as Array<[RichTextBlock, number[]]>;
                 if (blocks.some(([block]) => block.type !== "paragraph")) {
                   event.preventDefault();
                   for (const [block, path] of blocks)
                     if (block.type !== "paragraph")
-                      Transforms.setNodes(editor, shiftListIndent(block, event.shiftKey ? -1 : 1), { at: path });
+                      Transforms.setNodes(
+                        editor,
+                        shiftListIndent(block, event.shiftKey ? -1 : 1),
+                        { at: path },
+                      );
                   return;
                 }
               }

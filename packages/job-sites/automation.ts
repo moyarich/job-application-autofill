@@ -6,16 +6,17 @@ import type { ApplicationQuestion } from "./index.ts";
 import { workdayCredentials } from "./workday/workday-login.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
-import { automateCurrentStep, listJobSiteMenu, executeJobSiteMenuItem } from "./core/orchestrator.ts";
+import {
+  automateCurrentStep,
+  listJobSiteMenu,
+  executeJobSiteMenuItem,
+} from "./core/orchestrator.ts";
 import { detectCurrentPage } from "./core/state-machine.ts";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import {
-  adapterForUrl,
-  formState,
-} from "./index.ts";
+import { adapterForUrl, formState } from "./index.ts";
 import {
   prepareEmployerSignUp,
   type AccountSetupResult,
@@ -111,16 +112,20 @@ export function getActiveApplication(
 
 async function populateSession(session: ApplicationSession) {
   const adapter = adapterForUrl(session.page.url());
-  if (!adapter) throw new Error("Return to the supported employer application.");
-  const outcome = await automateCurrentStep({
-    page: session.page,
-    profile: session.profile,
-    expectedHost: new URL(session.url).hostname,
-    directory: session.directory,
-    pendingResume: session.pendingResume,
-    resumeFile: session.resumeFile,
-    resumeUploadUrls: session.resumeUploadUrls,
-  }, adapter);
+  if (!adapter)
+    throw new Error("Return to the supported employer application.");
+  const outcome = await automateCurrentStep(
+    {
+      page: session.page,
+      profile: session.profile,
+      expectedHost: new URL(session.url).hostname,
+      directory: session.directory,
+      pendingResume: session.pendingResume,
+      resumeFile: session.resumeFile,
+      resumeUploadUrls: session.resumeUploadUrls,
+    },
+    adapter,
+  );
   if (outcome.detection.kind !== "application") {
     throw new Error("The employer application is not ready for autofill.");
   }
@@ -138,35 +143,56 @@ export async function getApplicationMenu(id: string) {
   if (!session) throw new Error("Unknown or expired application session.");
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) return [];
-  return listJobSiteMenu({
-    page: session.page, profile: session.profile,
-    expectedHost: new URL(session.url).hostname,
-    directory: session.directory, pendingResume: session.pendingResume,
-    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
-  }, adapter);
+  return listJobSiteMenu(
+    {
+      page: session.page,
+      profile: session.profile,
+      expectedHost: new URL(session.url).hostname,
+      directory: session.directory,
+      pendingResume: session.pendingResume,
+      resumeFile: session.resumeFile,
+      resumeUploadUrls: session.resumeUploadUrls,
+    },
+    adapter,
+  );
 }
 
 /** A menu click invokes exactly one site-owned step; it never submits. */
 export async function runApplicationMenuItem(id: string, itemId: string) {
   const session = sessions.get(id);
-  if (!session || !["ready_for_review", "login_required", "manual_intervention"].includes(session.state))
+  if (
+    !session ||
+    !["ready_for_review", "login_required", "manual_intervention"].includes(
+      session.state,
+    )
+  )
     throw new Error("Application session is not ready for this action.");
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) throw new Error("Return to the employer application first.");
-  const outcome = await executeJobSiteMenuItem({
-    page: session.page, profile: session.profile,
-    expectedHost: new URL(session.url).hostname,
-    directory: session.directory, pendingResume: session.pendingResume,
-    resumeFile: session.resumeFile, resumeUploadUrls: session.resumeUploadUrls,
-  }, adapter, itemId);
+  const outcome = await executeJobSiteMenuItem(
+    {
+      page: session.page,
+      profile: session.profile,
+      expectedHost: new URL(session.url).hostname,
+      directory: session.directory,
+      pendingResume: session.pendingResume,
+      resumeFile: session.resumeFile,
+      resumeUploadUrls: session.resumeUploadUrls,
+    },
+    adapter,
+    itemId,
+  );
   session.filled = [...new Set([...session.filled, ...outcome.filled])];
   session.missing = [...new Set([...session.missing, ...outcome.missing])];
-  session.questions = outcome.questions.length ? outcome.questions : session.questions;
+  session.questions = outcome.questions.length
+    ? outcome.questions
+    : session.questions;
   session.pendingResume = outcome.pendingResume;
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
   session.state = "ready_for_review";
-  session.message = "Selected employer step processed. Review the fields before submitting.";
+  session.message =
+    "Selected employer step processed. Review the fields before submitting.";
   return status(session);
 }
 
@@ -197,15 +223,28 @@ export async function continueApplication(
       .innerText()
       .catch(() => "")
   ).slice(0, 20000);
-  const pageDetection = adapter ? await detectCurrentPage(session.page, adapter, new URL(session.url).hostname) : null;
-  const detected = pageDetection?.kind === "challenge" ? "manual_intervention" : pageDetection?.kind === "external" || pageDetection?.kind === "registration" || pageDetection?.kind === "sign_in" ? "login_required" : formState(text, session.page.url());
+  const pageDetection = adapter
+    ? await detectCurrentPage(
+        session.page,
+        adapter,
+        new URL(session.url).hostname,
+      )
+    : null;
+  const detected =
+    pageDetection?.kind === "challenge"
+      ? "manual_intervention"
+      : pageDetection?.kind === "external" ||
+          pageDetection?.kind === "registration" ||
+          pageDetection?.kind === "sign_in"
+        ? "login_required"
+        : formState(text, session.page.url());
   if (detected !== "ready_for_review") {
     session.state = detected;
     const providerError = adapter?.loginFailureMessage?.(text);
     session.message =
       detected === "login_required"
-        ? providerError ??
-          "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill."
+        ? (providerError ??
+          "Complete employer sign-in, email verification, or SSO in the browser viewer; credentials are never collected by job-application-autofill.")
         : "Complete the security challenge manually in the browser viewer.";
     return status(session);
   }
@@ -269,7 +308,9 @@ export async function answerApplicationQuestions(
   validateUrl(session.page.url());
   const adapter = adapterForUrl(session.page.url());
   if (!adapter?.answerQuestions || !adapter.discoverQuestions) {
-    throw new Error("This job site has no configured screening-answer handler.");
+    throw new Error(
+      "This job site has no configured screening-answer handler.",
+    );
   }
   const result = await adapter.answerQuestions(session.page, answers);
   session.questions = await adapter.discoverQuestions(session.page);
@@ -352,14 +393,27 @@ export async function prepareApplication({
       await adapter.openApplication(page).catch(() => {});
     if (accountAction !== "signup" && adapter?.helpSignIn)
       await prepareSignIn(adapter, session).catch(() => {});
-    if ((accountAction === "signup" || (!accountAction && accountSetupRequired)) && company) {
+    if (
+      (accountAction === "signup" ||
+        (!accountAction && accountSetupRequired)) &&
+      company
+    ) {
       session.signupPrepared = await prepareEmployerSignUp(
         page,
         url,
         company,
         profile,
         {
-          openRegistration: accountAction === "signup" || Boolean(workdayCredentials(page.url())) && formState(await page.locator("body").innerText().catch(() => ""), page.url()) === "login_required",
+          openRegistration:
+            accountAction === "signup" ||
+            (Boolean(workdayCredentials(page.url())) &&
+              formState(
+                await page
+                  .locator("body")
+                  .innerText()
+                  .catch(() => ""),
+                page.url(),
+              ) === "login_required"),
           submitConfigured: true,
         },
       ).catch(() => ({

@@ -7,7 +7,22 @@ import type { JobApplication } from "../../index";
 
 /** prepareJob action; no React hooks or state ownership. */
 export function createPrepareJob(context: ApplicationReviewActionsContext) {
-  const { applicationId, activeProfileId, activeResumeId, profile, contactId, errors, session, setTab, changeJob, setMessage, setApplyBusy, setSession, setReviewed, setQuestionAnswers } = context;
+  const {
+    applicationId,
+    activeProfileId,
+    activeResumeId,
+    profile,
+    contactId,
+    errors,
+    session,
+    setTab,
+    changeJob,
+    setMessage,
+    setApplyBusy,
+    setSession,
+    setReviewed,
+    setQuestionAnswers,
+  } = context;
   async function prepareJob(job: JobApplication) {
     if (!applicationId) {
       const url = new URL(window.location.href);
@@ -20,7 +35,9 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
     }
     if (session) return;
     if (!activeResumeId || (job.resumeId && job.resumeId !== activeResumeId)) {
-      setMessage("Select the resume assigned to this application before starting.");
+      setMessage(
+        "Select the resume assigned to this application before starting.",
+      );
       return;
     }
     if (!job.url) {

@@ -12,8 +12,10 @@ export async function retryWorkdayResumeUpload(
     return { filled: [], missing: [], uploaded: false };
   }
   const upload = page.locator(resumeFields.upload).first();
-  if (!(await upload.count()) ||
-      (await upload.evaluate((node) => (node as HTMLInputElement).files?.length))) {
+  if (
+    !(await upload.count()) ||
+    (await upload.evaluate((node) => (node as HTMLInputElement).files?.length))
+  ) {
     return { filled: [], missing: [], uploaded: false };
   }
 

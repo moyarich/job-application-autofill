@@ -3,8 +3,17 @@ import { requestApi } from "../api/client";
 import type { ApplySession } from "./types";
 
 /** setEmployerAccountStatus action; no React hooks or state ownership. */
-export function createSetEmployerAccountStatus(context: ApplicationReviewActionsContext) {
-  const { activeProfileId, activeResumeId, session, setMessage, setApplyBusy, setSession } = context;
+export function createSetEmployerAccountStatus(
+  context: ApplicationReviewActionsContext,
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    session,
+    setMessage,
+    setApplyBusy,
+    setSession,
+  } = context;
   async function setEmployerAccountStatus(status: "ready" | "setup_required") {
     if (!session?.employerAccount) return;
     setApplyBusy(true);

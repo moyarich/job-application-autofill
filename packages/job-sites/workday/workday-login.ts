@@ -2,7 +2,9 @@ import type { Page, Locator } from "playwright";
 import { helpWorkdaySignUp } from "./workday-sign-up.ts";
 /** Return a provider-specific explanation only for recognized Workday login failures. */
 export function workdayLoginFailureMessage(text: string): string | null {
-  return /wrong email address or password|account (?:may|might) be locked/i.test(text)
+  return /wrong email address or password|account (?:may|might) be locked/i.test(
+    text,
+  )
     ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
     : null;
 }
@@ -16,7 +18,8 @@ export function workdayCredentials(
   const destination = new URL(url);
   const selectedEmployer = employerHost?.toLowerCase();
   const expectedHost = selectedEmployer || destination.hostname;
-  const authorized = destination.hostname === expectedHost &&
+  const authorized =
+    destination.hostname === expectedHost &&
     /^[a-z0-9-]+\.wd\d+\.myworkdayjobs\.com$/i.test(destination.hostname);
   if (
     destination.protocol !== "https:" ||
@@ -61,9 +64,10 @@ export async function helpWorkdaySignIn(
   if (session.loginAttempted) return;
   const page = session.page;
   const employerHost = new URL(session.url ?? page.url()).hostname;
-  const credentialsForPage = () => workdayCredentials(page.url(), env, {
-    employerHost,
-  });
+  const credentialsForPage = () =>
+    workdayCredentials(page.url(), env, {
+      employerHost,
+    });
   if (
     credentialsForPage() &&
     (await page
@@ -79,12 +83,19 @@ export async function helpWorkdaySignIn(
     for (const existing of existingChoices) {
       if (!(await existing.isVisible().catch(() => false))) continue;
       await existing.click();
-      await page.getByRole("heading", { name: /^sign in$/i }).first()
-        .waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+      await page
+        .getByRole("heading", { name: /^sign in$/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 5000 })
+        .catch(() => {});
       break;
     }
   }
-  if ((await helpWorkdaySignUp(page, env, { employerHost })).state === "manual_required") return;
+  if (
+    (await helpWorkdaySignUp(page, env, { employerHost })).state ===
+    "manual_required"
+  )
+    return;
   if (session.loginAttempted || !credentialsForPage()) return;
   const visible = async (locator: Locator) =>
     await locator.isVisible().catch(() => false);

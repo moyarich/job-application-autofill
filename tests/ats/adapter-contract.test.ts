@@ -8,7 +8,11 @@ describe("job-site adapter contract", () => {
       ["lever", "https://jobs.lever.co/acme/123", "acme"],
       ["ashby", "https://jobs.ashbyhq.com/acme/123", "acme"],
       ["smart-recruiters", "https://jobs.smartrecruiters.com/acme/123", "acme"],
-      ["workday", "https://acme.wd5.myworkdayjobs.com/Careers/job/123", "acme.wd5.myworkdayjobs.com"],
+      [
+        "workday",
+        "https://acme.wd5.myworkdayjobs.com/Careers/job/123",
+        "acme.wd5.myworkdayjobs.com",
+      ],
     ] as const;
 
     for (const [id, url, tenant] of examples) {
@@ -22,7 +26,7 @@ describe("job-site adapter contract", () => {
   it("Workday declares only its own site-specific steps and menu actions", () => {
     const workday = ADAPTERS.workday;
     const steps = workday.steps ?? [];
-    const stepIds = steps.map(step => step.id);
+    const stepIds = steps.map((step) => step.id);
     expect(stepIds).toEqual([
       "workday.personal-information",
       "workday.work-experience",
@@ -36,20 +40,24 @@ describe("job-site adapter contract", () => {
       expect(step.run).toBeTypeOf("function");
     }
     const menu = workday.menuItems ?? [];
-    expect(menu.map(item => item.stepId)).toEqual(stepIds);
-    expect(new Set(menu.map(item => item.id)).size).toBe(menu.length);
+    expect(menu.map((item) => item.stepId)).toEqual(stepIds);
+    expect(new Set(menu.map((item) => item.id)).size).toBe(menu.length);
 
     expect(workday.detectPage).toBeTypeOf("function");
     expect(workday.openApplication).toBeTypeOf("function");
     expect(workday.helpSignIn).toBeTypeOf("function");
     expect(workday.loginFailureMessage).toBeTypeOf("function");
-    expect(workday.loginFailureMessage?.("wrong email address or password")).toMatch(/Workday/);
+    expect(
+      workday.loginFailureMessage?.("wrong email address or password"),
+    ).toMatch(/Workday/);
     expect(ADAPTERS.lever.menuItems).toBeUndefined();
     expect(ADAPTERS.lever.loginFailureMessage).toBeUndefined();
   });
 
   it("preserves Greenhouse custom-host tenant isolation", () => {
     const url = "https://careers.greenhouse.io/acme/jobs/123";
-    expect(adapterForUrl(url)?.employerTenant(new URL(url))).toBe("careers.greenhouse.io/acme");
+    expect(adapterForUrl(url)?.employerTenant(new URL(url))).toBe(
+      "careers.greenhouse.io/acme",
+    );
   });
 });

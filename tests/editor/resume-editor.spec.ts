@@ -78,7 +78,9 @@ test("all resume sections can be edited and saved, with a separate profile page"
   await skillsEditor.press("End");
   await skillsEditor.type(" AWS, TypeScript");
   await expect(skillsEditor).toHaveValue("React, AWS, TypeScript");
-  await expect.poll(() => profile.skills).toEqual(["React", "AWS", "TypeScript"]);
+  await expect
+    .poll(() => profile.skills)
+    .toEqual(["React", "AWS", "TypeScript"]);
   await expect(page.getByLabel("Institution", { exact: true })).toHaveValue(
     "DeVry University",
   );

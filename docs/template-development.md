@@ -6,16 +6,16 @@ Use this guide to customize and test a repository created from the template.
 
 ## Project layout
 
-| Path                   | Role                                                        |
-| ---------------------- | ----------------------------------------------------------- |
-| `packages/job-application-autofill/`    | Job application autofill package              |
-| `apps/playground/`     | Vite + React app consuming the autofill package              |
-| `.github/workflows/`   | Thin CI, release, publish, and maintenance workflow callers |
-| `eslint.config.mjs`    | Shared ESLint flat configuration and Prettier compatibility |
-| `tsconfig.json`        | Shared TypeScript defaults                                  |
-| `vitest.config.ts`     | Unit test discovery                                         |
-| `playwright.config.ts` | End-to-end test configuration                               |
-| `.storybook/`          | Storybook configuration                                     |
+| Path                                 | Role                                                        |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `packages/job-application-autofill/` | Job application autofill package                            |
+| `apps/playground/`                   | Vite + React app consuming the autofill package             |
+| `.github/workflows/`                 | Thin CI, release, publish, and maintenance workflow callers |
+| `eslint.config.mjs`                  | Shared ESLint flat configuration and Prettier compatibility |
+| `tsconfig.json`                      | Shared TypeScript defaults                                  |
+| `vitest.config.ts`                   | Unit test discovery                                         |
+| `playwright.config.ts`               | End-to-end test configuration                               |
+| `.storybook/`                        | Storybook configuration                                     |
 
 ## Start developing
 

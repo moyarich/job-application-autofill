@@ -6,4 +6,12 @@ import { handleJobs } from "./jobs.ts";
 import { handleResumeProcessing } from "./resume-processing.ts";
 import { handleApplications } from "./applications.ts";
 import type { RouteHandler } from "../server/types.ts";
-export const routes: readonly RouteHandler[] = [handleProfiles, handleEmployerAccounts, handleContacts, handleResumes, handleJobs, handleResumeProcessing, handleApplications];
+export const routes: readonly RouteHandler[] = [
+  handleProfiles,
+  handleEmployerAccounts,
+  handleContacts,
+  handleResumes,
+  handleJobs,
+  handleResumeProcessing,
+  handleApplications,
+];

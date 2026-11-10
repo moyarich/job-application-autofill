@@ -8,8 +8,16 @@ import { createSetEmployerAccountStatus } from "../utils/application/setEmployer
 import { createContinueAfterChallenge } from "../utils/application/continueAfterChallenge";
 import { createFinalizeApplication } from "../utils/application/finalizeApplication";
 export function useApplicationReview(workspace: ApplicationReviewData) {
-  const { applicationId, activeProfileId, activeResumeId, profile, contactId, errors,
-    setTab, setMessage } = workspace;
+  const {
+    applicationId,
+    activeProfileId,
+    activeResumeId,
+    profile,
+    contactId,
+    errors,
+    setTab,
+    setMessage,
+  } = workspace;
   const { changeJob } = workspace;
   const [activeLoaded, setActiveLoaded] = useState(!applicationId);
   const [applyBusy, setApplyBusy] = useState(false);
@@ -73,23 +81,48 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
     };
   }, []);
   const reviewContext = {
-    applicationId, activeProfileId, activeResumeId, profile, contactId,
-    errors, session, reviewed, questionAnswers, setTab, changeJob,
-    setMessage, setApplyBusy, setSession, setReviewed, setQuestionAnswers,
+    applicationId,
+    activeProfileId,
+    activeResumeId,
+    profile,
+    contactId,
+    errors,
+    session,
+    reviewed,
+    questionAnswers,
+    setTab,
+    changeJob,
+    setMessage,
+    setApplyBusy,
+    setSession,
+    setReviewed,
+    setQuestionAnswers,
   };
   const prepareJob = createPrepareJob(reviewContext);
   const fillCustomQuestions = createFillCustomQuestions(reviewContext);
   const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
-  const setEmployerAccountStatus = createSetEmployerAccountStatus(reviewContext);
+  const setEmployerAccountStatus =
+    createSetEmployerAccountStatus(reviewContext);
   const continueAfterChallenge = createContinueAfterChallenge(reviewContext);
   const finalizeApplication = createFinalizeApplication(reviewContext);
 
-
-
-
-  return { applicationId, activeLoaded, setActiveLoaded,
-    session, setSession, applyBusy, setApplyBusy, reviewed, setReviewed,
-    questionAnswers, setQuestionAnswers, prepareJob, fillCustomQuestions,
-    prepareAccountSignUp, setEmployerAccountStatus, continueAfterChallenge,
-    finalizeApplication };
+  return {
+    applicationId,
+    activeLoaded,
+    setActiveLoaded,
+    session,
+    setSession,
+    applyBusy,
+    setApplyBusy,
+    reviewed,
+    setReviewed,
+    questionAnswers,
+    setQuestionAnswers,
+    prepareJob,
+    fillCustomQuestions,
+    prepareAccountSignUp,
+    setEmployerAccountStatus,
+    continueAfterChallenge,
+    finalizeApplication,
+  };
 }

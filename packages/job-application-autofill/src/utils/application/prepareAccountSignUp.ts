@@ -3,8 +3,18 @@ import { requestApi } from "../api/client";
 import type { ApplySession } from "./types";
 
 /** prepareAccountSignUp action; no React hooks or state ownership. */
-export function createPrepareAccountSignUp(context: ApplicationReviewActionsContext) {
-  const { activeProfileId, activeResumeId, session, setMessage, setApplyBusy, setSession, setReviewed } = context;
+export function createPrepareAccountSignUp(
+  context: ApplicationReviewActionsContext,
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    session,
+    setMessage,
+    setApplyBusy,
+    setSession,
+    setReviewed,
+  } = context;
   async function prepareAccountSignUp(password?: string) {
     if (!session) return;
     setApplyBusy(true);

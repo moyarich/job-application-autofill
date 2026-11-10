@@ -1,6 +1,7 @@
 import type { ContactActionsContext, Contact } from "./contact-context";
 export function createChooseContact(context: ContactActionsContext) {
-  const { contacts, contactKeys, setProfile, setContactId, setMessage } = context;
+  const { contacts, contactKeys, setProfile, setContactId, setMessage } =
+    context;
   function chooseContact(id: string) {
     if (!id) {
       setContactId(null);

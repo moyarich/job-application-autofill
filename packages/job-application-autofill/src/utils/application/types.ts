@@ -12,7 +12,13 @@ export type EmployerAccount = {
   status: "setup_required" | "ready";
   updatedAt: string;
 };
-export type SignupPrepared = { submitted?: boolean; credentialSource?: "configured" | "provided" | "none"; state: "unavailable" | "not_required" | "prepared" | "manual_required"; filled: string[]; missing: string[] };
+export type SignupPrepared = {
+  submitted?: boolean;
+  credentialSource?: "configured" | "provided" | "none";
+  state: "unavailable" | "not_required" | "prepared" | "manual_required";
+  filled: string[];
+  missing: string[];
+};
 export type ApplySession = {
   employerAccount?: EmployerAccount | null;
   signupPrepared?: SignupPrepared | null;

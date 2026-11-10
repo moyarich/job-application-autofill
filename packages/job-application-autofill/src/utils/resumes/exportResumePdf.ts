@@ -3,12 +3,12 @@ import { validateCandidate, parseCandidateJson } from "../../index";
 import { requestApi } from "../api/client";
 import type { Dispatch, SetStateAction } from "react";
 export function createExportResumePdf(context: {
- profile: CandidateProfile;
- activeProfileId: string;
- activeResumeId: string | null;
- setMessage: Dispatch<SetStateAction<string>>;
+  profile: CandidateProfile;
+  activeProfileId: string;
+  activeResumeId: string | null;
+  setMessage: Dispatch<SetStateAction<string>>;
 }) {
- const { profile, activeProfileId, activeResumeId, setMessage } = context;
+  const { profile, activeProfileId, activeResumeId, setMessage } = context;
   async function exportResumePdf() {
     try {
       const missing = validateCandidate(profile);
@@ -41,5 +41,5 @@ export function createExportResumePdf(context: {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
     }
   }
- return exportResumePdf;
+  return exportResumePdf;
 }

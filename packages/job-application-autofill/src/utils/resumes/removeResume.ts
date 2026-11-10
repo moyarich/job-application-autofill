@@ -4,10 +4,19 @@ import { deleteResumeVersion } from "../api/client";
 import { navigateTo } from "./navigateTo";
 
 export function createRemoveResume(context: ProfileResumeActionsContext) {
-  const { applicationId, applyBusy, sessionActive, activeProfileId, activeResumeId, resumeVersions, flushPending, setMessage, setResumeVersions } = context;
+  const {
+    applicationId,
+    applyBusy,
+    sessionActive,
+    activeProfileId,
+    activeResumeId,
+    resumeVersions,
+    flushPending,
+    setMessage,
+    setResumeVersions,
+  } = context;
   async function removeResume(resumeId: string) {
-    if (applicationId || applyBusy || sessionActive)
-      return;
+    if (applicationId || applyBusy || sessionActive) return;
     try {
       await flushPending();
       await deleteResumeVersion(activeProfileId, resumeId);

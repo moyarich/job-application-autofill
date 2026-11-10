@@ -1,7 +1,14 @@
-import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
+import type {
+  ResumeImportActionsContext,
+  ApplyImportedContent,
+} from "./import-context";
 import type { CandidateProfile } from "../../index";
 
-export function createOfferImport(context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent }) {
+export function createOfferImport(
+  context: ResumeImportActionsContext & {
+    applyImportedContent: ApplyImportedContent;
+  },
+) {
   const { setMessage, setImportChoices, setPendingImport } = context;
   function offerImport(incoming: CandidateProfile) {
     setImportChoices({});

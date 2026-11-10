@@ -2,7 +2,15 @@ import type { ProfileResumeActionsContext } from "./library-context";
 import { renameResumeVersion } from "../api/client";
 
 export function createRenameResume(context: ProfileResumeActionsContext) {
-  const { applicationId, applyBusy, sessionActive, activeProfileId, flushPending, setMessage, setResumeVersions } = context;
+  const {
+    applicationId,
+    applyBusy,
+    sessionActive,
+    activeProfileId,
+    flushPending,
+    setMessage,
+    setResumeVersions,
+  } = context;
   async function renameResume(resumeId: string, name: string) {
     if (applicationId || applyBusy || sessionActive) return;
     try {

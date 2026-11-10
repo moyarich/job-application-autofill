@@ -36,5 +36,4 @@ describe("centralized application routes", () => {
     expect(resumeSwitchPath(routes.applications)).toBe(routes.workspace);
     expect(applicationReviewPath("job a/b")).toBe("/apply/job%20a%2Fb");
   });
-
 });

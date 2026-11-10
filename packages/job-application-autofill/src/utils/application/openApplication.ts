@@ -2,7 +2,12 @@ import { applicationReviewPath } from "../../routes";
 import type { JobApplication } from "../../index";
 
 /** Open the review workflow without making job-tracker pages own review state. */
-export function openApplication(job: JobApplication, profileId: string, resumeId: string | null, target?: Window | null) {
+export function openApplication(
+  job: JobApplication,
+  profileId: string,
+  resumeId: string | null,
+  target?: Window | null,
+) {
   const url = new URL(window.location.href);
   url.pathname = applicationReviewPath(job.id);
   url.search = "";

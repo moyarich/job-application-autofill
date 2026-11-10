@@ -52,7 +52,10 @@ export function tabForPath(pathname: string): WorkspaceTab {
 }
 
 export function applicationReviewPath(applicationId: string): string {
-  return routes.applicationReview.replace(":applicationId", encodeURIComponent(applicationId));
+  return routes.applicationReview.replace(
+    ":applicationId",
+    encodeURIComponent(applicationId),
+  );
 }
 
 export function resumePath(mode: "view" | "edit"): string {

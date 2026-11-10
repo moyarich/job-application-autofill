@@ -21,10 +21,7 @@
       "description": "Built cloud applications."
     }
   ],
-  "skills": [
-    "TypeScript",
-    "AWS"
-  ],
+  "skills": ["TypeScript", "AWS"],
   "education": [
     {
       "institution": "Example University",

@@ -4,9 +4,5 @@
     "composite": false,
     "outDir": "dist"
   },
-  "include": [
-    "src/**/*.ts",
-    "tests/**/*.ts",
-    "src/**/*.tsx"
-  ]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "src/**/*.tsx"]
 }

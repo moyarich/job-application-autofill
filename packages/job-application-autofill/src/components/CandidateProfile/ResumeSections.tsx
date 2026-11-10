@@ -3,7 +3,6 @@ import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
 import type { CandidateProfile } from "../../index";
 
-
 type Field<T> = {
   key: keyof T;
   label: string;
@@ -270,38 +269,42 @@ export function ResumeSections({
   );
 }
 
-export function SkillCategories({ controller }: { controller: ResumeSectionsData }) {
+export function SkillCategories({
+  controller,
+}: {
+  controller: ResumeSectionsData;
+}) {
   const { profile, setProfile } = controller;
   return (
-      <Entries
-        title="Skills"
-        singular="skill category"
-        items={profile.skillGroups || []}
-        blank={{ heading: "", content: "" }}
-        fields={[
-          { key: "heading", label: "Category" },
-          {
-            key: "content",
-            label: "Skills in this category (comma-separated)",
-            multiline: true,
-          },
-        ]}
-        onChange={(skillGroups) =>
-          setProfile((p) => ({
-            ...p,
-            skillGroups,
-            skills: [
-              ...new Set(
-                skillGroups.flatMap((g) =>
-                  g.content
-                    .split(/[,;•]/)
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                ),
+    <Entries
+      title="Skills"
+      singular="skill category"
+      items={profile.skillGroups || []}
+      blank={{ heading: "", content: "" }}
+      fields={[
+        { key: "heading", label: "Category" },
+        {
+          key: "content",
+          label: "Skills in this category (comma-separated)",
+          multiline: true,
+        },
+      ]}
+      onChange={(skillGroups) =>
+        setProfile((p) => ({
+          ...p,
+          skillGroups,
+          skills: [
+            ...new Set(
+              skillGroups.flatMap((g) =>
+                g.content
+                  .split(/[,;•]/)
+                  .map((s) => s.trim())
+                  .filter(Boolean),
               ),
-            ],
-          }))
-        }
-      />
+            ),
+          ],
+        }))
+      }
+    />
   );
 }

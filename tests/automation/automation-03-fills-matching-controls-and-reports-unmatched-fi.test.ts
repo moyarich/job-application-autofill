@@ -7,7 +7,12 @@ describe("application safety", () => {
   it("Workday-owned contact handler fills matching fields and reports missing fields", async () => {
     const target = {
       evaluate: vi.fn(async (callback: (node: HTMLInputElement) => unknown) =>
-        callback({ tagName: "INPUT", type: "text", readOnly: false } as HTMLInputElement)),
+        callback({
+          tagName: "INPUT",
+          type: "text",
+          readOnly: false,
+        } as HTMLInputElement),
+      ),
       count: vi.fn().mockResolvedValue(1),
       inputValue: vi.fn().mockResolvedValue(""),
       getAttribute: vi.fn().mockResolvedValue(null),

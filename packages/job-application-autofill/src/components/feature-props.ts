@@ -32,11 +32,21 @@ type ContactSelection = {
   defaultContact: ProfileContact | undefined;
   contactKeys: ContactKey[];
 };
-export type ResumeEditorData = ResumeViewData & ContactCommands & Import & ContactSelection & {
-  exportResumePdf: ReturnType<typeof createExportResumePdf>;
-};
-export type ResumeImportData = Selection & Contacts & Resume & Import & ContactSelection & Flush;
+export type ResumeEditorData = ResumeViewData &
+  ContactCommands &
+  Import &
+  ContactSelection & {
+    exportResumePdf: ReturnType<typeof createExportResumePdf>;
+  };
+export type ResumeImportData = Selection &
+  Contacts &
+  Resume &
+  Import &
+  ContactSelection &
+  Flush;
 export type ApplicationReviewData = Selection & Jobs & Resume & Review;
-export type TrackerData = Selection & Jobs & Tracker & {
-  prepareJob: (job: JobApplication) => void;
-};
+export type TrackerData = Selection &
+  Jobs &
+  Tracker & {
+    prepareJob: (job: JobApplication) => void;
+  };

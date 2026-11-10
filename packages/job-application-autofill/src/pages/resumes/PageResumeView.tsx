@@ -23,7 +23,8 @@ export function PageResumeView() {
     applicationId: selection.applicationId,
   });
   const ready =
-    selection.hydrated && contacts.contactsHydrated &&
+    selection.hydrated &&
+    contacts.contactsHydrated &&
     (!selection.activeResumeId || draft.resumeHydrated);
   const flushPending = async () => {
     await draft.flushResume();
@@ -44,10 +45,12 @@ export function PageResumeView() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="View resume"
-        />
-        {selection.activeResumeId ? <ResumeView controller={controller} /> : <NoResume />}
+        <WorkspaceHeader title="View resume" />
+        {selection.activeResumeId ? (
+          <ResumeView controller={controller} />
+        ) : (
+          <NoResume />
+        )}
       </>
     </PageStatus>
   );

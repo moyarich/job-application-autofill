@@ -28,7 +28,10 @@ export function parseInlineMarkdown(source: string): RichTextLeaf[] {
     return [{ text: source }];
   }
   const leaves: RichTextLeaf[] = [];
-  function visit(nodes: PhrasingContent[], marks: Omit<RichTextLeaf, "text"> = {}) {
+  function visit(
+    nodes: PhrasingContent[],
+    marks: Omit<RichTextLeaf, "text"> = {},
+  ) {
     for (const node of nodes) {
       switch (node.type) {
         case "text":
@@ -75,12 +78,18 @@ export function stringifyInlineMarkdown(leaves: RichTextLeaf[]): string {
     if (leaf.href) node = { type: "link", url: leaf.href, children: [node] };
     return node;
   });
-  const root: Root = { type: "root", children: [{ type: "paragraph", children }] };
+  const root: Root = {
+    type: "root",
+    children: [{ type: "paragraph", children }],
+  };
   return processor.stringify(root).replace(/\n$/, "");
 }
 
 /** Derive list nesting from the actual mdast tree, not indentation guesses. */
-export function markdownListLevels(markdown: string, lineCount: number): number[] {
+export function markdownListLevels(
+  markdown: string,
+  lineCount: number,
+): number[] {
   const levels = Array<number>(lineCount).fill(0);
   const root = processor.parse(markdown);
   function walk(list: List, depth: number) {
@@ -100,17 +109,24 @@ export function markdownToEditor(
   text: string,
   bullets = false,
 ): RichTextDocument {
-  return sourceLists(text).split("\n").map((line) => {
-    const prefix = line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
-    const numbered = /^\s*\d+[.)] /.test(prefix);
-    const bullet = /^\s*[-*+] /.test(prefix);
-    const children = parseInlineMarkdown(line.slice(prefix.length));
-    return {
-      type: numbered ? "numbered" : bullet || bullets ? "bullet" : "paragraph",
-      prefix: prefix || (bullets ? "- " : ""),
-      children: children.length ? children : [{ text: "" }],
-    };
-  });
+  return sourceLists(text)
+    .split("\n")
+    .map((line) => {
+      const prefix =
+        line.match(/^(\s*(?:[-*+] |\d+[.)] |#{1,6} |> ))/)?.[0] || "";
+      const numbered = /^\s*\d+[.)] /.test(prefix);
+      const bullet = /^\s*[-*+] /.test(prefix);
+      const children = parseInlineMarkdown(line.slice(prefix.length));
+      return {
+        type: numbered
+          ? "numbered"
+          : bullet || bullets
+            ? "bullet"
+            : "paragraph",
+        prefix: prefix || (bullets ? "- " : ""),
+        children: children.length ? children : [{ text: "" }],
+      };
+    });
 }
 /** Keep each list marker and its indentation in the Markdown representation. */
 /** Resolve visual nesting from Markdown structure, including wide ordered markers. */
@@ -119,7 +135,7 @@ export function listNestingLevels(document: RichTextDocument): number[] {
 }
 
 export function listDepth(block: RichTextBlock): number {
-  return (block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0);
+  return block.prefix?.match(/^[ \t]*/)?.[0].replace(/\t/g, "    ").length ?? 0;
 }
 
 export function setListStyle(
@@ -129,9 +145,14 @@ export function setListStyle(
   const indent = " ".repeat(listDepth(block));
   if (type === "paragraph") return { type, prefix: "" };
   const existing = block.prefix?.trim() ?? "";
-  const marker = type === "numbered"
-    ? (/^\d+[.)]$/.test(existing) ? existing : "1.")
-    : (/^[-*+]$/.test(existing) ? existing : "-");
+  const marker =
+    type === "numbered"
+      ? /^\d+[.)]$/.test(existing)
+        ? existing
+        : "1."
+      : /^[-*+]$/.test(existing)
+        ? existing
+        : "-";
   return { type, prefix: indent + marker + " " };
 }
 
@@ -140,11 +161,13 @@ export function shiftListIndent(
   block: RichTextBlock,
   direction: 1 | -1,
 ): Pick<RichTextBlock, "type" | "prefix"> {
-  if (block.type === "paragraph") return { type: block.type, prefix: block.prefix ?? "" };
+  if (block.type === "paragraph")
+    return { type: block.type, prefix: block.prefix ?? "" };
   const depth = Math.max(0, listDepth(block) + direction * 4);
-  const marker = direction === 1 && block.type === "numbered"
-    ? "1."
-    : (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
+  const marker =
+    direction === 1 && block.type === "numbered"
+      ? "1."
+      : (block.prefix ?? "").trim() || (block.type === "numbered" ? "1." : "-");
   return { type: block.type, prefix: " ".repeat(depth) + marker + " " };
 }
 
@@ -153,7 +176,9 @@ export function shiftListIndent(
  * Nested lists do not interrupt numbering in their parent ordered list.
  * The first explicit number in each sequence remains the starting number.
  */
-export function renumberListBlocks(document: RichTextDocument): RichTextDocument {
+export function renumberListBlocks(
+  document: RichTextDocument,
+): RichTextDocument {
   const counters = new Map<number, number>();
   return document.map((block) => {
     if (block.type === "paragraph") {
@@ -172,7 +197,9 @@ export function renumberListBlocks(document: RichTextDocument): RichTextDocument
     const match = current.match(/^(\d+)([.)])$/);
     const next = counters.has(depth)
       ? counters.get(depth)! + 1
-      : match ? Number(match[1]) : 1;
+      : match
+        ? Number(match[1])
+        : 1;
     counters.set(depth, next);
     const prefix = " ".repeat(depth) + next + (match?.[2] ?? ".") + " ";
     return prefix === block.prefix ? block : { ...block, prefix };
@@ -187,7 +214,9 @@ export function editorToMarkdown(document: RichTextDocument): string {
         (block.type === "bullet" || block.type === "numbered"
           ? /^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix || "")
             ? block.prefix
-            : block.type === "numbered" ? "1. " : "- "
+            : block.type === "numbered"
+              ? "1. "
+              : "- "
           : block.prefix && !/^\s*(?:[-*+] |\d+[.)] )/.test(block.prefix)
             ? block.prefix
             : "") + contents
@@ -195,6 +224,3 @@ export function editorToMarkdown(document: RichTextDocument): string {
     })
     .join("\n");
 }
-
-
-

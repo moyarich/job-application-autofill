@@ -20,6 +20,10 @@ describe("Workday environment credentials", () => {
       "https://accounts.google.com",
       "https://user:pass@workday.wd5.myworkdayjobs.com",
     ])
-      expect(workdayCredentials(url, env, { employerHost: "workday.wd5.myworkdayjobs.com" })).toBeNull();
+      expect(
+        workdayCredentials(url, env, {
+          employerHost: "workday.wd5.myworkdayjobs.com",
+        }),
+      ).toBeNull();
   });
 });

@@ -4,7 +4,8 @@ import type { ApplicationQuestion } from "./index.ts";
 
 export type AutofillResult = { filled: string[]; missing: string[] };
 export type BrowserSignInSession = { page: Page; loginAttempted?: boolean };
-export type PageKind = "application" | "registration" | "sign_in" | "challenge" | "external";
+export type PageKind =
+  "application" | "registration" | "sign_in" | "challenge" | "external";
 export type PageDetection = { kind: PageKind; url: string };
 
 /** Inputs shared by site-owned steps; no predefined section names or order. */
@@ -55,5 +56,8 @@ export interface JobSiteAdapter {
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
   loginFailureMessage?(text: string): string | null;
   discoverQuestions?(page: Page): Promise<ApplicationQuestion[]>;
-  answerQuestions?(page: Page, answers: Record<string, string>): Promise<{ filled: string[]; unresolved: string[] }>;
+  answerQuestions?(
+    page: Page,
+    answers: Record<string, string>,
+  ): Promise<{ filled: string[]; unresolved: string[] }>;
 }

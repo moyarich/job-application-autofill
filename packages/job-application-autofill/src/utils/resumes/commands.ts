@@ -12,10 +12,15 @@ import { createRemoveResume } from "./removeResume";
 
 /** Bind independent resume commands to a page-scoped record. */
 export function createResumeCommands(
-  state: Omit<ProfileResumeActionsContext, "applyBusy" | "sessionActive" | "pathname">,
+  state: Omit<
+    ProfileResumeActionsContext,
+    "applyBusy" | "sessionActive" | "pathname"
+  >,
 ) {
   const context: ProfileResumeActionsContext = {
-    ...state, applyBusy: false, sessionActive: false,
+    ...state,
+    applyBusy: false,
+    sessionActive: false,
     pathname: window.location.pathname,
   };
   return {

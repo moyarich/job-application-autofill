@@ -27,4 +27,8 @@ export type ResumeImportActionsContext = {
 };
 
 export type OfferImport = (incoming: CandidateProfile) => void;
-export type ApplyImportedContent = (incoming: CandidateProfile, selectedId: string | null, resolved: CandidateProfile["contact"]) => void;
+export type ApplyImportedContent = (
+  incoming: CandidateProfile,
+  selectedId: string | null,
+  resolved: CandidateProfile["contact"],
+) => void;

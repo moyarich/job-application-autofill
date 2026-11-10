@@ -1,5 +1,8 @@
 import { test, expect } from "vitest";
-import { openStore, DEFAULT_PROFILE_ID } from "../../packages/resume-api/src/database/store.ts";
+import {
+  openStore,
+  DEFAULT_PROFILE_ID,
+} from "../../packages/resume-api/src/database/store.ts";
 
 test("profiles start without placeholder resumes and permit deleting the last resume", () => {
   const db = openStore(":memory:");
@@ -12,5 +15,7 @@ test("profiles start without placeholder resumes and permit deleting the last re
     db.deleteResume(person.id, resume.id);
     expect(db.listResumes(person.id)).toEqual([]);
     expect(db.listResumes(DEFAULT_PROFILE_ID)).toEqual([]);
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 });

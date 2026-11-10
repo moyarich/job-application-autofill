@@ -6,7 +6,10 @@ test("switching resumes stays in the editor and applications retain selected res
   context,
 }) => {
   const template = JSON.parse(
-    readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"),
+    readFileSync(
+      "packages/resume/src/resume-schema/resume.example.json",
+      "utf8",
+    ),
   );
   const profileId = "00000000-0000-4000-8000-000000000001";
   const first = "00000000-0000-4000-8000-000000000002";
@@ -33,7 +36,9 @@ test("switching resumes stays in the editor and applications retain selected res
       let json: unknown = {};
       if (pathname === "/api/profiles")
         json = {
-          profiles: [{ id: profileId, name: "Default", createdAt: "2026-11-06" }],
+          profiles: [
+            { id: profileId, name: "Default", createdAt: "2026-11-06" },
+          ],
           defaultProfileId: profileId,
         };
       else if (pathname === "/api/state" && request.method() === "PUT")
@@ -55,15 +60,29 @@ test("switching resumes stays in the editor and applications retain selected res
   );
 
   await page.goto("/resumes/edit?profile=" + profileId + "&resume=" + first);
-  await expect(page.getByRole("heading", { name: "Resume editor" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Resume editor" }),
+  ).toBeVisible();
   await page.getByLabel("Resume version").selectOption(second);
-  await expect(page).toHaveURL(new RegExp("/resumes/edit\\?profile=" + profileId + "&resume=" + second));
-  await expect(page.getByRole("heading", { name: "Resume editor" })).toBeVisible();
+  await expect(page).toHaveURL(
+    new RegExp("/resumes/edit\\?profile=" + profileId + "&resume=" + second),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Resume editor" }),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Applications", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp("/applications\\?profile=" + profileId + "&resume=" + second));
-  await expect(page.getByRole("heading", { name: "Applications", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(
+    new RegExp("/applications\\?profile=" + profileId + "&resume=" + second),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Applications", exact: true }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Resumes", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp("/resumes\\?profile=" + profileId + "&resume=" + second));
-  await expect(page.getByRole("heading", { name: "Resumes", exact: true }).first()).toBeVisible();
+  await expect(page).toHaveURL(
+    new RegExp("/resumes\\?profile=" + profileId + "&resume=" + second),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Resumes", exact: true }).first(),
+  ).toBeVisible();
 });

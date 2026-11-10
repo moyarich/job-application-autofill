@@ -3,8 +3,19 @@ import { requestApi } from "../api/client";
 import type { ApplySession } from "./types";
 
 /** continueAfterChallenge action; no React hooks or state ownership. */
-export function createContinueAfterChallenge(context: ApplicationReviewActionsContext) {
-  const { activeProfileId, activeResumeId, session, changeJob, setMessage, setApplyBusy, setSession, setReviewed } = context;
+export function createContinueAfterChallenge(
+  context: ApplicationReviewActionsContext,
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    session,
+    changeJob,
+    setMessage,
+    setApplyBusy,
+    setSession,
+    setReviewed,
+  } = context;
   async function continueAfterChallenge() {
     if (!session) return;
     setApplyBusy(true);

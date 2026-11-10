@@ -108,7 +108,11 @@ function identity(lines: string[], fallbackCompany = "") {
 }
 export function extractEmploymentHistory(text: unknown) {
   if (typeof text !== "string") return [];
-  const all = text.replaceAll("\u0002", "-").replaceAll("\u00ad", "-").split(/\r?\n/).map((x) => x.trim());
+  const all = text
+    .replaceAll("\u0002", "-")
+    .replaceAll("\u00ad", "-")
+    .split(/\r?\n/)
+    .map((x) => x.trim());
   const start = all.findIndex((x) => BEGIN.test(x.replace(/[:：]$/, "")));
   if (start < 0) return [];
   const lines: string[] = [];
@@ -233,7 +237,9 @@ function joinDescription(lines: string[]) {
   for (const line of lines) {
     if (!line.trim()) continue;
     if (BULLET.test(line) || !items.length)
-      items.push((BULLET.test(line) ? "- " : "") + line.replace(BULLET, "").trim());
+      items.push(
+        (BULLET.test(line) ? "- " : "") + line.replace(BULLET, "").trim(),
+      );
     else items[items.length - 1] += " " + line.trim();
   }
   return items.join("\n");

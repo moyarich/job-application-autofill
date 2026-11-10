@@ -1,8 +1,17 @@
-import type { ContactActionsContext,  } from "./contact-context";
+import type { ContactActionsContext } from "./contact-context";
 import { validateCandidate } from "../../index";
 import { addProfileContact } from "../api/client";
 export function createSaveContactRecord(context: ContactActionsContext) {
-  const { contactId, profile, activeProfileId, flushPending, setContacts, setContactId, setDefaultContactId, setMessage } = context;
+  const {
+    contactId,
+    profile,
+    activeProfileId,
+    flushPending,
+    setContacts,
+    setContactId,
+    setDefaultContactId,
+    setMessage,
+  } = context;
   async function saveContactRecord() {
     if (contactId) return;
     const missing = validateCandidate(profile);

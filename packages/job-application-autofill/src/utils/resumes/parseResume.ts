@@ -3,8 +3,19 @@ import { requestApi } from "../api/client";
 import { filePayload } from "../files/resume-files";
 import type { CandidateProfile } from "../../index";
 
-export function createParseResume(context: ResumeImportActionsContext & { offerImport: OfferImport }) {
-  const { activeProfileId, activeResumeId, resume, setTab, setMessage, setParseBusy, setParsePreview, offerImport } = context;
+export function createParseResume(
+  context: ResumeImportActionsContext & { offerImport: OfferImport },
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    resume,
+    setTab,
+    setMessage,
+    setParseBusy,
+    setParsePreview,
+    offerImport,
+  } = context;
   async function parseResume() {
     if (!resume) {
       setMessage("Choose a PDF or DOCX resume first.");

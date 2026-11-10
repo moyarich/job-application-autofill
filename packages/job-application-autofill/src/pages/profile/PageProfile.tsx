@@ -16,9 +16,7 @@ export function PageProfile() {
       setMessage={selection.setMessage}
     >
       <>
-        <WorkspaceHeader
-          title="Profiles"
-        />
+        <WorkspaceHeader title="Profiles" />
         <section className="panel">
           <div className="panel-title">
             <h2>Your profiles</h2>

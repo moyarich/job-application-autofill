@@ -9,11 +9,16 @@ export interface WorkdaySignUpResult {
 export async function helpWorkdaySignUp(
   page: Page,
   env: NodeJS.ProcessEnv = process.env,
-  { openCreateAccount = false, employerHost }: { openCreateAccount?: boolean; employerHost?: string } = {},
+  {
+    openCreateAccount = false,
+    employerHost,
+  }: { openCreateAccount?: boolean; employerHost?: string } = {},
 ): Promise<WorkdaySignUpResult> {
   const emailAddress =
     env.WORKDAY_USERNAME || env.WORKDAY_USER_EMAIL || env.RESUME_SITE_EMAIL;
-  const expectedHost = (employerHost || new URL(page.url()).hostname).toLowerCase();
+  const expectedHost = (
+    employerHost || new URL(page.url()).hostname
+  ).toLowerCase();
   const allowed = () => {
     const url = new URL(page.url());
     return (

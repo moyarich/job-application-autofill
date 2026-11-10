@@ -120,9 +120,7 @@ export function ContactManager({
         </p>
       )}
       {contacts.length === 0 ? (
-        <div className="contact-management-empty">
-          No contacts yet.
-        </div>
+        <div className="contact-management-empty">No contacts yet.</div>
       ) : (
         <div className="contact-management-list">
           {contacts.map((item) => {

@@ -9,7 +9,8 @@ export function resumePackageDir() {
   let directory = dirname(fileURLToPath(import.meta.url));
   while (!existsSync(resolve(directory, "pyproject.toml"))) {
     const parent = dirname(directory);
-    if (parent === directory) throw new Error("Resume package Python configuration not found.");
+    if (parent === directory)
+      throw new Error("Resume package Python configuration not found.");
     directory = parent;
   }
   return directory;

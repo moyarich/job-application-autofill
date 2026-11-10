@@ -18,7 +18,10 @@ Server-side usage:
 import { renderResumePdf } from "./packages/resume/src/resume-schema/create-pdf.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 const resume = JSON.parse(
-  readFileSync("./packages/resume/src/resume-schema/resume.example.json", "utf8"),
+  readFileSync(
+    "./packages/resume/src/resume-schema/resume.example.json",
+    "utf8",
+  ),
 );
 writeFileSync("resume.pdf", await renderResumePdf(resume));
 ```

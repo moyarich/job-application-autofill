@@ -3,8 +3,19 @@ import { requestApi } from "../api/client";
 import type { ApplySession } from "./types";
 
 /** finalizeApplication action; no React hooks or state ownership. */
-export function createFinalizeApplication(context: ApplicationReviewActionsContext) {
-  const { activeProfileId, activeResumeId, session, reviewed, changeJob, setMessage, setApplyBusy, setSession } = context;
+export function createFinalizeApplication(
+  context: ApplicationReviewActionsContext,
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    session,
+    reviewed,
+    changeJob,
+    setMessage,
+    setApplyBusy,
+    setSession,
+  } = context;
   async function finalizeApplication(submit: boolean) {
     if (!session) return;
     if (submit && session.reviewUrl && !reviewed) {

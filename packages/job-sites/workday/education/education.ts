@@ -11,7 +11,9 @@ export async function fillWorkdayEducation(
     unresolved: [],
   };
   if (!entries.length) return result;
-  const heading = page.getByText(educationFields.heading, { exact: true }).first();
+  const heading = page
+    .getByText(educationFields.heading, { exact: true })
+    .first();
   if (!(await heading.isVisible().catch(() => false)))
     return { filled: [], unresolved: ["education: section not visible"] };
   const section = heading.locator("xpath=ancestor::*[.//button][1]");
@@ -25,9 +27,7 @@ export async function fillWorkdayEducation(
     for (let j = 0; j < (await rows.count()); j++) {
       const school = rows
         .nth(j)
-        .getByLabel(
-          educationFields.institution,
-        )
+        .getByLabel(educationFields.institution)
         .first();
       const value = await school
         .inputValue({ timeout: 1000 })
@@ -54,11 +54,7 @@ export async function fillWorkdayEducation(
     const errors: string[] = [];
     const parts = entry.degree.split("|").map((value) => value.trim());
     for (const [label, value, name] of [
-      [
-        educationFields.institution,
-        entry.institution,
-        "institution",
-      ],
+      [educationFields.institution, entry.institution, "institution"],
       [educationFields.degree, parts[0], "degree"],
       [
         educationFields.fieldOfStudy,

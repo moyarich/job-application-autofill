@@ -97,7 +97,11 @@ test("structured contact details are shared with linked resumes and survive upda
     const resume = db.createResume(DEFAULT_PROFILE_ID, "Linked");
     const snapshot = db.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
     db.saveResumeContent(
-      { revision: snapshot.revision, profile: { ...sample, contact }, contactId: snapshot.contactId },
+      {
+        revision: snapshot.revision,
+        profile: { ...sample, contact },
+        contactId: snapshot.contactId,
+      },
       DEFAULT_PROFILE_ID,
       resume.id,
     );
@@ -148,7 +152,11 @@ test("contacts with only some address fields still produce valid resume snapshot
     const resume = db.createResume(DEFAULT_PROFILE_ID, "Linked");
     const snapshot = db.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
     db.saveResumeContent(
-      { revision: snapshot.revision, profile: { ...sample, contact: { ...sample.contact, city: "Chicago" } }, contactId: snapshot.contactId },
+      {
+        revision: snapshot.revision,
+        profile: { ...sample, contact: { ...sample.contact, city: "Chicago" } },
+        contactId: snapshot.contactId,
+      },
       DEFAULT_PROFILE_ID,
       resume.id,
     );

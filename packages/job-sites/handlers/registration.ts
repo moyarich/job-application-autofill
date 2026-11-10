@@ -8,7 +8,11 @@ export async function prepareRegistration(
   jobUrl: string,
   company: string,
   profile: CandidateProfile,
-  options: { openRegistration?: boolean; password?: string; submitConfigured?: boolean } = {},
+  options: {
+    openRegistration?: boolean;
+    password?: string;
+    submitConfigured?: boolean;
+  } = {},
 ) {
   return prepareEmployerSignUp(page, jobUrl, company, profile, options);
 }

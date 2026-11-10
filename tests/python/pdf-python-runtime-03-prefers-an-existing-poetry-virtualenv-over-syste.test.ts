@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import { findPdfPython } from "../../packages/resume/src/extract-resume/python-runtime.ts";
 
 describe("PDF Python environment resolution", () => {
-  
-  
   it("prefers an existing Poetry virtualenv over system python", async () => {
     const run = async (command: string, args: string[]) => {
       if (command === "poetry" && args[0] === "env")
@@ -17,7 +15,4 @@ describe("PDF Python environment resolution", () => {
       "virtualenvs",
     );
   });
-  
-  
-  
 });
