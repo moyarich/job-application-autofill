@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   filterAnswerLibrary,
   relatedAnswers,
-  type PreviousAnswer,
 } from "../../packages/job-application-autofill/src/components/ScreeningAnswerDock/suggestions.ts";
+import { ApplicationQnA } from "../../packages/job-application-autofill/src/types/application-q-n-a.ts";
 
-const data: PreviousAnswer[] = [
+const data: ApplicationQnA[] = [
   {
     applicationId: "one",
     question: "Describe cloud development experience",

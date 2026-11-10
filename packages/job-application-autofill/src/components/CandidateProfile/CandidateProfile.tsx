@@ -1,4 +1,4 @@
-import type { ResumeEditorData } from "../feature-props";
+import type { ResumeEditorData } from "../../types/feature-props";
 import { useEffect, useRef, useState } from "react";
 import {
   resumeExportFormats,

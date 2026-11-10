@@ -1,4 +1,4 @@
-import type { ContactManagerData } from "../feature-props";
+import type { ContactManagerData } from "../../types/feature-props";
 import { useState, type FormEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Resume } from "@moyarich/resume";

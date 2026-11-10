@@ -1,7 +1,7 @@
 import { subscribeApplication } from "@moyarich/job-boards/automation";
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
-import type { ApiRequest, ApiResponse } from "./types.ts";
+import type { ApiRequest, ApiResponse } from "../types/types.ts";
 
 const MAX_BODY = 15 * 1024 * 1024;
 export async function readNodeJson(req: IncomingMessage): Promise<unknown> {

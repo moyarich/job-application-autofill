@@ -13,10 +13,12 @@ import {
   X,
 } from "lucide-react";
 import { requestApi } from "../../utils/api/client";
-import { relatedAnswers, type PreviousAnswer } from "./suggestions";
+
 import { AnswerLibrary } from "./AnswerLibrary";
 import { reusableQuestion } from "@moyarich/job-boards/screening-policy";
 import "./ScreeningAnswerDock.css";
+import { ApplicationQnA } from "../../types/application-q-n-a";
+import { relatedAnswers } from "./suggestions";
 
 type Question = {
   label: string;
@@ -32,8 +34,8 @@ type Props = {
   resumeId?: string;
   questions: Question[];
   savedAnswers: Record<string, string>;
-  previousAnswers: PreviousAnswer[];
-  currentAnswerRecords: PreviousAnswer[];
+  ApplicationQnAs: ApplicationQnA[];
+  currentAnswerRecords: ApplicationQnA[];
 };
 
 const blocked =
@@ -51,7 +53,7 @@ export function ScreeningAnswerDock({
   resumeId,
   questions,
   savedAnswers,
-  previousAnswers,
+  ApplicationQnAs,
   currentAnswerRecords,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -310,7 +312,7 @@ export function ScreeningAnswerDock({
                     {!matched && (
                       <small>No saved response for this question</small>
                     )}
-                    {relatedAnswers(key, previousAnswers).length > 0 && (
+                    {relatedAnswers(key, ApplicationQnAs).length > 0 && (
                       <div className="screening-dock-suggestions">
                         <button
                           type="button"
@@ -327,7 +329,7 @@ export function ScreeningAnswerDock({
                             : "View related past answers"}
                         </button>
                         {visibleSuggestions === key &&
-                          relatedAnswers(key, previousAnswers).map(
+                          relatedAnswers(key, ApplicationQnAs).map(
                             (example) => (
                               <div
                                 className="screening-dock-example"
@@ -409,7 +411,7 @@ export function ScreeningAnswerDock({
                 currentJobId={currentJobId}
                 profileId={profileId}
                 onChanged={onLibraryChanged}
-                examples={[...currentAnswerRecords, ...previousAnswers]}
+                examples={[...currentAnswerRecords, ...ApplicationQnAs]}
                 questions={eligible.map((question) => question.label)}
                 onAdapt={(question, answer) => {
                   setDrafts((previous) => ({

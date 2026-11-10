@@ -1,4 +1,4 @@
-import type { ResumeLibraryData } from "../feature-props";
+import type { ResumeLibraryData } from "../../types/feature-props";
 import {
   resumeExportFormats,
   type ResumeExportFormat,

@@ -1,4 +1,4 @@
-import type { ResumeImportData } from "../feature-props";
+import type { ResumeImportData } from "../../types/feature-props";
 import { useState } from "react";
 import { CheckCircle2, ContactRound } from "lucide-react";
 import "./ContactImportReview.css";

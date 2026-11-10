@@ -330,7 +330,11 @@ export const SiteMenu = forwardRef<
             type="button"
             aria-label="Refresh section status"
             aria-busy={menu.refreshing}
-            title={menu.refreshing ? "Refreshing section status…" : "Refresh section status"}
+            title={
+              menu.refreshing
+                ? "Refreshing section status…"
+                : "Refresh section status"
+            }
             onClick={() => void menu.refresh()}
           >
             <RefreshCw

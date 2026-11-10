@@ -1,6 +1,7 @@
 import { Resume } from "@moyarich/resume";
 import { JobApplication } from "../../types/job-application";
 import {
+  AnswersResponse,
   ContactChoice,
   LocalProfile,
   ProfileContact,
@@ -10,6 +11,23 @@ import {
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export const ACTIVE_PROFILE_STORAGE_KEY =
   "job-application-autofill:active-profile";
+
+export async function fetchAnswers(
+  applicationId: string,
+  profileId: string,
+  signal?: AbortSignal,
+): Promise<AnswersResponse> {
+  const response = await fetch(
+    `/api/applications/${encodeURIComponent(applicationId)}/answers`,
+    {
+      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": profileId },
+      cache: "no-store",
+      signal,
+    },
+  );
+  if (!response.ok) throw new Error("Could not reload saved answers.");
+  return response.json();
+}
 
 export async function resolveImportedContact(
   profileId: string,

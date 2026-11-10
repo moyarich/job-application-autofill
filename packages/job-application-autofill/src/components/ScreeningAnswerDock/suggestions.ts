@@ -3,15 +3,7 @@ import {
   reusableQuestion,
   normalizedQuestion,
 } from "@moyarich/job-boards/screening-policy";
-
-export type PreviousAnswer = {
-  applicationId: string;
-  question: string;
-  answer: string;
-  company: string;
-  role: string;
-  updatedAt: string;
-};
+import { ApplicationQnA } from "../../types/application-q-n-a";
 
 const stopwords = new Set([
   "a",
@@ -60,7 +52,7 @@ export const questionWords = (question: string) =>
 /** Similarity ranks examples but never authorizes employer autofill. */
 export function relatedAnswers(
   question: string,
-  examples: PreviousAnswer[],
+  examples: ApplicationQnA[],
   max = 3,
 ) {
   if (!reusableQuestion(question) || !Number.isSafeInteger(max) || max <= 0)
@@ -108,7 +100,7 @@ export type LibraryFilters = {
 
 /** Pure, deterministic, profile-owned history view; no writes or answer reuse. */
 export function filterAnswerLibrary(
-  examples: PreviousAnswer[],
+  examples: ApplicationQnA[],
   filters: LibraryFilters,
 ) {
   const search = normalizedQuestion(filters.search);

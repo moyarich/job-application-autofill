@@ -1,4 +1,4 @@
-import type { ResumeViewData } from "../feature-props";
+import type { ResumeViewData } from "../../types/feature-props";
 import { renderResumeHtml } from "@moyarich/resume/render-html";
 import { Pencil, ArrowLeft } from "lucide-react";
 

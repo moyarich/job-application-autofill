@@ -91,9 +91,11 @@ export function credentialEnvironment(
   const resolved = { ...inherited };
   for (const key of ["WORKDAY_PASSWORD", "RESUME_SITE_PASSWORD"] as const) {
     if (Object.prototype.hasOwnProperty.call(inherited, key)) continue;
-    const lines = [...content.matchAll(new RegExp(
-      "^\\s*(?:export\\s+)?" + key + "\\s*=\\s*(.*)$", "gm",
-    ))];
+    const lines = [
+      ...content.matchAll(
+        new RegExp("^\\s*(?:export\\s+)?" + key + "\\s*=\\s*(.*)$", "gm"),
+      ),
+    ];
     const raw = lines.at(-1)?.[1]?.trim();
     if (raw === undefined) continue;
     const quote = raw[0];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { openStore } from "../../packages/resume-api/src/database/store.ts";
 import { createApiHandler } from "../../packages/resume-api/src/server/app.ts";
-import type { ApiRequest } from "../../packages/resume-api/src/server/types.ts";
+import { ApiRequest } from "../../packages/resume-api/src/types/types.ts";
 
 function request(path: string, method = "GET", body?: unknown): ApiRequest {
   return {

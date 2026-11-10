@@ -1,7 +1,7 @@
 import type { useProfileSelection } from "../hooks/useProfileSelection";
 import type { useProfileContacts } from "../hooks/useProfileContacts";
 import type { useResumeDraft } from "../hooks/useResumeDraft";
-import type { useJobApplications } from "../hooks/useJobApplications";
+import type { IJobApplications } from "../hooks/useJobApplications";
 import type { useResumeImport } from "../hooks/useResumeImport";
 import type { useApplicationReview } from "../hooks/useApplicationReview";
 import type { useJobTracker } from "../hooks/useJobTracker";
@@ -9,14 +9,14 @@ import type { createResumeCommands } from "../utils/resumes/commands";
 import type { createContactCommands } from "../utils/contacts/commands";
 import type { createExportResumePdf } from "../utils/resumes/exportResumePdf";
 
-import type { ContactKey } from "../types/contact-actions-context";
-import { ProfileContact } from "../types/api-types";
-import { JobApplication } from "../types/job-application";
+import type { ContactKey } from "./contact-actions-context";
+import { ProfileContact } from "./api-types";
+import { JobApplication } from "./job-application";
 
 type Selection = ReturnType<typeof useProfileSelection>;
 type Contacts = ReturnType<typeof useProfileContacts>;
 type Resume = ReturnType<typeof useResumeDraft>;
-type Jobs = ReturnType<typeof useJobApplications>;
+
 type ResumeCommands = ReturnType<typeof createResumeCommands>;
 type ContactCommands = ReturnType<typeof createContactCommands>;
 type Import = ReturnType<typeof useResumeImport>;
@@ -28,6 +28,7 @@ export type ContactManagerData = Selection & Contacts & Flush;
 export type ResumeSectionsData = Selection & Resume;
 export type ResumeLibraryData = Selection & Contacts & ResumeCommands & Flush;
 export type ResumeViewData = ResumeLibraryData & Resume;
+
 type ContactSelection = {
   selectedContact: ProfileContact | undefined;
   defaultContact: ProfileContact | undefined;
@@ -45,9 +46,13 @@ export type ResumeImportData = Selection &
   Import &
   ContactSelection &
   Flush;
-export type ApplicationReviewData = Selection & Jobs & Resume & Review;
+export type ApplicationReviewData = Selection &
+  IJobApplications &
+  Resume &
+  Review;
+
 export type TrackerData = Selection &
-  Jobs &
+  IJobApplications &
   Tracker & {
     prepareJob: (job: JobApplication) => void;
   };

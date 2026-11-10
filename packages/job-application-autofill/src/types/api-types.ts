@@ -1,4 +1,5 @@
 import { Resume } from "@moyarich/resume";
+import { ApplicationQnA } from "./application-q-n-a";
 
 export type LocalProfile = { id: string; name: string; createdAt: string };
 export type ResumeVersion = {
@@ -15,3 +16,11 @@ export type ProfileContact = Resume["contact"] & {
   isDefault: boolean;
 };
 export type ContactChoice = "resume" | "shared" | "keep";
+
+export type AnswerMap = Record<string, string>;
+
+export interface AnswersResponse {
+  answers?: AnswerMap;
+  examples?: ApplicationQnA[];
+  currentRecords?: ApplicationQnA[];
+}

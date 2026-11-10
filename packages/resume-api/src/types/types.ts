@@ -21,15 +21,3 @@ export interface RouteContext {
 export type RouteHandler = (
   context: RouteContext,
 ) => Promise<ApiResponse | undefined>;
-export function reply(
-  status: number,
-  body: unknown,
-  contentType?: string,
-): ApiResponse {
-  return { status, body, contentType };
-}
-export function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error("Expected a JSON object.");
-  return value as Record<string, unknown>;
-}

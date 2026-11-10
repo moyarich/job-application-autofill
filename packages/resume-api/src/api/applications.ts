@@ -1,9 +1,3 @@
-import {
-  accountForJob,
-  prepareSavedApplication,
-} from "../services/applications.ts";
-import type { RouteHandler } from "../server/types.ts";
-import { reply, record } from "../server/types.ts";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { employerAccountIdentity } from "@moyarich/job-boards/employer-account";
@@ -23,6 +17,14 @@ import {
   prepareApplicationAccount,
   closeApplication,
 } from "@moyarich/job-boards/automation";
+
+import {
+  accountForJob,
+  prepareSavedApplication,
+} from "../services/applications.ts";
+import type { RouteHandler } from "../types/types.ts";
+import { reply } from "../server/reply.ts";
+import { record } from "./record.ts";
 
 export const handleApplications: RouteHandler = async ({
   req,
