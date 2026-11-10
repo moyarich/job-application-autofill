@@ -22,7 +22,7 @@ test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
   await page.route("**/api/apply/*/focus", (route) =>
     route.fulfill({ json: {} }),
   );
-  await page.route("**/vnc/core/rfb.js", (route) =>
+  await page.route("**/vnc/core/rfb.js*", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: `

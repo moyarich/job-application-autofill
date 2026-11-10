@@ -22,7 +22,7 @@ for (const width of [375, 768, 1440]) {
         : path.endsWith("/menu") ? { items: [], session } : session;
       return route.fulfill({ json });
     });
-    await context.route("**/vnc/core/rfb.js", (route) => route.fulfill({ contentType: "text/javascript", body: `
+    await context.route("**/vnc/core/rfb.js*", (route) => route.fulfill({ contentType: "text/javascript", body: `
       export default class RFB extends EventTarget {
         constructor() { super(); window.__rfbForTest = this; setTimeout(() => this.dispatchEvent(new Event('connect')), 0); }
         focus() {} disconnect() {}

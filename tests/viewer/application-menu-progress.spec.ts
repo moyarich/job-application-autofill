@@ -19,7 +19,7 @@ test("employer menu follows automation and page changes without reopening", asyn
     if (path.endsWith("/focus")) return route.fulfill({ json: {} });
     return route.fulfill({ json: { ...active, state: "login_required", message: "Stale sign-in status" } });
   });
-  await page.route("**/vnc/core/rfb.js", (route) => route.fulfill({
+  await page.route("**/vnc/core/rfb.js*", (route) => route.fulfill({
     contentType: "text/javascript",
     body: `export default class RFB extends EventTarget {
       constructor() { super(); setTimeout(() => this.dispatchEvent(new Event('connect')), 0); }
@@ -27,6 +27,7 @@ test("employer menu follows automation and page changes without reopening", asyn
     }`,
   }));
   await page.goto("/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa");
+  await expect(page.locator("#site-menu")).toBeVisible();
   for (const width of [1280, 375]) {
     await page.setViewportSize({ width, height: 800 });
     await expect.poll(() => page.evaluate(() => {

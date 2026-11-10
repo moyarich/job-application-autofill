@@ -14,7 +14,7 @@ test("normal paste forwards native clipboard text without a fallback panel", asy
   await page.route("**/api/apply/*/focus", (route) =>
     route.fulfill({ json: {} }),
   );
-  await page.route("**/vnc/core/rfb.js", (route) =>
+  await page.route("**/vnc/core/rfb.js*", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: `

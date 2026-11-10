@@ -50,7 +50,7 @@ export const ApplicationBrowser = forwardRef<ApplicationBrowserHandle, { session
       {error && <p role="status">{error}</p>}
       {actualSize && <p className="application-browser-hint">Drag the employer view to move around the form.</p>}
       <iframe ref={frame} className="browser-viewer" title="Interactive Playwright application browser"
-        src={`${routes.applicationViewer}?session=${encodeURIComponent(sessionId)}&profile=${encodeURIComponent(profileId)}&ui=compact-footer-3`}
+        src={`${routes.applicationViewer}?session=${encodeURIComponent(sessionId)}&profile=${encodeURIComponent(profileId)}`}
         allow="clipboard-read; clipboard-write; fullscreen" allowFullScreen referrerPolicy="no-referrer"
         onLoad={() => { send("refresh-menu"); send(actualSize ? "actual-size" : "fit"); }} />
     </div>;
