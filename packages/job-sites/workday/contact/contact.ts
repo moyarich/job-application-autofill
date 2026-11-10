@@ -13,6 +13,7 @@ async function chooseExactOption(page: Page, value: string): Promise<boolean> {
     page.getByRole("option", { name: value, exact: true }),
     page.getByRole("listbox").getByText(value, { exact: true }),
     page.locator('[data-automation-id="promptOption"]').getByText(value, { exact: true }),
+    page.getByText(value, { exact: true }),
   ];
   for (const candidate of candidates) {
     const count = await candidate.count().catch(() => 0);
