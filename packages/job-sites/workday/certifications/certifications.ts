@@ -1,17 +1,16 @@
 import type { Locator, Page } from "playwright";
 import type { CandidateProfile } from "../../../resume/src/types.ts";
 
-type Certificate = CandidateProfile["certifications"][number];
 type Result = { filled: string[]; unresolved: string[] };
 
-const ROW = /^Certification\\s+\\d+$/i;
+const ROW = /^Certification\s+\d+$/i;
 const fields = {
-  name: /^(certification|certification name|name)\\s*\\*?$/i,
-  issuer: /^(issuing organization|issuer|issued by)\\s*\\*?$/i,
-  issuedDate: /^(issue date|issued date|date issued)\\s*\\*?$/i,
-  expirationDate: /^(expiration date|expiry date|expires on)\\s*\\*?$/i,
-  credentialId: /^(credential id|certificate id)\\s*\\*?$/i,
-  url: /^(credential url|certificate url)\\s*\\*?$/i,
+  name: /^(certification|certification name|name)\s*\*?$/i,
+  issuer: /^(issuing organization|issuer|issued by)\s*\*?$/i,
+  issuedDate: /^(issue date|issued date|date issued)\s*\*?$/i,
+  expirationDate: /^(expiration date|expiry date|expires on)\s*\*?$/i,
+  credentialId: /^(credential id|certificate id)\s*\*?$/i,
+  url: /^(credential url|certificate url)\s*\*?$/i,
 } as const;
 
 async function visible(locator: Locator) {
@@ -59,7 +58,7 @@ async function choose(row: Locator, page: Page, label: RegExp, value: string) {
 async function setMonth(row: Locator, label: RegExp, date: string) {
   const field = row.getByLabel(label).first();
   if (!(await visible(field))) return false;
-  if (!/^\\d{4}-(?:0[1-9]|1[0-2])$/.test(date)) return false;
+  if (!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(date)) return false;
   if (await field.getAttribute("type") !== "month") return false;
   const old = await field.inputValue().catch(() => null);
   if (old === date) return true;
