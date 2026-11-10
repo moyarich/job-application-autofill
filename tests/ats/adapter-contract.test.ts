@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ADAPTERS, adapterForUrl } from "../../packages/job-sites/index.ts";
+import { ADAPTERS, adapterForUrl } from "../../packages/job-boards/index.ts";
 
 describe("job-site adapter contract", () => {
   it("registers typed adapters with their own employer identity rules", () => {

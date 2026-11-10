@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Page } from "playwright";
-import { ADAPTERS } from "../../packages/job-sites/index.ts";
+import { ADAPTERS } from "../../packages/job-boards/index.ts";
 import type {
   JobSiteAdapter,
   JobSiteStepContext,
-} from "../../packages/job-sites/types.ts";
+} from "../../packages/job-boards/types.ts";
 import {
   executeJobSiteMenuItem,
   listJobSiteMenu,
-} from "../../packages/job-sites/core/orchestrator.ts";
+} from "../../packages/job-boards/core/orchestrator.ts";
 
 function fakePage() {
   return {
