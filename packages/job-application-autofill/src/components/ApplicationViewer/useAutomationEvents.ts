@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { viewerHeaders } from "./api";
+import { viewerHeaders } from "../../api/viewer";
 
 /**
  * Subscribe to server-side Playwright session updates.

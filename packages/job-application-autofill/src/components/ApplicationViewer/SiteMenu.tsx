@@ -18,7 +18,7 @@ import {
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
-import type { MenuItem } from "./api";
+import type { MenuItem } from "../../api/viewer";
 import { useEmployerMenu } from "./useEmployerMenu";
 export type SiteMenuHandle = { refresh: () => void; toggle: () => void };
 

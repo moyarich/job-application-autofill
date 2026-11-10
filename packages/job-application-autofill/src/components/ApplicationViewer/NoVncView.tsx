@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { viewerRequest } from "./api";
+import { viewerRequest } from "../../api/viewer";
 
 interface RemoteFrame extends EventTarget {
   scaleViewport: boolean;

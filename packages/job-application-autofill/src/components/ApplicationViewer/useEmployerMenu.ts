@@ -4,7 +4,7 @@ import {
   viewerRequest,
   type MenuItem,
   type ViewerSession,
-} from "./api";
+} from "../../api/viewer";
 import { useAutomationEvents } from "./useAutomationEvents";
 
 export function useEmployerMenu(
