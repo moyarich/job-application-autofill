@@ -1,0 +1,51 @@
+import type { ApplicationReviewActionsContext } from "./review-context";
+import { requestApi } from "../api/client";
+import type { ApplySession } from "./types";
+
+/** continueAfterChallenge action; no React hooks or state ownership. */
+export function createContinueAfterChallenge(
+  context: ApplicationReviewActionsContext,
+) {
+  const {
+    activeProfileId,
+    activeResumeId,
+    session,
+    changeJob,
+    setMessage,
+    setApplyBusy,
+    setSession,
+    setReviewed,
+  } = context;
+  async function continueAfterChallenge() {
+    if (!session) return;
+    setApplyBusy(true);
+    try {
+      const updated = await requestApi<ApplySession>(
+        "/api/apply/" + session.id + "/continue",
+        {},
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
+      setSession((current) => ({
+        ...updated,
+        employerAccount: updated.employerAccount ?? current?.employerAccount,
+        signupPrepared: updated.signupPrepared ?? current?.signupPrepared,
+      }));
+      setReviewed(false);
+      changeJob(
+        updated.jobId,
+        updated.state === "ready_for_review"
+          ? "ready_for_review"
+          : "in_progress",
+      );
+      setMessage(updated.message);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Challenge is not complete.",
+      );
+    } finally {
+      setApplyBusy(false);
+    }
+  }
+  return continueAfterChallenge;
+}

@@ -1,0 +1,29 @@
+# Local development only. The base compose file remains image-based for deployments.
+services:
+  api:
+    # The source mount shadows Dockerfile chmod; invoke the host script via Bash.
+    entrypoint: ["bash", "/app/docker/start-review.sh"]
+    # Mount source for node --watch while preserving image-installed dependencies
+    # and the prebuilt resume package exported from dist/.
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/resume/dist
+      - screenshots:/app/screenshots
+      - ./sqlite-data:/app/data
+    command:
+      - node
+      - --watch
+      - --experimental-strip-types
+      - packages/resume-api/index.ts
+
+  # OCR dependencies and models remain in the isolated container image.
+  # Rebuild after changing the Python worker or its Poetry dependencies.
+  web:
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/resume/dist
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"

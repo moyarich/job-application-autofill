@@ -1,0 +1,19 @@
+.no-resume {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+}
+.no-resume h2,
+.no-resume p {
+  margin: 0;
+}
+.no-resume p {
+  color: var(--muted);
+}
+.no-resume a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

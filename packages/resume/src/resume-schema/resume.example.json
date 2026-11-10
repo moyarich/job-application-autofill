@@ -1,0 +1,43 @@
+{
+  "contact": {
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "email": "ada@example.com",
+    "phone": "",
+    "location": "Chicago, IL",
+    "linkedIn": "",
+    "github": "",
+    "website": ""
+  },
+  "summary": "Software engineer",
+  "experience": [
+    {
+      "company": "Example Technologies",
+      "jobTitle": "Senior Software Engineer",
+      "location": "Chicago, IL",
+      "startDate": "2021-06",
+      "endDate": null,
+      "isCurrent": true,
+      "description": "Built cloud applications."
+    }
+  ],
+  "skills": ["TypeScript", "AWS"],
+  "education": [
+    {
+      "institution": "Example University",
+      "degree": "BS",
+      "fieldOfStudy": "Computer Science",
+      "location": "",
+      "startDate": "2014",
+      "endDate": "2018",
+      "description": ""
+    }
+  ],
+  "projects": [],
+  "certifications": [],
+  "languages": [],
+  "awards": [],
+  "source": {
+    "fileName": "resume.pdf"
+  }
+}
