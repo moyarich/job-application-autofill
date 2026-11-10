@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test";
 import {
   fillWorkdayCertifications,
   workdayCertificationsVisible,
-} from "../../packages/job-sites/workday/certifications/certifications.ts";
-import { workdaySteps } from "../../packages/job-sites/workday/steps.ts";
+} from "../../packages/job-boards/workday/certifications/certifications.ts";
+import { workdaySteps } from "../../packages/job-boards/workday/steps.ts";
 import type { CandidateProfile } from "../../packages/resume/src/types.ts";
-import type { JobSiteStepContext } from "../../packages/job-sites/types.ts";
+import type { JobSiteStepContext } from "../../packages/job-boards/types.ts";
 
 const certificate = (name: string) => ({
   name,

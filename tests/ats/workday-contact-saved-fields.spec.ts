@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { fillWorkdayContact } from "../../packages/job-sites/workday/contact/contact.ts";
+import { fillWorkdayContact } from "../../packages/job-boards/workday/contact/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("Workday uses saved extended contact fields without overwriting existing fields", async ({ page }) => {

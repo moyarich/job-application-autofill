@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { fillWorkdaySkills } from "../../packages/job-sites/workday/skills/skills.ts";
+import { fillWorkdaySkills } from "../../packages/job-boards/workday/skills/skills.ts";
 
 test("selects exact resume skills and does not duplicate selected skills", async () => {
   const browser = await chromium.launch({ headless: true });

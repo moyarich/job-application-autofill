@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { ADAPTERS } from "../../packages/job-sites/index.ts";
+import { ADAPTERS } from "../../packages/job-boards/index.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("education and skills status reads existing employer values without autofill history", async () => {
