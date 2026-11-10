@@ -34,17 +34,15 @@ test("normal paste forwards native clipboard text without a fallback panel", asy
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",
   );
-  await page
-    .locator("#screen")
-    .evaluate((element) =>
-      element.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: "v",
-          metaKey: true,
-          bubbles: true,
-        }),
-      ),
-    );
+  await page.locator("#screen").evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "v",
+        metaKey: true,
+        bubbles: true,
+      }),
+    ),
+  );
   await expect(page.locator("#paste-input")).toBeFocused();
   await page.locator("#paste-input").evaluate((element) => {
     const clipboardData = new DataTransfer();

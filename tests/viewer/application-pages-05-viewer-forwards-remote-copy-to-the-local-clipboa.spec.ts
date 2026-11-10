@@ -41,17 +41,15 @@ test("viewer forwards remote copy to the local clipboard", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",
   );
-  await page
-    .locator("#screen")
-    .evaluate((element) =>
-      element.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: "c",
-          metaKey: true,
-          bubbles: true,
-        }),
-      ),
-    );
+  await page.locator("#screen").evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "c",
+        metaKey: true,
+        bubbles: true,
+      }),
+    ),
+  );
   await expect
     .poll(() => page.evaluate(() => (window as ViewerTestWindow).__copiedText))
     .toBe("Copied remote text");
