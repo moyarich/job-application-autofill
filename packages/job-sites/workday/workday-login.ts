@@ -1,0 +1,155 @@
+import type { Page, Locator } from "playwright";
+import { helpWorkdaySignUp } from "./workday-sign-up.ts";
+/** Return a provider-specific explanation only for recognized Workday login failures. */
+export function workdayLoginFailureMessage(text: string): string | null {
+  return /wrong email address or password|account (?:may|might) be locked/i.test(text)
+    ? "Workday did not accept the configured sign-in. Verify your existing account or finish account registration in the employer browser."
+    : null;
+}
+
+// The saved application URL determines the employer; credentials never reach the dashboard.
+export function workdayCredentials(
+  url: string,
+  env: NodeJS.ProcessEnv = process.env,
+  { employerHost }: { employerHost?: string } = {},
+) {
+  const destination = new URL(url);
+  const selectedEmployer = employerHost?.toLowerCase();
+  const expectedHost = selectedEmployer || destination.hostname;
+  const authorized = destination.hostname === expectedHost &&
+    /^[a-z0-9-]+\.wd\d+\.myworkdayjobs\.com$/i.test(destination.hostname);
+  if (
+    destination.protocol !== "https:" ||
+    !authorized ||
+    !destination.hostname.endsWith(".myworkdayjobs.com") ||
+    destination.username ||
+    destination.password
+  )
+    return null;
+  const email =
+    env.WORKDAY_USERNAME || env.WORKDAY_USER_EMAIL || env.RESUME_SITE_EMAIL;
+  const password = env.WORKDAY_PASSWORD || env.RESUME_SITE_PASSWORD;
+  if (!email || !password) return null;
+  return { email, password };
+}
+
+export async function openWorkdayApplication(page: Page) {
+  if (!new URL(page.url()).hostname.endsWith(".myworkdayjobs.com")) return;
+  const apply = page
+    .getByRole("button", { name: "Apply", exact: true })
+    .first();
+  await apply.waitFor({ state: "visible", timeout: 12000 }).catch(() => {});
+  if (!(await apply.isVisible().catch(() => false))) return;
+  await apply.click();
+  const autofill = page
+    .getByRole("button", { name: "Autofill with Resume", exact: true })
+    .first();
+  await autofill.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+  if (await autofill.isVisible().catch(() => false)) {
+    await autofill.click();
+    await page
+      .getByRole("button", { name: "Sign in with email", exact: true })
+      .waitFor({ state: "visible", timeout: 10000 })
+      .catch(() => {});
+  }
+}
+
+export async function helpWorkdaySignIn(
+  session: { page: Page; loginAttempted?: boolean; url?: string },
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  if (session.loginAttempted) return;
+  const page = session.page;
+  const employerHost = new URL(session.url ?? page.url()).hostname;
+  const credentialsForPage = () => workdayCredentials(page.url(), env, {
+    employerHost,
+  });
+  if (
+    credentialsForPage() &&
+    (await page
+      .getByRole("heading", { name: /^create (?:an? )?account$/i })
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    const existingChoices = [
+      page.getByRole("link", { name: /^sign in$/i }).last(),
+      page.getByRole("button", { name: /^sign in$/i }).last(),
+    ];
+    for (const existing of existingChoices) {
+      if (!(await existing.isVisible().catch(() => false))) continue;
+      await existing.click();
+      await page.getByRole("heading", { name: /^sign in$/i }).first()
+        .waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+      break;
+    }
+  }
+  if ((await helpWorkdaySignUp(page, env, { employerHost })).state === "manual_required") return;
+  if (session.loginAttempted || !credentialsForPage()) return;
+  const visible = async (locator: Locator) =>
+    await locator.isVisible().catch(() => false);
+  // Enter the application flow without creating an account or accepting terms.
+  const apply = page
+    .getByRole("button", { name: "Apply", exact: true })
+    .first();
+  if (await visible(apply)) {
+    await apply.click();
+    const autofill = page
+      .getByRole("button", { name: "Autofill with Resume", exact: true })
+      .first();
+    if (await visible(autofill)) await autofill.click();
+  }
+  const emailSignIn = page
+    .getByRole("button", { name: "Sign in with email", exact: true })
+    .last();
+  await emailSignIn
+    .waitFor({ state: "visible", timeout: 5000 })
+    .catch(() => {});
+  if (await visible(emailSignIn)) await emailSignIn.click();
+  const email = page.getByLabel(/email(?: address)?/i).last();
+  const password = page.getByLabel(/^password\s*\*?$/i).last();
+  await password.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+  const credentials = credentialsForPage();
+  const text = await page.locator("body").innerText();
+  if (
+    await visible(
+      page.getByRole("heading", { name: /^create (?:an? )?account$/i }).first(),
+    )
+  ) {
+    if (credentials && (await visible(email)))
+      await email.fill(credentials.email);
+    return; // New passwords, terms and account creation remain in the user's control.
+  }
+  if (
+    !credentials ||
+    /captcha|verify you are human|verification code|confirm password/i.test(
+      text,
+    )
+  )
+    return;
+  let submit = page.getByRole("button", { name: /^sign in$/i }).last();
+  // Workday also has a global Sign In button. Prefer the actual form submit.
+  if (typeof password.locator === "function") {
+    const form = password.locator("xpath=ancestor::form[1]");
+    const workdaySubmit = page
+      .locator('[data-automation-id="signInSubmitButton"]')
+      .last();
+    if (await visible(workdaySubmit)) submit = workdaySubmit;
+    else if (await form.count())
+      submit = form.getByRole("button", { name: /^sign in$/i }).first();
+    else submit = page.getByRole("button", { name: /^sign in$/i }).last();
+  }
+  if (
+    !(await visible(email)) ||
+    !(await visible(password)) ||
+    !(await visible(submit))
+  )
+    return;
+  session.loginAttempted = true;
+  await email.fill(credentials.email);
+  await password.fill(credentials.password);
+  // Recheck the tenant immediately before submitting existing-account credentials.
+  if (!credentialsForPage()) return;
+  await submit.click();
+  await password.waitFor({ state: "hidden", timeout: 10000 }).catch(() => {});
+}
