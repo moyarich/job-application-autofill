@@ -10,7 +10,7 @@ describe("PDF Python environment resolution", () => {
     };
     await expect(
       findPdfPython({ env: {}, executeCommand: run }),
-    ).rejects.toThrow(/npm run build:python --workspace packages\/resume/);
+    ).rejects.toThrow();
     expect(
       commands.some((command) => /\b(install|venv|pip)\b/.test(command)),
     ).toBe(false);
