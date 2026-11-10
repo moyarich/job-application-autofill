@@ -31,7 +31,7 @@ export async function missingWorkdayRequiredFields(page: Page): Promise<string[]
       if (!required) continue;
       if (element.tagName === "BUTTON" && !/\b(?:Select One|Select) Required\b/i.test(name)) continue;
       const type = element.type;
-      let empty = false;
+      let empty: boolean;
       if (type === "checkbox" || type === "radio") {
         const group = element.name ? root.querySelectorAll('input[name="' + CSS.escape(element.name) + '"]') : [element];
         empty = !Array.from(group).some((entry) => (entry as HTMLInputElement).checked);
