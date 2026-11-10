@@ -1,3 +1,4 @@
+import { captureEmployerAnswers } from "./answer-capture.ts";
 import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -294,6 +295,16 @@ export async function prepareApplicationAccount(
   }
   await refreshScreenshot(id).catch(() => {});
   return status(session);
+}
+
+/** Read application-specific text answers directly from the employer's form. */
+export async function snapshotEmployerAnswers(id: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (!adapterForUrl(session.page.url()) ||
+      new URL(session.page.url()).hostname !== new URL(session.url).hostname)
+    throw new Error("Return to the employer application before saving answers.");
+  return captureEmployerAnswers(session.page);
 }
 
 export async function answerApplicationQuestions(
