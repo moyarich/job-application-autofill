@@ -23,7 +23,7 @@ test("employer menu follows automation and page changes without reopening", asyn
         return originalFetch(input, init);
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
-          publish = () => controller.enqueue(encoder.encode("event: update\\ndata: {}\\n\\n"));
+          publish = () => controller.enqueue(encoder.encode("event: update\ndata: {}\n\n"));
           publish();
           init?.signal?.addEventListener("abort", () => {
             publish = undefined;
