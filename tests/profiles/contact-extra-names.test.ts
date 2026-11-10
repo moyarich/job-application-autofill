@@ -17,6 +17,15 @@ test("saved middle and preferred names persist and remain attached to the select
     const record = store.listContacts(DEFAULT_PROFILE_ID)[0];
     expect(record).toMatchObject({ middleName: "Jay", preferredName: "MJ" });
     const resume = store.createResume(DEFAULT_PROFILE_ID, "Linked");
+    // A new resume is an empty draft. Link a valid document before checking its contact projection.
+    expect(resume.contactId).toBe(saved.id);
+    expect(store.getResumeContent(DEFAULT_PROFILE_ID, resume.id).profile).toBeNull();
+    const snapshot = store.getResumeContent(DEFAULT_PROFILE_ID, resume.id);
+    store.saveResumeContent(
+      { revision: snapshot.revision, profile: sample, contactId: saved.id },
+      DEFAULT_PROFILE_ID,
+      resume.id,
+    );
     expect(store.getResumeContent(DEFAULT_PROFILE_ID, resume.id).profile?.contact)
       .toMatchObject({ middleName: "Jay", preferredName: "MJ" });
   } finally {
