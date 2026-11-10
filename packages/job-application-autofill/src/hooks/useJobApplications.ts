@@ -108,5 +108,19 @@ export function useJobApplications({
     }
   }
 
-  return { jobs, setJobs, jobsHydrated, flushJobs };
+  async function removeJob(jobId: string) {
+    if (timer.current) clearTimeout(timer.current);
+    const operation = queue.current.then(async () => {
+      await persistJobs();
+      await deleteJob(profileId, jobId, revisionsRef.current[jobId]);
+      delete revisionsRef.current[jobId];
+      const saved = JSON.parse(savedRef.current || "[]") as JobApplication[];
+      savedRef.current = JSON.stringify(saved.filter((job) => job.id !== jobId));
+      setJobs((items) => items.filter((job) => job.id !== jobId));
+    });
+    queue.current = operation.catch(() => {});
+    await operation;
+  }
+
+  return { jobs, setJobs, jobsHydrated, flushJobs, removeJob };
 }
