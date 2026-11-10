@@ -37,7 +37,6 @@ export default {
     },
   ],
   discoverQuestions: workdayScreening.discover,
-  answerQuestions: workdayScreening.answer,
   openApplication: openWorkdayApplication,
   helpSignIn: helpWorkdaySignIn,
   loginFailureMessage: workdayLoginFailureMessage,
