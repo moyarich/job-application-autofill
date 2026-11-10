@@ -6,6 +6,8 @@ export const fields: {
 }[] = [
   { key: "firstName", label: "First name" },
   { key: "lastName", label: "Last name" },
+  { key: "middleName", label: "Middle name" },
+  { key: "preferredName", label: "Preferred name" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "location", label: "Location" },
