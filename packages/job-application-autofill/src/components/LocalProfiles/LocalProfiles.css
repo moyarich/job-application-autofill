@@ -1,9 +1,0 @@
-.local-profiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 660px; }
-.local-profiles label { color: #44526b; font-size: 12px; font-weight: 700; letter-spacing: .01em; text-transform: none; }
-.local-profiles select { width: 100%; min-height: 44px; border: 1px solid #dbe3ee; border-radius: 10px; padding: 10px 13px; background: white; color: #182338; }
-.local-profile-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 17px; }
-.local-profile-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 39px; padding: 9px 12px; background: #fff; color: #42516a; border: 1px solid #dbe3ee; border-radius: 9px; font-size: 12px; font-weight: 650; }
-.local-profile-actions button:hover:not(:disabled) { background: #f5f8ff; border-color: #bfcbe0; }
-.local-profile-actions button:disabled { opacity: .4; }
-.local-profile-actions .action-danger:hover:not(:disabled) { color: #ae3146; background: #fff4f5; border-color: #efcbd0; }
-.local-profiles .resume-context { margin: -7px 0 0; padding: 12px 14px; border: 1px solid #e2e7f2; border-radius: 10px; background: #f8faff; color: #67758a; font-size: 12px; line-height: 1.5; }

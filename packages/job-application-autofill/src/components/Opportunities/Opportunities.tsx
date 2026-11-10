@@ -6,7 +6,7 @@ import { SearchInput } from "../SearchInput/SearchInput";
 import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";
 import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Trash2, Link2, MapPin, BriefcaseBusiness, LoaderCircle, ChevronDown, X } from "lucide-react";
+import { Download, FilePlus2, Trash2, Link2, MapPin, BriefcaseBusiness, LoaderCircle, ChevronDown, ExternalLink, FileText, StickyNote, X } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -37,7 +37,6 @@ export function Opportunities({
     notesJobId,
     setJobs,
   } = controller;
-  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const previousJobCount = useRef(jobs.length);
   useEffect(() => {
     if (jobs.length > previousJobCount.current) onCloseAddForm();
@@ -47,6 +46,7 @@ export function Opportunities({
   const [sort, setSort] = useState<ApplicationSort>("newest");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [descriptionJobId, setDescriptionJobId] = useState<string | null>(null);
   const filtered = useMemo(() => searchApplications(jobs, search, statusFilter, sort), [jobs, search, statusFilter, sort]);
   const paginated = paginateApplications(filtered, page, pageSize);
   const updateSearch = (value: string) => { setSearch(value); setPage(1); };
@@ -92,14 +92,6 @@ export function Opportunities({
               placeholder="Detected from job posting"
             />
           </label>
-          <fieldset className="application-account-choice">
-            <legend>Employer account</legend>
-            <label><input type="radio" name="account-action" value="signup" checked={newJob.accountAction === "signup"}
-              onChange={() => setNewJob((current) => ({ ...current, accountAction: "signup" }))} /> Sign up</label>
-            <label><input type="radio" name="account-action" value="login" checked={newJob.accountAction === "login"}
-              onChange={() => setNewJob((current) => ({ ...current, accountAction: "login" }))} /> Log in</label>
-            <span>Uses your configured credentials.</span>
-          </fieldset>
           <button className="primary" type="submit" disabled={metadataBusy}>
             {metadataBusy ? <LoaderCircle size={15} className="application-spinner" /> : <FilePlus2 size={15} />} {metadataBusy ? "Reading posting…" : "Add application"}
           </button>
@@ -163,53 +155,93 @@ export function Opportunities({
                   </span>
                   {job.details?.location && <span className="job-location"><MapPin size={12} aria-hidden="true" />{job.details.location}</span>}
                   {job.details?.salary && <span className="job-salary">{job.details.salary}</span>}
-                  {job.details?.description && <details className="saved-job-description"><summary>Job description</summary><JobDescription content={job.details.description} /></details>}
-                  {job.url && (
-                    <a href={job.url} target="_blank" rel="noopener noreferrer">
-                      View job posting
-                    </a>
-                  )}
+
                 </div>
                 <div className="job-actions">
-                  <label className="sr-only" htmlFor={`status-${job.id}`}>Status for {job.role} at {job.company}</label>
-                  <select id={`status-${job.id}`} className="application-status-select"
-                    value={job.status} onChange={(e) => changeJob(job.id, e.target.value as ApplicationStatus)}>
-                    {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+                <div className="job-apply-card">
+                <label className="application-resume-selector">
+                  Resume
+                  <select
+                    aria-label={`Resume for ${job.role} at ${job.company}`}
+                    value={job.resumeId ?? ""}
+                    onChange={(event) => setJobs((items) => items.map((item) =>
+                      item.id === job.id ? { ...item, resumeId: event.target.value || null } : item
+                    ))}
+                  >
+                    <option value="">Select resume</option>
+                    {resumeVersions.map((resume) => (
+                      <option key={resume.id} value={resume.id}>{resume.name}</option>
+                    ))}
                   </select>
-                  <button className="primary" disabled={!job.url || !job.resumeId || !resumeVersions.some((resume) => resume.id === job.resumeId)}
-                    onClick={() => void prepareJob(job)}>Apply</button>
-                  <button type="button" className="secondary application-details-toggle"
-                    aria-expanded={expandedJobId === job.id} aria-controls={`application-details-${job.id}`}
-                    onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}>
-                    Details <ChevronDown size={15} aria-hidden="true" />
-                  </button>
+                </label>
+                <label className="application-resume-selector application-account-selector">Account
+                  <select aria-label={`Account action for ${job.role} at ${job.company}`} value={job.accountAction ?? "signup"}
+                    onChange={(event) => setJobs((items) => items.map((item) => item.id === job.id ? { ...item, accountAction: event.target.value as "signup" | "login" } : item))}>
+                    <option value="signup">Sign up</option><option value="login">Log in</option>
+                  </select>
+                </label>
+                <button
+                  className="primary"
+                  disabled={!job.url || !job.resumeId || !resumeVersions.some((resume) => resume.id === job.resumeId)}
+                  onClick={() => void prepareJob(job)}
+                >
+                  Apply
+                </button>
                 </div>
-                {expandedJobId === job.id && <div className="application-row-details" id={`application-details-${job.id}`}>
-                  <label className="application-resume-selector">
-                    Resume
-                    <select aria-label={`Resume for ${job.role} at ${job.company}`} value={job.resumeId ?? ""}
-                      onChange={(event) => setJobs((items) => items.map((item) =>
-                        item.id === job.id ? { ...item, resumeId: event.target.value || null } : item))}>
-                      <option value="">Select resume</option>
-                      {resumeVersions.map((resume) => <option key={resume.id} value={resume.id}>{resume.name}</option>)}
-                    </select>
-                  </label>
-                  <label className="application-resume-selector">
-                    Employer account
-                    <select aria-label={`Account action for ${job.role} at ${job.company}`}
-                      value={job.accountAction ?? "signup"}
-                      onChange={(event) => setJobs((items) => items.map((item) =>
-                        item.id === job.id ? { ...item, accountAction: event.target.value as "signup" | "login" } : item))}>
-                      <option value="signup">Sign up</option><option value="login">Log in</option>
-                    </select>
-                  </label>
-                  <button type="button" className="secondary" onClick={() => setNotesJobId(notesJobId === job.id ? null : job.id)}>Notes</button>
-                  <button type="button" className="remove" aria-label={`Remove ${job.role} at ${job.company}`}
-                    onClick={() => setJobs((items) => items.filter((x) => x.id !== job.id))}>
-                    <Trash2 size={16} aria-hidden="true" /> Remove
-                  </button>
-                </div>}
-                {expandedJobId === job.id && notesJobId === job.id && (
+                <details className="job-action-menu">
+                  <summary aria-label={`Actions for ${job.role} at ${job.company}`}>
+                    Actions <ChevronDown size={16} aria-hidden="true" />
+                  </summary>
+                  <div className="job-action-menu-content">
+                    <label className="job-status-control">
+                      Status
+                      <select
+                        aria-label={`Status for ${job.company} ${job.role}`}
+                        value={job.status}
+                        onChange={(event) => {
+                          changeJob(job.id, event.target.value as ApplicationStatus);
+                          event.currentTarget.closest(".job-action-menu")?.removeAttribute("open");
+                        }}
+                      >
+                        {statuses.map((status) => (
+                          <option key={status} value={status}>{statusLabels[status]}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {job.details?.description && (
+                      <button type="button" className="job-menu-item" onClick={(event) => {
+                        setDescriptionJobId(descriptionJobId === job.id ? null : job.id);
+                        event.currentTarget.closest(".job-action-menu")?.removeAttribute("open");
+                      }}>
+                        <FileText size={16} aria-hidden="true" /> Job description
+                      </button>
+                    )}
+                    {job.url && (
+                      <a className="job-menu-item" href={job.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={16} aria-hidden="true" /> View job posting
+                      </a>
+                    )}
+                    <button type="button" className="job-menu-item" onClick={(event) => {
+                      setNotesJobId(notesJobId === job.id ? null : job.id);
+                      event.currentTarget.closest(".job-action-menu")?.removeAttribute("open");
+                    }}>
+                      <StickyNote size={16} aria-hidden="true" /> Notes
+                    </button>
+                    <button type="button" className="job-menu-item job-menu-danger"
+                      aria-label={`Remove ${job.role} at ${job.company}`}
+                      onClick={() => setJobs((items) => items.filter((item) => item.id !== job.id))}>
+                      <Trash2 size={16} aria-hidden="true" /> Delete
+                    </button>
+                  </div>
+                </details>
+                </div>
+                {descriptionJobId === job.id && job.details?.description && (
+                  <div className="job-description-expanded">
+                    <button type="button" className="secondary" onClick={() => setDescriptionJobId(null)}>Close description</button>
+                    <JobDescription content={job.details.description} />
+                  </div>
+                )}
+                {notesJobId === job.id && (
                   <label className="job-notes">
                     Application notes
                     <textarea

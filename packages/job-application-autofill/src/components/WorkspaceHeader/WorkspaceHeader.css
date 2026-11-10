@@ -1,6 +1,0 @@
-.workspace-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
-.eyebrow { color: #6478a0; text-transform: uppercase; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
-.workspace-header h1 { margin: 9px 0 6px; font-size: clamp(27px,3.2vw,37px); line-height: 1.2; font-weight: 790; letter-spacing: -.055em; }
-.workspace-header p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
-.workspace-header .actions { justify-content: flex-end; }
-@media(max-width: 940px) { .workspace-header { align-items: flex-start; flex-direction: column; } .workspace-header .actions { justify-content: flex-start; } }
