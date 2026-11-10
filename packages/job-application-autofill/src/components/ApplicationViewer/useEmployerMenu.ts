@@ -16,48 +16,61 @@ export function useEmployerMenu(
   const [active, setActive] = useState<ViewerSession | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const mounted = useRef(false),
     closed = useRef(false);
   const pending = useRef<Promise<void> | null>(null);
+  const refreshAgain = useRef(false);
   const actions = useRef(new Set<string>());
   const base = "/api/apply/" + encodeURIComponent(session);
   const refresh = useCallback(async () => {
     if (!session || closed.current || !mounted.current) return;
-    if (pending.current) return pending.current;
+    if (pending.current) {
+      // An SSE notification or a manual click must not be lost to a
+      // previously started inspection of the employer's page.
+      refreshAgain.current = true;
+      return pending.current;
+    }
+    setRefreshing(true);
     pending.current = (async () => {
-      try {
-        const data = await viewerRequest<{
-          items?: MenuItem[];
-          session?: ViewerSession;
-        }>(base + "/menu", profile);
-        const nextItems = Array.isArray(data.items) ? data.items : [];
-        let next =
-          data.session ?? (await viewerRequest<ViewerSession>(base, profile));
-        if (
-          !data.session &&
-          next.state === "login_required" &&
-          nextItems.length &&
-          !next.running &&
-          !next.paused
-        )
-          next = { ...next, state: "ready_for_review" };
-        if (mounted.current && !closed.current) {
-          setActive(next);
-          setItems(nextItems);
-        }
-      } catch (cause) {
-        if (!mounted.current) return;
-        if (
-          /expired|not found|closed|unknown.*session/i.test(
-            cause instanceof Error ? cause.message : "",
+      do {
+        refreshAgain.current = false;
+        try {
+          const data = await viewerRequest<{
+            items?: MenuItem[];
+            session?: ViewerSession;
+          }>(base + "/menu", profile);
+          const nextItems = Array.isArray(data.items) ? data.items : [];
+          let next =
+            data.session ?? (await viewerRequest<ViewerSession>(base, profile));
+          if (
+            !data.session &&
+            next.state === "login_required" &&
+            nextItems.length &&
+            !next.running &&
+            !next.paused
           )
-        )
-          setActive(null);
-        else setError(menuError(cause));
-      }
+            next = { ...next, state: "ready_for_review" };
+          if (mounted.current && !closed.current) {
+            setActive(next);
+            setItems(nextItems);
+            setError("");
+          }
+        } catch (cause) {
+          if (!mounted.current || closed.current) return;
+          if (
+            /expired|not found|closed|unknown.*session/i.test(
+              cause instanceof Error ? cause.message : "",
+            )
+          )
+            setActive(null);
+          else setError(menuError(cause));
+        }
+      } while (refreshAgain.current && mounted.current && !closed.current);
     })().finally(() => {
       pending.current = null;
+      if (mounted.current) setRefreshing(false);
     });
     return pending.current;
   }, [base, profile, session]);
@@ -108,5 +121,5 @@ export function useEmployerMenu(
       if (!closed.current) await refresh();
     }
   }
-  return { active, items, busy, error, refresh, run };
+  return { active, items, busy, refreshing, error, refresh, run };
 }
