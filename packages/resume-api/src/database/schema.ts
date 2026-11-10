@@ -1,13 +1,14 @@
 import { readFileSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 const initialTables = [
   "profiles.sql",
   "profile-contact.sql",
   "resumes.sql",
   "employer-accounts.sql",
   "applications.sql",
+  "application-answers.sql",
 ] as const;
 
 /** Initialize current tables or upgrade an existing database without discarding data. */
@@ -16,15 +17,16 @@ export function initializeDatabase(db: DatabaseSync): void {
     db.prepare("PRAGMA user_version").get() as { user_version: number }
   ).user_version;
   if (version === CURRENT_SCHEMA_VERSION) return;
-  if (version === 1 || version === 2) {
+  if (version === 1 || version === 2 || version === 3) {
     db.exec("BEGIN IMMEDIATE");
     try {
       if (version === 1)
         db.exec(
           "ALTER TABLE applications ADD COLUMN account_action TEXT CHECK(account_action IN ('signup','login'))",
         );
-      db.exec("ALTER TABLE applications ADD COLUMN details_json TEXT");
-      db.exec("PRAGMA user_version = 3");
+      if (version < 3) db.exec("ALTER TABLE applications ADD COLUMN details_json TEXT");
+      db.exec(readFileSync(new URL("./tables/application-answers.sql", import.meta.url), "utf8"));
+      db.exec("PRAGMA user_version = 4");
       db.exec("COMMIT");
     } catch (error) {
       db.exec("ROLLBACK");
