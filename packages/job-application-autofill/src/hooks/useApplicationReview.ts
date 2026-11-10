@@ -1,3 +1,4 @@
+import { readActiveApplication } from "../api/applications";
 import { useState, useEffect } from "react";
 import type { ApplySession } from "../types/types";
 import type { ApplicationReviewData } from "../types/application-review-data";
@@ -27,19 +28,7 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
     if (!applicationId || !session) return;
     let cancelled = false;
     const timer = setInterval(() => {
-      fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {
-        headers: {
-          "X-Moya-Client": "dashboard",
-          "X-Profile-Id": activeProfileId,
-        },
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(
-              "Application session is unavailable. Reload to retry.",
-            );
-          return response.json();
-        })
+      readActiveApplication(applicationId, activeProfileId)
         .then((result) => {
           if (cancelled) return;
           setSession(result.session ?? null);
@@ -62,13 +51,7 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
   useEffect(() => {
     let cancelled = false;
     if (!applicationId) return;
-    fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {
-      headers: {
-        "X-Moya-Client": "dashboard",
-        "X-Profile-Id": activeProfileId,
-      },
-    })
-      .then((response) => (response.ok ? response.json() : null))
+    readActiveApplication(applicationId, activeProfileId)
       .then((result) => {
         if (!cancelled && result?.session)
           setSession(result.session as ApplySession);
