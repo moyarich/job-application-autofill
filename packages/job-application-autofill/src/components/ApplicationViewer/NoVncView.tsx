@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { viewerRequest } from "../../api/viewer";
+import { focusViewerBrowser, pasteViewerText, readViewerConfig } from "../../api/viewer";
 
 interface RemoteFrame extends EventTarget {
   scaleViewport: boolean;
@@ -65,12 +65,7 @@ export const NoVncView = forwardRef<
     }
     async function focusApplication() {
       if (!focusRequest)
-        focusRequest = viewerRequest(
-          `/api/apply/${encodeURIComponent(session)}/focus`,
-          profile,
-          {},
-          signal,
-        )
+        focusRequest = focusViewerBrowser(session, profile, signal)
           .then(() => {})
           .catch(() => {
             throw new Error("This application browser session has ended.");
@@ -111,12 +106,7 @@ export const NoVncView = forwardRef<
         [0xffe4, "ControlRight"],
       ] as const)
         rfb!.sendKey(key, code, false);
-      await viewerRequest(
-        `/api/apply/${encodeURIComponent(session)}/paste`,
-        profile,
-        { text },
-        signal,
-      );
+      await pasteViewerText(session, profile, text, signal);
       input.value = "";
       focusKeyboard(true);
       report("Connected to application browser");
@@ -196,12 +186,7 @@ export const NoVncView = forwardRef<
     void (async () => {
       if (!session)
         throw new Error("Open the browser from an application page.");
-      const config = await viewerRequest<{ password: string }>(
-        "/api/viewer/config",
-        profile,
-        undefined,
-        signal,
-      );
+      const config = await readViewerConfig(profile, signal);
       const modulePath = "/vnc/core/rfb.js";
       const { default: RFB } = (await import(
         /* @vite-ignore */ modulePath
