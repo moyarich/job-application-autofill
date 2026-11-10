@@ -1,86 +1,41 @@
-import type {
-  ResumeImportActionsContext,
-  ApplyImportedContent,
-} from "./import-context";
-import {
-  createResumeVersion,
-  deleteResumeVersion,
-  resolveImportedContact,
-  saveResumeContent,
-} from "../api/client";
+import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
+import { requestApi } from "../api/client";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
 import type { ContactChoice } from "../api/client";
-import type { ContactKey } from "./import-context";
 
 export function createConfirmImport(
-  context: ResumeImportActionsContext & {
-    applyImportedContent: ApplyImportedContent;
-  },
+  context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent },
 ) {
-  const {
-    activeProfileId,
-    activeResumeId,
-    contactKeys,
-    pendingImport,
-    flushPending,
-    setMessage,
-    setContacts,
-    setDefaultContactId,
-    applyImportedContent,
-  } = context;
+  const { activeProfileId, activeResumeId, revisionRef, contactKeys, pendingImport, flushPending, setMessage } = context;
+  let importing = false;
   async function confirmImport(strategy: ContactChoice = "resume") {
-    if (!pendingImport) return;
-    let newResumeId: string | null = null;
+    if (!pendingImport || importing) return;
+    importing = true;
     try {
-      if (!activeResumeId) {
-        const created = await createResumeVersion(
-          activeProfileId,
-          defaultImportedResumeName(pendingImport),
-        );
-        newResumeId = created.id;
-      } else {
-        await flushPending();
-      }
-      const choices = Object.fromEntries(
-        contactKeys.map((key) => [key, strategy]),
-      ) as Partial<Record<ContactKey, ContactChoice>>;
-      const result = await resolveImportedContact(
+      await flushPending();
+      const result = await requestApi<{ resumeId: string; revision: number }>(
+        "/api/resumes/import",
+        {
+          resumeId: activeResumeId,
+          revision: revisionRef.current,
+          name: defaultImportedResumeName(pendingImport),
+          profile: pendingImport,
+          choices: Object.fromEntries(contactKeys.map((key) => [key, strategy])),
+        },
         activeProfileId,
-        activeResumeId ?? newResumeId!,
-        pendingImport.contact,
-        choices,
       );
-      setContacts(result.contacts);
-      if (result.contacts.some((item) => item.isDefault)) {
-        setDefaultContactId(result.contacts.find((item) => item.isDefault)!.id);
-      }
-      if (newResumeId) {
-        await saveResumeContent(activeProfileId, newResumeId, {
-          revision: 0,
-          profile: { ...pendingImport, contact: result.contact },
-          contactId: result.contactId,
-        });
-        const url = new URL(window.location.href);
-        url.pathname = routes.resumes;
-        url.search = "";
-        url.searchParams.set("profile", activeProfileId);
-        url.searchParams.set("resume", newResumeId);
-        window.location.assign(url.href);
-        return;
-      }
-      applyImportedContent(pendingImport, result.contactId, result.contact);
+      // Reload the committed resume/contact snapshot; do not autosave stale local state.
+      const url = new URL(window.location.href);
+      if (!activeResumeId) url.pathname = routes.resumes;
+      url.search = "";
+      url.searchParams.set("profile", activeProfileId);
+      url.searchParams.set("resume", result.resumeId);
+      window.location.assign(url.href);
     } catch (error) {
-      if (newResumeId) {
-        try {
-          await deleteResumeVersion(activeProfileId, newResumeId);
-        } catch {
-          /* Preserve original error. */
-        }
-      }
-      setMessage(
-        error instanceof Error ? error.message : "Could not import resume.",
-      );
+      setMessage(error instanceof Error ? error.message : "Could not import resume.");
+    } finally {
+      importing = false;
     }
   }
   return confirmImport;

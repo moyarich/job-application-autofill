@@ -6,7 +6,12 @@ import type {
 } from "../types.ts";
 import type { ApplicationQuestion } from "../index.ts";
 
-export type StepContext = JobSiteStepContext & { expectedHost: string };
+export type StepContext = JobSiteStepContext & {
+  expectedHost: string;
+  onStep?: (stepId: string | null) => void;
+  onStepResult?: (stepId: string, missing: string[]) => void;
+  processedSteps?: Record<string, "processed" | "needs_review">;
+};
 export interface StepOutcome {
   detection: PageDetection;
   filled: string[];
@@ -65,7 +70,14 @@ export async function automateCurrentStep(
       resumeUploadUrls: outcome.resumeUploadUrls,
     };
     if (!(await step.matches(current))) continue;
-    const result = await step.run(current);
+    context.onStep?.(step.id);
+    let result;
+    try {
+      result = await step.run(current);
+      context.onStepResult?.(step.id, result.missing);
+    } finally {
+      context.onStep?.(null);
+    }
     outcome.executed.push(step.id);
     outcome.filled.push(...result.filled);
     outcome.missing.push(...result.missing);
@@ -99,14 +111,19 @@ export async function listJobSiteMenu(
   )
     return [];
   const steps = new Map((adapter.steps ?? []).map((step) => [step.id, step]));
-  const items: { id: string; label: string; available: boolean }[] = [];
+  const items: { id: string; label: string; available: boolean; status?: "processed" | "needs_review" | "filled" | "ready" }[] = [];
   for (const item of adapter.menuItems ?? []) {
     const step = steps.get(item.stepId);
     if (!step) continue;
+    const available = await step.matches(context).catch(() => false);
+    const observed = await step.inspectStatus?.(context).catch(() => undefined);
+    const previous = context.processedSteps?.[item.stepId];
+    const status = observed ?? previous;
     items.push({
       id: item.id,
       label: item.label,
-      available: await step.matches(context).catch(() => false),
+      available,
+      ...(status ? { status } : {}),
     });
   }
   return items;

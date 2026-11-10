@@ -56,6 +56,8 @@ export function Opportunities({
     setNotesJobId,
     notesJobId,
     setJobs,
+    removeJob: deleteApplication,
+    setMessage,
   } = controller;
   const previousJobCount = useRef(jobs.length);
   useEffect(() => {
@@ -70,6 +72,7 @@ export function Opportunities({
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({ company: "", role: "", url: "" });
   const [editError, setEditError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   function startEdit(job: (typeof jobs)[number]) {
     setEditingJobId(job.id);
     setEditDraft({ company: job.company, role: job.role, url: job.url });
@@ -87,10 +90,19 @@ export function Opportunities({
     setEditingJobId(null);
     setEditError("");
   }
-  function removeJob(job: (typeof jobs)[number]) {
+  async function removeJob(job: (typeof jobs)[number]) {
+    if (deletingId) return;
     if (!window.confirm("Delete the application for " + job.role + " at " + job.company +
       "? Its saved screening answers will also be deleted.")) return;
-    setJobs((items) => items.filter((item) => item.id !== job.id));
+    setDeletingId(job.id);
+    try {
+      await deleteApplication(job.id);
+      setMessage("Application deleted.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not delete application.");
+    } finally {
+      setDeletingId(null);
+    }
   }
   const filtered = useMemo(
     () => searchApplications(jobs, search, statusFilter, sort),
@@ -327,14 +339,16 @@ export function Opportunities({
                       className="primary"
                       disabled={
                         !job.url ||
+                        (!["in_progress", "ready_for_review"].includes(job.status) && (
                         !job.resumeId ||
                         !resumeVersions.some(
                           (resume) => resume.id === job.resumeId,
                         )
+                        ))
                       }
                       onClick={() => void prepareJob(job)}
                     >
-                      Apply
+                      {["in_progress", "ready_for_review"].includes(job.status) ? "Continue application" : "Apply"}
                     </button>
                   </div>
                   <details className="job-action-menu">
@@ -423,9 +437,10 @@ export function Opportunities({
                         type="button"
                         className="job-menu-item job-menu-danger"
                         aria-label={`Remove ${job.role} at ${job.company}`}
-                        onClick={() => removeJob(job)}
+                        disabled={deletingId !== null}
+                        onClick={() => void removeJob(job)}
                       >
-                        <Trash2 size={16} aria-hidden="true" /> Delete
+                        <Trash2 size={16} aria-hidden="true" /> {deletingId === job.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </details>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ApplicationBrowser, type ApplicationBrowserHandle } from "./ApplicationBrowser";
 import { requestApi } from "../../utils/api/client";
 import { JobDescription } from "../JobDescription/JobDescription";
 import {
@@ -39,6 +40,10 @@ export function ApplicationReview({
     finalizeApplication,
   } = controller;
   const [savingAnswers, setSavingAnswers] = useState(false);
+  const browser = useRef<ApplicationBrowserHandle>(null);
+  useEffect(() => {
+    browser.current?.refreshMenu();
+  }, [session?.id, session?.state, session?.running, applyBusy]);
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
   const [previousAnswers, setPreviousAnswers] = useState<PreviousAnswer[]>([]);
   const [currentAnswerRecords, setCurrentAnswerRecords] = useState<PreviousAnswer[]>([]);
@@ -179,7 +184,7 @@ export function ApplicationReview({
           <div className="application-start-heading">
             <span className="application-step">1</span>
             <div>
-              <h2>Choose your resume</h2>
+              <h2>{job && ["in_progress", "ready_for_review"].includes(job.status) ? "Continue your application" : "Choose your resume"}</h2>
               <p>
                 Confirm the version to share with{" "}
                 {job?.company || "this employer"}.
@@ -217,7 +222,7 @@ export function ApplicationReview({
                 if (job) void controller.prepareJob(job);
               }}
             >
-              {resumeBusy ? "Saving resume…" : "Open employer application"}
+              {resumeBusy ? "Saving resume…" : job && ["in_progress", "ready_for_review"].includes(job.status) ? "Reopen employer application" : "Open employer application"}
               <ArrowUpRight size={16} />
             </button>
           </div>
@@ -267,7 +272,7 @@ export function ApplicationReview({
                       disabled={applyBusy}
                       onClick={continueAfterChallenge}
                     >
-                      Continue
+                      Resume autofill
                     </button>
                   </div>
                 )}
@@ -357,19 +362,7 @@ export function ApplicationReview({
                         {session.missing.join(", ")}
                       </p>
                     )}
-                    <iframe
-                      className="browser-viewer"
-                      title="Interactive Playwright application browser"
-                      src={
-                        routes.applicationViewer +
-                        "?session=" +
-                        session.id +
-                        "&profile=" +
-                        encodeURIComponent(activeProfileId)
-                      }
-                      allow="clipboard-read; clipboard-write"
-                      referrerPolicy="no-referrer"
-                    />
+                    <ApplicationBrowser key={session.id} ref={browser} sessionId={session.id} profileId={activeProfileId} />
                     <label className="review-checkbox">
                       <input
                         type="checkbox"

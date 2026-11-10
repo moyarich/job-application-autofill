@@ -1,3 +1,4 @@
+import { missingWorkdayRequiredFields } from "./workday/required-fields.ts";
 import { captureEmployerAnswers } from "./answer-capture.ts";
 import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
 import { chromium } from "playwright";
@@ -46,6 +47,10 @@ type ApplicationSession = {
   questions: ApplicationQuestion[];
   loginAttempted?: boolean;
   signupPrepared?: AccountSetupResult;
+  pauseRequested?: boolean;
+  running?: boolean;
+  currentAction?: string | null;
+  processedSteps?: Record<string, "processed" | "needs_review">;
 };
 type ApplicationPreparation = {
   jobUrl: string;
@@ -98,6 +103,9 @@ function status(session: ApplicationSession) {
     ats: session.ats,
     questions: session.questions || [],
     signupPrepared: session.signupPrepared ?? null,
+    paused: Boolean(session.pauseRequested),
+    running: Boolean(session.running),
+    currentAction: session.currentAction ?? null,
   };
 }
 
@@ -105,10 +113,20 @@ export function getActiveApplication(
   jobId?: string | null,
   profileId = "00000000-0000-4000-8000-000000000001",
 ) {
+  pruneClosedSessions();
   const session = [...sessions.values()].find(
     (item) => item.profileId === profileId && (!jobId || item.jobId === jobId),
   );
   return session ? status(session) : null;
+}
+
+function pruneClosedSessions() {
+  for (const session of sessions.values()) {
+    if (
+      (typeof session.page.isClosed === "function" && session.page.isClosed()) ||
+      (typeof session.browser.isConnected === "function" && !session.browser.isConnected())
+    ) void closeApplication(session.id);
+  }
 }
 
 async function populateSession(session: ApplicationSession) {
@@ -124,6 +142,12 @@ async function populateSession(session: ApplicationSession) {
       pendingResume: session.pendingResume,
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
+      onStep: (stepId) => {
+        session.currentAction = adapter.menuItems?.find((item) => item.stepId === stepId)?.label ?? stepId;
+      },
+      onStepResult: (stepId, missing) => {
+        (session.processedSteps ??= {})[stepId] = missing.length ? "needs_review" : "processed";
+      },
     },
     adapter,
   );
@@ -136,6 +160,18 @@ async function populateSession(session: ApplicationSession) {
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
   session.questions = outcome.questions;
+}
+
+/** Pause at the next safe automation boundary without closing the employer browser. */
+export function pauseApplication(id: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (["submitted", "submission_unverified"].includes(session.state))
+    throw new Error("Application submission has already been attempted.");
+  session.pauseRequested = true;
+  session.state = "paused";
+  session.message = "Automation paused. Make changes in the employer browser, then continue.";
+  return status(session);
 }
 
 /** Only actions explicitly declared by the current site's adapter are visible. */
@@ -151,6 +187,7 @@ export async function getApplicationMenu(id: string) {
       expectedHost: new URL(session.url).hostname,
       directory: session.directory,
       pendingResume: session.pendingResume,
+      processedSteps: session.processedSteps,
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
     },
@@ -160,6 +197,10 @@ export async function getApplicationMenu(id: string) {
 
 /** A menu click invokes exactly one site-owned step; it never submits. */
 export async function runApplicationMenuItem(id: string, itemId: string) {
+  return withRunningSession(id, () => runApplicationMenuItemInternal(id, itemId));
+}
+
+async function runApplicationMenuItemInternal(id: string, itemId: string) {
   const session = sessions.get(id);
   if (
     !session ||
@@ -170,6 +211,7 @@ export async function runApplicationMenuItem(id: string, itemId: string) {
     throw new Error("Application session is not ready for this action.");
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) throw new Error("Return to the employer application first.");
+  session.currentAction = adapter.menuItems?.find((item) => item.id === itemId)?.label;
   const outcome = await executeJobSiteMenuItem(
     {
       page: session.page,
@@ -177,6 +219,9 @@ export async function runApplicationMenuItem(id: string, itemId: string) {
       expectedHost: new URL(session.url).hostname,
       directory: session.directory,
       pendingResume: session.pendingResume,
+      onStepResult: (stepId, missing) => {
+        (session.processedSteps ??= {})[stepId] = missing.length ? "needs_review" : "processed";
+      },
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
     },
@@ -191,7 +236,7 @@ export async function runApplicationMenuItem(id: string, itemId: string) {
   session.pendingResume = outcome.pendingResume;
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
-  session.state = "ready_for_review";
+  session.state = session.pauseRequested ? "paused" : "ready_for_review";
   session.message =
     "Selected employer step processed. Review the fields before submitting.";
   return status(session);
@@ -201,14 +246,36 @@ export async function continueApplication(
   id: string,
   profile?: CandidateProfile,
 ) {
+  return withRunningSession(id, () => continueApplicationInternal(id, profile));
+}
+
+async function withRunningSession(id: string, run: () => Promise<ReturnType<typeof status>>) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (session.running) throw new Error("Automation is already running for this application.");
+  session.running = true;
+  try {
+    await run();
+  } finally {
+    session.running = false;
+    session.currentAction = null;
+  }
+  return status(session);
+}
+
+async function continueApplicationInternal(
+  id: string,
+  profile?: CandidateProfile,
+) {
   const session = sessions.get(id);
   if (
     !session ||
-    !["manual_intervention", "login_required", "ready_for_review"].includes(
+    !["paused", "manual_intervention", "login_required", "ready_for_review"].includes(
       session.state,
     )
   )
     throw new Error("This session cannot be resumed.");
+  session.pauseRequested = false;
   if (profile) session.profile = resumeToPlainText(profile);
   if (!adapterForUrl(session.page.url())) {
     session.state = "login_required";
@@ -250,9 +317,16 @@ export async function continueApplication(
     return status(session);
   }
   await populateSession(session);
-  session.state = "ready_for_review";
-  session.message =
-    "Application controls inspected. Review all fields and questions, then explicitly confirm submission.";
+  if (session.ats === "workday") {
+    const required = await missingWorkdayRequiredFields(session.page);
+    session.missing = [...new Set([...session.missing, ...required.map((name) => "required: " + name)])];
+  }
+  session.state = session.pauseRequested ? "paused" : "ready_for_review";
+  session.message = session.pauseRequested
+    ? "Automation paused. Resume autofill when ready."
+    : session.missing.some((name) => name.startsWith("required:"))
+    ? "Workday requires additional information. Complete the listed fields in the employer viewer."
+    : "Current page autofill finished. Review the fields, then use the employer’s Save and Continue button to advance.";
   await refreshScreenshot(id);
   return status(session);
 }
@@ -269,10 +343,10 @@ export async function prepareApplicationAccount(
   if (
     password !== undefined &&
     (typeof password !== "string" ||
-      password.length < 12 ||
+      password.length < 8 ||
       password.length > 128)
   )
-    throw new Error("Account password must contain 12–128 characters.");
+    throw new Error("Account password must contain 8–128 characters.");
   // The destination is compared to the original employer's exact tenant host.
   const result = await prepareRegistration(
     session.page,
@@ -349,6 +423,7 @@ export async function prepareApplication({
   if (typeof jobId !== "string" || !jobId.trim())
     throw new Error("A job identifier is required.");
   const sessionKey = profileId + ":" + jobId;
+  pruneClosedSessions();
   if (
     launchingJobs.has(sessionKey) ||
     [...sessions.values()].some(
@@ -389,6 +464,10 @@ export async function prepareApplication({
       questions: [],
     };
     sessions.set(id, session);
+    if (typeof page.on === "function")
+      page.on("close", () => { void closeApplication(session.id); });
+    if (typeof browser.on === "function")
+      browser.on("disconnected", () => { void closeApplication(session.id); });
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
     // Account sign-in/SSO may redirect to an identity provider. Do not
@@ -477,8 +556,32 @@ export async function prepareApplication({
 }
 
 export function getApplication(id: string) {
+  pruneClosedSessions();
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
+  return status(session);
+}
+
+/** Observe manual employer navigation without running autofill or submitting. */
+export async function refreshApplicationState(id: string) {
+  getApplication(id);
+  const session = sessions.get(id)!;
+  if (session.running || session.pauseRequested ||
+      ["preparing", "submitted", "submission_unverified"].includes(session.state))
+    return status(session);
+  const adapter = adapterForUrl(session.page.url());
+  if (!adapter) return status(session);
+  const detection = await detectCurrentPage(session.page, adapter, new URL(session.url).hostname);
+  const next = detection.kind === "application" ? "ready_for_review" :
+    detection.kind === "challenge" ? "manual_intervention" : "login_required";
+  if (session.state !== next) {
+    session.state = next;
+    session.message = next === "ready_for_review"
+      ? "Employer application is open. Continue automation for the current page."
+      : next === "manual_intervention"
+        ? "Complete the security challenge in the employer browser."
+        : "Complete sign-in on the employer website, then continue.";
+  }
   return status(session);
 }
 

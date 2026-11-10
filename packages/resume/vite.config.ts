@@ -19,6 +19,7 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: {
+        "screening-policy": resolve(import.meta.dirname, "src/screening-policy.ts"),
         index: resolve(import.meta.dirname, "src/index.ts"),
         "extract-resume": resolve(
           import.meta.dirname,

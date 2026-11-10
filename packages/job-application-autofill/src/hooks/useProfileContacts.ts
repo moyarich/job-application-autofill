@@ -5,6 +5,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { usePendingSave } from "./PendingSaves";
 import type { CandidateProfile } from "../index";
 import {
   readContacts,
@@ -100,6 +101,11 @@ export function useProfileContacts({
     if (blocked.current) throw new Error("Contact changes could not be saved.");
     await persistContacts();
   }
+
+  usePendingSave(
+    () => hydrated && contacts.some((item) => signature(item) !== saved.current.get(item.id)),
+    flushContacts,
+  );
 
   return {
     contacts,

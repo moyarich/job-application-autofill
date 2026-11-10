@@ -60,9 +60,9 @@ test("application controls are grouped and secondary actions appear in one menu"
   await expect(
     row.locator(".job-apply-card").getByRole("button", { name: "Apply" }),
   ).toBeVisible();
-  await expect(row.getByText("Job description")).toHaveCount(0);
+  await expect(row.getByRole("button", { name: "Job description" })).toBeHidden();
 
-  await row.getByText("Actions", { exact: true }).click();
+  await row.locator("summary").click();
   const menu = row.locator(".job-action-menu");
   await expect(
     menu.getByLabel("Status for Cardinal Health Senior Engineer"),
@@ -82,7 +82,7 @@ test("application controls are grouped and secondary actions appear in one menu"
   await expect(row.locator(".job-description-expanded")).toContainText(
     "Build software.",
   );
-  await row.getByText("Actions", { exact: true }).click();
+  await row.locator("summary").click();
   await menu.getByRole("button", { name: "Notes" }).click();
   await expect(
     row.getByRole("textbox", { name: "Application notes" }),

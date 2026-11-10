@@ -329,3 +329,30 @@
   line-height: 1.7;
   color: var(--muted);
 }
+
+.application-browser { width: 100%; min-width: 0; background: #18181b; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.application-browser-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; background: #fafafa; border-bottom: 1px solid var(--line); }
+.application-browser-tools button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 6px 9px; border: 0; border-radius: 5px; background: transparent; color: #3f3f46; font-size: 12px; font-weight: 500; }
+.application-browser-tools button:hover, .application-browser-tools button[aria-pressed="true"] { background: #e4e4e7; }
+.application-browser-tools svg { flex-shrink: 0; }
+.application-browser > .browser-viewer { width: 100%; margin: 0; border: 0; border-radius: 0; resize: none; }
+.application-browser .application-browser-hint, .application-browser > p { margin: 0; padding: 8px 12px; background: #fafafa; color: #52525b; font-size: 12px; }
+.application-browser:fullscreen { display: flex; flex-direction: column; border: 0; border-radius: 0; }
+.application-browser:fullscreen > .browser-viewer { flex: 1; min-height: 0; height: auto; }
+.application-page .application-workspace, .application-page .review-panel, .application-page .employer-application { min-width: 0; }
+.application-page .employer-application { border-color: var(--line); background: white; }
+@media (max-width: 700px) {
+  .app.application-page > .main { padding: 16px 12px 32px; }
+  .app.application-page .review-panel { padding: 14px; background: #fff; border-color: var(--line); }
+  .application-page .review-panel .employer-application { padding: 0; border: 0; }
+  .application-page .browser-review-header { gap: 8px; }
+  .application-page .browser-review-header .browser-open { font-size: 12px; }
+  .application-page .review-panel .application-browser > .browser-viewer { height: max(440px, 72dvh); min-height: 0; margin: 0; }
+  .application-page .review-panel > .actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .application-page .review-panel .actions > button { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+  .application-page .application-questions { padding: 12px; }
+  .application-page .application-questions > .actions { flex-wrap: wrap; }
+  .application-page .screening-dock { position: static; }
+  .application-browser-tools button { flex: 1 1 auto; }
+  .application-browser:fullscreen > .browser-viewer { height: auto !important; }
+}

@@ -51,7 +51,7 @@ export function createFinalizeApplication(
         );
       } else {
         setSession(null);
-        setMessage("Application preview closed.");
+        setMessage("Browser session closed. Application status is unchanged.");
       }
     } catch (error) {
       setMessage(

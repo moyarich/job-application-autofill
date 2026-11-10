@@ -462,6 +462,7 @@ export function openStore(
     resumeId: string,
     incoming: unknown,
     choices: unknown,
+    manageTransaction = true,
   ) {
     const owner = requireProfile(profileId);
     const resume = requireResume(owner, resumeId);
@@ -504,7 +505,7 @@ export function openStore(
     for (const key of CONTACT_KEYS)
       if ((decisions[key] ?? "resume") !== "resume")
         tailored[key] = shared[key] || "";
-    db.exec("BEGIN IMMEDIATE");
+    if (manageTransaction) db.exec("BEGIN IMMEDIATE");
     try {
       if (current && CONTACT_KEYS.some((key) => shared[key] !== current[key]))
         updateContact.run(...contactValues(shared), owner, current.id);
@@ -527,10 +528,10 @@ export function openStore(
       db.prepare(
         "UPDATE resumes SET contact_id=?,updated_at=? WHERE profile_id=? AND id=?",
       ).run(contactId, now(), owner, resume.id);
-      db.exec("COMMIT");
+      if (manageTransaction) db.exec("COMMIT");
       return { contactId, contact: tailored, contacts: listContacts(owner) };
     } catch (error) {
-      db.exec("ROLLBACK");
+      if (manageTransaction) db.exec("ROLLBACK");
       throw error;
     }
   }
@@ -682,6 +683,7 @@ export function openStore(
     raw: unknown,
     profileId = DEFAULT_PROFILE_ID,
     resumeId?: string,
+    manageTransaction = true,
   ) {
     const owner = requireProfile(profileId);
     const id = resumeId ?? listResumes(owner)[0]?.id;
@@ -705,7 +707,7 @@ export function openStore(
       revision < 0
     )
       throw new Error("Expected a nonnegative resume revision.");
-    db.exec("BEGIN IMMEDIATE");
+    if (manageTransaction) db.exec("BEGIN IMMEDIATE");
     try {
       const current = requireResume(owner, id).revision;
       if (current !== revision) {
@@ -723,8 +725,35 @@ export function openStore(
       db.prepare(
         "UPDATE resumes SET contact_id=?,content_json=?,content_revision=?,updated_at=? WHERE profile_id=? AND id=?",
       ).run(contactId, content, current + 1, now(), owner, id);
-      db.exec("COMMIT");
+      if (manageTransaction) db.exec("COMMIT");
       return { revision: current + 1 };
+    } catch (error) {
+      if (manageTransaction) db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  /** Commit the resume and all imported contact changes as one unit. */
+  function importResumeDocument(profileId: string, raw: unknown) {
+    const owner = requireProfile(profileId);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      throw new Error("Invalid resume import.");
+    const payload = raw as Record<string, unknown>;
+    const profile = validateResume(payload.profile);
+    const resumeId = payload.resumeId == null ? null : validId(String(payload.resumeId));
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const resume = resumeId
+        ? { id: requireResume(owner, resumeId).id }
+        : createResume(owner, payload.name);
+      const resolved = resolveImportContact(owner, resume.id, profile.contact, payload.choices, false);
+      const saved = saveResumeContent({
+        revision: resumeId ? payload.revision : 0,
+        profile: { ...profile, contact: resolved.contact },
+        contactId: resolved.contactId,
+      }, owner, resume.id, false);
+      db.exec("COMMIT");
+      return { resumeId: resume.id, ...saved };
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
@@ -1039,6 +1068,7 @@ export function openStore(
     deleteContactRecord,
     setDefaultContact,
     resolveImportContact,
+    importResumeDocument,
     listResumes,
     createResume,
     renameResume,

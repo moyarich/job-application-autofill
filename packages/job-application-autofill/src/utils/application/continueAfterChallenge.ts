@@ -5,6 +5,7 @@ import type { ApplySession } from "./types";
 /** continueAfterChallenge action; no React hooks or state ownership. */
 export function createContinueAfterChallenge(
   context: ApplicationReviewActionsContext,
+  recoverSession?: () => Promise<void>,
 ) {
   const {
     activeProfileId,
@@ -40,6 +41,20 @@ export function createContinueAfterChallenge(
       );
       setMessage(updated.message);
     } catch (error) {
+      if (recoverSession) {
+        try {
+          const response = await fetch("/api/apply/active?jobId=" + encodeURIComponent(session.jobId), {
+            headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
+            cache: "no-store",
+          });
+          if (response.ok && !(await response.json()).session) {
+            setSession(null);
+            setReviewed(false);
+            await recoverSession();
+            return;
+          }
+        } catch { /* Retain the original error if the API is unreachable. */ }
+      }
       setMessage(
         error instanceof Error ? error.message : "Challenge is not complete.",
       );

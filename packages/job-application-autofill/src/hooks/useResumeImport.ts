@@ -16,6 +16,7 @@ export function useResumeImport(workspace: ResumeImportData) {
     contactId,
     activeProfileId,
     activeResumeId,
+    revisionRef,
     contactKeys,
     flushPending,
     setTab,
@@ -43,6 +44,7 @@ export function useResumeImport(workspace: ResumeImportData) {
       )
     : [];
   const importContext = {
+    revisionRef,
     profile,
     contactId,
     activeProfileId,

@@ -15,7 +15,7 @@ test("viewer restores keyboard input after connecting and after returning focus"
     await new Promise((resolve) => setTimeout(resolve, 150));
     await route.fulfill({ json: {} });
   });
-  await page.route("**/vnc/core/rfb.js", (route) =>
+  await page.route("**/vnc/core/rfb.js*", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: `

@@ -149,8 +149,8 @@ export async function prepareEmployerSignUp(
     } else if (key === "email") missing.push(key);
   }
   if (signupPassword) {
-    if (password && (password.length < 12 || password.length > 128))
-      throw new Error("Account password must contain 12–128 characters.");
+    if (password && (password.length < 8 || password.length > 128))
+      throw new Error("Account password must contain 8–128 characters.");
     for (const [key, label] of [
       ["password", /^(?:new )?password\s*\*?$/i],
       [

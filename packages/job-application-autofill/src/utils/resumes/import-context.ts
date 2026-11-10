@@ -9,6 +9,7 @@ export type ResumeImportActionsContext = {
   contactId: string | null;
   activeProfileId: string;
   activeResumeId: string | null;
+  revisionRef: { current: number };
   contactKeys: ContactKey[];
   pendingImport: CandidateProfile | null;
   resume: File | null;

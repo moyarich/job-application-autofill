@@ -6,6 +6,10 @@
   "type": "module",
   "license": "MIT",
   "exports": {
+    "./screening-policy": {
+      "types": "./dist/screening-policy.d.ts",
+      "import": "./dist/screening-policy.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

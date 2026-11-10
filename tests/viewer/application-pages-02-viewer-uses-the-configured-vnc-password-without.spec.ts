@@ -9,7 +9,7 @@ test("viewer uses the configured VNC password without putting it in the URL or s
   await page.route("**/api/apply/*/focus", (route) =>
     route.fulfill({ json: {} }),
   );
-  await page.route("**/vnc/core/rfb.js", (route) =>
+  await page.route("**/vnc/core/rfb.js*", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: `

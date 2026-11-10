@@ -52,8 +52,11 @@ export function PageApplicationReview() {
   const autoStart =
     new URLSearchParams(window.location.search).get("start") === "1";
   const startAttempt = useRef("");
+  const hadSession = useRef(false);
   useEffect(() => {
+    if (review.session) hadSession.current = true;
     if (
+      hadSession.current ||
       !autoStart ||
       !ready ||
       !review.activeLoaded ||
