@@ -8,6 +8,8 @@ import "./ScreeningAnswerDock.css";
 type Question = { label: string; kind: string; required: boolean; options: string[] };
 type Props = {
   sessionId: string;
+  currentJobId: string;
+  onLibraryChanged: () => Promise<void>;
   profileId: string;
   resumeId?: string;
   questions: Question[];
@@ -22,7 +24,7 @@ const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowled
  * automatically, and only an exact question-label match may be sent to Workday.
  */
 export function ScreeningAnswerDock({
-  sessionId, profileId, resumeId, questions, savedAnswers, previousAnswers,
+  sessionId, currentJobId, onLibraryChanged, profileId, resumeId, questions, savedAnswers, previousAnswers,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -110,6 +112,9 @@ export function ScreeningAnswerDock({
             );
           })}
           <AnswerLibrary
+            currentJobId={currentJobId}
+            profileId={profileId}
+            onChanged={onLibraryChanged}
             examples={previousAnswers}
             questions={eligible.map((question) => question.label)}
             onAdapt={(question, answer) => {
