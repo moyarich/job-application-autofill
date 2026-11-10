@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { fillWorkdayScreeningAnswers } from "../../packages/job-sites/workday/screening/answers.ts";
+import { fillWorkdayScreeningAnswers } from "../../packages/job-boards/workday/screening/answers.ts";
 
 test("Workday only fills exact safe saved answers and leaves consent untouched", async ({ page }) => {
   await page.setContent([

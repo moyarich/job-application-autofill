@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { workdaySteps } from "../../packages/job-sites/workday/steps.ts";
-import workday from "../../packages/job-sites/workday/index.ts";
-import type { JobSiteAdapter, JobSiteStepContext, JobSiteStepResult } from "../../packages/job-sites/types.ts";
+import { workdaySteps } from "../../packages/job-boards/workday/steps.ts";
+import workday from "../../packages/job-boards/workday/index.ts";
+import type { JobSiteAdapter, JobSiteStepContext, JobSiteStepResult } from "../../packages/job-boards/types.ts";
 
 test("Workday discovers questions but does not answer or change the employer form", async ({ page }) => {
   const screening = workdaySteps.find((entry) => entry.id === "workday.screening");
