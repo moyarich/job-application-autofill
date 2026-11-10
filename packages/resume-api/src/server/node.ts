@@ -62,7 +62,8 @@ export function createNodeServer(
         const heartbeat = setInterval(() => {
           if (!closed) response.write(": heartbeat\n\n");
         }, 25000);
-        request.on("close", finish);
+        // IncomingMessage can close as soon as the GET request is read;
+        // only the outgoing response close indicates the stream ended.
         response.on("close", finish);
         return;
       }
