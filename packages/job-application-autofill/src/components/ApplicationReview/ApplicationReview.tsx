@@ -58,6 +58,20 @@ export function ApplicationReview({
       }).catch(() => {});
     return () => { cancelled = true; };
   }, [applicationId, activeProfileId]);
+  async function refreshAnswerContext() {
+    if (!applicationId) return;
+    const response = await fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
+      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error("Could not reload saved answers.");
+    const data = await response.json() as {
+      answers?: Record<string, string>;
+      examples?: PreviousAnswer[];
+    };
+    setSavedAnswers(data.answers ?? {});
+    setPreviousAnswers(data.examples ?? []);
+  }
   async function saveEmployerAnswers() {
     if (!session) return;
     setSavingAnswers(true);
@@ -293,6 +307,8 @@ export function ApplicationReview({
                     <ScreeningAnswerDock
                       key={session.id}
                       sessionId={session.id}
+                      currentJobId={applicationId!}
+                      onLibraryChanged={refreshAnswerContext}
                       profileId={activeProfileId}
                       resumeId={activeResumeId ?? undefined}
                       questions={session.questions ?? []}
