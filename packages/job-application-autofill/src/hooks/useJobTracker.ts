@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type React from "react";
 
 import { changeJobStatus } from "../utils/application/changeJobStatus";
-import { requestApi } from "../api/client";
+import { readJobMetadata } from "../api/client";
 import type { JobTrackerData } from "../types/job-tracker-data";
 import { JobPostingDetails, ApplicationStatus } from "../types/job-application";
 import { createApplication } from "../utils/application/createApplication";
@@ -29,11 +29,7 @@ export function useJobTracker(workspace: JobTrackerData) {
       setMetadataBusy(true);
       setMetadataError("");
       try {
-        const details = await requestApi<{
-          company: string;
-          role: string;
-          details?: JobPostingDetails;
-        }>("/api/jobs/metadata", { jobUrl: url }, activeProfileId);
+        const details = await readJobMetadata(url, activeProfileId);
         if (cancelled) return;
         setJobDetails(details.details ?? null);
         setNewJob((current) => {
