@@ -288,7 +288,7 @@ export function ApplicationReview({
                       sessionId={session.id}
                       profileId={activeProfileId}
                       resumeId={activeResumeId ?? undefined}
-                      questions={session.questions}
+                      questions={session.questions ?? []}
                       savedAnswers={savedAnswers}
                     />
                   )}
