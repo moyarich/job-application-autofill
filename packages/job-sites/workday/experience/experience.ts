@@ -25,18 +25,22 @@ async function put(
   val: string | null | undefined,
   replaceExisting = false,
 ) {
-  if (!val) return true;
   const el = await input(row, key);
+  if (!val && !replaceExisting) return true;
   if (!el) return false;
   const type = await el.getAttribute("type");
   if (type && !["text", "email", "tel", "month"].includes(type)) return false;
   const old = await el.inputValue().catch(() => null);
   if (old === null) return false;
-  if (old.trim() && !replaceExisting) return old.trim() === val.trim();
-  return el
-    .fill(val, { timeout: 2000 })
-    .then(() => true)
-    .catch(() => false);
+  const expected = val ?? "";
+  if (old.trim() === expected.trim()) return true;
+  if (old.trim() && !replaceExisting) return false;
+  try {
+    await el.fill(expected, { timeout: 2000 });
+    return (await el.inputValue()).trim() === expected.trim();
+  } catch {
+    return false;
+  }
 }
 async function date(
   row: Locator,
@@ -71,9 +75,10 @@ async function date(
         const old = await target.inputValue();
         if (old && Number(old) !== Number(value) && !replaceExisting) return false;
       }
-      await month.fill(match[2]);
-      await year.fill(match[1]);
-      return true;
+      if (await month.inputValue() !== match[2]) await month.fill(match[2]);
+      if (await year.inputValue() !== match[1]) await year.fill(match[1]);
+      return Number(await month.inputValue()) === Number(match[2]) &&
+        Number(await year.inputValue()) === Number(match[1]);
     } catch {
       return false;
     }
@@ -101,7 +106,8 @@ async function date(
 async function fillRow(row: Locator, job: WorkExperienceEntry, replaceExisting: boolean) {
   const errors: string[] = [];
   for (const key of ["company", "jobTitle", "location", "description"] as const)
-    if (job[key] && !(await put(row, key, job[key], replaceExisting))) errors.push(key);
+    if (!(await put(row, key, job[key], replaceExisting)) &&
+        (job[key] || await read(row, key))) errors.push(key);
   if (!(await date(row, "startDate", job.startDate, replaceExisting))) errors.push("startDate");
   const current = await input(row, "isCurrent");
   if (current) {
@@ -113,14 +119,16 @@ async function fillRow(row: Locator, job: WorkExperienceEntry, replaceExisting: 
       errors.push("isCurrent");
     }
   } else if (job.isCurrent) errors.push("isCurrent");
-  if (
-    !job.isCurrent &&
-    job.endDate &&
-    !(await date(row, "endDate", job.endDate, replaceExisting))
-  )
+  if (!job.isCurrent && job.endDate) {
+    if (!(await date(row, "endDate", job.endDate, replaceExisting)))
+      errors.push("endDate");
+  } else if (!(await put(row, "endDate", "", replaceExisting)) &&
+             (await read(row, "endDate"))?.trim()) {
     errors.push("endDate");
+  }
   return errors;
 }
+/** The selected Moya resume, never Workday's imported values, defines job order and contents. */
 export async function fillWorkdayExperience(
   page: Page,
   experience: WorkExperienceEntry[],
@@ -132,121 +140,97 @@ export async function fillWorkdayExperience(
   if (!Array.isArray(experience) || !experience.length) return result;
   let section = page.locator(SECTION).first();
   if (!(await section.isVisible().catch(() => false))) {
-    const heading = page
-      .getByText(/^Work Experience$/i, { exact: true })
-      .first();
+    const heading = page.getByText(/^Work Experience$/i, { exact: true }).first();
     if (await heading.isVisible().catch(() => false))
       section = heading.locator("xpath=ancestor::*[.//button][1]");
   }
   if (!(await section.isVisible().catch(() => false))) {
-    result.unresolved = experience.map(
-      (_, i) => "experience[" + i + "]: section not visible",
-    );
+    result.unresolved = experience.map((_, i) => "experience[" + i + "]: section not visible");
     return result;
   }
-  const assignedRows = new Set<number>();
+
+  // Validate resume data before modifying any imported Workday record.
   for (const [i, job] of experience.entries()) {
-    const key = "experience[" + i + "]";
-    if (!job?.company?.trim() || !job?.jobTitle?.trim()) {
-      result.unresolved.push(key + ": missing company or title");
-      continue;
-    }
-    const explicit = section.locator(ROW);
-    const rows = (await explicit.count())
-      ? explicit
-      : section
-          .getByText(/^Work Experience\s+\d+$/i, { exact: true })
-          .locator("xpath=ancestor::*[.//input][1]");
-    let row: Locator | null = null;
-    let rowIndex = -1;
-    let trustedMatch = false;
-    const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
-    const employer = normalize(job.company);
-    const title = normalize(job.jobTitle);
-    const exact: number[] = [];
-    const partial: number[] = [];
-    const vacant: number[] = [];
-    for (let j = 0; j < await rows.count(); j++) {
-      if (assignedRows.has(j)) continue;
-      const candidate = rows.nth(j);
-      const companyValue = await read(candidate, "company");
-      const titleValue = await read(candidate, "jobTitle");
-      if (companyValue === null || titleValue === null) continue;
-      const company = normalize(companyValue);
-      const role = normalize(titleValue);
-      if (company === employer && role === title) exact.push(j);
-      else if (!company && !role) vacant.push(j);
-      else if ((company === employer && !role) || (role === title && !company))
-        partial.push(j);
-    }
-    if (exact.length > 1 || (!exact.length && partial.length > 1)) {
-      result.unresolved.push(key + ": ambiguous existing experience rows");
-      continue;
-    }
-    if (exact.length === 1) { rowIndex = exact[0]; trustedMatch = true; }
-    else if (partial.length === 1) { rowIndex = partial[0]; trustedMatch = true; }
-    else if (vacant.length) { rowIndex = vacant[0]; trustedMatch = true; }
-    else if (await rows.count() === experience.length && !assignedRows.has(i)) {
-      // Workday occasionally mis-parses every field. Index-based recovery is
-      // only permitted when the entire imported row count matches the resume.
-      // Do not consume a row that matches a different employment entry.
-      const candidate = rows.nth(i);
-      const company = await read(candidate, "company");
-      const role = await read(candidate, "jobTitle");
-      const reservedForOther = experience.some((other, otherIndex) => otherIndex !== i &&
-        company?.trim().toLowerCase() === other.company.trim().toLowerCase() &&
-        role?.trim().toLowerCase() === other.jobTitle.trim().toLowerCase());
-      if (company !== null && role !== null && !reservedForOther) rowIndex = i;
-    }
-    if (rowIndex >= 0) row = rows.nth(rowIndex);
-    if (!row) {
-      // If Workday produced unmatched nonempty rows, adding more jobs can
-      // duplicate history. Keep the original form intact for user review.
-      let unmatchedImported = false;
-      for (let j = 0; j < await rows.count(); j++) {
-        if (assignedRows.has(j)) continue;
-        const company = await read(rows.nth(j), "company");
-        const title = await read(rows.nth(j), "jobTitle");
-        if (company?.trim() || title?.trim()) {
-          unmatchedImported = true;
-          break;
-        }
+    if (!job?.company?.trim() || !job?.jobTitle?.trim() || !job.startDate?.trim())
+      result.unresolved.push("experience[" + i + "]: incomplete resume employment record");
+  }
+  if (result.unresolved.length) return result;
+
+  const explicit = section.locator(ROW);
+  const rows = (await explicit.count())
+    ? explicit
+    : section.getByText(/^Work Experience\s+\d+$/i, { exact: true })
+        .locator("xpath=ancestor::*[.//input][1]");
+  const add = section.getByRole("button", {
+    name: /^(add|add another|add experience|add work experience)$/i,
+  }).last();
+
+  // Extra imported records are never silently retained alongside Moya's jobs.
+  // Only delete from the end when each surplus card has its own clear remove control.
+  // Check all controls before any deletion or filling.
+  let count = await rows.count();
+  if (count > experience.length) {
+    for (let i = experience.length; i < count; i++) {
+      const remove = rows.nth(i).getByRole("button", {
+        name: /^(remove|remove experience|delete|delete experience)$/i,
+      });
+      if (await remove.count() !== 1 || !(await remove.isVisible().catch(() => false)) ||
+          !(await remove.isEnabled().catch(() => false))) {
+        result.unresolved.push("experience: surplus Workday-imported rows require manual removal");
+        return result;
       }
-      if (unmatchedImported) {
-        result.unresolved.push(key + ": unmatched imported history needs review");
-        continue;
-      }
-      const button = section
-        .getByRole("button", {
-          name: /^(add|add another|add experience|add work experience)$/i,
-        })
-        .last();
-      if (!(await button.isVisible().catch(() => false))) {
-        result.unresolved.push(key + ": no add control");
-        continue;
-      }
-      const count = await rows.count();
+    }
+    for (let i = count - 1; i >= experience.length; i--) {
       try {
-        await button.click({ timeout: 2000 });
-        await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
+        const remove = rows.nth(i).getByRole("button", {
+          name: /^(remove|remove experience|delete|delete experience)$/i,
+        });
+        await remove.click({ timeout: 2000 });
+        await rows.nth(i).waitFor({ state: "detached", timeout: 2500 });
       } catch {
-        result.unresolved.push(key + ": could not add row");
-        continue;
-      }
-      row = rows.nth(count);
-      rowIndex = count;
-      if (
-        (await read(row, "company")) !== "" ||
-        (await read(row, "jobTitle")) !== ""
-      ) {
-        result.unresolved.push(key + ": new row occupied");
-        continue;
+        result.unresolved.push("experience: could not remove surplus imported row");
+        return result;
       }
     }
-    assignedRows.add(rowIndex);
-    const errors = await fillRow(row, job, trustedMatch || rowIndex === i);
-    if (errors.length) result.unresolved.push(key + ": " + errors.join(", "));
-    else result.filled.push(key);
+    count = await rows.count();
+  }
+
+  // Workday may have imported too few records. Append exactly as many as required.
+  // Each new row must be empty before it is assigned to a resume job.
+  while (count < experience.length) {
+    if (!(await add.isVisible().catch(() => false)) ||
+        !(await add.isEnabled().catch(() => false))) {
+      result.unresolved.push("experience: cannot add missing employment rows");
+      return result;
+    }
+    try {
+      await add.click({ timeout: 2000 });
+      await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
+      const newRow = rows.nth(count);
+      if ((await read(newRow, "company")) !== "" ||
+          (await read(newRow, "jobTitle")) !== "") {
+        result.unresolved.push("experience: added row is not empty");
+        return result;
+      }
+      count++;
+    } catch {
+      result.unresolved.push("experience: could not add missing employment row");
+      return result;
+    }
+  }
+
+  if (await rows.count() !== experience.length) {
+    result.unresolved.push("experience: Workday row count does not match the selected resume");
+    return result;
+  }
+
+  // Replace incorrect parser output by position, including incorrect titles,
+  // employers, descriptions and dates. Do not depend on parser-derived matches.
+  for (const [i, job] of experience.entries()) {
+    const errors = await fillRow(rows.nth(i), job, true);
+    if (errors.length)
+      result.unresolved.push("experience[" + i + "]: " + errors.join(", "));
+    else result.filled.push("experience[" + i + "]");
   }
   return result;
 }
