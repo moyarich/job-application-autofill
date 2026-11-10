@@ -5,7 +5,7 @@ import {
 } from "@moyarich/resume/markdown";
 import { Resume } from "@moyarich/resume";
 
-import { requestApi } from "../../api/client";
+import { generateResumePdf } from "../../api/resumes";
 import { downloadJson, downloadText } from "./resume-files";
 
 export type ResumeExportFormat =
@@ -134,12 +134,7 @@ export async function exportResume(
   if (format === "docx")
     return downloadBlob(filename + ".docx", await createResumeWord(profile));
   if (format === "pdf") {
-    const result = await requestApi<{ base64: string }>(
-      "/api/resume/pdf",
-      profile,
-      profileId,
-      resumeId,
-    );
+    const result = await generateResumePdf(profile, profileId, resumeId);
     const bytes = Uint8Array.from(atob(result.base64), (char) =>
       char.charCodeAt(0),
     );
