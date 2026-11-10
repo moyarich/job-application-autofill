@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { subscribeAutomationEvents } from "../../api/events";
+import { subscribeAutomationEvents } from "../../api/sse";
 
-/** React lifecycle wrapper; the SSE transport lives in src/api. */
+/** React lifecycle wrapper; the SSE transport lives in src/api/sse. */
 export function useAutomationEvents(
   session: string,
   profile: string,

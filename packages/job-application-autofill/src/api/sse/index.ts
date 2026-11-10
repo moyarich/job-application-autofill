@@ -1,4 +1,4 @@
-import { viewerHeaders } from "./viewer";
+import { viewerHeaders } from "../viewer";
 
 /** Subscribe to session-scoped automation notifications over SSE. */
 export function subscribeAutomationEvents(
