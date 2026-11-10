@@ -29,7 +29,7 @@ describe("job-site adapter contract", () => {
     const stepIds = steps.map((step) => step.id);
     expect(stepIds.length).toBeGreaterThan(0);
     expect(new Set(stepIds).size).toBe(stepIds.length);
-    for (const id of stepIds) expect(id).toMatch(/^workday\\.[a-z][a-z0-9-]*$/);
+    for (const id of stepIds) expect(id).toMatch(/^workday\.[a-z][a-z0-9-]*$/);
     for (const step of steps) {
       expect(step.matches).toBeTypeOf("function");
       expect(step.run).toBeTypeOf("function");
