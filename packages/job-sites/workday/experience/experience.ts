@@ -141,6 +141,7 @@ export async function fillWorkdayExperience(
     );
     return result;
   }
+  const assignedRows = new Set<number>();
   for (const [i, job] of experience.entries()) {
     const key = "experience[" + i + "]";
     if (!job?.company?.trim() || !job?.jobTitle?.trim()) {
@@ -154,78 +155,33 @@ export async function fillWorkdayExperience(
           .getByText(/^Work Experience\s+\d+$/i, { exact: true })
           .locator("xpath=ancestor::*[.//input][1]");
     let row: Locator | null = null;
-    for (let j = 0; j < (await rows.count()); j++) {
-      const found = rows.nth(j);
-      if (
-        (await read(found, "company"))?.trim().toLowerCase() ===
-          job.company.trim().toLowerCase() &&
-        (await read(found, "jobTitle"))?.trim().toLowerCase() ===
-          job.jobTitle.trim().toLowerCase()
-      ) {
-        row = found;
-        break;
-      }
+    let rowIndex = -1;
+    const normalized = (value: string) => value.trim().replace(/\\s+/g, " ").toLocaleLowerCase("en-US");
+    const employer = normalized(job.company);
+    const title = normalized(job.jobTitle);
+    const exact: number[] = [];
+    const partial: number[] = [];
+    const vacant: number[] = [];
+    for (let j = 0; j < await rows.count(); j++) {
+      if (assignedRows.has(j)) continue;
+      const candidate = rows.nth(j);
+      const companyValue = await read(candidate, "company");
+      const titleValue = await read(candidate, "jobTitle");
+      // An uninspectable record must never be treated as an empty record.
+      if (companyValue === null || titleValue === null) continue;
+      const company = normalized(companyValue);
+      const role = normalized(titleValue);
+      if (company === employer && role === title) exact.push(j);
+      else if (!company && !role) vacant.push(j);
+      else if ((company === employer && !role) || (role === title && !company))
+        partial.push(j);
     }
-    // Resume upload may populate a title but leave employer and location blank.
-    // Reuse an unambiguous matching row instead of adding a duplicate job.
-    if (!row) {
-      const candidates: Locator[] = [];
-      for (let j = 0; j < (await rows.count()); j++) {
-        const found = rows.nth(j);
-        const company = (await read(found, "company"))?.trim().toLowerCase();
-        const title = (await read(found, "jobTitle"))?.trim().toLowerCase();
-        if (
-          company !== undefined &&
-          title !== undefined &&
-          (!company || company === job.company.trim().toLowerCase()) &&
-          (!title || title === job.jobTitle.trim().toLowerCase()) &&
-          (company || title)
-        )
-          candidates.push(found);
-      }
-      if (candidates.length === 1) row = candidates[0];
+    if (exact.length > 1 || (!exact.length && partial.length > 1)) {
+      result.unresolved.push(key + ": ambiguous existing experience rows");
+      continue;
     }
-    if (!row)
-      for (let j = 0; j < (await rows.count()); j++) {
-        const found = rows.nth(j);
-        if (
-          (await read(found, "company")) === "" &&
-          (await read(found, "jobTitle")) === ""
-        ) {
-          row = found;
-          break;
-        }
-      }
-    if (!row) {
-      const button = section
-        .getByRole("button", {
-          name: /^(add|add another|add experience|add work experience)$/i,
-        })
-        .last();
-      if (!(await button.isVisible().catch(() => false))) {
-        result.unresolved.push(key + ": no add control");
-        continue;
-      }
-      const count = await rows.count();
-      try {
-        await button.click({ timeout: 2000 });
-        await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
-      } catch {
-        result.unresolved.push(key + ": could not add row");
-        continue;
-      }
-      row = rows.nth(count);
-      if (
-        (await read(row, "company")) !== "" ||
-        (await read(row, "jobTitle")) !== ""
-      ) {
-        result.unresolved.push(key + ": new row occupied");
-        continue;
-      }
-    }
-    const errors = await fillRow(row, job);
-    if (errors.length) result.unresolved.push(key + ": " + errors.join(", "));
-    else result.filled.push(key);
-  }
-  return result;
-}
+    if (exact.length === 1) rowIndex = exact[0];
+    else if (partial.length === 1) rowIndex = partial[0];
+    else if (vacant.length) rowIndex = vacant[0];
+    if (rowIndex >= 0) row = rows.nth(rowIndex);
+
