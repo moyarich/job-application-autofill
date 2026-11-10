@@ -81,7 +81,7 @@ export const workdaySteps = [
   {
     id: "workday.personal-information",
     matches: async ({ page }) =>
-      page.getByLabel(/^first name\\s*\\*?$/i).first().isVisible().catch(() => false),
+      page.getByLabel(/^first name\s*\*?$/i).first().isVisible().catch(() => false),
     run: ({ page, profile }) => fillWorkdayContact(page, profile),
   },
   {
