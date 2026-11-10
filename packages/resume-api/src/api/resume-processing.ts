@@ -1,6 +1,7 @@
-import type { RouteHandler } from "../server/types.ts";
-import { reply } from "../server/types.ts";
+import type { RouteHandler } from "../types/types.ts";
+
 import { generateResumePdf, parseResumeUpload } from "../services/resumes.ts";
+import { reply } from "../server/reply.ts";
 
 export const handleResumeProcessing: RouteHandler = async ({ req, url }) => {
   if (req.method === "POST" && url.pathname === "/api/resume/pdf") {

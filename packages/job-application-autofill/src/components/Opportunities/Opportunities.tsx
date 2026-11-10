@@ -1,7 +1,7 @@
 import { JobDescription } from "../JobDescription/JobDescription";
 import { applicationReviewPath } from "../../routes";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { TrackerData } from "../feature-props";
+import type { TrackerData } from "../../types/feature-props";
 import { Pagination } from "../Pagination/Pagination";
 import { SearchInput } from "../SearchInput/SearchInput";
 import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";

@@ -3,7 +3,7 @@ import type {
   ResumeImportActionsContext,
   OfferImport,
 } from "../../types/resume-import-actions-context";
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import { filePayload } from "../files/resume-files";
 
 export function createParseResume(

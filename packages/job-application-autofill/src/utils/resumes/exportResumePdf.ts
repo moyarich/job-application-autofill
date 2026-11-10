@@ -2,7 +2,7 @@ import { Resume } from "@moyarich/resume";
 import { parseResumeJson } from "@moyarich/resume/validate";
 import { validateResume } from "./validateResume";
 
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import type { Dispatch, SetStateAction } from "react";
 
 export function createExportResumePdf(context: {

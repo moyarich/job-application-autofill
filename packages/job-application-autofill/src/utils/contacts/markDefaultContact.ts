@@ -1,5 +1,5 @@
 import type { ContactActionsContext } from "../../types/contact-actions-context";
-import { chooseDefaultContact } from "../api/client";
+import { chooseDefaultContact } from "../../api/client";
 export function createMarkDefaultContact(context: ContactActionsContext) {
   const {
     contactId,

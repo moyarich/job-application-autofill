@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   useLocation,
   useNavigate,
@@ -12,13 +12,28 @@ import {
   DEFAULT_PROFILE_ID,
   readProfiles,
   readResumes,
-} from "../utils/api/client";
+} from "../api/client";
 
 /** Query-string keys used for selection. */
 const PARAM = { profile: "profile", resume: "resume" } as const;
 
+export interface ProfileSelection {
+  applicationId: string | null;
+  activeProfileId: string;
+  activeResumeId: string | null;
+  profiles: LocalProfile[];
+  setProfiles: Dispatch<SetStateAction<LocalProfile[]>>;
+  resumeVersions: ResumeVersion[];
+  setResumeVersions: Dispatch<SetStateAction<ResumeVersion[]>>;
+  tab: string;
+  setTab: (next: WorkspaceTab) => void | Promise<void>;
+  hydrated: boolean;
+  message: string;
+  setMessage: Dispatch<SetStateAction<string>>;
+}
+
 /** Route, profile and resume selection only. No resume or jobs data. */
-export function useProfileSelection() {
+export function useProfileSelection(): ProfileSelection {
   const location = useLocation();
   const navigate = useNavigate();
   const applicationId = useParams().applicationId ?? null;

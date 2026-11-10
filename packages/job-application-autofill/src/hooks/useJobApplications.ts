@@ -5,10 +5,17 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-
+import type { JobApplication } from "../index";
 import { usePendingSave } from "./PendingSaves";
-import { readJobs, saveJob, deleteJob } from "../utils/api/client";
-import { JobApplication } from "../types/job-application";
+import { readJobs, saveJob, deleteJob } from "../api/client";
+
+export interface IJobApplications {
+  jobs: JobApplication[];
+  setJobs: Dispatch<SetStateAction<JobApplication[]>>;
+  jobsHydrated: boolean;
+  flushJobs: () => Promise<void>;
+  removeJob: (jobId: string) => Promise<void>;
+}
 
 /** Applications have their own list, revision, and save queue. No resume state. */
 export function useJobApplications({
@@ -21,7 +28,7 @@ export function useJobApplications({
   enabled: boolean;
   applicationId: string | null;
   setMessage: Dispatch<SetStateAction<string>>;
-}) {
+}): IJobApplications {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [jobsHydrated, setJobsHydrated] = useState(false);
   const revisionsRef = useRef<Record<string, number>>({});

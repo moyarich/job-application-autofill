@@ -1,5 +1,5 @@
 import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
-import { createLocalProfile } from "../api/client";
+import { createLocalProfile } from "../../api/client";
 import { navigateTo } from "./navigateTo";
 
 export function createCreatePerson(context: ProfileResumeActionsContext) {

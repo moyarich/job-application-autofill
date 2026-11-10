@@ -1,4 +1,4 @@
-import type { ResumeSectionsData } from "../feature-props";
+import type { ResumeSectionsData } from "../../types/feature-props";
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
 import { Resume } from "@moyarich/resume";

@@ -1,4 +1,4 @@
-import type { Store } from "../server/types.ts";
+import type { Store } from "../types/types.ts";
 import { validateResume } from "@moyarich/resume/validate";
 import { decodePdfAttachment } from "./attachment.ts";
 import { employerAccountIdentity } from "@moyarich/job-boards/employer-account";

@@ -1,4 +1,4 @@
-import type { ApplicationReviewData } from "../feature-props";
+import type { ApplicationReviewData } from "../../types/feature-props";
 import { ArrowRight, UserPlus } from "lucide-react";
 import "./EmployerAccountSetup.css";
 

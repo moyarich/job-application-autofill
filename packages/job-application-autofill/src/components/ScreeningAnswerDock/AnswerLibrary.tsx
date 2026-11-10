@@ -1,12 +1,9 @@
 import { useMemo, useState } from "react";
-import {
-  filterAnswerLibrary,
-  type LibraryFilters,
-  type PreviousAnswer,
-} from "./suggestions";
+import { filterAnswerLibrary, type LibraryFilters } from "./suggestions";
+import { ApplicationQnA } from "../../types/application-q-n-a";
 
-type Props = {
-  examples: PreviousAnswer[];
+export type AnswerLibraryProps = {
+  examples: ApplicationQnA[];
   questions: string[];
   onAdapt: (question: string, answer: string) => void;
   currentJobId: string;
@@ -22,7 +19,7 @@ export function AnswerLibrary({
   currentJobId,
   profileId,
   onChanged,
-}: Props) {
+}: AnswerLibraryProps) {
   const [filters, setFilters] = useState<LibraryFilters>({
     search: "",
     company: "",
@@ -77,7 +74,7 @@ export function AnswerLibrary({
       setWorking(false);
     }
   }
-  const keyFor = (item: PreviousAnswer) =>
+  const keyFor = (item: ApplicationQnA) =>
     item.applicationId + ":" + item.question;
   const companies = useMemo(
     () =>

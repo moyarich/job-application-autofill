@@ -8,7 +8,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import type { ResumeImportData } from "../feature-props";
+import type { ResumeImportData } from "../../types/feature-props";
 import "./ResumeParser.css";
 
 export function ResumeParser({ controller }: { controller: ResumeImportData }) {

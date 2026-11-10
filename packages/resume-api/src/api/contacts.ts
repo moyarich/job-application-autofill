@@ -1,5 +1,6 @@
-import type { RouteHandler } from "../server/types.ts";
-import { reply, record } from "../server/types.ts";
+import type { RouteHandler } from "../types/types.ts";
+import { reply } from "../server/reply.ts";
+import { record } from "./record.ts";
 
 export const handleContacts: RouteHandler = async ({
   req,

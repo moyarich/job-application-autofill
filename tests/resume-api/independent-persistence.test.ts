@@ -5,7 +5,7 @@ import {
   DEFAULT_PROFILE_ID,
   openStore,
 } from "../../packages/resume-api/src/database/store.ts";
-import type { ApiRequest } from "../../packages/resume-api/src/server/types.ts";
+import { ApiRequest } from "../../packages/resume-api/src/types/types.ts";
 
 const profile = JSON.parse(
   readFileSync(

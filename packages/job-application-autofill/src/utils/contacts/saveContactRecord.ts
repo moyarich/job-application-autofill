@@ -1,7 +1,7 @@
 import { validateResume } from "../resumes/validateResume";
 import type { ContactActionsContext } from "../../types/contact-actions-context";
 
-import { addProfileContact } from "../api/client";
+import { addProfileContact } from "../../api/client";
 export function createSaveContactRecord(context: ContactActionsContext) {
   const {
     contactId,

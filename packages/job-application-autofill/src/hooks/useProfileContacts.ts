@@ -7,7 +7,7 @@ import {
 } from "react";
 import { usePendingSave } from "./PendingSaves";
 
-import { readContacts, updateProfileContact } from "../utils/api/client";
+import { readContacts, updateProfileContact } from "../api/client";
 import { Resume } from "@moyarich/resume";
 import { ProfileContact } from "../types/api-types";
 

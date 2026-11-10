@@ -1,5 +1,5 @@
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import type { ApplySession } from "../../types/types";
 
 /** continueAfterChallenge action; no React hooks or state ownership. */
