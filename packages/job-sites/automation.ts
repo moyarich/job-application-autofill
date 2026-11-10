@@ -47,6 +47,7 @@ type ApplicationSession = {
   questions: ApplicationQuestion[];
   loginAttempted?: boolean;
   signupPrepared?: AccountSetupResult;
+  pauseRequested?: boolean;
 };
 type ApplicationPreparation = {
   jobUrl: string;
@@ -99,6 +100,7 @@ function status(session: ApplicationSession) {
     ats: session.ats,
     questions: session.questions || [],
     signupPrepared: session.signupPrepared ?? null,
+    paused: Boolean(session.pauseRequested),
   };
 }
 
@@ -145,6 +147,7 @@ async function advanceWorkdayPages(session: ApplicationSession) {
   const visited = new Set<string>();
   let advanced = 0;
   for (let step = 0; step < 8; step++) {
+    if (session.pauseRequested) break;
     if (new URL(session.page.url()).hostname !== expectedHost) break;
     const adapter = adapterForUrl(session.page.url());
     if (!adapter) break;
@@ -175,9 +178,22 @@ async function advanceWorkdayPages(session: ApplicationSession) {
     if (session.page.url() === url && after === before) break;
     advanced++;
     if (new URL(session.page.url()).hostname !== expectedHost) break;
+    if (session.pauseRequested) break;
     await populateSession(session);
   }
   return advanced;
+}
+
+/** Pause at the next safe automation boundary without closing the employer browser. */
+export function pauseApplication(id: string) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (["submitted", "submission_unverified"].includes(session.state))
+    throw new Error("Application submission has already been attempted.");
+  session.pauseRequested = true;
+  session.state = "paused";
+  session.message = "Automation paused. Make changes in the employer browser, then continue.";
+  return status(session);
 }
 
 /** Only actions explicitly declared by the current site's adapter are visible. */
@@ -246,11 +262,12 @@ export async function continueApplication(
   const session = sessions.get(id);
   if (
     !session ||
-    !["manual_intervention", "login_required", "ready_for_review"].includes(
+    !["paused", "manual_intervention", "login_required", "ready_for_review"].includes(
       session.state,
     )
   )
     throw new Error("This session cannot be resumed.");
+  session.pauseRequested = false;
   if (profile) session.profile = resumeToPlainText(profile);
   if (!adapterForUrl(session.page.url())) {
     session.state = "login_required";
@@ -293,8 +310,10 @@ export async function continueApplication(
   }
   await populateSession(session);
   const advanced = session.ats === "workday" ? await advanceWorkdayPages(session).catch(() => 0) : 0;
-  session.state = "ready_for_review";
-  session.message = session.missing.some((name) => name.startsWith("required:"))
+  session.state = session.pauseRequested ? "paused" : "ready_for_review";
+  session.message = session.pauseRequested
+    ? "Automation paused. Continue when ready."
+    : session.missing.some((name) => name.startsWith("required:"))
     ? "Workday requires additional information. Complete the listed fields in the employer viewer."
     : advanced > 0
       ? "Advanced through " + advanced + " Workday step(s). Review remaining questions and employer agreements manually."
