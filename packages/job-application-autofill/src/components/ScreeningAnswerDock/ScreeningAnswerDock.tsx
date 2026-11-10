@@ -15,6 +15,7 @@ type Props = {
   questions: Question[];
   savedAnswers: Record<string, string>;
   previousAnswers: PreviousAnswer[];
+  currentAnswerRecords: PreviousAnswer[];
 };
 
 const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowledge|signature|terms and conditions|privacy policy|gender|race|ethnic|veteran|disability|birth date|social security|password)/i;
@@ -24,7 +25,7 @@ const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowled
  * automatically, and only an exact question-label match may be sent to Workday.
  */
 export function ScreeningAnswerDock({
-  sessionId, currentJobId, onLibraryChanged, profileId, resumeId, questions, savedAnswers, previousAnswers,
+  sessionId, currentJobId, onLibraryChanged, profileId, resumeId, questions, savedAnswers, previousAnswers, currentAnswerRecords,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -115,7 +116,7 @@ export function ScreeningAnswerDock({
             currentJobId={currentJobId}
             profileId={profileId}
             onChanged={onLibraryChanged}
-            examples={previousAnswers}
+            examples={[...currentAnswerRecords, ...previousAnswers]}
             questions={eligible.map((question) => question.label)}
             onAdapt={(question, answer) => {
               setDrafts((previous) => ({ ...previous, [question]: answer }));
