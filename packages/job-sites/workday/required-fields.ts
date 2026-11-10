@@ -38,7 +38,8 @@ export async function missingWorkdayRequiredFields(page: Page): Promise<string[]
       } else if (element.tagName === "BUTTON") {
         empty = /\b(?:Select One|Select) Required\b/i.test(name);
       } else if (element.tagName === "SELECT") {
-        empty = !element.value || /^(?:select|select one|choose)$/i.test(element.selectedOptions?.[0]?.textContent?.trim() || "");
+        const select = control as HTMLSelectElement;
+        empty = !select.value || /^(?:select|select one|choose)$/i.test(select.selectedOptions?.[0]?.textContent?.trim() || "");
       } else {
         empty = !element.value?.trim() || /^(?:select one|select|choose)$/i.test(element.value?.trim() || "");
       }
