@@ -1,3 +1,4 @@
+import { readActiveApplication } from "../../api/applications";
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
 import { requestApi } from "../../api/client";
 import type { ApplySession } from "../../types/types";
@@ -43,17 +44,8 @@ export function createContinueAfterChallenge(
     } catch (error) {
       if (recoverSession) {
         try {
-          const response = await fetch(
-            "/api/apply/active?jobId=" + encodeURIComponent(session.jobId),
-            {
-              headers: {
-                "X-Moya-Client": "dashboard",
-                "X-Profile-Id": activeProfileId,
-              },
-              cache: "no-store",
-            },
-          );
-          if (response.ok && !(await response.json()).session) {
+          const result = await readActiveApplication(session.jobId, activeProfileId);
+          if (!result.session) {
             setSession(null);
             setReviewed(false);
             await recoverSession();
