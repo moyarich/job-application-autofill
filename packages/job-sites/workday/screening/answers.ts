@@ -1,8 +1,9 @@
 import type { Page, Locator } from "playwright";
 import { classifyQuestion, discoverQuestions } from "../../index.ts";
+import { reusableAnswer, normalizedQuestion } from "../../screening-policy.ts";
 
 const BLOCKED = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowledge|certif(?:y|ication) that|electronic signature|signature|terms and conditions|privacy policy|gender|race|ethnic|veteran|disability)/i;
-const normalize = (text: string) => text.replace(/\s+/g, " ").trim().toLowerCase();
+const normalize = normalizedQuestion;
 
 async function chooseOption(page: Page, answer: string) {
   const options = [
@@ -38,7 +39,7 @@ export async function fillWorkdayScreeningAnswers(
     const group = page.getByRole("group", { name: label, exact: true });
     const customButton = group.getByRole("button", { name: /^(?:Select One(?: Required)?|Select)$/i });
     const custom = match.length === 0 && await group.count() === 1 && await customButton.count() === 1;
-    if (!answer || (match.length !== 1 && !custom) || classifyQuestion(label) !== "general" ||
+    if (!reusableAnswer(label, answer) || (match.length !== 1 && !custom) || classifyQuestion(label) !== "general" ||
       BLOCKED.test(label)) {
       result.unresolved.push(label);
       continue;
