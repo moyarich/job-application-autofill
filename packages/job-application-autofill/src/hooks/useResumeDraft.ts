@@ -9,7 +9,7 @@ import { usePendingSave } from "./PendingSaves";
 import {
   emptyCandidate,
   parseCandidateJson,
-  validateCandidate,
+  validateResume,
   type Resume,
 } from "../index";
 import {
@@ -44,7 +44,7 @@ export function useResumeDraft({
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const blockedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const errors = validateCandidate(profile);
+  const errors = validateResume(profile);
 
   useEffect(() => {
     setHydrated(false);

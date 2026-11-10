@@ -1,5 +1,5 @@
 import type { Resume } from "../../index";
-import { validateCandidate, parseCandidateJson } from "../../index";
+import { validateResume, parseCandidateJson } from "../../index";
 import { requestApi } from "../api/client";
 import type { Dispatch, SetStateAction } from "react";
 export function createExportResumePdf(context: {
@@ -11,7 +11,7 @@ export function createExportResumePdf(context: {
   const { profile, activeProfileId, activeResumeId, setMessage } = context;
   async function exportResumePdf() {
     try {
-      const missing = validateCandidate(profile);
+      const missing = validateResume(profile);
       if (missing.length)
         throw new Error(
           "Complete contact information first: " + missing.join(", "),

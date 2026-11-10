@@ -19,6 +19,7 @@
     "packages/job-boards/**/*.ts",
     "packages/resume-api/**/*.ts",
     "docker/**/*.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "packages/job-application-autofill/src/**/*.d.ts"
   ]
 }

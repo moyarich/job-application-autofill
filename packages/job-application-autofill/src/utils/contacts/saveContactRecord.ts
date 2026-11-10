@@ -1,5 +1,5 @@
 import type { ContactActionsContext } from "./contact-context";
-import { validateCandidate } from "../../index";
+import { validateResume } from "../../index";
 import { addProfileContact } from "../api/client";
 export function createSaveContactRecord(context: ContactActionsContext) {
   const {
@@ -14,7 +14,7 @@ export function createSaveContactRecord(context: ContactActionsContext) {
   } = context;
   async function saveContactRecord() {
     if (contactId) return;
-    const missing = validateCandidate(profile);
+    const missing = validateResume(profile);
     if (missing.length) {
       setMessage(
         "Complete the contact details before saving a contact record: " +
