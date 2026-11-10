@@ -1,7 +1,10 @@
-import type { ResumeImportActionsContext, OfferImport } from "./import-context";
+import { Resume } from "@moyarich/resume";
+import type {
+  ResumeImportActionsContext,
+  OfferImport,
+} from "../../types/resume-import-actions-context";
 import { requestApi } from "../api/client";
 import { filePayload } from "../files/resume-files";
-import type { Resume } from "../../index";
 
 export function createParseResume(
   context: ResumeImportActionsContext & { offerImport: OfferImport },

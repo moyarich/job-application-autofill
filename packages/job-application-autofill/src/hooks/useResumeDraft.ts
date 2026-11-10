@@ -6,17 +6,14 @@ import {
   type SetStateAction,
 } from "react";
 import { usePendingSave } from "./PendingSaves";
-import {
-  emptyCandidate,
-  parseCandidateJson,
-  validateResume,
-  type Resume,
-} from "../index";
-import {
-  readResumeContent,
-  saveResumeContent,
-  type ProfileContact,
-} from "../utils/api/client";
+import { Resume } from "@moyarich/resume";
+import { parseResumeJson } from "@moyarich/resume/validate";
+import { validateResume } from "../utils/resumes/validateResume";
+
+import { ProfileContact } from "../types/api-types";
+import { readResumeContent, saveResumeContent } from "../utils/api/client";
+
+import { EMPTY_CANDIDATE } from "../constants";
 
 /** Owns the selected resume's draft, revision and autosave; never writes contacts or jobs. */
 export function useResumeDraft({
@@ -35,7 +32,7 @@ export function useResumeDraft({
   applicationId: string | null;
 }) {
   const [profile, setProfile] = useState<Resume>(() =>
-    structuredClone(emptyCandidate),
+    structuredClone(EMPTY_CANDIDATE),
   );
   const [contactId, setContactId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -49,7 +46,7 @@ export function useResumeDraft({
   useEffect(() => {
     setHydrated(false);
     if (!enabled || !resumeId) {
-      setProfile(structuredClone(emptyCandidate));
+      setProfile(structuredClone(EMPTY_CANDIDATE));
       setContactId(null);
       revisionRef.current = 0;
       savedRef.current = "";
@@ -68,10 +65,10 @@ export function useResumeDraft({
                   !["id", "profileId", "name", "isDefault"].includes(key),
               ),
             ) as Resume["contact"])
-          : structuredClone(emptyCandidate.contact);
+          : structuredClone(EMPTY_CANDIDATE.contact);
         const value = result.profile
-          ? parseCandidateJson(JSON.stringify(result.profile))
-          : { ...structuredClone(emptyCandidate), contact };
+          ? parseResumeJson(JSON.stringify(result.profile))
+          : { ...structuredClone(EMPTY_CANDIDATE), contact };
         setProfile(value);
         setContactId(result.contactId);
         revisionRef.current = result.revision;

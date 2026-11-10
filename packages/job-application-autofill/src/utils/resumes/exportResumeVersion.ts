@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { exportResume } from "../files/export-resume";
 import type { ResumeExportFormat } from "../files/export-resume";
 import { readResumeContent } from "../api/client";

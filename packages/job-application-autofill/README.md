@@ -4,7 +4,7 @@ Typed, framework-agnostic candidate profile and application models for job-appli
 
 ## Exports
 
-- `Resume`, `emptyCandidate`, `validateCandidate`, `parseCandidateJson`
+- `Resume`, `EMPTY_CANDIDATE`, `validateResume`, `parseResumeJson`
 - `JobApplication`, `ApplicationStatus`, `statuses`, `createApplication`
 
 The React + TypeScript application is in `apps/playground`.

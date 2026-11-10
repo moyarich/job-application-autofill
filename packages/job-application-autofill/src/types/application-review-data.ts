@@ -1,5 +1,5 @@
-import type { JobApplication } from "../../index";
-import type { ApplicationReviewActionsContext } from "./review-context";
+import { ApplicationReviewActionsContext } from "./application-review-actions-context";
+import { JobApplication } from "./job-application";
 
 /** Only the data/callbacks needed for application review, not a hook's return type. */
 export type ApplicationReviewData = Pick<

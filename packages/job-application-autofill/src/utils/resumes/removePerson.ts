@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { deleteLocalProfile } from "../api/client";
 import { DEFAULT_PROFILE_ID } from "../api/client";
 import { navigateTo } from "./navigateTo";

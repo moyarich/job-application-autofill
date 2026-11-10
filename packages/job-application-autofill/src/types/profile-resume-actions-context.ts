@@ -1,6 +1,7 @@
+import { Resume } from "@moyarich/resume";
 import type { Dispatch, SetStateAction } from "react";
-import type { Resume } from "../../index";
-import type { LocalProfile, ResumeVersion } from "../api/client";
+import { LocalProfile, ResumeVersion } from "./api-types";
+
 type Update<T> = Dispatch<SetStateAction<T>>;
 export type ProfileResumeActionsContext = {
   applicationId: string | null;

@@ -3,8 +3,8 @@ import { useState } from "react";
 import { CheckCircle2, ContactRound } from "lucide-react";
 import "./ContactImportReview.css";
 
-import type { ContactChoice } from "../../utils/api/client";
-import { fields } from "../../utils/profile/fields";
+import { fields } from "../../constants/fields";
+import { ContactChoice } from "../../types/api-types";
 
 export function ContactImportReview({
   controller,

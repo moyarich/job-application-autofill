@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { createSwitchProfile } from "./switchProfile";
 import { createSwitchResume } from "./switchResume";
 import { createCreatePerson } from "./createPerson";

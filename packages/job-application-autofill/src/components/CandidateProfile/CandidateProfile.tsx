@@ -17,7 +17,7 @@ import {
   Layers,
   ArrowUpRight,
 } from "lucide-react";
-import { fields } from "../../utils/profile/fields";
+import { fields } from "../../constants/fields";
 
 /** Keep incomplete comma-separated text while persisting only complete skill values. */
 function SkillsInput({

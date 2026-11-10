@@ -8,9 +8,10 @@ import type { useJobTracker } from "../hooks/useJobTracker";
 import type { createResumeCommands } from "../utils/resumes/commands";
 import type { createContactCommands } from "../utils/contacts/commands";
 import type { createExportResumePdf } from "../utils/resumes/exportResumePdf";
-import type { ProfileContact } from "../utils/api/client";
-import type { ContactKey } from "../utils/contacts/contact-context";
-import type { JobApplication } from "../index";
+
+import type { ContactKey } from "../types/contact-actions-context";
+import { ProfileContact } from "../types/api-types";
+import { JobApplication } from "../types/job-application";
 
 type Selection = ReturnType<typeof useProfileSelection>;
 type Contacts = ReturnType<typeof useProfileContacts>;

@@ -1,8 +1,8 @@
 import type {
   ResumeImportActionsContext,
   ApplyImportedContent,
-} from "./import-context";
-import type { Resume } from "../../index";
+} from "../../types/resume-import-actions-context";
+import { Resume } from "@moyarich/resume";
 
 export function createOfferImport(
   context: ResumeImportActionsContext & {

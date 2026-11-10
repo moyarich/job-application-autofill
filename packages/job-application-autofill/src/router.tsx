@@ -6,7 +6,6 @@ import { routes, pageRoutes } from "./routes";
 
 export const router = createBrowserRouter([
   { path: routes.applicationViewer, element: <ApplicationViewer /> },
-  { path: "/application-viewer.html", element: <ApplicationViewer /> },
   { path: routes.home, element: <Navigate to={routes.applications} replace /> },
   ...pageRoutes.map((path) => ({ path, element: <App /> })),
   { path: routes.applicationReview, element: <App /> },

@@ -1,6 +1,7 @@
+import { Resume } from "@moyarich/resume";
 import type { Dispatch, SetStateAction } from "react";
-import type { Resume } from "../../index";
-import type { ContactChoice, ProfileContact } from "../api/client";
+import { ContactChoice, ProfileContact } from "./api-types";
+
 type Update<T> = Dispatch<SetStateAction<T>>;
 export type Contact = Resume["contact"];
 export type ContactKey = keyof Contact;

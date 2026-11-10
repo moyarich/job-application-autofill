@@ -1,6 +1,6 @@
-import type { ResumeImportActionsContext } from "./import-context";
-import type { Resume } from "../../index";
-import type { Contact } from "./import-context";
+import type { ResumeImportActionsContext } from "../../types/resume-import-actions-context";
+import { Resume } from "@moyarich/resume";
+import type { Contact } from "../../types/resume-import-actions-context";
 
 export function createApplyImportedContent(
   context: ResumeImportActionsContext,

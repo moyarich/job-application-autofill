@@ -1,4 +1,4 @@
-import type { Resume } from "../../index";
+import { Resume } from "@moyarich/resume";
 
 /** Derive an editable resume name only after the import has been confirmed. */
 export function defaultImportedResumeName(profile: Resume): string {

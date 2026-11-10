@@ -1,23 +1,16 @@
-import type { Resume, JobApplication } from "../../index";
+import { Resume } from "@moyarich/resume";
+import { JobApplication } from "../../types/job-application";
+import {
+  ContactChoice,
+  LocalProfile,
+  ProfileContact,
+  ResumeVersion,
+} from "../../types/api-types";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export const ACTIVE_PROFILE_STORAGE_KEY =
   "job-application-autofill:active-profile";
-export type LocalProfile = { id: string; name: string; createdAt: string };
-export type ResumeVersion = {
-  id: string;
-  name: string;
-  contactId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-export type ProfileContact = Resume["contact"] & {
-  id: string;
-  profileId: string;
-  name: string;
-  isDefault: boolean;
-};
-export type ContactChoice = "resume" | "shared" | "keep";
+
 export async function resolveImportedContact(
   profileId: string,
   resumeId: string,

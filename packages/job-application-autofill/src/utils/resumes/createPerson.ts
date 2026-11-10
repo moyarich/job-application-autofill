@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { createLocalProfile } from "../api/client";
 import { navigateTo } from "./navigateTo";
 

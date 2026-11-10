@@ -94,7 +94,7 @@ type JobRecord = {
   accountAction?: "signup" | "login";
   details?: Record<string, string>;
 };
-const statuses = new Set([
+const STATUSES = new Set([
   "saved",
   "in_progress",
   "ready_for_review",
@@ -194,7 +194,7 @@ function validateJobs(raw: unknown): JobRecord[] {
     if (!validId(job.id) || ids.has(job.id))
       throw new Error("Duplicate job identifier.");
     ids.add(job.id);
-    if (!statuses.has(job.status)) throw new Error("Invalid job status.");
+    if (!STATUSES.has(job.status)) throw new Error("Invalid job status.");
     if (job.url && !/^https?:\/\//i.test(job.url))
       throw new Error("Invalid job URL.");
     if (
@@ -926,7 +926,7 @@ export function openStore(
   function setJobStatus(profileId: string, jobId: string, status: string) {
     const owner = requireProfile(profileId);
     const id = validId(jobId);
-    if (!statuses.has(status)) throw new Error("Invalid job status.");
+    if (!STATUSES.has(status)) throw new Error("Invalid job status.");
     const updated = db
       .prepare(
         "UPDATE applications SET status=?,revision=revision+1 WHERE profile_id=? AND id=?",

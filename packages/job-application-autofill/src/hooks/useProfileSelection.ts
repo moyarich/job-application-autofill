@@ -1,26 +1,35 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
-import { routes, tabForPath, tabRoutes, type WorkspaceTab } from "../routes";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
+import { tabForPath, tabRoutes, type WorkspaceTab } from "../routes";
+import { LocalProfile, ResumeVersion } from "../types/api-types";
 import {
   ACTIVE_PROFILE_STORAGE_KEY,
   DEFAULT_PROFILE_ID,
   readProfiles,
   readResumes,
-  type LocalProfile,
-  type ResumeVersion,
 } from "../utils/api/client";
+
+/** Query-string keys used for selection. */
+const PARAM = { profile: "profile", resume: "resume" } as const;
 
 /** Route, profile and resume selection only. No resume or jobs data. */
 export function useProfileSelection() {
   const location = useLocation();
   const navigate = useNavigate();
   const applicationId = useParams().applicationId ?? null;
-  const query = new URLSearchParams(location.search);
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeProfileId =
-    query.get("profile") ||
+    searchParams.get(PARAM.profile) ||
     localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY) ||
     DEFAULT_PROFILE_ID;
-  const requestedResumeId = query.get("resume") || undefined;
+  const requestedResumeId = searchParams.get(PARAM.resume) || undefined;
+
   const [profiles, setProfiles] = useState<LocalProfile[]>([]);
   const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
   const [activeResumeId, setActiveResumeId] = useState<string | null>(
@@ -30,55 +39,69 @@ export function useProfileSelection() {
   const [message, setMessage] = useState("");
 
   const tab = tabForPath(location.pathname);
-  function setTab(next: WorkspaceTab) {
-    navigate({ pathname: tabRoutes[next], search: location.search });
-  }
+  const setTab = (next: WorkspaceTab) =>
+    navigate({ pathname: tabRoutes[next], search: searchParams.toString() });
 
   useEffect(() => {
     let cancelled = false;
-    setHydrated(false);
-    readProfiles()
-      .then(async (available) => {
+
+    async function hydrate() {
+      setHydrated(false);
+      try {
+        const available = await readProfiles();
         const selectedId = available.profiles.some(
-          (item) => item.id === activeProfileId,
+          (profile) => profile.id === activeProfileId,
         )
           ? activeProfileId
           : available.defaultProfileId;
         const resumes = await readResumes(selectedId);
+
+        // The parser tab starts without a resume; otherwise honor the
+        // requested one only if it belongs to the profile we ended up with.
+        const requestedIsUsable =
+          selectedId === activeProfileId &&
+          !!requestedResumeId &&
+          resumes.some((resume) => resume.id === requestedResumeId);
         const wanted =
-          location.pathname === routes.resumeImport
+          tab === "parser"
             ? null
-            : selectedId === activeProfileId &&
-                requestedResumeId &&
-                resumes.some((item) => item.id === requestedResumeId)
-              ? requestedResumeId
-              : resumes[0]?.id;
+            : requestedIsUsable
+              ? requestedResumeId!
+              : (resumes[0]?.id ?? null);
+
         if (cancelled) return;
-        if (
+
+        localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedId);
+
+        // URL disagrees with what we resolved: fix it and let the effect re-run.
+        const urlIsStale =
           selectedId !== activeProfileId ||
-          (requestedResumeId && wanted !== requestedResumeId)
-        ) {
-          localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedId);
-          const params = new URLSearchParams(location.search);
-          params.set("profile", selectedId);
-          if (wanted) params.set("resume", wanted);
-          else params.delete("resume");
-          navigate(
-            { pathname: location.pathname, search: params.toString() },
+          (!!requestedResumeId && wanted !== requestedResumeId);
+        if (urlIsStale) {
+          setSearchParams(
+            (current) => {
+              const next = new URLSearchParams(current);
+              next.set(PARAM.profile, selectedId);
+              if (wanted) next.set(PARAM.resume, wanted);
+              else next.delete(PARAM.resume);
+              return next;
+            },
             { replace: true },
           );
           return;
         }
+
         setProfiles(available.profiles);
         setResumeVersions(resumes);
-        setActiveResumeId(wanted ?? null);
-        localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, selectedId);
+        setActiveResumeId(wanted);
         setHydrated(true);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!cancelled)
-          setMessage("Could not load profiles and resumes: " + String(error));
-      });
+          setMessage(`Could not load profiles and resumes: ${String(error)}`);
+      }
+    }
+
+    void hydrate();
     return () => {
       cancelled = true;
     };

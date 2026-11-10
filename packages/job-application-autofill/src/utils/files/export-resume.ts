@@ -3,12 +3,14 @@ import {
   markdownToEditor,
   markdownToPlainText,
 } from "@moyarich/resume/markdown";
-import type { Resume } from "../../index";
+import { Resume } from "@moyarich/resume";
 
 import { requestApi } from "../api/client";
 import { downloadJson, downloadText } from "./resume-files";
+
 export type ResumeExportFormat =
   "txt" | "yaml" | "json" | "pdf" | "docx" | "md";
+
 export const resumeExportFormats = [
   ["txt", "Text"],
   ["yaml", "YAML"],
@@ -17,6 +19,7 @@ export const resumeExportFormats = [
   ["docx", "Word"],
   ["md", "Markdown"],
 ] as const;
+
 function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob),
     anchor = document.createElement("a");

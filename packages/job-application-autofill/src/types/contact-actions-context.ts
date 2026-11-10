@@ -1,9 +1,12 @@
+import { Resume } from "@moyarich/resume";
 import type { Dispatch, SetStateAction } from "react";
-import { emptyCandidate, type Resume } from "../../index";
-import type { ProfileContact } from "../api/client";
+
+import { ProfileContact } from "./api-types";
+import { EMPTY_CANDIDATE } from "../constants";
+
 export type Contact = Resume["contact"];
 export type ContactKey = keyof Contact;
-export const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
+export const contactKeys = Object.keys(EMPTY_CANDIDATE.contact) as ContactKey[];
 type Update<T> = Dispatch<SetStateAction<T>>;
 export type ContactActionsContext = {
   contactId: string | null;

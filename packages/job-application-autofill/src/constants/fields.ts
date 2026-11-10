@@ -1,4 +1,6 @@
-import type { Resume, ApplicationStatus } from "../../index";
+import { Resume } from "@moyarich/resume";
+import { ApplicationStatus } from "../types/job-application";
+
 export const fields: {
   key: keyof Resume["contact"];
   label: string;

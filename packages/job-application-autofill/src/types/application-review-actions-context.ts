@@ -1,6 +1,8 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { Resume, ApplicationStatus } from "../../index";
+
 import type { ApplySession } from "./types";
+import { Resume } from "@moyarich/resume";
+import { ApplicationStatus } from "./job-application";
 type Update<T> = Dispatch<SetStateAction<T>>;
 export type ApplicationReviewActionsContext = {
   applicationId: string | null;

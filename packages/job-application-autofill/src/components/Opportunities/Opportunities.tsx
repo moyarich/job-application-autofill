@@ -27,9 +27,11 @@ import {
   StickyNote,
   X,
 } from "lucide-react";
-import { statuses, type ApplicationStatus } from "../../index";
-import { statusLabels } from "../../utils/profile/fields";
+
+import { statusLabels } from "../../constants/fields";
 import { downloadJson } from "../../utils/files/resume-files";
+import { STATUSES } from "../../constants";
+import { ApplicationStatus } from "../../types/job-application";
 
 export function Opportunities({
   controller,
@@ -396,7 +398,7 @@ export function Opportunities({
                               ?.removeAttribute("open");
                           }}
                         >
-                          {statuses.map((status) => (
+                          {STATUSES.map((status) => (
                             <option key={status} value={status}>
                               {statusLabels[status]}
                             </option>

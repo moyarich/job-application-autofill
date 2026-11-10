@@ -6,12 +6,10 @@ import {
   type SetStateAction,
 } from "react";
 import { usePendingSave } from "./PendingSaves";
-import type { Resume } from "../index";
-import {
-  readContacts,
-  updateProfileContact,
-  type ProfileContact,
-} from "../utils/api/client";
+
+import { readContacts, updateProfileContact } from "../utils/api/client";
+import { Resume } from "@moyarich/resume";
+import { ProfileContact } from "../types/api-types";
 
 const contactValues = (entry: ProfileContact): Resume["contact"] => {
   return Object.fromEntries(

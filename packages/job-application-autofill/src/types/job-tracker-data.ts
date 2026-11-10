@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { JobApplication } from "../../index";
+import { JobApplication } from "./job-application";
 
 export type JobTrackerData = {
   jobs: JobApplication[];

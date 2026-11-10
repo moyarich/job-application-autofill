@@ -1,4 +1,4 @@
-import type { ContactActionsContext } from "./contact-context";
+import type { ContactActionsContext } from "../../types/contact-actions-context";
 import { createEditContact } from "./editContact";
 import { createChooseContact } from "./chooseContact";
 import { createSaveContactRecord } from "./saveContactRecord";

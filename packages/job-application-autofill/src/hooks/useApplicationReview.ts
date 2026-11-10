@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { ApplySession } from "../utils/application/types";
-import type { ApplicationReviewData } from "../utils/application/review-data";
+import type { ApplySession } from "../types/types";
+import type { ApplicationReviewData } from "../types/application-review-data";
 import { createPrepareJob } from "../utils/application/prepareJob";
 import { createPrepareAccountSignUp } from "../utils/application/prepareAccountSignUp";
 import { createSetEmployerAccountStatus } from "../utils/application/setEmployerAccountStatus";

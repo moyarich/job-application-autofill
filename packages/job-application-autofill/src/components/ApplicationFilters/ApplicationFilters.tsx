@@ -1,15 +1,16 @@
 import { ArrowDownUp, ListFilter } from "lucide-react";
-import { statuses } from "../../index";
-import { statusLabels } from "../../utils/profile/fields";
+
+import { statusLabels } from "../../constants/fields";
 import type {
   ApplicationFilter,
   ApplicationSort,
 } from "../../utils/application/application-list";
 import { SelectFilter, type FilterOption } from "../SelectFilter/SelectFilter";
+import { STATUSES } from "../../constants";
 
 const statusOptions: readonly FilterOption<ApplicationFilter>[] = [
   { value: "all", label: "All statuses" },
-  ...statuses.map((status) => ({ value: status, label: statusLabels[status] })),
+  ...STATUSES.map((status) => ({ value: status, label: statusLabels[status] })),
 ];
 
 const sortOptions: readonly FilterOption<ApplicationSort>[] = [

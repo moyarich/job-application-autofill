@@ -1,7 +1,10 @@
-import type { Resume } from "../../index";
-import { validateResume, parseCandidateJson } from "../../index";
+import { Resume } from "@moyarich/resume";
+import { parseResumeJson } from "@moyarich/resume/validate";
+import { validateResume } from "./validateResume";
+
 import { requestApi } from "../api/client";
 import type { Dispatch, SetStateAction } from "react";
+
 export function createExportResumePdf(context: {
   profile: Resume;
   activeProfileId: string;
@@ -17,7 +20,7 @@ export function createExportResumePdf(context: {
           "Complete contact information first: " + missing.join(", "),
         );
       // Revalidate the entire user-supplied JSON before producing a document.
-      const valid = parseCandidateJson(JSON.stringify(profile));
+      const valid = parseResumeJson(JSON.stringify(profile));
       const { base64 } = await requestApi<{ base64: string }>(
         "/api/resume/pdf",
         valid,

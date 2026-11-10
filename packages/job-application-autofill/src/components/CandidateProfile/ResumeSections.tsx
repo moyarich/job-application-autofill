@@ -1,7 +1,7 @@
 import type { ResumeSectionsData } from "../feature-props";
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
-import type { Resume } from "../../index";
+import { Resume } from "@moyarich/resume";
 
 type Field<T> = {
   key: keyof T;

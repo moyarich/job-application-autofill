@@ -1,4 +1,4 @@
-import type { ResumeImportActionsContext } from "./import-context";
+import type { ResumeImportActionsContext } from "./resume-import-actions-context";
 
 /** Shared resume/contact dependencies supplied by the page. */
 export type ResumeImportData = Pick<

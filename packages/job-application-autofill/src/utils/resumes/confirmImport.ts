@@ -1,11 +1,11 @@
 import type {
   ResumeImportActionsContext,
   ApplyImportedContent,
-} from "./import-context";
+} from "../../types/resume-import-actions-context";
 import { requestApi } from "../api/client";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
-import type { ContactChoice } from "../api/client";
+import { ContactChoice } from "../../types/api-types";
 
 export function createConfirmImport(
   context: ResumeImportActionsContext & {

@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
-import type { Resume } from "../index";
-type ContactKey = keyof Resume["contact"];
-import type { ContactChoice } from "../utils/api/client";
-import type { ResumeImportData } from "../utils/resumes/import-data";
+import { Resume } from "@moyarich/resume";
+import { ContactChoice } from "../types/api-types";
+
 import { createOfferImport } from "../utils/resumes/offerImport";
 import { createApplyImportedContent } from "../utils/resumes/applyImportedContent";
 import { createConfirmImport } from "../utils/resumes/confirmImport";
@@ -10,6 +9,11 @@ import { createCancelImport } from "../utils/resumes/cancelImport";
 import { createImportProfile } from "../utils/resumes/importProfile";
 import { createChooseResume } from "../utils/resumes/chooseResume";
 import { createParseResume } from "../utils/resumes/parseResume";
+
+type ContactKey = keyof Resume["contact"];
+
+import type { ResumeImportData } from "../types/resume-import-data";
+
 export function useResumeImport(workspace: ResumeImportData) {
   const {
     profile,
