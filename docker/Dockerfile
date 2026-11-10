@@ -8,7 +8,7 @@ COPY apps/playground/package.json apps/playground/package.json
 COPY packages/job-application-autofill/package.json packages/job-application-autofill/package.json
 COPY packages/resume/package.json packages/resume/package.json
 COPY packages/resume-api/package.json packages/resume-api/package.json
-COPY packages/job-sites/package.json packages/job-sites/package.json
+COPY packages/job-boards/package.json packages/job-boards/package.json
 RUN npm ci --include=optional --no-audit --no-fund
 
 FROM node-deps AS build

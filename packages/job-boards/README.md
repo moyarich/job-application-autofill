@@ -22,7 +22,7 @@ This URL is included in the adapter classification regression test. Live sign-in
 
 ## Smartsheet — real Greenhouse example
 
-[Sr. Software Engineer I (Remote Eligible), job 8250247](https://job-boards.greenhouse.io/smartsheet/jobs/8250247) is hosted on `job-boards.greenhouse.io`, so it uses `job-sites/greenhouse/`.
+[Sr. Software Engineer I (Remote Eligible), job 8250247](https://job-boards.greenhouse.io/smartsheet/jobs/8250247) is hosted on `job-boards.greenhouse.io`, so it uses `job-boards/greenhouse/`.
 
 Publicly visible application fields include first and last name, **preferred first name**, email, country/phone, city, résumé upload, education, applicant privacy notice, referral relationship, source, LinkedIn, AI familiarity, U.S. work authorization and future sponsorship. These fields vary by employer and change over time.
 
