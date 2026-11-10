@@ -32,6 +32,27 @@ export const handleApplications: RouteHandler = async ({
   const savedAnswers = url.pathname.match(/^\/api\/applications\/([0-9a-f-]+)\/answers$/);
   if (savedAnswers && req.method === "GET")
     return reply(200, store.getApplicationAnswerContext(profileId, savedAnswers[1]));
+  if (savedAnswers && req.method === "POST") {
+    const payload = record(await req.readJson());
+    if (typeof payload.question !== "string" || typeof payload.answer !== "string")
+      throw new Error("Question and answer are required.");
+    // New library records are attached to this application, never an invented global owner.
+    return reply(201, store.createApplicationAnswer(profileId, savedAnswers[1], payload.question, payload.answer));
+  }
+  const answerRecord = url.pathname.match(/^\\/api\\/applications\\/([0-9a-f-]+)\\/answers\\/record$/);
+  if (answerRecord && (req.method === "PATCH" || req.method === "DELETE")) {
+    const payload = record(await req.readJson());
+    const { applicationId, question, expectedAnswer, expectedUpdatedAt, answer } = payload;
+    if (typeof applicationId !== "string" || typeof question !== "string" ||
+        typeof expectedAnswer !== "string" || typeof expectedUpdatedAt !== "string")
+      throw new Error("Invalid answer reference.");
+    // Validate the viewed application even when updating a different source in the same profile.
+    store.listApplicationAnswers(profileId, answerRecord[1]);
+    if (req.method === "DELETE")
+      return reply(200, store.deleteApplicationAnswer(profileId, applicationId, question, expectedAnswer, expectedUpdatedAt));
+    if (typeof answer !== "string") throw new Error("Answer is required.");
+    return reply(200, store.updateApplicationAnswer(profileId, applicationId, question, expectedAnswer, expectedUpdatedAt, answer));
+  }
   if (req.method === "GET" && url.pathname === "/api/apply/active") {
     const active = getActiveApplication(
       url.searchParams.get("jobId"),
