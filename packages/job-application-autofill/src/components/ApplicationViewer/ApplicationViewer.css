@@ -300,6 +300,9 @@
 #menu-refresh:hover {
   background: #e4e4e7;
 }
+#menu-refresh[aria-busy="true"] svg {
+  animation: status-spin 1s linear infinite;
+}
 #menu-footer p {
   margin: 5px 0;
 }
@@ -334,6 +337,9 @@
   }
   .menu-chevron {
     transition: none !important;
+  }
+  #menu-refresh svg {
+    animation: none !important;
   }
 }
 @media (max-width: 600px) {
