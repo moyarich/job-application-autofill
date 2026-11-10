@@ -2,6 +2,7 @@ import type { JobSiteAdapter } from "../types.ts";
 import { workdayEmployerTenant } from "./identity.ts";
 import { detectWorkdayPage } from "./detection.ts";
 import { workdaySteps, workdayScreening } from "./steps.ts";
+import { fillWorkdayScreeningAnswers } from "./screening/answers.ts";
 import {
   helpWorkdaySignIn,
   openWorkdayApplication,
@@ -38,6 +39,7 @@ export default {
     },
   ],
   discoverQuestions: workdayScreening.discover,
+  answerQuestions: fillWorkdayScreeningAnswers,
   openApplication: openWorkdayApplication,
   helpSignIn: helpWorkdaySignIn,
   loginFailureMessage: workdayLoginFailureMessage,
