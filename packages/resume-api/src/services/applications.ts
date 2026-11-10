@@ -1,8 +1,8 @@
 import type { Store } from "../server/types.ts";
 import { validateResume } from "../../../resume/src/resume-schema/validate.ts";
 import { decodePdfAttachment } from "../../../resume/src/resume-schema/attachment.ts";
-import { employerAccountIdentity } from "../../../job-sites/employer-account.ts";
-import { prepareApplication } from "../../../job-sites/automation.ts";
+import { employerAccountIdentity } from "../../../job-boards/employer-account.ts";
+import { prepareApplication } from "../../../job-boards/automation.ts";
 
 export function accountForJob(store: Store, profileId: string, jobId: string) {
   const job = store

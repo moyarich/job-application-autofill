@@ -1,4 +1,4 @@
-import { reusableAnswer } from "../../../job-sites/screening-policy.ts";
+import { reusableAnswer } from "../../../job-boards/screening-policy.ts";
 import { openConnection } from "./connection.ts";
 import { initializeDatabase } from "./schema.ts";
 import { createProfilesStatements } from "./repositories/profiles.ts";

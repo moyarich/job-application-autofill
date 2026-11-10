@@ -6,7 +6,7 @@ import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { employerAccountIdentity } from "../../../job-sites/employer-account.ts";
+import { employerAccountIdentity } from "../../../job-boards/employer-account.ts";
 import {
   pasteApplicationText,
   getApplication,
@@ -22,7 +22,7 @@ import {
   submitApplication,
   prepareApplicationAccount,
   closeApplication,
-} from "../../../job-sites/automation.ts";
+} from "../../../job-boards/automation.ts";
 
 export const handleApplications: RouteHandler = async ({
   req,
