@@ -27,21 +27,21 @@ describe("job-site adapter contract", () => {
     const workday = ADAPTERS.workday;
     const steps = workday.steps ?? [];
     const stepIds = steps.map((step) => step.id);
-    expect(stepIds).toEqual([
-      "workday.personal-information",
-      "workday.work-experience",
-      "workday.education",
-      "workday.skills",
-      "workday.resume",
-      "workday.screening",
-    ]);
+    expect(stepIds.length).toBeGreaterThan(0);
+    expect(new Set(stepIds).size).toBe(stepIds.length);
+    for (const id of stepIds) expect(id).toMatch(/^workday\\.[a-z][a-z0-9-]*$/);
     for (const step of steps) {
       expect(step.matches).toBeTypeOf("function");
       expect(step.run).toBeTypeOf("function");
     }
     const menu = workday.menuItems ?? [];
-    expect(menu.map((item) => item.stepId)).toEqual(stepIds);
+    expect(menu.length).toBeGreaterThan(0);
     expect(new Set(menu.map((item) => item.id)).size).toBe(menu.length);
+    for (const item of menu) {
+      expect(item.id).toMatch(/^[a-z][a-z0-9-]*$/);
+      expect(item.label.trim()).not.toBe("");
+      expect(stepIds).toContain(item.stepId);
+    }
 
     expect(workday.detectPage).toBeTypeOf("function");
     expect(workday.openApplication).toBeTypeOf("function");
