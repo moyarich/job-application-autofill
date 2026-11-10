@@ -1,6 +1,6 @@
 import type { Page, Locator } from "playwright";
 import { classifyQuestion, discoverQuestions } from "../../index.ts";
-import { reusableAnswer, normalizedQuestion } from "../../screening-policy.ts";
+import { reusableAnswer, normalizedQuestion } from "@moyarich/resume";
 
 const BLOCKED = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowledge|certif(?:y|ication) that|electronic signature|signature|terms and conditions|privacy policy|gender|race|ethnic|veteran|disability)/i;
 const normalize = normalizedQuestion;
