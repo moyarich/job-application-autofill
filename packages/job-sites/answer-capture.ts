@@ -5,7 +5,7 @@ import { classifyQuestion, discoverQuestions } from "./index.ts";
 export async function captureEmployerAnswers(page: Page): Promise<Record<string, string>> {
   const questions = (await discoverQuestions(page)).filter(
     (q) => classifyQuestion(q.label) === "general" &&
-      !/^(?:first|last|middle|preferred|full) name|(?:e-?mail|phone|mobile|address|city|state|zip|postal|country|linkedin|github|website|resume|cover letter|password|username|signature/i.test(q.label),
+      !/^(?:first|last|middle|preferred|full) name|(?:e-?mail|phone|mobile|address|city|state|zip|postal|country|linkedin|github|website|resume|cover letter|password|username|signature)/i.test(q.label),
   );
   if (!questions.length) return {};
   return page.evaluate((labels) => {
