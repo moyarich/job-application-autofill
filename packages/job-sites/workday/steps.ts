@@ -80,12 +80,7 @@ export const workdaySteps = [
   {
     id: "workday.personal-information",
     matches: async ({ page }) =>
-      has(page, /^My Information$/i) ||
-      page
-        .getByLabel(/^first name\s*\*?$/i)
-        .first()
-        .isVisible()
-        .catch(() => false),
+      page.getByLabel(/^first name\\s*\\*?$/i).first().isVisible().catch(() => false),
     run: ({ page, profile }) => fillWorkdayContact(page, profile),
   },
   {
