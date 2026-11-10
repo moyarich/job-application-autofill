@@ -1,6 +1,5 @@
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../../api/client";
-import type { ApplySession } from "../../types/types";
+import { prepareEmployerAccount } from "../../api/applications";
 
 /** prepareAccountSignUp action; no React hooks or state ownership. */
 export function createPrepareAccountSignUp(
@@ -19,12 +18,7 @@ export function createPrepareAccountSignUp(
     if (!session) return;
     setApplyBusy(true);
     try {
-      const updated = await requestApi<ApplySession>(
-        "/api/apply/" + session.id + "/account-signup",
-        { ...(password ? { password } : {}) },
-        activeProfileId,
-        activeResumeId ?? undefined,
-      );
+      const updated = await prepareEmployerAccount(session.id, password, activeProfileId, activeResumeId ?? undefined);
       setSession(updated);
       setReviewed(false);
       setMessage(updated.message);

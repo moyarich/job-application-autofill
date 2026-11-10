@@ -1,7 +1,6 @@
 import { readActiveApplication } from "../../api/applications";
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../../api/client";
-import type { ApplySession } from "../../types/types";
+import { continueApplicationSession } from "../../api/applications";
 
 /** continueAfterChallenge action; no React hooks or state ownership. */
 export function createContinueAfterChallenge(
@@ -22,12 +21,7 @@ export function createContinueAfterChallenge(
     if (!session) return;
     setApplyBusy(true);
     try {
-      const updated = await requestApi<ApplySession>(
-        "/api/apply/" + session.id + "/continue",
-        {},
-        activeProfileId,
-        activeResumeId ?? undefined,
-      );
+      const updated = await continueApplicationSession(session.id, activeProfileId, activeResumeId ?? undefined);
       setSession((current) => ({
         ...updated,
         employerAccount: updated.employerAccount ?? current?.employerAccount,
