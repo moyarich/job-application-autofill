@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { requestApi } from "../../utils/api/client";
 import { relatedAnswers, type PreviousAnswer } from "./suggestions";
+import { AnswerLibrary } from "./AnswerLibrary";
+import { reusableQuestion } from "../../../../job-sites/screening-policy.ts";
 import "./ScreeningAnswerDock.css";
 
 type Question = { label: string; kind: string; required: boolean; options: string[] };
@@ -32,7 +34,7 @@ export function ScreeningAnswerDock({
     !blocked.test(question.label) && typeof savedAnswers[question.label] === "string" &&
     savedAnswers[question.label].trim(),
   );
-  const eligible = questions.filter((question) => !blocked.test(question.label));
+  const eligible = questions.filter((question) => !blocked.test(question.label) && reusableQuestion(question.label));
   async function apply(label: string, answer: string) {
     if (!answer.trim()) return;
     setBusy(label);
@@ -107,6 +109,14 @@ export function ScreeningAnswerDock({
               </div>
             );
           })}
+          <AnswerLibrary
+            examples={previousAnswers}
+            questions={eligible.map((question) => question.label)}
+            onAdapt={(question, answer) => {
+              setDrafts((previous) => ({ ...previous, [question]: answer }));
+              setMessage("Example copied into a draft. Edit the response for this job before filling.");
+            }}
+          />
           {message && <p role="status">{message}</p>}
           <small>Legal consent and sensitive disclosures are completed directly on the employer's form.</small>
         </div>
