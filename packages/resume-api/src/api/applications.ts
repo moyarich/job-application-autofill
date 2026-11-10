@@ -14,6 +14,7 @@ import {
   runApplicationMenuItem,
   getActiveApplication,
   continueApplication,
+  pauseApplication,
   answerApplicationQuestions,
   snapshotEmployerAnswers,
   refreshScreenshot,
@@ -79,7 +80,7 @@ export const handleApplications: RouteHandler = async ({
       : reply(400, { error: result.error });
   }
   const match = url.pathname.match(
-    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|save-answers|continue|answers|account-signup|focus|paste|menu))?$/,
+    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|save-answers|continue|pause|answers|account-signup|focus|paste|menu))?$/,
   );
   if (match) {
     const [, id, action] = match;
@@ -140,6 +141,8 @@ export const handleApplications: RouteHandler = async ({
         ),
       );
     }
+    if (req.method === "POST" && action === "pause")
+      return reply(200, pauseApplication(id));
     if (req.method === "POST" && action === "continue") {
       // Capture answers on the current step before automation moves forward.
       const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
