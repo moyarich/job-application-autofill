@@ -2,7 +2,7 @@ import { parseResumeJson } from "@moyarich/resume/validate";
 
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
 
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import { filePayload } from "../files/resume-files";
 import type { ApplySession } from "../../types/types";
 import { JobApplication } from "../../types/job-application";

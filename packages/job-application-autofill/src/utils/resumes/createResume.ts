@@ -1,6 +1,6 @@
 import { routes } from "../../routes";
 import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
-import { createResumeVersion } from "../api/client";
+import { createResumeVersion } from "../../api/client";
 import { navigateTo } from "./navigateTo";
 
 export function createCreateResume(context: ProfileResumeActionsContext) {

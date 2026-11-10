@@ -7,7 +7,7 @@ import { useJobApplications } from "../../hooks/useJobApplications";
 import { useProfileContacts } from "../../hooks/useProfileContacts";
 import { useResumeDraft } from "../../hooks/useResumeDraft";
 import { PageStatus } from "../../components/PageStatus/PageStatus";
-import { readJobs, saveJob } from "../../utils/api/client";
+import { readJobs, saveJob } from "../../api/client";
 import { useNavigate } from "react-router";
 
 export function PageApplicationReview() {

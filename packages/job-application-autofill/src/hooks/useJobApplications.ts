@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { JobApplication } from "../index";
 import { usePendingSave } from "./PendingSaves";
-import { readJobs, saveJob, deleteJob } from "../utils/api/client";
+import { readJobs, saveJob, deleteJob } from "../api/client";
 
 export interface IJobApplications {
   jobs: JobApplication[];

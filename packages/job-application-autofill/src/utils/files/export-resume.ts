@@ -5,7 +5,7 @@ import {
 } from "@moyarich/resume/markdown";
 import { Resume } from "@moyarich/resume";
 
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import { downloadJson, downloadText } from "./resume-files";
 
 export type ResumeExportFormat =

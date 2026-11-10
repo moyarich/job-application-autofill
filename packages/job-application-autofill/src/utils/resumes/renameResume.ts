@@ -1,5 +1,5 @@
 import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
-import { renameResumeVersion } from "../api/client";
+import { renameResumeVersion } from "../../api/client";
 
 export function createRenameResume(context: ProfileResumeActionsContext) {
   const {

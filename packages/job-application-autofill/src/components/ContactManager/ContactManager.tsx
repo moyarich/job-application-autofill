@@ -8,7 +8,7 @@ import {
   updateProfileContact,
   deleteProfileContact,
   chooseDefaultContact,
-} from "../../utils/api/client";
+} from "../../api/client";
 import { fields } from "../../constants/fields";
 import "./ContactManager.css";
 

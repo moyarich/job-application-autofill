@@ -4,7 +4,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 
-import { fetchAnswers, requestApi } from "../utils/api/client";
+import { fetchAnswers, requestApi } from "../api/client";
 import { AnswerMap, AnswersResponse } from "../types/api-types";
 import { ApplicationQnA } from "../types/application-q-n-a";
 

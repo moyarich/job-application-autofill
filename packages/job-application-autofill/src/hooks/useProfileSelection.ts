@@ -12,7 +12,7 @@ import {
   DEFAULT_PROFILE_ID,
   readProfiles,
   readResumes,
-} from "../utils/api/client";
+} from "../api/client";
 
 /** Query-string keys used for selection. */
 const PARAM = { profile: "profile", resume: "resume" } as const;

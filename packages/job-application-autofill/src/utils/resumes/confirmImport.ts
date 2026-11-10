@@ -2,7 +2,7 @@ import type {
   ResumeImportActionsContext,
   ApplyImportedContent,
 } from "../../types/resume-import-actions-context";
-import { requestApi } from "../api/client";
+import { requestApi } from "../../api/client";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
 import { ContactChoice } from "../../types/api-types";

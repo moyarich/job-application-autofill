@@ -1,12 +1,12 @@
 import { Resume } from "@moyarich/resume";
-import { JobApplication } from "../../types/job-application";
+import { JobApplication } from "../types/job-application";
 import {
   AnswersResponse,
   ContactChoice,
   LocalProfile,
   ProfileContact,
   ResumeVersion,
-} from "../../types/api-types";
+} from "../types/api-types";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export const ACTIVE_PROFILE_STORAGE_KEY =

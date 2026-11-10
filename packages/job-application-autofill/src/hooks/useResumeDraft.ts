@@ -11,7 +11,7 @@ import { parseResumeJson } from "@moyarich/resume/validate";
 import { validateResume } from "../utils/resumes/validateResume";
 
 import { ProfileContact } from "../types/api-types";
-import { readResumeContent, saveResumeContent } from "../utils/api/client";
+import { readResumeContent, saveResumeContent } from "../api/client";
 
 import { EMPTY_CANDIDATE } from "../constants";
 

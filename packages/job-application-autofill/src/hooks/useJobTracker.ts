@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type React from "react";
 
 import { changeJobStatus } from "../utils/application/changeJobStatus";
-import { requestApi } from "../utils/api/client";
+import { requestApi } from "../api/client";
 import type { JobTrackerData } from "../types/job-tracker-data";
 import { JobPostingDetails, ApplicationStatus } from "../types/job-application";
 import { createApplication } from "../utils/application/createApplication";

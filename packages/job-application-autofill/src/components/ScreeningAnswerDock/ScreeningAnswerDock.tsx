@@ -12,7 +12,7 @@ import {
   Minus,
   X,
 } from "lucide-react";
-import { requestApi } from "../../utils/api/client";
+import { requestApi } from "../../api/client";
 
 import { AnswerLibrary } from "./AnswerLibrary";
 import { reusableQuestion } from "@moyarich/job-boards/screening-policy";
