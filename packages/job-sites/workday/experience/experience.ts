@@ -200,6 +200,22 @@ export async function fillWorkdayExperience(
     }
     if (rowIndex >= 0) row = rows.nth(rowIndex);
     if (!row) {
+      // If Workday produced unmatched nonempty rows, adding more jobs can
+      // duplicate history. Keep the original form intact for user review.
+      let unmatchedImported = false;
+      for (let j = 0; j < await rows.count(); j++) {
+        if (assignedRows.has(j)) continue;
+        const company = await read(rows.nth(j), "company");
+        const title = await read(rows.nth(j), "jobTitle");
+        if (company?.trim() || title?.trim()) {
+          unmatchedImported = true;
+          break;
+        }
+      }
+      if (unmatchedImported) {
+        result.unresolved.push(key + ": unmatched imported history needs review");
+        continue;
+      }
       const button = section
         .getByRole("button", {
           name: /^(add|add another|add experience|add work experience)$/i,
