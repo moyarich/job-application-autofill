@@ -30,7 +30,12 @@ export function prepareApplicationSession(
   profileId: string,
   resumeId?: string,
 ) {
-  return requestApi<ApplySession>("/api/apply/prepare", payload, profileId, resumeId);
+  return requestApi<ApplySession>(
+    "/api/apply/prepare",
+    payload,
+    profileId,
+    resumeId,
+  );
 }
 
 export function prepareEmployerAccount(
@@ -68,8 +73,10 @@ export function finalizeApplicationSession(
   resumeId?: string,
 ) {
   return requestApi<ApplySession | { closed: boolean }>(
-    "/api/apply/" + encodeURIComponent(sessionId) +
-      "/" + (submit ? "submit" : "close"),
+    "/api/apply/" +
+      encodeURIComponent(sessionId) +
+      "/" +
+      (submit ? "submit" : "close"),
     submit ? { confirm: true, reviewed } : {},
     profileId,
     resumeId,

@@ -21,7 +21,11 @@ export function createContinueAfterChallenge(
     if (!session) return;
     setApplyBusy(true);
     try {
-      const updated = await continueApplicationSession(session.id, activeProfileId, activeResumeId ?? undefined);
+      const updated = await continueApplicationSession(
+        session.id,
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       setSession((current) => ({
         ...updated,
         employerAccount: updated.employerAccount ?? current?.employerAccount,
@@ -38,7 +42,10 @@ export function createContinueAfterChallenge(
     } catch (error) {
       if (recoverSession) {
         try {
-          const result = await readActiveApplication(session.jobId, activeProfileId);
+          const result = await readActiveApplication(
+            session.jobId,
+            activeProfileId,
+          );
           if (!result.session) {
             setSession(null);
             setReviewed(false);

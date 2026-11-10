@@ -1,5 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { focusViewerBrowser, pasteViewerText, readViewerConfig } from "../../api/viewer";
+import {
+  focusViewerBrowser,
+  pasteViewerText,
+  readViewerConfig,
+} from "../../api/viewer";
 
 interface RemoteFrame extends EventTarget {
   scaleViewport: boolean;

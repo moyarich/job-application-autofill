@@ -21,16 +21,18 @@ const contactValues = (entry: ProfileContact): Resume["contact"] => {
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });
 
+export interface ProfileContacts {
+  profileId: string;
+  enabled: boolean;
+  setMessage: Dispatch<SetStateAction<string>>;
+}
+
 /** Owns contact records and contact-record writes only. */
 export function useProfileContacts({
   profileId,
   enabled,
   setMessage,
-}: {
-  profileId: string;
-  enabled: boolean;
-  setMessage: Dispatch<SetStateAction<string>>;
-}) {
+}: ProfileContacts) {
   const [contacts, setContacts] = useState<ProfileContact[]>([]);
   const [defaultContactId, setDefaultContactId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);

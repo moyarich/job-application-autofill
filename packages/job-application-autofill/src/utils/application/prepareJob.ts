@@ -60,7 +60,11 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
       // The JSON drives autofill. The application also needs a PDF attachment.
       // Generate from resolved data, never attach an outdated imported PDF.
       const validProfile = parseResumeJson(JSON.stringify(profile));
-      const generated = await generateResumePdf(validProfile, activeProfileId, activeResumeId ?? undefined);
+      const generated = await generateResumePdf(
+        validProfile,
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       const attachment = new File(
         [Uint8Array.from(atob(generated.base64), (char) => char.charCodeAt(0))],
         (
@@ -71,12 +75,16 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
         { type: "application/pdf" },
       );
       const upload = await filePayload(attachment);
-      const result = await prepareApplicationSession({
+      const result = await prepareApplicationSession(
+        {
           jobUrl: job.url,
           jobId: job.id,
           profile: validProfile,
           resume: upload,
-        }, activeProfileId, activeResumeId ?? undefined);
+        },
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       setSession(result);
       setReviewed(false);
       changeJob(

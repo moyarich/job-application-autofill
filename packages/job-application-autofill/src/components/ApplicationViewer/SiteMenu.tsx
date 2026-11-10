@@ -19,7 +19,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import type { MenuItem } from "../../api/viewer";
-import { useEmployerMenu } from "./useEmployerMenu";
+import { useEmployerMenu } from "../../hooks/useEmployerMenu";
 export type SiteMenuHandle = { refresh: () => void; toggle: () => void };
 
 function ItemStatus({ item, current }: { item: MenuItem; current: boolean }) {

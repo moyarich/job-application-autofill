@@ -23,7 +23,12 @@ export function changeJobStatus(
     setMessage,
   } = context;
   if (applicationId) {
-    void updateJobStatus(id, status, activeProfileId, activeResumeId ?? undefined).catch((error) => setMessage(String(error)));
+    void updateJobStatus(
+      id,
+      status,
+      activeProfileId,
+      activeResumeId ?? undefined,
+    ).catch((error) => setMessage(String(error)));
   }
   setJobs((items) =>
     items.map((item) => (item.id === id ? { ...item, status } : item)),

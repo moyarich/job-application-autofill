@@ -157,7 +157,13 @@ export function ScreeningAnswerDock({
     setBusy(label);
     setMessage("");
     try {
-      const response = await fillApplicationAnswer(sessionId, label, answer, profileId, resumeId);
+      const response = await fillApplicationAnswer(
+        sessionId,
+        label,
+        answer,
+        profileId,
+        resumeId,
+      );
       if (response.answerResult.filled.includes(label)) {
         setCompleted((old) => [...new Set([...old, label])]);
         setMessage(

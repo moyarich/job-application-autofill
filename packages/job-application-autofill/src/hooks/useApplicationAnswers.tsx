@@ -60,7 +60,11 @@ export function useApplicationAnswers(
     async (sessionId: string) => {
       setSaving(true);
       try {
-        const result = await saveEmployerFormAnswers(sessionId, profileId, resumeId ?? undefined);
+        const result = await saveEmployerFormAnswers(
+          sessionId,
+          profileId,
+          resumeId ?? undefined,
+        );
         setSavedAnswers(result.answers);
         setMessage(
           result.count

@@ -76,7 +76,12 @@ export function focusViewerBrowser(
   profile: string,
   signal?: AbortSignal,
 ) {
-  return viewerRequest(applicationPath(session) + "/focus", profile, {}, signal);
+  return viewerRequest(
+    applicationPath(session) + "/focus",
+    profile,
+    {},
+    signal,
+  );
 }
 
 export function pasteViewerText(

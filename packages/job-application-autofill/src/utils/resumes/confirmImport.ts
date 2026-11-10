@@ -27,7 +27,8 @@ export function createConfirmImport(
     importing = true;
     try {
       await flushPending();
-      const result = await importResumeContent({
+      const result = await importResumeContent(
+        {
           resumeId: activeResumeId,
           revision: revisionRef.current,
           name: defaultImportedResumeName(pendingImport),
@@ -35,7 +36,9 @@ export function createConfirmImport(
           choices: Object.fromEntries(
             contactKeys.map((key) => [key, strategy]),
           ),
-        }, activeProfileId);
+        },
+        activeProfileId,
+      );
       // Reload the committed resume/contact snapshot; do not autosave stale local state.
       const url = new URL(window.location.href);
       if (!activeResumeId) url.pathname = routes.resumes;

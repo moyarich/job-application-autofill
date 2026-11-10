@@ -87,7 +87,7 @@ export function CandidateProfile({
   const [resumeName, setResumeName] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [renameError, setRenameError] = useState("");
-  async function saveName(event: React.FormEvent<HTMLFormElement>) {
+  async function saveName(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!currentResume || renameBusy) return;
     const title = resumeName.trim();

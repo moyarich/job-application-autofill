@@ -6,15 +6,27 @@ import {
   runViewerAction,
   type MenuItem,
   type ViewerSession,
-} from "../../api/viewer";
+} from "../api/viewer";
 import { useAutomationEvents } from "./useAutomationEvents";
 
+interface EmployerMenu {
+  active: ViewerSession | null;
+  items: MenuItem[];
+  busy: boolean;
+  refreshing: boolean;
+  error: string;
+  refresh: () => Promise<void>;
+  run: (
+    action: "continue" | "pause" | "close" | "menu",
+    itemId?: string,
+  ) => Promise<void>;
+}
 export function useEmployerMenu(
   session: string,
   profile: string,
   _connected: boolean,
   onClosed: () => void,
-) {
+): EmployerMenu {
   const [active, setActive] = useState<ViewerSession | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [busy, setBusy] = useState(false);

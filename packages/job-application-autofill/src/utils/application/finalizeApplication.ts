@@ -33,7 +33,13 @@ export function createFinalizeApplication(
       return;
     setApplyBusy(true);
     try {
-      const result = await finalizeApplicationSession(session.id, submit, session.reviewUrl ? reviewed : true, activeProfileId, activeResumeId ?? undefined);
+      const result = await finalizeApplicationSession(
+        session.id,
+        submit,
+        session.reviewUrl ? reviewed : true,
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       if (submit) {
         const next = result as ApplySession;
         setSession(next);

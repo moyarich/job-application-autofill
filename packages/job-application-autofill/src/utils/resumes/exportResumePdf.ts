@@ -21,7 +21,11 @@ export function createExportResumePdf(context: {
         );
       // Revalidate the entire user-supplied JSON before producing a document.
       const valid = parseResumeJson(JSON.stringify(profile));
-      const { base64 } = await generateResumePdf(valid, activeProfileId, activeResumeId ?? undefined);
+      const { base64 } = await generateResumePdf(
+        valid,
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);

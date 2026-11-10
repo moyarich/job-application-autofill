@@ -28,7 +28,11 @@ export function createParseResume(
     setMessage("");
     try {
       const upload = await filePayload(resume);
-      const result = await parseResumeFile(upload, activeProfileId, activeResumeId ?? undefined);
+      const result = await parseResumeFile(
+        upload,
+        activeProfileId,
+        activeResumeId ?? undefined,
+      );
       offerImport(result.profile);
       setParsePreview(result.preview);
     } catch (error) {
