@@ -152,8 +152,9 @@ export const handleApplications: RouteHandler = async ({
         200,
         await continueApplication(
           id,
-          store.getResumeContent(profileId, resumeIdHeader).profile ??
-            undefined,
+          resumeIdHeader
+            ? (store.getResumeContent(profileId, resumeIdHeader).profile ?? undefined)
+            : undefined,
         ),
       );
     }
