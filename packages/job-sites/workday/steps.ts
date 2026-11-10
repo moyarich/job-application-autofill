@@ -10,6 +10,7 @@ import { fillWorkdayContact } from "./contact/contact.ts";
 import { fillWorkdayExperience } from "./experience/experience.ts";
 import { fillWorkdayEducation } from "./education/education.ts";
 import { fillWorkdaySkills } from "./skills/skills.ts";
+import { fillWorkdayCertifications, workdayCertificationsVisible } from "./certifications/certifications.ts";
 import { retryWorkdayResumeUpload } from "./resume/resume.ts";
 import { resumeFields } from "./resume/selectors.ts";
 import { skillsFields } from "./skills/selectors.ts";
@@ -113,6 +114,17 @@ export const workdaySteps = [
     run: async ({ page, profile }) => {
       const r = await fillWorkdaySkills(page, profile.skills);
       return { filled: r.filled, missing: r.unresolved };
+    },
+  },
+  {
+    id: "workday.certifications",
+    matches: ({ page, profile }) =>
+      profile.certifications.length
+        ? workdayCertificationsVisible(page)
+        : Promise.resolve(false),
+    run: async ({ page, profile }) => {
+      const result = await fillWorkdayCertifications(page, profile.certifications);
+      return { filled: result.filled, missing: result.unresolved };
     },
   },
   {

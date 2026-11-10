@@ -29,6 +29,7 @@ export default {
     },
     { id: "education", label: "Education", stepId: "workday.education" },
     { id: "skills", label: "Skills", stepId: "workday.skills" },
+    { id: "certifications", label: "Certifications", stepId: "workday.certifications" },
     { id: "resume", label: "Resume upload", stepId: "workday.resume" },
     {
       id: "screening",
