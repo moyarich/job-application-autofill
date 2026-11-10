@@ -23,6 +23,7 @@ async function put(
   row: Locator,
   key: keyof typeof LABEL,
   val: string | null | undefined,
+  replaceExisting = false,
 ) {
   if (!val) return true;
   const el = await input(row, key);
@@ -31,7 +32,7 @@ async function put(
   if (type && !["text", "email", "tel", "month"].includes(type)) return false;
   const old = await el.inputValue().catch(() => null);
   if (old === null) return false;
-  if (old.trim()) return old.trim() === val.trim();
+  if (old.trim() && !replaceExisting) return old.trim() === val.trim();
   return el
     .fill(val, { timeout: 2000 })
     .then(() => true)
@@ -41,6 +42,7 @@ async function date(
   row: Locator,
   key: keyof typeof LABEL,
   raw: string | null | undefined,
+  replaceExisting = false,
 ) {
   if (!raw) return true;
   const match = /^([0-9]{4})(?:-(0[1-9]|1[0-2]))?$/.exec(raw);
@@ -67,7 +69,7 @@ async function date(
         [year, match[1]],
       ] as const) {
         const old = await target.inputValue();
-        if (old && Number(old) !== Number(value)) return false;
+        if (old && Number(old) !== Number(value) && !replaceExisting) return false;
       }
       await month.fill(match[2]);
       await year.fill(match[1]);
@@ -93,13 +95,14 @@ async function date(
       : match[2]
         ? match[2] + "/" + match[1]
         : match[1],
+    replaceExisting,
   );
 }
-async function fillRow(row: Locator, job: WorkExperienceEntry) {
+async function fillRow(row: Locator, job: WorkExperienceEntry, replaceExisting: boolean) {
   const errors: string[] = [];
   for (const key of ["company", "jobTitle", "location", "description"] as const)
-    if (job[key] && !(await put(row, key, job[key]))) errors.push(key);
-  if (!(await date(row, "startDate", job.startDate))) errors.push("startDate");
+    if (job[key] && !(await put(row, key, job[key], replaceExisting))) errors.push(key);
+  if (!(await date(row, "startDate", job.startDate, replaceExisting))) errors.push("startDate");
   const current = await input(row, "isCurrent");
   if (current) {
     try {
@@ -113,7 +116,7 @@ async function fillRow(row: Locator, job: WorkExperienceEntry) {
   if (
     !job.isCurrent &&
     job.endDate &&
-    !(await date(row, "endDate", job.endDate))
+    !(await date(row, "endDate", job.endDate, replaceExisting))
   )
     errors.push("endDate");
   return errors;
@@ -156,6 +159,7 @@ export async function fillWorkdayExperience(
           .locator("xpath=ancestor::*[.//input][1]");
     let row: Locator | null = null;
     let rowIndex = -1;
+    let trustedMatch = false;
     const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
     const employer = normalize(job.company);
     const title = normalize(job.jobTitle);
@@ -179,9 +183,21 @@ export async function fillWorkdayExperience(
       result.unresolved.push(key + ": ambiguous existing experience rows");
       continue;
     }
-    if (exact.length === 1) rowIndex = exact[0];
-    else if (partial.length === 1) rowIndex = partial[0];
-    else if (vacant.length) rowIndex = vacant[0];
+    if (exact.length === 1) { rowIndex = exact[0]; trustedMatch = true; }
+    else if (partial.length === 1) { rowIndex = partial[0]; trustedMatch = true; }
+    else if (vacant.length) { rowIndex = vacant[0]; trustedMatch = true; }
+    else if (await rows.count() === experience.length && !assignedRows.has(i)) {
+      // Workday occasionally mis-parses every field. Index-based recovery is
+      // only permitted when the entire imported row count matches the resume.
+      // Do not consume a row that matches a different employment entry.
+      const candidate = rows.nth(i);
+      const company = await read(candidate, "company");
+      const role = await read(candidate, "jobTitle");
+      const reservedForOther = experience.some((other, otherIndex) => otherIndex !== i &&
+        company?.trim().toLowerCase() === other.company.trim().toLowerCase() &&
+        role?.trim().toLowerCase() === other.jobTitle.trim().toLowerCase());
+      if (company !== null && role !== null && !reservedForOther) rowIndex = i;
+    }
     if (rowIndex >= 0) row = rows.nth(rowIndex);
     if (!row) {
       const button = section
@@ -212,7 +228,7 @@ export async function fillWorkdayExperience(
       }
     }
     assignedRows.add(rowIndex);
-    const errors = await fillRow(row, job);
+    const errors = await fillRow(row, job, trustedMatch || rowIndex === i);
     if (errors.length) result.unresolved.push(key + ": " + errors.join(", "));
     else result.filled.push(key);
   }
