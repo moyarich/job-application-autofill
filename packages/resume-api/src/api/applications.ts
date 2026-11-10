@@ -32,6 +32,9 @@ export const handleApplications: RouteHandler = async ({
   const savedAnswers = url.pathname.match(/^\/api\/applications\/([0-9a-f-]+)\/answers$/);
   if (savedAnswers && req.method === "GET")
     return reply(200, { answers: store.listApplicationAnswers(profileId, savedAnswers[1]) });
+  const library = url.pathname.match(/^\/api\/applications\/([0-9a-f-]+)\/answer-library$/);
+  if (library && req.method === "GET")
+    return reply(200, { examples: store.listAnswerLibrary(profileId, library[1]) });
   if (req.method === "GET" && url.pathname === "/api/apply/active") {
     const active = getActiveApplication(
       url.searchParams.get("jobId"),
