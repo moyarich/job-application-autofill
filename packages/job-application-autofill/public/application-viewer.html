@@ -99,6 +99,14 @@
         outline: 3px solid #60a5fa;
         outline-offset: -3px;
       }
+      #automation-actions { display: flex; gap: 7px; padding: 9px; border-bottom: 1px solid #d7dfec; }
+      #automation-actions button { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid #ccd5e1; border-radius: 9px; background: #fff; color: #253454; cursor: pointer; font: 600 12px system-ui; }
+      #automation-actions button:disabled { opacity: .5; cursor: not-allowed; }
+      #automation-actions button:focus-visible { outline: 2px solid #60a5fa; }
+      #automation-actions button.primary { background: #243958; color: #fff; }
+      #automation-actions button.danger { color: #9f3535; }
+      #automation-state { padding: 7px 12px 0; font: 11px system-ui; color: #566780; }
+      #site-menu:not(.expanded) #automation-state, #site-menu:not(.expanded) #automation-actions { display: none; }
       #menu-message {
         font: 12px system-ui;
         padding: 0 10px;
@@ -116,6 +124,8 @@
       <button id="menu-handle" type="button" aria-expanded="false">
         <span>⠿</span><span>Employer actions</span><span>▾</span>
       </button>
+      <div id="automation-state" role="status"></div>
+      <div id="automation-actions"></div>
       <div id="menu-list"></div>
       <div id="menu-message" role="status"></div>
     </nav>
@@ -142,23 +152,71 @@
       const menuHandle = document.getElementById("menu-handle");
       const menuList = document.getElementById("menu-list");
       const menuMessage = document.getElementById("menu-message");
+      const automationActions = document.getElementById("automation-actions");
+      const automationState = document.getElementById("automation-state");
       let menuOpen = false;
       let menuBusy = false;
       let suppressHandleClick = false;
+      async function runSessionAction(action) {
+        if (menuBusy || !session) return;
+        if (action === "close" && !window.confirm("Stop automation and close the application browser?")) return;
+        menuBusy = true;
+        menuMessage.textContent = action === "pause" ? "Pausing…" : action === "continue" ? "Continuing…" : "Closing…";
+        try {
+          const response = await fetch("/api/apply/" + encodeURIComponent(session) + "/" + action, { method: "POST", headers });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || "Automation action failed.");
+          menuMessage.textContent = result.message || "Action completed.";
+          if (action === "close") {
+            siteMenu.classList.remove("visible");
+            status.textContent = "Application browser session closed";
+            return;
+          }
+        } catch (error) {
+          menuMessage.textContent = error.message || "Automation action failed.";
+        } finally {
+          menuBusy = false;
+          if (action !== "close") await reloadEmployerMenu().catch(() => {});
+        }
+      }
+      function addSessionAction(label, action, className = "") {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.className = className;
+        button.disabled = menuBusy;
+        button.addEventListener("click", () => void runSessionAction(action));
+        automationActions.appendChild(button);
+      }
       async function reloadEmployerMenu() {
         if (!session) return;
-        const response = await fetch(
-          "/api/apply/" + encodeURIComponent(session) + "/menu",
-          { headers, cache: "no-store" },
-        );
-        if (!response.ok) {
+        const base = "/api/apply/" + encodeURIComponent(session);
+        const [sessionResponse, response] = await Promise.all([
+          fetch(base, { headers, cache: "no-store" }),
+          fetch(base + "/menu", { headers, cache: "no-store" }),
+        ]);
+        if (!sessionResponse.ok) {
           siteMenu.classList.remove("visible");
           return;
         }
-        const data = await response.json();
+        const active = await sessionResponse.json();
+        const data = response.ok ? await response.json() : {};
         const items = Array.isArray(data.items) ? data.items : [];
         menuList.replaceChildren();
-        siteMenu.classList.toggle("visible", items.length > 0);
+        automationActions.replaceChildren();
+        const finished = ["submitted", "submission_unverified"].includes(active.state);
+        automationState.textContent = active.paused ? "Paused — browser remains available" :
+          finished ? "Application finished" :
+          active.state === "ready_for_review" ? "Ready for review" :
+          active.state === "login_required" ? "Sign-in required" :
+          active.state === "manual_intervention" ? "Needs attention" : "Running";
+        if (!finished) {
+          if (active.paused) addSessionAction("Continue", "continue", "primary");
+          else addSessionAction("Pause", "pause");
+          if (active.paused || ["manual_intervention", "login_required", "ready_for_review"].includes(active.state))
+            addSessionAction("Stop", "close", "danger");
+        } else addSessionAction("Close", "close");
+        siteMenu.classList.add("visible");
         for (const item of items) {
           if (typeof item.id !== "string" || typeof item.label !== "string")
             continue;
