@@ -923,6 +923,53 @@ export function openStore(
     };
   }
 
+  /** Optimistic, application-owned CRUD on the same table used by captured answers. */
+  function createApplicationAnswer(profileId: string, applicationId: string, question: string, answer: string) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (!reusableAnswer(question, answer)) throw new Error("Invalid or restricted screening answer.");
+    const normalizedLabel = question.trim(), normalizedValue = answer.trim();
+    const timestamp = now();
+    const result = db.prepare(
+      "INSERT OR IGNORE INTO application_answers(profile_id,application_id,question,answer,updated_at) VALUES (?,?,?,?,?)"
+    ).run(owner, id, normalizedLabel, normalizedValue, timestamp);
+    if (!result.changes) throw new Error("An answer already exists for that application and question.");
+    return { applicationId: id, question: normalizedLabel, answer: normalizedValue, updatedAt: timestamp };
+  }
+
+  function updateApplicationAnswer(
+    profileId: string, applicationId: string, question: string,
+    expectedAnswer: string, expectedUpdatedAt: string, answer: string,
+  ) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (!reusableAnswer(question, answer) || typeof expectedAnswer !== "string" ||
+        typeof expectedUpdatedAt !== "string") throw new Error("Invalid answer update.");
+    const timestamp = now();
+    const result = db.prepare(`
+      UPDATE application_answers SET answer=?,updated_at=?
+      WHERE profile_id=? AND application_id=? AND question=? AND answer=? AND updated_at=?
+    `).run(answer.trim(), timestamp, owner, id, question, expectedAnswer, expectedUpdatedAt);
+    if (!result.changes) throw new Error("Answer changed or was deleted. Reload before editing.");
+    return { applicationId: id, question, answer: answer.trim(), updatedAt: timestamp };
+  }
+
+  function deleteApplicationAnswer(
+    profileId: string, applicationId: string, question: string,
+    expectedAnswer: string, expectedUpdatedAt: string,
+  ) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (!reusableAnswer(question, expectedAnswer) || typeof expectedUpdatedAt !== "string")
+      throw new Error("Invalid answer deletion.");
+    const result = db.prepare(`
+      DELETE FROM application_answers
+      WHERE profile_id=? AND application_id=? AND question=? AND answer=? AND updated_at=?
+    `).run(owner, id, question, expectedAnswer, expectedUpdatedAt);
+    if (!result.changes) throw new Error("Answer changed or was deleted. Reload before deleting.");
+    return { deleted: true };
+  }
+
   /** Preserve written screening answers only for the matching application. */
   function listApplicationAnswers(profileId: string, jobId: string) {
     const owner = requireProfile(profileId);
@@ -990,6 +1037,9 @@ export function openStore(
     listApplicationAnswers,
     listAnswerLibrary,
     getApplicationAnswerContext,
+    createApplicationAnswer,
+    updateApplicationAnswer,
+    deleteApplicationAnswer,
     close: () => db.close(),
   };
 }
