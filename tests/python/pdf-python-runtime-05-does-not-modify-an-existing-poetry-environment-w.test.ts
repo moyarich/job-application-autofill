@@ -13,6 +13,8 @@ describe("PDF Python environment resolution", () => {
     await expect(
       findPdfPython({ env: {}, executeCommand: run }),
     ).rejects.toThrow();
-    expect(commands.some((command) => /\b(?:install|pip)\b/.test(command))).toBe(false);
+    expect(
+      commands.some((command) => /\b(?:install|pip)\b/.test(command)),
+    ).toBe(false);
   });
 });
