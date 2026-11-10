@@ -396,3 +396,22 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.application-edit-form {
+  width: 100%;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.application-edit-form h3 { margin: 0; font-size: 15px; }
+.application-edit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.application-edit-fields label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; }
+.application-edit-fields label:last-child { grid-column: 1 / -1; }
+.application-edit-fields input { width: 100%; min-width: 0; }
+.application-edit-form [role="alert"] { margin: 0; color: #a42929; font-size: 12px; }
+@media (max-width: 700px) {
+  .application-edit-fields { grid-template-columns: minmax(0, 1fr); }
+  .application-edit-fields label:last-child { grid-column: auto; }
+}
