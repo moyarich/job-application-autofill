@@ -1,12 +1,12 @@
 import { JobDescription } from "../JobDescription/JobDescription";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackerData } from "../feature-props";
 import { Pagination } from "../Pagination/Pagination";
 import { SearchInput } from "../SearchInput/SearchInput";
 import { ApplicationFilters } from "../ApplicationFilters/ApplicationFilters";
 import { paginateApplications, searchApplications, type ApplicationFilter, type ApplicationSort } from "../../utils/application/application-list";
 import "./Opportunities.css";
-import { Download, FilePlus2, Trash2, Link2, MapPin, BriefcaseBusiness, LoaderCircle, ChevronDown, ExternalLink, FileText, StickyNote } from "lucide-react";
+import { Download, FilePlus2, Trash2, Link2, MapPin, BriefcaseBusiness, LoaderCircle, ChevronDown, ExternalLink, FileText, StickyNote, X } from "lucide-react";
 import { statuses, type ApplicationStatus } from "../../index";
 import { statusLabels } from "../../utils/profile/fields";
 import { downloadJson } from "../../utils/files/resume-files";
@@ -14,9 +14,11 @@ import { downloadJson } from "../../utils/files/resume-files";
 
 
 export function Opportunities({
-  controller,
+  controller, showAddForm, onCloseAddForm,
 }: {
   controller: TrackerData;
+  showAddForm: boolean;
+  onCloseAddForm: () => void;
 }) {
   const {
     addJob,
@@ -35,6 +37,11 @@ export function Opportunities({
     notesJobId,
     setJobs,
   } = controller;
+  const previousJobCount = useRef(jobs.length);
+  useEffect(() => {
+    if (jobs.length > previousJobCount.current) onCloseAddForm();
+    previousJobCount.current = jobs.length;
+  }, [jobs.length, onCloseAddForm]);
   const [statusFilter, setStatusFilter] = useState<ApplicationFilter>("all");
   const [sort, setSort] = useState<ApplicationSort>("newest");
   const [page, setPage] = useState(1);
@@ -45,9 +52,10 @@ export function Opportunities({
   const updateSearch = (value: string) => { setSearch(value); setPage(1); };
   return (
     <>
-      <section className="panel" id="add-application">
-        <div className="panel-title">
-          <h2>Add a job application</h2>
+      {showAddForm && <section className="panel application-create-panel" id="add-application">
+        <div className="panel-title horizontal">
+          <h2>Add application</h2>
+          <button type="button" className="application-icon-button" onClick={onCloseAddForm} aria-label="Close add application form"><X size={18} /></button>
         </div>
         <form className="add-form job-intake" onSubmit={addJob}>
           <label className="job-url-field">
@@ -101,11 +109,11 @@ export function Opportunities({
         </form>
         {metadataBusy && <p className="job-metadata-status" role="status">Reading job posting…</p>}
         {!metadataBusy && metadataError && <p className="job-metadata-status" role="status">{metadataError}</p>}
-      </section>
-      <section className="panel" id="applications-list">
+      </section>}
+      <section className="panel applications-panel" id="applications-list">
         <div className="panel-title applications-heading">
           <div>
-            <h2>Your job applications</h2>
+            <h2>Applications <span className="application-count">{jobs.length}</span></h2>
           </div>
           <div className="opportunity-controls">
             <SearchInput

@@ -1,3 +1,10 @@
+.applications-panel { padding: 24px; }
+.application-create-panel { padding: 24px; }
+.application-create-panel .panel-title { margin-bottom: 18px; }
+.application-icon-button { display: inline-grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
+.application-icon-button:hover { background: var(--canvas); }
+.application-count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--canvas); padding: 3px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+.applications-heading h2 { margin: 0; }
 .add-form { display: grid; gap: 16px; align-items: end; }
 .job-intake { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .job-intake > label { min-width: 0; }
@@ -58,6 +65,7 @@
   .job-apply-card { grid-template-columns: minmax(130px, 1fr) minmax(110px, 145px) 82px; }
 }
 @media (max-width: 700px) {
+  .applications-panel, .application-create-panel { padding: 17px; }
   .job-intake { grid-template-columns: minmax(0, 1fr); }
   .job-intake > button { grid-column: 1; }
   .job-intake > button { width: 100%; }

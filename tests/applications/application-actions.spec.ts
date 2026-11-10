@@ -29,7 +29,7 @@ test("application controls are grouped and secondary actions appear in one menu"
   await page.goto("/applications?profile=default");
 
   await expect(page.getByRole("group", { name: "Employer account" })).toHaveCount(0);
-  await expect(page.locator("#add-application")).not.toContainText("Uses your configured credentials.");
+  await expect(page.locator("#add-application")).toHaveCount(0);
 
   const row = page.locator(".job").filter({ hasText: "Senior Engineer" });
   await expect(row.locator(".job-apply-card")).toBeVisible();
