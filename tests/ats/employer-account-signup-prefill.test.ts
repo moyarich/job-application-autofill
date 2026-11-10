@@ -1,6 +1,6 @@
 import { test, expect, vi } from "vitest";
 import type { Page } from "playwright";
-import { prepareEmployerSignUp } from "../../packages/job-sites/account-sign-up.ts";
+import { prepareEmployerSignUp } from "../../packages/job-boards/account-sign-up.ts";
 
 test.each(["Short1!x", "secure-once-password-01234"])("employer signup fills employer-compatible password %s without submitting", async (password) => {
   const values: Record<string, string> = {};

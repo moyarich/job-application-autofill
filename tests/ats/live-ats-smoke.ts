@@ -5,7 +5,7 @@ import {
   adapterForUrl,
   discoverQuestions,
   formState,
-} from "../../packages/job-sites/index.ts";
+} from "../../packages/job-boards/index.ts";
 
 const raw = process.env.ATS_LIVE_URLS;
 if (!raw) {
