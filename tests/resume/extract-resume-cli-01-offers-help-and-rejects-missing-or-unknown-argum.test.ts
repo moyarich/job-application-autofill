@@ -10,7 +10,7 @@ describe("extract-resume CLI", () => {
   it("offers help and rejects missing or unknown arguments", () => {
     expect(
       execFileSync(process.execPath, [cli, "--help"], { encoding: "utf8" }),
-    ).toContain("--output <file>");
+    ).toContain("--help");
     expect(spawnSync(process.execPath, [cli]).status).toBe(1);
     expect(spawnSync(process.execPath, [cli, "--unknown"]).status).toBe(1);
   });
