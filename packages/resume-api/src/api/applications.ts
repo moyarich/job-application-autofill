@@ -124,21 +124,14 @@ export const handleApplications: RouteHandler = async ({
       const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
       if (Object.keys(captured).length)
         store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
-      const continued = await continueApplication(
-        id,
-        store.getResumeContent(profileId, resumeIdHeader).profile ??
-          undefined,
+      return reply(
+        200,
+        await continueApplication(
+          id,
+          store.getResumeContent(profileId, resumeIdHeader).profile ??
+            undefined,
+        ),
       );
-      // Saved answers are owned by this application/profile. Only the Workday
-      // handler's exact, nonsensitive question matches can be replayed.
-      if (continued.state === "ready_for_review" && continued.ats === "workday") {
-        const saved = store.listApplicationAnswers(profileId, getApplication(id).jobId);
-        if (Object.keys(saved).length) {
-          const applied = await answerApplicationQuestions(id, saved);
-          return reply(200, applied);
-        }
-      }
-      return reply(200, continued);
     }
     if (req.method === "POST" && action === "paste") {
       const body = record(await req.readJson());
