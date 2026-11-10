@@ -115,10 +115,13 @@ export async function findMappedField<Key extends string>(
       !(await candidate.isEnabled().catch(() => false))) continue;
     const editable = await candidate.evaluate((node) => {
       if (!["INPUT", "TEXTAREA", "SELECT"].includes(node.tagName)) return false;
-      if (node instanceof HTMLInputElement && (
-        ["hidden", "password", "file", "checkbox", "radio", "submit"].includes(node.type) || node.readOnly
-      )) return false;
-      if (node instanceof HTMLTextAreaElement && node.readOnly) return false;
+      // Tag checks also work with mocked elements and across DOM realms.
+      if (node.tagName === "INPUT") {
+        const input = node as HTMLInputElement;
+        if (["hidden", "password", "file", "checkbox", "radio", "submit"].includes(input.type) ||
+            input.readOnly) return false;
+      }
+      if (node.tagName === "TEXTAREA" && (node as HTMLTextAreaElement).readOnly) return false;
       return true;
     }).catch(() => false);
     if (editable) return candidate;
