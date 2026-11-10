@@ -114,16 +114,14 @@ for (const width of [375, 768, 1440]) {
       .click();
     await expect
       .poll(() =>
-        viewer
-          .locator("body")
-          .evaluate(
-            () =>
-              (
-                window as unknown as {
-                  __rfbForTest: { scaleViewport: boolean };
-                }
-              ).__rfbForTest.scaleViewport,
-          ),
+        viewer.locator("body").evaluate(
+          () =>
+            (
+              window as unknown as {
+                __rfbForTest: { scaleViewport: boolean };
+              }
+            ).__rfbForTest.scaleViewport,
+        ),
       )
       .toBe(false);
     await page
@@ -131,16 +129,14 @@ for (const width of [375, 768, 1440]) {
       .click();
     await expect
       .poll(() =>
-        viewer
-          .locator("body")
-          .evaluate(
-            () =>
-              (
-                window as unknown as {
-                  __rfbForTest: { scaleViewport: boolean };
-                }
-              ).__rfbForTest.scaleViewport,
-          ),
+        viewer.locator("body").evaluate(
+          () =>
+            (
+              window as unknown as {
+                __rfbForTest: { scaleViewport: boolean };
+              }
+            ).__rfbForTest.scaleViewport,
+        ),
       )
       .toBe(true);
     if (width === 375)
