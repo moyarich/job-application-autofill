@@ -5,11 +5,12 @@ import {
   type MenuItem,
   type ViewerSession,
 } from "./api";
+import { useAutomationEvents } from "./useAutomationEvents";
 
 export function useEmployerMenu(
   session: string,
   profile: string,
-  connected: boolean,
+  _connected: boolean,
   onClosed: () => void,
 ) {
   const [active, setActive] = useState<ViewerSession | null>(null);
@@ -66,13 +67,7 @@ export function useEmployerMenu(
       mounted.current = false;
     };
   }, []);
-  useEffect(() => {
-    void refresh();
-    const timer = setInterval(() => {
-      if (connected && !document.hidden) void refresh();
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [refresh, connected]);
+  useAutomationEvents(session, profile, refresh);
   async function run(
     action: "continue" | "pause" | "close" | "menu",
     itemId?: string,
