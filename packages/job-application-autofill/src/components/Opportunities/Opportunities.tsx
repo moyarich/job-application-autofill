@@ -1,4 +1,5 @@
 import { JobDescription } from "../JobDescription/JobDescription";
+import { applicationReviewPath } from "../../routes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackerData } from "../feature-props";
 import { Pagination } from "../Pagination/Pagination";
@@ -365,6 +366,9 @@ export function Opportunities({
                           ))}
                         </select>
                       </label>
+                      <a className="job-menu-item" href={applicationReviewPath(job.id)}>
+                        <FileText size={16} aria-hidden="true" /> View application
+                      </a>
                       {job.details?.description && (
                         <button
                           type="button"
