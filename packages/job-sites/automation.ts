@@ -494,8 +494,14 @@ export async function prepareApplication({
     };
     sessions.set(id, session);
     emitApplication(id);
-    if (typeof page.on === "function")
+    if (typeof page.on === "function") {
+      // Browser navigation (including same-document navigation) updates the
+      // React steps menu without a one-second status polling loop.
+      page.on("framenavigated", (frame) => {
+        if (frame === page.mainFrame()) emitApplication(session.id);
+      });
       page.on("close", () => { void closeApplication(session.id); });
+    }
     if (typeof browser.on === "function")
       browser.on("disconnected", () => { void closeApplication(session.id); });
 
