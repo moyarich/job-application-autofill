@@ -7,7 +7,7 @@ test("Workday discovers questions but does not answer or change the employer for
   const screening = workdaySteps.find((entry) => entry.id === "workday.screening");
   if (!screening) throw new Error("Missing screening step");
   await page.setContent('<nav>Screening Questions</nav>');
-  const context = { page } as JobSiteStepContext;
+  const context = { page } as unknown as JobSiteStepContext;
   expect(await screening.matches(context)).toBe(false);
   await page.setContent(`
     <section data-automation-id="questionnaireSection">
