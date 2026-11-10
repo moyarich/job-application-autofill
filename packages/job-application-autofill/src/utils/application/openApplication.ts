@@ -1,5 +1,5 @@
 import { applicationReviewPath } from "../../routes";
-import type { JobApplication } from "../../index";
+import { JobApplication } from "../../types/job-application";
 
 /** Open the review workflow without making job-tracker pages own review state. */
 export function openApplication(

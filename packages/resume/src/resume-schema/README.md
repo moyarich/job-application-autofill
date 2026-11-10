@@ -15,7 +15,7 @@ From the local dashboard choose **Export PDF**. The dashboard sends validated ca
 Server-side usage:
 
 ```js
-import { renderResumePdf } from "./packages/resume/src/resume-schema/create-pdf.ts";
+import { renderResumePdf } from "./packages/resume/src/create-resume/create-pdf.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 const resume = JSON.parse(
   readFileSync(
@@ -45,6 +45,6 @@ Playwright (`npx playwright install chromium`). Errors exit with a nonzero statu
 
 ## Markdown content and downloads
 
-Summary, experience descriptions, education/project descriptions, and additional-section content use a single Markdown string per field. Slate is the editing interface; no separate editor document is persisted. `markdownToPlainText` and `resumeToPlainText` strip formatting for application autofill, while HTML/PDF rendering preserves formatting with raw HTML disabled.
+Summary, experience descriptions, education/project descriptions, and additional-section content use a single Markdown string per field. Slate is the editing interface; no separate editor document is persisted. The shared `markdownToPlainText` primitive strips formatting; `job-boards` owns whole-profile conversion for autofill. `@moyarich/resume/markdown` exposes editor conversion and Markdown document export. HTML/PDF rendering preserves formatting with raw HTML disabled.
 
 The Resumes listing provides View, Edit, Copy, Rename, Export, and Delete. Export supports Text, YAML, JSON, PDF, Word (`.docx`), and Markdown. JSON/YAML retain the structured resume contract and Markdown fields; document formats are generated from those same fields.

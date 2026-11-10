@@ -8,7 +8,7 @@ export interface EmploymentEntry {
   description: string;
 }
 
-export interface CandidateProfile {
+export interface Resume {
   contact: {
     firstName: string;
     lastName: string;

@@ -25,17 +25,7 @@ export const pageRoutes = [
   routes.workspace,
 ] as const;
 
-export type WorkspaceTab =
-  | "applications"
-  | "profile"
-  | "view"
-  | "resumes"
-  | "personal"
-  | "contacts"
-  | "parser"
-  | "workspace";
-
-export const tabRoutes: Record<WorkspaceTab, string> = {
+export const tabRoutes: Record<string, string> = {
   applications: routes.applications,
   profile: routes.resumeEditor,
   view: routes.resumeView,
@@ -46,9 +36,13 @@ export const tabRoutes: Record<WorkspaceTab, string> = {
   workspace: routes.workspace,
 };
 
+export type WorkspaceTab = keyof typeof tabRoutes;
+
 export function tabForPath(pathname: string): WorkspaceTab {
-  const entry = Object.entries(tabRoutes).find(([, path]) => path === pathname);
-  return (entry?.[0] as WorkspaceTab | undefined) ?? "applications";
+  const entry = (Object.entries(tabRoutes) as [WorkspaceTab, string][]).find(
+    ([, path]) => path === pathname,
+  );
+  return entry?.[0] ?? "applications";
 }
 
 export function applicationReviewPath(applicationId: string): string {

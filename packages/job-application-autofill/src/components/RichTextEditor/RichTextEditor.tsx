@@ -31,7 +31,7 @@ import {
   type RichTextBlock,
   type RichTextLeaf,
   type RichTextDocument,
-} from "@moyarich/resume/editor";
+} from "@moyarich/resume/markdown";
 import "./RichTextEditor.css";
 
 declare module "slate" {

@@ -16,10 +16,10 @@
     "tests/**/*.ts",
     "vite.config.ts",
     "packages/resume/src/**/*.ts",
-    "packages/job-sites/**/*.ts",
+    "packages/job-boards/**/*.ts",
     "packages/resume-api/**/*.ts",
     "docker/**/*.ts",
     "scripts/**/*.ts",
-    "packages/resume/scripts/python-runtime.ts"
+    "packages/job-application-autofill/src/**/*.d.ts"
   ]
 }

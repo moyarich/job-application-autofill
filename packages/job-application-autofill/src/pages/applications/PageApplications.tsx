@@ -29,7 +29,12 @@ export function PageApplications() {
     const target = window.open("about:blank", "application-" + job.id);
     try {
       await applications.flushJobs();
-      openApplication(job, selection.activeProfileId, job.resumeId ?? selection.activeResumeId, target);
+      openApplication(
+        job,
+        selection.activeProfileId,
+        job.resumeId ?? selection.activeResumeId,
+        target,
+      );
     } catch (error) {
       target?.close();
       selection.setMessage("Could not save selected resume: " + String(error));

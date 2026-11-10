@@ -1,7 +1,10 @@
-import type { ResumeImportActionsContext, OfferImport } from "./import-context";
+import { Resume } from "@moyarich/resume";
+import type {
+  ResumeImportActionsContext,
+  OfferImport,
+} from "../../types/resume-import-actions-context";
 import { requestApi } from "../api/client";
 import { filePayload } from "../files/resume-files";
-import type { CandidateProfile } from "../../index";
 
 export function createParseResume(
   context: ResumeImportActionsContext & { offerImport: OfferImport },
@@ -27,7 +30,7 @@ export function createParseResume(
     try {
       const upload = await filePayload(resume);
       const result = await requestApi<{
-        profile: CandidateProfile;
+        profile: Resume;
         preview: string;
         warnings: string[];
       }>(

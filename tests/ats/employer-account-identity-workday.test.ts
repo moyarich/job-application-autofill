@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { employerAccountIdentity } from "../../packages/job-sites/employer-account.ts";
+import { employerAccountIdentity } from "../../packages/job-boards/employer-account.ts";
 
 test("Workday accounts are isolated by employer host and reused for jobs at that employer", () => {
   const first = employerAccountIdentity(

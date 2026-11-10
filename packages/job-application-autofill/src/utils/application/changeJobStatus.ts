@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { ApplicationStatus, JobApplication } from "../../index";
+
 import { requestApi } from "../api/client";
+import { ApplicationStatus, JobApplication } from "../../types/job-application";
 
 /** Change a job status without depending on a tracker hook. */
 export function changeJobStatus(

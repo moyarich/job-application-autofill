@@ -3,18 +3,18 @@ name: CI / PDF extraction and OCR
 on:
   pull_request:
     paths:
-      - "packages/resume/python/**"
-      - "packages/resume/python/test_pdf_ocr.py"
-      - "packages/resume/pyproject.toml"
-      - "packages/resume/poetry.lock"
+      - "packages/resume-ocr/**"
+      - "packages/resume-ocr/tests/test_pdf_ocr.py"
+      - "packages/resume-ocr/pyproject.toml"
+      - "packages/resume-ocr/poetry.lock"
       - ".github/workflows/ci_pdf-ocr.yml"
   push:
     branches: [main]
     paths:
-      - "packages/resume/python/pdf_ocr.py"
-      - "packages/resume/python/test_pdf_ocr.py"
-      - "packages/resume/pyproject.toml"
-      - "packages/resume/poetry.lock"
+      - "packages/resume-ocr/**"
+      - "packages/resume-ocr/tests/test_pdf_ocr.py"
+      - "packages/resume-ocr/pyproject.toml"
+      - "packages/resume-ocr/poetry.lock"
       - ".github/workflows/ci_pdf-ocr.yml"
 
 permissions:
@@ -33,16 +33,16 @@ jobs:
       - name: Install Poetry
         run: pipx install poetry
       - name: Resolve and install PDF/OCR dependencies
-        working-directory: packages/resume
+        working-directory: packages/resume-ocr
         run: |
           poetry check --lock
-          poetry install --with test --no-root
+          poetry install --with test
       - name: Confirm Python 3.14 runtime
-        working-directory: packages/resume
+        working-directory: packages/resume-ocr
         run: poetry run python -c 'import sys; assert sys.version_info[:2] == (3, 14), sys.version'
       - name: Python syntax check
-        working-directory: packages/resume
-        run: poetry run python -m compileall -q python/pdf_ocr.py python/ocr_service.py python/test_pdf_ocr.py python/test_ocr_service.py
+        working-directory: packages/resume-ocr
+        run: poetry run python -m compileall -q resume_ocr tests
       - name: PDF parsing and scanned-page fallback tests
-        working-directory: packages/resume
-        run: poetry run python -m unittest discover -s python -p 'test_*.py' -v
+        working-directory: packages/resume-ocr
+        run: poetry run python -m unittest discover -s tests -p 'test_*.py' -v

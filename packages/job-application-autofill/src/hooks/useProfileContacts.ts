@@ -6,19 +6,17 @@ import {
   type SetStateAction,
 } from "react";
 import { usePendingSave } from "./PendingSaves";
-import type { CandidateProfile } from "../index";
-import {
-  readContacts,
-  updateProfileContact,
-  type ProfileContact,
-} from "../utils/api/client";
 
-const contactValues = (entry: ProfileContact): CandidateProfile["contact"] => {
+import { readContacts, updateProfileContact } from "../utils/api/client";
+import { Resume } from "@moyarich/resume";
+import { ProfileContact } from "../types/api-types";
+
+const contactValues = (entry: ProfileContact): Resume["contact"] => {
   return Object.fromEntries(
     Object.entries(entry).filter(
       ([key]) => !["id", "profileId", "name", "isDefault"].includes(key),
     ),
-  ) as CandidateProfile["contact"];
+  ) as Resume["contact"];
 };
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });
@@ -103,7 +101,9 @@ export function useProfileContacts({
   }
 
   usePendingSave(
-    () => hydrated && contacts.some((item) => signature(item) !== saved.current.get(item.id)),
+    () =>
+      hydrated &&
+      contacts.some((item) => signature(item) !== saved.current.get(item.id)),
     flushContacts,
   );
 

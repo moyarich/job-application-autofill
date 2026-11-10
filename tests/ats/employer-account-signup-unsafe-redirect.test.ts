@@ -1,5 +1,5 @@
 import { test, expect, vi } from "vitest";
-import { prepareEmployerSignUp } from "../../packages/job-sites/account-sign-up.ts";
+import { prepareEmployerSignUp } from "../../packages/job-boards/account-sign-up.ts";
 import type { Page } from "playwright";
 
 test("account automation never fills fields on a different host", async () => {

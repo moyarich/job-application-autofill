@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { extractProfile } from "../../packages/resume/src/extract-resume/index.ts";
-import { renderResumeHtml } from "../../packages/resume/src/resume-schema/create-pdf.ts";
+import { renderResumeHtml } from "../../packages/resume/src/create-resume/create-pdf.ts";
 import { validateResume } from "../../packages/resume/src/resume-schema/validate.ts";
 
 it("preserves wrapped bullets, skill categories, team context and additional sections", () => {

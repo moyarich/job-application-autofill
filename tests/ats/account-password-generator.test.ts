@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import {
   generateAccountPassword,
   accountPasswordValid,
-} from "../../packages/job-application-autofill/src/utils/profile/password.ts";
+} from "../../packages/job-application-autofill/src/utils/password/password.ts";
 
 it("always generates every character class required by Workday", () => {
   for (const length of [12, 24, 128]) {

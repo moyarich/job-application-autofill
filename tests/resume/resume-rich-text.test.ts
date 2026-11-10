@@ -1,10 +1,10 @@
+import { resumeToPlainText } from "../../packages/job-boards/resume-text.ts";
 import { expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { renderResumeHtml } from "../../packages/resume/src/resume-schema/create-pdf.ts";
+import { renderResumeHtml } from "../../packages/resume/src/create-resume/create-pdf.ts";
 import {
   markdownToPlainText,
   markdownToHtml,
-  resumeToPlainText,
 } from "../../packages/resume/src/resume-schema/markdown.ts";
 import {
   markdownToEditor,
@@ -14,7 +14,7 @@ import {
   setListStyle,
   shiftListIndent,
   renumberListBlocks,
-} from "../../packages/resume/src/resume-schema/editor-markdown.ts";
+} from "@moyarich/resume/markdown";
 const example = JSON.parse(
   readFileSync("packages/resume/src/resume-schema/resume.example.json", "utf8"),
 );

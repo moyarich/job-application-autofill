@@ -2,7 +2,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import type { Root, PhrasingContent, List } from "mdast";
-import { sourceLists } from "./markdown.ts";
+import { sourceLists } from "./markdown-render.ts";
 
 export type RichTextLeaf = {
   text: string;

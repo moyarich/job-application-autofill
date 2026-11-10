@@ -1,4 +1,4 @@
-import { subscribeApplication } from "../../../job-sites/automation.ts";
+import { subscribeApplication } from "@moyarich/job-boards/automation";
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import type { ApiRequest, ApiResponse } from "./types.ts";
@@ -30,12 +30,18 @@ export function createNodeServer(
     try {
       // Authenticate through the existing API handler before attaching a stream.
       // This preserves the same profile/session boundary as the normal viewer API.
-      const stream = req.url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)\/events$/);
+      const stream = req.url.pathname.match(
+        /^\/api\/apply\/([0-9a-f-]+)\/events$/,
+      );
       if (stream && req.method === "GET") {
-        const verified = await handler({ ...req, url: new URL("/api/apply/" + stream[1], req.url) });
+        const verified = await handler({
+          ...req,
+          url: new URL("/api/apply/" + stream[1], req.url),
+        });
         if (verified.status !== 200) {
           response.writeHead(verified.status, {
-            "Content-Type": "application/json", "Cache-Control": "no-store",
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store",
           });
           response.end(JSON.stringify(verified.body));
           return;

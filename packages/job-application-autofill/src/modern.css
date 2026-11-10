@@ -1,5 +1,11 @@
 :root {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   --surface: #fff;
   --canvas: #fafafa;
   --ink: #18181b;
@@ -14,9 +20,14 @@
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
-.app label { color: #3f3f46; font-weight: 500; letter-spacing: 0; }
+.app label {
+  color: #3f3f46;
+  font-weight: 500;
+  letter-spacing: 0;
+}
 .app input:not([type="checkbox"]):not([type="radio"]),
-.app select, .app textarea {
+.app select,
+.app textarea {
   border-color: var(--line);
   border-radius: 6px;
   padding: 8px 11px;
@@ -24,13 +35,21 @@
   font-size: 13px;
   box-shadow: 0 1px 2px rgb(0 0 0 / 2%);
 }
-.app input::placeholder, .app textarea::placeholder { color: #a1a1aa; font-weight: 400; }
-.app input:not([type="checkbox"]):not([type="radio"]):focus,
-.app select:focus, .app textarea:focus {
-  border-color: #a1a1aa;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e4e4e7;
+.app input::placeholder,
+.app textarea::placeholder {
+  color: #a1a1aa;
+  font-weight: 400;
 }
-.app button.primary, .app button.secondary {
+.app input:not([type="checkbox"]):not([type="radio"]):focus,
+.app select:focus,
+.app textarea:focus {
+  border-color: #a1a1aa;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #e4e4e7;
+}
+.app button.primary,
+.app button.secondary {
   min-height: 36px;
   padding: 8px 12px;
   border-radius: 6px;
@@ -38,51 +57,207 @@
   font-weight: 500;
   box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
 }
-.app button.primary:hover:not(:disabled) { transform: none; }
-.app button.secondary { color: #27272a; border-color: var(--line); }
-.app button.secondary:hover:not(:disabled) { background: #f4f4f5; border-color: #d4d4d8; }
-.app button:disabled { opacity: .45; }
-.app .panel, .app .stat { border-radius: 10px; box-shadow: var(--shadow); }
-.app .panel-title h2 { font-size: 16px; font-weight: 600; letter-spacing: -.025em; }
-.app .workspace-header { margin-bottom: 24px; }
-.app .workspace-header h1 { margin-top: 8px; font-size: 28px; font-weight: 600; letter-spacing: -.04em; }
-.app .eyebrow { color: var(--muted); text-transform: none; font-size: 12px; font-weight: 400; letter-spacing: 0; }
-.app .sidebar { color: var(--ink); background: #f7f7f8; border-color: var(--line); padding-top: 24px; }
-.app .brand { font-weight: 600; letter-spacing: -.025em; }
-.app .brand-symbol { width: 34px; height: 34px; border-radius: 8px; background: #18181b; border-color: #18181b; }
-.app .brand-light { color: var(--muted); font-weight: 400; }
-.app .nav-label { color: #a1a1aa; text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 500; }
-.app .sidebar .nav { min-height: 38px; padding: 9px 12px; border-radius: 6px; color: #52525b; font-weight: 400; }
-.app .sidebar .nav:hover { color: var(--ink); background: #ededf0; border-color: transparent; text-decoration: none; }
-.app .sidebar .nav.active { color: var(--ink); background: #e9e9ed; border-color: transparent; box-shadow: none; font-weight: 500; }
-.app .sidebar-bottom { color: #a1a1aa; border-color: var(--line); font-size: 11px; font-weight: 400; }
-.app .sidebar-privacy-dot { background: #a1a1aa; }
-.app .sidebar-toggle { color: var(--ink); border-color: var(--line); border-radius: 6px; }
-.app .notice { background: #fff; color: #3f3f46; border-color: var(--line); border-radius: 8px; font-weight: 400; }
-.app .application-count { background: #f4f4f5; color: #71717a; border-radius: 5px; font-weight: 500; }
-.app .job { padding: 20px 0; }
-.app .job-icon, .app .resume-management-file { background: #f4f4f5; color: #52525b; border: 1px solid var(--line); border-radius: 8px; }
-.app .job-info strong, .app .resume-management-name strong { font-weight: 600; }
-.app .job-apply-card { background: transparent; border-color: var(--line); border-radius: 8px; }
-.app .select-filter select { min-height: 36px; padding: 8px 32px 8px 37px; }
-.app .pagination-buttons button[aria-current="page"] { color: #18181b; background: #f4f4f5; border-color: #d4d4d8; font-weight: 500; }
-@media (min-width: 701px) {
-  .app .job-apply-card { grid-template-columns: minmax(150px, 240px) minmax(110px, 145px) max-content; }
+.app button.primary:hover:not(:disabled) {
+  transform: none;
 }
-.app .job-action-menu > summary { border-color: var(--line); border-radius: 6px; font-weight: 500; color: #52525b; }
-.app .job-action-menu-content { border-color: var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / 8%); }
-.app .job-menu-item { font-weight: 400; }
-.app .resume-management-row { border-radius: 8px; }
-.app .resume-management-row.selected { border-color: #d4d4d8; background: #fafafa; }
-.app .resume-management-current { background: #f4f4f5; color: #52525b; font-weight: 500; border: 1px solid var(--line); }
-.app .resume-management-form { background: #fafafa; border-color: var(--line); border-radius: 8px; }
-.app .resume-library-overview { color: var(--muted); }
-.app .pagination button { border-color: var(--line); border-radius: 6px; }
+.app button.secondary {
+  color: #27272a;
+  border-color: var(--line);
+}
+.app button.secondary:hover:not(:disabled) {
+  background: #f4f4f5;
+  border-color: #d4d4d8;
+}
+.app button:disabled {
+  opacity: 0.45;
+}
+.app .panel,
+.app .stat {
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.app .panel-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.app .workspace-header {
+  margin-bottom: 24px;
+}
+.app .workspace-header h1 {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.app .eyebrow {
+  color: var(--muted);
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.app .sidebar {
+  color: var(--ink);
+  background: #f7f7f8;
+  border-color: var(--line);
+  padding-top: 24px;
+}
+.app .brand {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.app .brand-symbol {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #18181b;
+  border-color: #18181b;
+}
+.app .brand-light {
+  color: var(--muted);
+  font-weight: 400;
+}
+.app .nav-label {
+  color: #a1a1aa;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+.app .sidebar .nav {
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  color: #52525b;
+  font-weight: 400;
+}
+.app .sidebar .nav:hover {
+  color: var(--ink);
+  background: #ededf0;
+  border-color: transparent;
+  text-decoration: none;
+}
+.app .sidebar .nav.active {
+  color: var(--ink);
+  background: #e9e9ed;
+  border-color: transparent;
+  box-shadow: none;
+  font-weight: 500;
+}
+.app .sidebar-bottom {
+  color: #a1a1aa;
+  border-color: var(--line);
+  font-size: 11px;
+  font-weight: 400;
+}
+.app .sidebar-privacy-dot {
+  background: #a1a1aa;
+}
+.app .sidebar-toggle {
+  color: var(--ink);
+  border-color: var(--line);
+  border-radius: 6px;
+}
+.app .notice {
+  background: #fff;
+  color: #3f3f46;
+  border-color: var(--line);
+  border-radius: 8px;
+  font-weight: 400;
+}
+.app .application-count {
+  background: #f4f4f5;
+  color: #71717a;
+  border-radius: 5px;
+  font-weight: 500;
+}
+.app .job {
+  padding: 20px 0;
+}
+.app .job-icon,
+.app .resume-management-file {
+  background: #f4f4f5;
+  color: #52525b;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.app .job-info strong,
+.app .resume-management-name strong {
+  font-weight: 600;
+}
+.app .job-apply-card {
+  background: transparent;
+  border-color: var(--line);
+  border-radius: 8px;
+}
+.app .select-filter select {
+  min-height: 36px;
+  padding: 8px 32px 8px 37px;
+}
+.app .pagination-buttons button[aria-current="page"] {
+  color: #18181b;
+  background: #f4f4f5;
+  border-color: #d4d4d8;
+  font-weight: 500;
+}
+@media (min-width: 701px) {
+  .app .job-apply-card {
+    grid-template-columns: minmax(150px, 240px) minmax(110px, 145px) max-content;
+  }
+}
+.app .job-action-menu > summary {
+  border-color: var(--line);
+  border-radius: 6px;
+  font-weight: 500;
+  color: #52525b;
+}
+.app .job-action-menu-content {
+  border-color: var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+}
+.app .job-menu-item {
+  font-weight: 400;
+}
+.app .resume-management-row {
+  border-radius: 8px;
+}
+.app .resume-management-row.selected {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+.app .resume-management-current {
+  background: #f4f4f5;
+  color: #52525b;
+  font-weight: 500;
+  border: 1px solid var(--line);
+}
+.app .resume-management-form {
+  background: #fafafa;
+  border-color: var(--line);
+  border-radius: 8px;
+}
+.app .resume-library-overview {
+  color: var(--muted);
+}
+.app .pagination button {
+  border-color: var(--line);
+  border-radius: 6px;
+}
 @media (min-width: 941px) {
-  .app .sidebar { width: 232px; }
-  .app > .main { padding: 32px clamp(24px, 3.5vw, 56px); }
+  .app .sidebar {
+    width: 232px;
+  }
+  .app > .main {
+    padding: 32px clamp(24px, 3.5vw, 56px);
+  }
 }
 @media (max-width: 600px) {
-  .app .workspace-header h1 { font-size: 24px; }
-  .app .panel { padding: 18px; }
+  .app .workspace-header h1 {
+    font-size: 24px;
+  }
+  .app .panel {
+    padding: 18px;
+  }
 }

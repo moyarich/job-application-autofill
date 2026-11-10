@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 
-import { formState } from "../../packages/job-sites/index.ts";
+import { formState } from "../../packages/job-boards/index.ts";
 
 test("sign-in, SSO and challenge detection", () => {
   assert.equal(

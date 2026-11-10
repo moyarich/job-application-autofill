@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   emptyCandidate,
-  validateCandidate,
+  validateResume,
 } from "../../packages/job-application-autofill/src/index";
 
 describe("candidate profile", () => {
   it("requires a first name, last name and valid email", () => {
-    expect(validateCandidate(emptyCandidate)).toHaveLength(3);
+    expect(validateResume(emptyCandidate)).toHaveLength(3);
     expect(
-      validateCandidate({
+      validateResume({
         ...emptyCandidate,
         contact: {
           ...emptyCandidate.contact,

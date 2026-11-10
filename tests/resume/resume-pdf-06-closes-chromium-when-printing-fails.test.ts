@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Browser } from "playwright";
 import { readFileSync } from "node:fs";
-import { renderResumePdf } from "../../packages/resume/src/resume-schema/create-pdf.ts";
+import { renderResumePdf } from "../../packages/resume/src/create-resume/create-pdf.ts";
 
 const resume = JSON.parse(
   readFileSync(

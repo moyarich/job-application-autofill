@@ -32,7 +32,7 @@ test("viewer restores keyboard input after connecting and after returning focus"
     }),
   );
   await page.goto(
-    "/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
+    "/application-viewer?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
   );
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",

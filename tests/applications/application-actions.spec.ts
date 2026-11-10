@@ -60,7 +60,9 @@ test("application controls are grouped and secondary actions appear in one menu"
   await expect(
     row.locator(".job-apply-card").getByRole("button", { name: "Apply" }),
   ).toBeVisible();
-  await expect(row.getByRole("button", { name: "Job description" })).toBeHidden();
+  await expect(
+    row.getByRole("button", { name: "Job description" }),
+  ).toBeHidden();
 
   await row.locator("summary").click();
   const menu = row.locator(".job-action-menu");

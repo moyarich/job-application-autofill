@@ -1,4 +1,7 @@
-import type { ContactActionsContext, Contact } from "./contact-context";
+import type {
+  ContactActionsContext,
+  Contact,
+} from "../../types/contact-actions-context";
 export function createChooseContact(context: ContactActionsContext) {
   const { contacts, contactKeys, setProfile, setContactId, setMessage } =
     context;

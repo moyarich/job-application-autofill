@@ -1,5 +1,5 @@
 import { routes } from "../../routes";
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { createResumeVersion } from "../api/client";
 import { navigateTo } from "./navigateTo";
 

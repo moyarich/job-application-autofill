@@ -1,7 +1,7 @@
 import type { ContactManagerData } from "../feature-props";
 import { useState, type FormEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { CandidateProfile } from "../../index";
+import { Resume } from "@moyarich/resume";
 
 import {
   addProfileContact,
@@ -9,10 +9,10 @@ import {
   deleteProfileContact,
   chooseDefaultContact,
 } from "../../utils/api/client";
-import { fields } from "../../utils/profile/fields";
+import { fields } from "../../constants/fields";
 import "./ContactManager.css";
 
-type Contact = CandidateProfile["contact"];
+type Contact = Resume["contact"];
 const blank = (): Contact => ({
   firstName: "",
   lastName: "",

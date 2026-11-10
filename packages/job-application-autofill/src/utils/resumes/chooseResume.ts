@@ -1,4 +1,4 @@
-import type { ResumeImportActionsContext } from "./import-context";
+import type { ResumeImportActionsContext } from "../../types/resume-import-actions-context";
 import type React from "react";
 
 export function createChooseResume(context: ResumeImportActionsContext) {

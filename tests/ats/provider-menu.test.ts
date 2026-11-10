@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Page } from "playwright";
-import { ADAPTERS } from "../../packages/job-sites/index.ts";
+import { ADAPTERS } from "../../packages/job-boards/index.ts";
 import type {
   JobSiteAdapter,
   JobSiteStepContext,
-} from "../../packages/job-sites/types.ts";
+} from "../../packages/job-boards/types.ts";
 import {
   executeJobSiteMenuItem,
   listJobSiteMenu,
-} from "../../packages/job-sites/core/orchestrator.ts";
+} from "../../packages/job-boards/core/orchestrator.ts";
 
 function fakePage() {
   return {
@@ -74,7 +74,10 @@ describe("provider-owned floating menu", () => {
         },
       ],
     };
-    const context = { ...createContext(fakePage()), onStep: (stepId: string | null) => progress.push(stepId) };
+    const context = {
+      ...createContext(fakePage()),
+      onStep: (stepId: string | null) => progress.push(stepId),
+    };
     expect(await listJobSiteMenu(context, adapter)).toEqual([
       { id: "portfolio", label: "Portfolio", available: true },
     ]);
@@ -82,17 +85,37 @@ describe("provider-owned floating menu", () => {
     expect(result.executed).toEqual(["fixture.portfolio"]);
     expect(calls).toEqual(["portfolio"]);
     expect(progress).toEqual(["fixture.portfolio", null]);
-    const processedContext = { ...context, processedSteps: { "fixture.portfolio": "processed" as const } };
+    const processedContext = {
+      ...context,
+      processedSteps: { "fixture.portfolio": "processed" as const },
+    };
     adapter.steps![0].matches = async () => false;
     expect(await listJobSiteMenu(processedContext, adapter)).toEqual([
-      { id: "portfolio", label: "Portfolio", available: false, status: "processed" },
+      {
+        id: "portfolio",
+        label: "Portfolio",
+        available: false,
+        status: "processed",
+      },
     ]);
     adapter.steps![0].inspectStatus = async () => "filled";
-    expect(await listJobSiteMenu({ ...context, processedSteps: { "fixture.portfolio": "needs_review" } }, adapter)).toEqual([
-      { id: "portfolio", label: "Portfolio", available: false, status: "filled" },
+    expect(
+      await listJobSiteMenu(
+        { ...context, processedSteps: { "fixture.portfolio": "needs_review" } },
+        adapter,
+      ),
+    ).toEqual([
+      {
+        id: "portfolio",
+        label: "Portfolio",
+        available: false,
+        status: "filled",
+      },
     ]);
     adapter.steps![0].inspectStatus = async () => "ready";
-    expect((await listJobSiteMenu(processedContext, adapter))[0].status).toBe("ready");
+    expect((await listJobSiteMenu(processedContext, adapter))[0].status).toBe(
+      "ready",
+    );
     await expect(
       executeJobSiteMenuItem(context, adapter, "fixture.hidden"),
     ).rejects.toThrow("Unknown employer menu action");

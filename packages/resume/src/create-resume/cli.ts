@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFile, writeFile, access } from "node:fs/promises";
 import { resolve, parse, join } from "node:path";
-import { renderResumePdf } from "../resume-schema/create-pdf.ts";
+import { renderResumePdf } from "./create-pdf.ts";
 import { parseResumeJson } from "../resume-schema/validate.ts";
 
 const command = new Command()

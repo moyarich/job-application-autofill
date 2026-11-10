@@ -3,7 +3,7 @@ import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeade
 import { useProfileSelection } from "../../hooks/useProfileSelection";
 import { useProfileContacts } from "../../hooks/useProfileContacts";
 import { useResumeDraft } from "../../hooks/useResumeDraft";
-import { contactKeys } from "../../utils/contacts/contact-context";
+import { contactKeys } from "../../types/contact-actions-context";
 import { PageStatus } from "../../components/PageStatus/PageStatus";
 import { useResumeImport } from "../../hooks/useResumeImport";
 import { ContactImportReview } from "../../components/ContactImportReview/ContactImportReview";
