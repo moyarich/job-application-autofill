@@ -211,12 +211,13 @@
           active.state === "login_required" ? "Sign-in required" :
           active.state === "manual_intervention" ? "Needs attention" : "Running";
         if (!finished) {
-          if (active.paused) addSessionAction("Continue", "continue", "primary");
-          else addSessionAction("Pause", "pause");
           if (active.paused || ["manual_intervention", "login_required", "ready_for_review"].includes(active.state))
-            addSessionAction("Stop", "close", "danger");
+            addSessionAction("Continue", "continue", "primary");
+          else addSessionAction("Pause", "pause");
+          addSessionAction("Stop", "close", "danger");
         } else addSessionAction("Close", "close");
         siteMenu.classList.add("visible");
+        if (active.paused) menuList.replaceChildren();
         for (const item of items) {
           if (typeof item.id !== "string" || typeof item.label !== "string")
             continue;
