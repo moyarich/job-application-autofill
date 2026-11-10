@@ -1,3 +1,4 @@
+import { mutateApplicationAnswer } from "../../api/answers";
 import { useMemo, useState } from "react";
 import { filterAnswerLibrary, type LibraryFilters } from "./suggestions";
 import { ApplicationQnA } from "../../types/application-q-n-a";
@@ -42,23 +43,7 @@ export function AnswerLibrary({
     setWorking(true);
     setFeedback("");
     try {
-      const url =
-        "/api/applications/" +
-        encodeURIComponent(currentJobId) +
-        "/answers" +
-        (method === "POST" ? "" : "/record");
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Moya-Client": "dashboard",
-          "X-Profile-Id": profileId,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Unable to update the library.");
+      await mutateApplicationAnswer(currentJobId, profileId, method, payload);
       await onChanged();
       setEditing(null);
       if (method === "POST") {
