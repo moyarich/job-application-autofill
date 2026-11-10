@@ -159,6 +159,16 @@ export async function helpWorkdaySignIn(
   session.loginAttempted = true;
   await email.fill(credentials.email);
   await password.fill(credentials.password);
+  // Fail closed if the employer form modifies the credential as it is entered.
+  // Never log or return any portion of the password.
+  if (
+    typeof password.inputValue === "function" &&
+    (await password.inputValue()) !== credentials.password
+  ) {
+    throw new Error(
+      "Workday changed the password field while autofilling. Enter it manually in the employer browser.",
+    );
+  }
   // Recheck the tenant immediately before submitting existing-account credentials.
   if (!credentialsForPage()) return;
   await submit.click();

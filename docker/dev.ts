@@ -74,6 +74,40 @@ export function setupEnv(
   chmodSync(filename, 0o600);
   return { source: ".env", generated };
 }
+
+/**
+ * Docker Compose interpolates dollar signs in .env values. Pass credential
+ * variables explicitly from the literal .env text so a Workday password like
+ * "ab$cd" is not silently changed to "ab" inside the API container.
+ * A caller's environment still takes precedence over .env.
+ */
+export function credentialEnvironment(
+  dir = root,
+  inherited: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const filename = resolve(dir, ".env");
+  if (!existsSync(filename)) return { ...inherited };
+  const content = readFileSync(filename, "utf8");
+  const resolved = { ...inherited };
+  for (const key of ["WORKDAY_PASSWORD", "RESUME_SITE_PASSWORD"] as const) {
+    if (Object.prototype.hasOwnProperty.call(inherited, key)) continue;
+    const lines = [...content.matchAll(new RegExp(
+      "^\\s*(?:export\\s+)?" + key + "\\s*=\\s*(.*)$", "gm",
+    ))];
+    const raw = lines.at(-1)?.[1]?.trim();
+    if (raw === undefined) continue;
+    const quote = raw[0];
+    const value =
+      (quote === "'" || quote === '"') &&
+      raw.lastIndexOf(quote) > 0 &&
+      /^\s*(?:#.*)?$/.test(raw.slice(raw.lastIndexOf(quote) + 1))
+        ? raw.slice(1, raw.lastIndexOf(quote))
+        : raw.replace(/\s+#.*$/, "").trim();
+    resolved[key] = value;
+  }
+  return resolved;
+}
+
 function preflight(cmd: string, args: string[], name: string) {
   const child = spawnSync(cmd, args, {
     cwd: root,
@@ -105,6 +139,7 @@ export function main() {
     );
     mkdirSync(resolve(root, "sqlite-data"), { recursive: true, mode: 0o700 });
     const { generated } = setupEnv();
+    const composeEnv = credentialEnvironment();
     if (generated) {
       console.log("Created .env with a random viewer password (private file).");
       console.log(
@@ -146,6 +181,7 @@ export function main() {
       cwd: root,
       encoding: "utf8",
       stdio: "pipe",
+      env: composeEnv,
     });
     if (listed.error || listed.status !== 0) {
       throw new Error(
@@ -179,6 +215,7 @@ export function main() {
       const built = spawnSync("docker", [...compose, "build"], {
         cwd: root,
         stdio: "inherit",
+        env: composeEnv,
       });
       if (built.error || built.status !== 0) {
         throw new Error(
@@ -198,7 +235,7 @@ export function main() {
     const child = spawn("docker", composeArgs, {
       cwd: root,
       stdio: "inherit",
-      env: process.env,
+      env: composeEnv,
     });
     for (const signal of ["SIGINT", "SIGTERM"] as const)
       process.on(signal, () => child.kill(signal));
