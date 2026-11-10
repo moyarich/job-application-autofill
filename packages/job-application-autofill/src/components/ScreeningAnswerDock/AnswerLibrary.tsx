@@ -5,15 +5,47 @@ type Props = {
   examples: PreviousAnswer[];
   questions: string[];
   onAdapt: (question: string, answer: string) => void;
+  currentJobId: string;
+  profileId: string;
+  onChanged: () => Promise<void>;
 };
 
 /** The historical library is read-only. Adapting only updates the current draft. */
-export function AnswerLibrary({ examples, questions, onAdapt }: Props) {
+export function AnswerLibrary({ examples, questions, onAdapt, currentJobId, profileId, onChanged }: Props) {
   const [filters, setFilters] = useState<LibraryFilters>({
     search: "", company: "", role: "", sort: "recent",
   });
   const [target, setTarget] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [newAnswer, setNewAnswer] = useState("");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [working, setWorking] = useState(false);
+  const [feedback, setFeedback] = useState("");
+
+  async function mutate(method: "POST" | "PATCH" | "DELETE", payload: Record<string, string>) {
+    setWorking(true);
+    setFeedback("");
+    try {
+      const url = "/api/applications/" + encodeURIComponent(currentJobId) + "/answers" +
+        (method === "POST" ? "" : "/record");
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", "X-Moya-Client": "dashboard", "X-Profile-Id": profileId },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to update the library.");
+      await onChanged();
+      setEditing(null);
+      if (method === "POST") { setNewQuestion(""); setNewAnswer(""); }
+      setFeedback(method === "DELETE" ? "Answer deleted." : "Answer saved.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Unable to save the answer.");
+    } finally { setWorking(false); }
+  }
+  const keyFor = (item: PreviousAnswer) => item.applicationId + ":" + item.question;
   const companies = useMemo(() =>
     [...new Set(examples.map((item) => item.company).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b)), [examples]);
@@ -67,17 +99,59 @@ export function AnswerLibrary({ examples, questions, onAdapt }: Props) {
               {questions.map((question) => <option key={question} value={question}>{question}</option>)}
             </select>
           </label>
+          <form className="answer-library-create" onSubmit={(event) => {
+            event.preventDefault();
+            void mutate("POST", { question: newQuestion, answer: newAnswer });
+          }}>
+            <strong>New answer for this application</strong>
+            <label>Question
+              <input required maxLength={300} value={newQuestion}
+                onChange={(event) => setNewQuestion(event.target.value)}/>
+            </label>
+            <label>Answer
+              <textarea required maxLength={4000} rows={3} value={newAnswer}
+                onChange={(event) => setNewAnswer(event.target.value)}/>
+            </label>
+            <button type="submit" className="secondary" disabled={working || !newQuestion.trim() || !newAnswer.trim()}>
+              Save new answer
+            </button>
+          </form>
+          {feedback && <p role="status">{feedback}</p>}
           <p role="status">{found.length} matching {found.length === 1 ? "answer" : "answers"}</p>
           {found.length === 0 && <p>No matching saved answers. Try different filters.</p>}
           {found.slice(0, 40).map((item) => (
             <article className="screening-dock-example" key={item.applicationId + ":" + item.question}>
               <small>{item.company} · {item.role}</small>
               <strong>{item.question}</strong>
-              <p>{item.answer}</p>
-              <button type="button" className="secondary" disabled={!target}
-                onClick={() => onAdapt(target, item.answer)}>
-                Adapt into draft
-              </button>
+              {editing === keyFor(item) ? (
+                <label className="answer-library-editor">Edit saved answer
+                  <textarea rows={4} maxLength={4000} value={editValue}
+                    onChange={(event) => setEditValue(event.target.value)}/>
+                </label>
+              ) : <p>{item.answer}</p>}
+              <div className="answer-library-actions">
+                <button type="button" className="secondary" disabled={!target || working}
+                  onClick={() => onAdapt(target, item.answer)}>Adapt into draft</button>
+                {editing === keyFor(item) ? (
+                  <>
+                    <button type="button" className="secondary" disabled={working || !editValue.trim()}
+                      onClick={() => void mutate("PATCH", {
+                        applicationId: item.applicationId, question: item.question,
+                        expectedAnswer: item.answer, expectedUpdatedAt: item.updatedAt, answer: editValue,
+                      })}>Save changes</button>
+                    <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancel</button>
+                  </>
+                ) : <button type="button" className="secondary" disabled={working}
+                  onClick={() => { setEditing(keyFor(item)); setEditValue(item.answer); }}>Edit</button>}
+                <button type="button" className="secondary" disabled={working}
+                  onClick={() => {
+                    if (window.confirm("Delete this saved answer from " + item.company + "?"))
+                      void mutate("DELETE", {
+                        applicationId: item.applicationId, question: item.question,
+                        expectedAnswer: item.answer, expectedUpdatedAt: item.updatedAt,
+                      });
+                  }}>Delete</button>
+              </div>
             </article>
           ))}
           {found.length > 40 && <p>Showing the first 40 results. Narrow your search to see more.</p>}
