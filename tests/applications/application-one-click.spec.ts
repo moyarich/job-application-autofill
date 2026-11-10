@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
-test("Apply starts the selected employer application without a second click", async ({
+for (const mode of ["new", "started", "expired"]) {
+const started = mode !== "new";
+test(mode === "expired" ? "expired sessions are removed without marking the application submitted" : started ? "Continue reopens a started application after its resume was removed" : "Apply starts the selected employer application without a second click", async ({
   page,
   context,
 }) => {
@@ -20,18 +22,21 @@ test("Apply starts the selected employer application without a second click", as
     company: "Example",
     role: "Developer",
     url: "https://example.com/jobs/42",
-    resumeId,
+    resumeId: started ? null : resumeId,
     accountAction: "signup",
-    status: "saved",
+    status: started ? "in_progress" : "saved",
     createdAt: "2026-11-09",
     notes: "",
   };
   let starts = 0;
+  let sessionAlive = true;
+  const statusUpdates: unknown[] = [];
   await context.route(
     (url) => url.pathname.startsWith("/api/"),
     async (route) => {
       const path = new URL(route.request().url()).pathname;
       let json: unknown = {};
+      if (path.endsWith("/status")) statusUpdates.push(route.request().postDataJSON());
       if (path === "/api/profiles")
         json = {
           profiles: [{ id: profileId, name: "Default" }],
@@ -56,9 +61,13 @@ test("Apply starts the selected employer application without a second click", as
         json = { profile, revision: 1, contactId };
       else if (path === "/api/jobs")
         json = { jobs: [job], revisions: { [jobId]: 1 } };
-      else if (path === "/api/apply/active") json = { session: null };
+      else if (path === "/api/apply/active") json = { session: started && sessionAlive ? {
+        id: "existing-session", jobId, state: "ready_for_review", message: "Review your application.",
+        url: job.url, reviewUrl: null, filled: [], missing: [], questions: [],
+      } : null };
       else if (path === "/api/resume/pdf")
         json = { base64: Buffer.from("%PDF-1.4").toString("base64") };
+      else if (path.endsWith("/close")) { sessionAlive = false; json = { closed: true }; }
       else if (path === "/api/apply/prepare") {
         starts++;
         expect(route.request().headers()["x-resume-id"]).toBe(resumeId);
@@ -79,7 +88,7 @@ test("Apply starts the selected employer application without a second click", as
   );
   await page.goto(`/applications?profile=${profileId}&resume=${resumeId}`);
   const popupPromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await page.getByRole("button", { name: started ? "Continue application" : "Apply", exact: true }).click();
   const popup = await popupPromise;
   await expect(
     popup.getByRole("heading", { name: "Application review", exact: true }),
@@ -87,5 +96,20 @@ test("Apply starts the selected employer application without a second click", as
   await expect(
     popup.getByRole("button", { name: "Open employer application" }),
   ).toHaveCount(0);
-  expect(starts).toBe(1);
+  expect(starts).toBe(started ? 0 : 1);
+  if (mode === "expired") {
+    sessionAlive = false;
+    await expect(popup.locator(".notice")).toContainText("Browser session ended.");
+    await expect(popup.getByRole("button", { name: "Close browser session", exact: true })).toHaveCount(0);
+    await expect(popup.getByRole("button", { name: "Reopen employer application", exact: true })).toBeVisible();
+    expect(starts).toBe(0);
+    expect(statusUpdates).toEqual([]);
+  } else if (started) {
+    await popup.getByRole("button", { name: "Close browser session", exact: true }).click();
+    await expect(popup.locator(".notice")).toContainText("Application status is unchanged.");
+    await expect(popup.getByRole("button", { name: "Close browser session", exact: true })).toHaveCount(0);
+    expect(starts).toBe(0);
+    expect(statusUpdates).toEqual([]);
+  }
 });
+}

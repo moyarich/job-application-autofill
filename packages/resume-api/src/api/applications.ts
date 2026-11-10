@@ -10,6 +10,7 @@ import { employerAccountIdentity } from "../../../job-sites/employer-account.ts"
 import {
   pasteApplicationText,
   getApplication,
+  refreshApplicationState,
   getApplicationMenu,
   runApplicationMenuItem,
   getActiveApplication,
@@ -62,7 +63,7 @@ export const handleApplications: RouteHandler = async ({
     return reply(200, {
       session: active
         ? {
-            ...active,
+            ...await refreshApplicationState(active.id),
             employerAccount: accountForJob(store, profileId, active.jobId),
           }
         : null,
@@ -88,15 +89,17 @@ export const handleApplications: RouteHandler = async ({
       throw new Error("Application session belongs to another local profile.");
     if (req.method === "GET" && !action)
       return reply(200, {
-        ...getApplication(id),
+        ...await refreshApplicationState(id),
         employerAccount: accountForJob(
           store,
           profileId,
           getApplication(id).jobId,
         ),
       });
-    if (req.method === "GET" && action === "menu")
-      return reply(200, { items: await getApplicationMenu(id) });
+    if (req.method === "GET" && action === "menu") {
+      const session = await refreshApplicationState(id);
+      return reply(200, { items: await getApplicationMenu(id), session });
+    }
     if (req.method === "POST" && action === "menu") {
       const payload = record(await req.readJson());
       if (typeof payload.itemId !== "string")
@@ -179,7 +182,10 @@ export const handleApplications: RouteHandler = async ({
       const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
       if (Object.keys(captured).length)
         store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
-      return reply(200, await submitApplication(id));
+      const result = await submitApplication(id);
+      store.setJobStatus(profileId, result.jobId,
+        result.state === "submitted" ? "submitted" : "in_progress");
+      return reply(200, result);
     }
     if (req.method === "POST" && action === "close") {
       const captured = await snapshotEmployerAnswers(id).catch(() => ({}));

@@ -44,10 +44,11 @@ it("tries configured login for new employer records and keeps a pending resume u
     // No upload control is present yet; the provider will retry on a matching step.
     expect(session.missing).not.toContain("resume");
     await page!.setContent(
-      '<h1>Upload your resume</h1><label>Resume<input type="file"></label>',
+      '<main><h1>Upload your resume</h1><label>Resume<input type="file"></label><button onclick="window.navigationClicks = (window.navigationClicks || 0) + 1">Save and Continue</button></main>',
     );
     const continued = await continueApplication(session.id);
     expect(continued.filled).toContain("resume");
+    expect(await page!.evaluate(() => (window as unknown as { navigationClicks?: number }).navigationClicks ?? 0)).toBe(0);
     expect(
       await page!
         .locator('input[type="file"]')

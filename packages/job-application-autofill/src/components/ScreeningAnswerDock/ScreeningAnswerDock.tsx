@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
+import { GripVertical, Maximize2, MessageSquareText, Minus, X } from "lucide-react";
 import { requestApi } from "../../utils/api/client";
 import { relatedAnswers, type PreviousAnswer } from "./suggestions";
 import { AnswerLibrary } from "./AnswerLibrary";
@@ -28,6 +30,42 @@ export function ScreeningAnswerDock({
   sessionId, currentJobId, onLibraryChanged, profileId, resumeId, questions, savedAnswers, previousAnswers, currentAnswerRecords,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const initialBox = () => ({
+    x: Math.max(12, window.innerWidth - 504), y: Math.max(12, window.innerHeight - 552),
+    width: Math.min(480, window.innerWidth - 24), height: Math.min(520, window.innerHeight - 24),
+  });
+  const [box, setBox] = useState(initialBox);
+  const popup = useRef<HTMLElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const gesture = useRef<{ mode: "move" | "resize"; x: number; y: number; box: typeof box } | null>(null);
+  function constrain(next: typeof box) {
+    const width = Math.min(Math.max(Math.min(300, innerWidth - 24), next.width), innerWidth - 24);
+    const height = Math.min(Math.max(Math.min(240, innerHeight - 24), next.height), innerHeight - 24);
+    return { width, height, x: Math.max(12, Math.min(next.x, innerWidth - width - 12)), y: Math.max(12, Math.min(next.y, innerHeight - height - 12)) };
+  }
+  useEffect(() => {
+    if (!expanded) return;
+    setBox((current) => constrain(current));
+    popup.current?.focus();
+    const resize = () => setBox((current) => constrain(current));
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [expanded]);
+  function closePopup() { setExpanded(false); trigger.current?.focus(); }
+  function startGesture(event: ReactPointerEvent<HTMLElement>, mode: "move" | "resize") {
+    if (event.button !== 0 || (mode === "move" && (event.target as HTMLElement).closest("button"))) return;
+    event.preventDefault();
+    gesture.current = { mode, x: event.clientX, y: event.clientY, box };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moveGesture(event: ReactPointerEvent<HTMLElement>) {
+    const start = gesture.current;
+    if (!start) return;
+    const dx = event.clientX - start.x, dy = event.clientY - start.y;
+    setBox(constrain(start.mode === "move"
+      ? { ...start.box, x: start.box.x + dx, y: start.box.y + dy }
+      : { ...start.box, width: start.box.width + dx, height: start.box.height + dy }));
+  }
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [imported, setImported] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -60,15 +98,34 @@ export function ScreeningAnswerDock({
     }
   }
   return (
-    <aside className="screening-dock" aria-label="Screening answer assistant">
-      <button type="button" className="screening-dock-toggle" aria-expanded={expanded}
-        onClick={() => setExpanded((open) => !open)}>
-        <span>Screening answers</span>
-        <small>{suggested.length} saved matches · {questions.length} detected questions</small>
-        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+    <>
+      <button ref={trigger} type="button" className="secondary screening-answer-launcher" aria-expanded={expanded}
+        aria-haspopup="dialog" onClick={() => setExpanded((open) => !open)}>
+        <MessageSquareText size={16} aria-hidden="true" /> Screening answers
+        <small>{suggested.length} saved matches · {questions.length} questions</small>
       </button>
-      {expanded && (
-        <div className="screening-dock-content">
+      {expanded && createPortal(
+        <aside ref={popup} className="screening-answer-popup" role="dialog" aria-modal="false"
+          aria-label="Screening answer assistant" tabIndex={-1}
+          style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
+          onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closePopup(); } }}>
+          <header className="screening-popup-header" tabIndex={0} aria-label="Move screening answers using arrow keys"
+            onPointerDown={(event) => startGesture(event, "move")} onPointerMove={moveGesture}
+            onPointerUp={() => { gesture.current = null; }} onPointerCancel={() => { gesture.current = null; }}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget || !event.key.startsWith("Arrow")) return;
+              event.preventDefault();
+              setBox((current) => constrain({ ...current,
+                x: current.x + (event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0),
+                y: current.y + (event.key === "ArrowDown" ? 16 : event.key === "ArrowUp" ? -16 : 0) }));
+            }}>
+            <GripVertical size={16} aria-hidden="true" />
+            <div><strong>Screening answers</strong><small>{suggested.length} saved matches · {questions.length} questions</small></div>
+            <button type="button" aria-label="Reset popup size and position" onClick={() => setBox(initialBox())}><Maximize2 size={15} /></button>
+            <button type="button" aria-label="Minimize screening answers" onClick={closePopup}><Minus size={16} /></button>
+            <button type="button" aria-label="Close screening answers" onClick={closePopup}><X size={16} /></button>
+          </header>
+          <div className="screening-dock-content">
           <p>Current answers are kept with this application. Previous jobs provide labeled examples only; choose and edit one before filling.</p>
           {eligible.length === 0 && <p>There are no safe, editable screening questions detected on this step.</p>}
           {eligible.map((question) => {
@@ -131,8 +188,19 @@ export function ScreeningAnswerDock({
           />
           {message && <p role="status">{message}</p>}
           <small>Legal consent and sensitive disclosures are completed directly on the employer's form.</small>
-        </div>
+          </div>
+          <button type="button" className="screening-popup-resize" aria-label="Resize screening answers"
+            onPointerDown={(event) => startGesture(event, "resize")} onPointerMove={moveGesture}
+            onPointerUp={() => { gesture.current = null; }} onPointerCancel={() => { gesture.current = null; }}
+            onKeyDown={(event) => {
+              if (!event.key.startsWith("Arrow")) return;
+              event.preventDefault();
+              setBox((current) => constrain({ ...current,
+                width: current.width + (event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0),
+                height: current.height + (event.key === "ArrowDown" ? 16 : event.key === "ArrowUp" ? -16 : 0) }));
+            }} />
+        </aside>, document.body
       )}
-    </aside>
+    </>
   );
 }

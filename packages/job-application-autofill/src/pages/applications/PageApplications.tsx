@@ -19,7 +19,8 @@ export function PageApplications() {
   });
   const tracker = useJobTracker({ ...selection, ...applications });
   const prepareJob = async (job: (typeof applications.jobs)[number]) => {
-    if (!job.resumeId) {
+    const started = ["in_progress", "ready_for_review"].includes(job.status);
+    if (!job.resumeId && !started) {
       selection.setMessage(
         "Choose a resume for this application before applying.",
       );
@@ -28,7 +29,7 @@ export function PageApplications() {
     const target = window.open("about:blank", "application-" + job.id);
     try {
       await applications.flushJobs();
-      openApplication(job, selection.activeProfileId, job.resumeId, target);
+      openApplication(job, selection.activeProfileId, job.resumeId ?? selection.activeResumeId, target);
     } catch (error) {
       target?.close();
       selection.setMessage("Could not save selected resume: " + String(error));

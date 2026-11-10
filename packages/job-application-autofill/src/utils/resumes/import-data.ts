@@ -7,6 +7,7 @@ export type ResumeImportData = Pick<
   | "contactId"
   | "activeProfileId"
   | "activeResumeId"
+  | "revisionRef"
   | "contactKeys"
   | "flushPending"
   | "setTab"

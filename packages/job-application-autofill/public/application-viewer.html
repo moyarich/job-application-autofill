@@ -18,8 +18,13 @@
         flex-direction: column;
       }
       #status {
-        padding: 9px 14px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        min-height: 108px;
+        padding: 20px 280px 20px 20px;
         background: #243149;
+        border-bottom: 1px solid #27272a;
       }
       #screen {
         flex: 1;
@@ -34,86 +39,92 @@
         left: -100px;
         top: 0;
       }
+      * { box-sizing: border-box; }
+      #status { background: #18181b; color: #d4d4d8; font-size: 12px; }
       #site-menu {
         position: fixed;
         z-index: 100;
-        right: 18px;
-        top: 72px;
+        right: 16px;
+        top: 16px;
         display: none;
-        max-width: min(300px, calc(100vw - 24px));
-        border-radius: 22px;
-        background: #f8fafc;
-        color: #172033;
-        box-shadow: 0 12px 32px #0008;
-        border: 1px solid #b8c7da;
+        width: 240px;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 24px);
+        border: 1px solid #e4e4e7;
+        border-radius: 12px;
+        background: #fff;
+        color: #18181b;
+        box-shadow: 0 4px 6px -2px #00000008, 0 12px 32px -8px #00000026;
         overflow: hidden;
+        font: 13px ui-sans-serif, system-ui, sans-serif;
       }
-      #site-menu.visible {
-        display: block;
-      }
+      #site-menu.visible { display: flex; flex-direction: column; }
+      #site-menu.expanded { width: 296px; }
       #menu-handle {
-        width: 100%;
         display: flex;
-        gap: 10px;
         align-items: center;
+        gap: 9px;
+        flex-shrink: 0;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
         border: 0;
-        padding: 10px 14px;
-        color: white;
-        background: #243958;
+        background: #fff;
+        color: #27272a;
+        text-align: left;
         cursor: grab;
         touch-action: none;
-        font: 600 13px system-ui;
+        font: 500 13px ui-sans-serif, system-ui, sans-serif;
       }
-      #menu-handle:active {
-        cursor: grabbing;
-      }
-      #menu-list {
-        display: none;
-        max-height: 42vh;
-        overflow: auto;
-        padding: 7px;
-      }
-      #site-menu.expanded #menu-list {
-        display: grid;
-        gap: 6px;
-      }
-      #menu-list button {
-        border: 1px solid #d7dfec;
-        background: white;
-        border-radius: 12px;
-        color: #172033;
-        padding: 9px 12px;
-        text-align: left;
-        cursor: pointer;
-        font: 13px system-ui;
-      }
-      #menu-list button:hover:enabled {
-        background: #e8f1ff;
-      }
-      #menu-list button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-      #menu-handle:focus-visible,
-      #menu-list button:focus-visible {
-        outline: 3px solid #60a5fa;
-        outline-offset: -3px;
-      }
-      #automation-actions { display: flex; gap: 7px; padding: 9px; border-bottom: 1px solid #d7dfec; }
-      #automation-actions button { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid #ccd5e1; border-radius: 9px; background: #fff; color: #253454; cursor: pointer; font: 600 12px system-ui; }
+      #menu-handle:hover { background: #fafafa; }
+      #menu-handle:active { cursor: grabbing; }
+      #menu-handle svg { width: 16px; height: 16px; flex-shrink: 0; color: #a1a1aa; }
+      #menu-handle .menu-chevron { margin-left: auto; transition: transform .15s; }
+      #site-menu.expanded .menu-chevron { transform: rotate(180deg); }
+      #automation-state { padding: 0 12px 12px; color: #71717a; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+      #automation-state::before { content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 7px 1px 0; background: #a1a1aa; border-radius: 50%; }
+      #automation-state[data-phase="running"]::before { background: #2563eb; animation: pulse 1.5s ease-in-out infinite; }
+      #automation-state[data-phase="paused"]::before { background: #d97706; }
+      #automation-state[data-phase="submitted"]::before { background: #16a34a; }
+      #automation-actions { display: none; flex-shrink: 0; gap: 8px; padding: 0 12px 12px; border-bottom: 1px solid #e4e4e7; }
+      #site-menu.expanded #automation-actions { display: flex; }
+      #automation-actions button { display: flex; justify-content: center; align-items: center; gap: 6px; flex: 1; min-width: 0; min-height: 34px; padding: 7px 10px; border: 1px solid #e4e4e7; border-radius: 6px; background: #fff; color: #3f3f46; cursor: pointer; font: 500 12px ui-sans-serif, system-ui, sans-serif; }
+      #automation-actions button:hover:enabled { background: #f4f4f5; }
+      #automation-actions button.primary { color: #fff; background: #18181b; border-color: #18181b; }
+      #automation-actions button.primary:hover:enabled { background: #303036; }
+      #automation-actions button.danger { color: #b91c1c; }
+      #automation-actions button.danger:hover:enabled { background: #fef2f2; border-color: #fecaca; }
+      #menu-list { display: none; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 6px; scrollbar-width: thin; }
+      #site-menu.expanded #menu-list:not(:empty) { display: grid; gap: 2px; }
+      #menu-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; border: 0; border-radius: 6px; background: transparent; color: #27272a; padding: 8px 10px; text-align: left; cursor: pointer; font: 13px ui-sans-serif, system-ui, sans-serif; }
+      #menu-list button:hover:enabled { background: #f4f4f5; }
+      #menu-list button small { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; color: #a1a1aa; font-size: 10px; }
+      .step-status-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .step-status-icon.running { animation: status-spin 1s linear infinite; }
+      @keyframes status-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .step-status-icon.running { animation: none; } }
+      #menu-list button[data-active="true"] { background: #f4f4f5; }
+      #menu-list button[data-active="true"] small { color: #2563eb; }
+      #menu-list button[data-status="processed"] small { color: #15803d; }
+      #menu-list button[data-status="filled"] small { color: #15803d; }
+      #menu-list button[data-status="needs_review"] small { color: #a16207; }
+      #menu-list button:disabled { color: #a1a1aa; cursor: not-allowed; }
       #automation-actions button:disabled { opacity: .5; cursor: not-allowed; }
-      #automation-actions button:focus-visible { outline: 2px solid #60a5fa; }
-      #automation-actions button.primary { background: #243958; color: #fff; }
-      #automation-actions button.danger { color: #9f3535; }
-      #automation-state { padding: 7px 12px 0; font: 11px system-ui; color: #566780; }
-      #site-menu:not(.expanded) #automation-state, #site-menu:not(.expanded) #automation-actions { display: none; }
-      #menu-message {
-        font: 12px system-ui;
-        padding: 0 10px;
-        color: #263b64;
-      }
-      #site-menu.expanded #menu-message:not(:empty) {
-        padding: 7px 10px;
+      #site-menu button:focus-visible { outline: 2px solid #71717a; outline-offset: -2px; }
+      #menu-footer { display: none; flex-shrink: 0; padding: 10px 12px; max-height: 190px; overflow: auto; border-top: 1px solid #e4e4e7; background: #fafafa; color: #71717a; font-size: 11px; line-height: 1.5; }
+      #site-menu.expanded #menu-footer { display: block; }
+      .menu-footer-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #3f3f46; font-weight: 500; }
+      #menu-refresh { border: 0; border-radius: 4px; background: transparent; color: #71717a; font-size: 18px; width: 26px; height: 26px; cursor: pointer; }
+      #menu-refresh:hover { background: #e4e4e7; }
+      #menu-footer p { margin: 5px 0; }
+      #site-menu.expanded #menu-footer #menu-message { padding: 6px 0 0; border: 0; }
+      #menu-message { display: none; flex-shrink: 0; max-height: 100px; overflow: auto; color: #71717a; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+      #site-menu.expanded #menu-message:not(:empty) { display: block; padding: 10px 12px; border-top: 1px solid #e4e4e7; background: #fafafa; }
+      @keyframes pulse { 50% { opacity: .35; } }
+      @media (prefers-reduced-motion: reduce) { #automation-state::before { animation: none !important; } .menu-chevron { transition: none !important; } }
+      @media (max-width: 600px) {
+        #status { min-height: 148px; align-items: flex-start; padding: 14px 16px; }
+        #site-menu { top: 52px; }
       }
     </style>
   </head>
@@ -122,12 +133,18 @@
     <div id="screen"></div>
     <nav id="site-menu" aria-label="Employer actions">
       <button id="menu-handle" type="button" aria-expanded="false">
-        <span>⠿</span><span>Employer actions</span><span>▾</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5h.01M8 12h.01M8 19h.01M16 5h.01M16 12h.01M16 19h.01" stroke-linecap="round" stroke-width="3"/></svg>
+        <span>Employer actions</span>
+        <svg class="menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </button>
       <div id="automation-state" role="status"></div>
       <div id="automation-actions"></div>
       <div id="menu-list"></div>
-      <div id="menu-message" role="status"></div>
+      <footer id="menu-footer">
+        <div class="menu-footer-summary"><span id="menu-summary"></span><button id="menu-refresh" type="button" aria-label="Refresh section status" title="Refresh section status">↻</button></div>
+        <p id="menu-next-step"></p>
+        <div id="menu-message" role="status"></div>
+      </footer>
     </nav>
     <textarea
       id="paste-input"
@@ -154,6 +171,12 @@
       const menuMessage = document.getElementById("menu-message");
       const automationActions = document.getElementById("automation-actions");
       const automationState = document.getElementById("automation-state");
+      function showMenuError(message) {
+        menuMessage.textContent = /expired|closed|ended/i.test(message || "")
+          ? "Session ended. Reopen the application."
+          : /fetch|network|connect/i.test(message || "") ? "Can’t connect. Try again."
+          : "Couldn’t complete that action. Try again.";
+      }
       let menuOpen = false;
       let menuBusy = false;
       let menuReload = null;
@@ -165,13 +188,13 @@
         if ((menuBusy && !["pause", "close"].includes(action)) || !session) return;
         if (action === "close" && !window.confirm("Stop automation and close the application browser?")) return;
         menuBusy = true;
-        menuMessage.textContent = action === "pause" ? "Pausing…" : action === "continue" ? "Continuing…" : "Closing…";
+        menuMessage.textContent = "";
         void reloadEmployerMenu().catch(() => {});
         try {
           const response = await fetch("/api/apply/" + encodeURIComponent(session) + "/" + action, { method: "POST", headers });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.error || "Automation action failed.");
-          menuMessage.textContent = result.message || "Action completed.";
+          menuMessage.textContent = "";
           if (action === "close") {
             menuClosed = true;
             clearInterval(menuTimer);
@@ -180,7 +203,7 @@
             return;
           }
         } catch (error) {
-          menuMessage.textContent = error.message || "Automation action failed.";
+          showMenuError(error.message);
         } finally {
           menuBusy = false;
           if (action !== "close") await reloadEmployerMenu().catch(() => {});
@@ -190,6 +213,7 @@
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = label;
+        if (action === "continue") button.title = "Fill this page without advancing to the next employer step";
         button.className = className;
         button.disabled = menuBusy && !["pause", "close"].includes(action);
         button.addEventListener("click", () => void runSessionAction(action));
@@ -215,10 +239,17 @@
           siteMenu.classList.remove("visible");
           return;
         }
-        const active = await sessionResponse.json();
+        const sessionSnapshot = await sessionResponse.json();
         const data = response.ok ? await response.json() : {};
         if (menuClosed) return;
         const items = Array.isArray(data.items) ? data.items : [];
+        // Older running APIs also inspect the DOM before returning menu items:
+        // a nonempty application menu means manual sign-in has completed.
+        const active = data.session || (
+          sessionSnapshot.state === "login_required" && items.length && !sessionSnapshot.running && !sessionSnapshot.paused
+            ? { ...sessionSnapshot, state: "ready_for_review", message: "" }
+            : sessionSnapshot
+        );
         const version = JSON.stringify([active.state, active.paused, active.running, active.currentAction, active.message, items, menuBusy]);
         if (version === menuVersion) return;
         menuVersion = version;
@@ -227,30 +258,80 @@
         const finished = ["submitted", "submission_unverified"].includes(active.state);
         const running = active.running || active.state === "preparing" || menuBusy;
         automationState.textContent = active.paused ? "Paused — browser remains available" :
-          finished ? "Application finished" :
+          active.state === "submitted" ? "Submission confirmed" :
+          active.state === "submission_unverified" ? "Submission not confirmed" :
           running ? (active.currentAction ? "Running — " + active.currentAction : "Running") :
           active.state === "ready_for_review" ? "Ready for review" :
           active.state === "login_required" ? "Sign-in required" :
           active.state === "manual_intervention" ? "Needs attention" : "Running";
         if (!finished) {
           if (!running && (active.paused || ["manual_intervention", "login_required", "ready_for_review"].includes(active.state)))
-            addSessionAction("Continue", "continue", "primary");
+            addSessionAction("Resume autofill", "continue", "primary");
           else addSessionAction("Pause", "pause");
           addSessionAction("Stop", "close", "danger");
         } else addSessionAction("Close", "close");
+        automationState.dataset.phase = active.paused ? "paused" : running ? "running" : active.state;
+        menuHandle.title = automationState.textContent + " — drag to move, click to expand";
         siteMenu.classList.add("visible");
-        if (!menuBusy) menuMessage.textContent = active.message || "";
+
+        const handled = items.filter((item) => ["filled", "processed"].includes(item.status)).length;
+        const reviewItems = items.filter((item) => item.status === "needs_review");
+        const readyItems = items.filter((item) => item.available && (!item.status || item.status === "ready"));
+        document.getElementById("menu-summary").textContent = [handled ? `${handled} done` : "", reviewItems.length ? `${reviewItems.length} to check` : "", readyItems.length ? `${readyItems.length} ready` : ""].filter(Boolean).join(" · ");
+        const manualItems = items.filter((item) => !item.available && item.status === "ready");
+        const nextReview = reviewItems.find((item) => item.available) || reviewItems[0];
+        document.getElementById("menu-next-step").textContent = active.paused ? "Paused" :
+          running ? `Filling ${active.currentAction || "this page"}…` :
+          active.state === "login_required" ? "Sign in to continue" :
+          active.state === "manual_intervention" ? "Complete verification" :
+          active.state === "submitted" ? "Application submitted" :
+          active.state === "submission_unverified" ? "Check submission on employer site" :
+          nextReview ? `Check ${nextReview.label}` :
+          readyItems.length ? `Fill ${readyItems[0].label}` :
+          manualItems.length ? `Enter ${manualItems[0].label}` :
+          "Review, then Save and Continue on employer site";
         for (const item of active.paused || finished ? [] : items) {
           if (typeof item.id !== "string" || typeof item.label !== "string")
             continue;
           const button = document.createElement("button");
           button.type = "button";
-          button.textContent = item.label;
+          button.setAttribute("aria-label", item.label);
+          const label = document.createElement("span");
+          label.textContent = item.label;
+          button.appendChild(label);
+          const hint = document.createElement("small");
+          hint.id = "step-status-" + encodeURIComponent(item.id);
+          button.setAttribute("aria-describedby", hint.id);
+          const isCurrent = running && active.currentAction === item.label;
+          button.dataset.active = String(isCurrent);
+          button.dataset.status = item.status || "";
+          hint.textContent = isCurrent ? "Running" : item.status === "processed" ? "Processed" : item.status === "filled" ? "Filled" :
+            item.status === "needs_review" ? "Needs review" : item.status === "ready" && !item.available ? "Manual entry" : !item.available ? "Not on this page" : "Ready";
+          if (hint.textContent) {
+            const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            icon.setAttribute("viewBox", "0 0 24 24");
+            icon.setAttribute("aria-hidden", "true");
+            icon.setAttribute("fill", "none");
+            icon.setAttribute("stroke", "currentColor");
+            icon.setAttribute("stroke-width", "1.8");
+            icon.setAttribute("stroke-linecap", "round");
+            icon.setAttribute("stroke-linejoin", "round");
+            icon.setAttribute("class", "step-status-icon" + (isCurrent ? " running" : ""));
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", isCurrent ? "M12 3a9 9 0 1 1-9 9" :
+              item.status === "processed" || item.status === "filled" ? "M22 11.1V12a10 10 0 1 1-5.9-9.1 M22 4 12 14l-3-3" :
+              item.status === "needs_review" ? "M12 3 2 21h20L12 3Z M12 9v4 M12 17h.01" :
+              item.available ? "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z M10 8l5 4-5 4" :
+              "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z M7 12h10");
+            icon.appendChild(path);
+            hint.prepend(icon);
+          }
+          button.appendChild(hint);
           button.disabled = !item.available || running;
           button.addEventListener("click", async () => {
             if (menuBusy) return;
             menuBusy = true;
-            menuMessage.textContent = "Running " + item.label + "…";
+            menuMessage.textContent = "";
             void reloadEmployerMenu().catch(() => {});
             try {
               const response = await fetch(
@@ -264,10 +345,9 @@
               const result = await response.json();
               if (!response.ok)
                 throw new Error(result.error || "Employer action failed.");
-              menuMessage.textContent = "Completed. Review the employer form.";
+              menuMessage.textContent = "";
             } catch (error) {
-              menuMessage.textContent =
-                error.message || "Employer action failed.";
+              showMenuError(error.message);
             } finally {
               menuBusy = false;
               await reloadEmployerMenu().catch(() => {});
@@ -276,18 +356,46 @@
           menuList.appendChild(button);
         }
       }
+      document.getElementById("menu-refresh").addEventListener("click", () => {
+        menuVersion = "";
+        void reloadEmployerMenu().catch(() => { showMenuError("connection"); });
+      });
+      let menuMoved = false;
+      function fitMenu() {
+        if (!menuMoved) {
+          siteMenu.style.left = "auto";
+          siteMenu.style.right = "16px";
+          siteMenu.style.top = window.innerWidth <= 600 ? "52px" : "16px";
+        }
+        const rect = siteMenu.getBoundingClientRect();
+        if (!rect.width) return;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8));
+        const top = Math.max(8, Math.min(rect.top, window.innerHeight - rect.height - 8));
+        siteMenu.style.left = left + "px";
+        siteMenu.style.top = top + "px";
+        siteMenu.style.right = "auto";
+      }
+      new ResizeObserver(fitMenu).observe(siteMenu);
+      window.addEventListener("resize", fitMenu);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && menuOpen) {
+          menuOpen = false;
+          siteMenu.classList.remove("expanded");
+          menuHandle.setAttribute("aria-expanded", "false");
+          menuHandle.focus();
+        }
+      });
       menuHandle.addEventListener("click", () => {
         if (suppressHandleClick) {
           suppressHandleClick = false;
           return;
         }
-        if (menuBusy) return;
         menuOpen = !menuOpen;
         siteMenu.classList.toggle("expanded", menuOpen);
         menuHandle.setAttribute("aria-expanded", String(menuOpen));
         if (menuOpen)
           void reloadEmployerMenu().catch(() => {
-            menuMessage.textContent = "Menu unavailable.";
+            showMenuError("connection");
           });
       });
       // Only the handle drags; the noVNC canvas keeps its own pointer controls.
@@ -310,6 +418,7 @@
           dy = event.clientY - menuDrag.y;
         if (Math.abs(dx) + Math.abs(dy) > 5) menuDrag.moved = true;
         if (!menuDrag.moved) return;
+        menuMoved = true;
         siteMenu.style.left =
           Math.max(
             0,
@@ -447,6 +556,24 @@
         await focusRequest;
         focusRemoteKeyboard();
       }
+      window.addEventListener("message", (event) => {
+        if (event.origin !== location.origin || event.source !== window.parent ||
+            event.data?.type !== "moya:viewer-command" || event.data.sessionId !== session) return;
+        switch (event.data.action) {
+          case "refresh-menu": void reloadEmployerMenu().catch(() => {}); break;
+          case "toggle-menu": menuHandle.click(); break;
+          case "focus": void focusApplication().catch((error) => { status.textContent = error.message; }); break;
+          case "fit":
+          case "actual-size":
+            if (rfb) {
+              const fit = event.data.action === "fit";
+              rfb.scaleViewport = fit;
+              rfb.clipViewport = !fit;
+              rfb.dragViewport = !fit;
+            }
+            break;
+        }
+      });
       try {
         if (!session)
           throw new Error("Open the browser from an application page.");

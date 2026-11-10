@@ -24,8 +24,8 @@ export function EmployerAccountSetup({
           </h3>
           <p>
             {prepared
-              ? "Review the account fields and any employer message in the browser, then continue."
-              : "Automation uses your configured credentials. Review the employer message in the browser below, then continue."}
+              ? "Review the account fields and any employer message in the browser, then resume autofill."
+              : "Automation uses your configured credentials. Review the employer message in the browser below, then resume autofill."}
           </p>
         </div>
         <div className="actions">
@@ -43,7 +43,7 @@ export function EmployerAccountSetup({
             disabled={applyBusy}
             onClick={continueAfterChallenge}
           >
-            Continue <ArrowRight size={16} />
+            Resume autofill <ArrowRight size={16} />
           </button>
         </div>
       </div>

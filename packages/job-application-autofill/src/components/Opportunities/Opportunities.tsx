@@ -339,14 +339,16 @@ export function Opportunities({
                       className="primary"
                       disabled={
                         !job.url ||
+                        (!["in_progress", "ready_for_review"].includes(job.status) && (
                         !job.resumeId ||
                         !resumeVersions.some(
                           (resume) => resume.id === job.resumeId,
                         )
+                        ))
                       }
                       onClick={() => void prepareJob(job)}
                     >
-                      Apply
+                      {["in_progress", "ready_for_review"].includes(job.status) ? "Continue application" : "Apply"}
                     </button>
                   </div>
                   <details className="job-action-menu">

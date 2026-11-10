@@ -4,7 +4,8 @@ services:
     # The source mount shadows Dockerfile chmod; invoke the host script via Bash.
     entrypoint: ["bash", "/app/docker/start-review.sh"]
     # Mount source for node --watch while preserving image-installed dependencies
-    # and the prebuilt resume package exported from dist/.
+    # Build the shared package at startup: an existing anonymous dist volume
+    # may contain exports from an older image or branch.
     volumes:
       - .:/app
       - /app/node_modules
@@ -12,14 +13,17 @@ services:
       - screenshots:/app/screenshots
       - ./sqlite-data:/app/data
     command:
-      - node
-      - --watch
-      - --experimental-strip-types
-      - packages/resume-api/index.ts
+      - bash
+      - -c
+      - npm run build:js --workspace packages/resume && exec node --watch --experimental-strip-types packages/resume-api/index.ts
 
   # OCR dependencies and models remain in the isolated container image.
   # Rebuild after changing the Python worker or its Poetry dependencies.
   web:
+    command:
+      - sh
+      - -c
+      - npm run build:js --workspace packages/resume && exec npm run dev --workspace packages/job-application-autofill
     volumes:
       - .:/app
       - /app/node_modules

@@ -5,6 +5,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { usePendingSave } from "./PendingSaves";
 import {
   emptyCandidate,
   parseCandidateJson,
@@ -134,6 +135,11 @@ export function useResumeDraft({
       throw error;
     }
   }
+
+  usePendingSave(
+    () => hydrated && !applicationId && JSON.stringify({ profile, contactId }) !== savedRef.current,
+    flushResume,
+  );
 
   return {
     profile,

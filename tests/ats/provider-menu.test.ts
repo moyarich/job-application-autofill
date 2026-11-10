@@ -82,6 +82,17 @@ describe("provider-owned floating menu", () => {
     expect(result.executed).toEqual(["fixture.portfolio"]);
     expect(calls).toEqual(["portfolio"]);
     expect(progress).toEqual(["fixture.portfolio", null]);
+    const processedContext = { ...context, processedSteps: { "fixture.portfolio": "processed" as const } };
+    adapter.steps![0].matches = async () => false;
+    expect(await listJobSiteMenu(processedContext, adapter)).toEqual([
+      { id: "portfolio", label: "Portfolio", available: false, status: "processed" },
+    ]);
+    adapter.steps![0].inspectStatus = async () => "filled";
+    expect(await listJobSiteMenu({ ...context, processedSteps: { "fixture.portfolio": "needs_review" } }, adapter)).toEqual([
+      { id: "portfolio", label: "Portfolio", available: false, status: "filled" },
+    ]);
+    adapter.steps![0].inspectStatus = async () => "ready";
+    expect((await listJobSiteMenu(processedContext, adapter))[0].status).toBe("ready");
     await expect(
       executeJobSiteMenuItem(context, adapter, "fixture.hidden"),
     ).rejects.toThrow("Unknown employer menu action");

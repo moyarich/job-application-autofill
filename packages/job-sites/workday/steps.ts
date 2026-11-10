@@ -17,6 +17,7 @@ import { skillsFields } from "./skills/selectors.ts";
 import { discoverQuestions } from "../index.ts";
 import { SECTION as WORK_EXPERIENCE_SECTION } from "./experience/selectors.ts";
 import { educationFields } from "./education/selectors.ts";
+import { inspectWorkdayFields } from "./menu-status.ts";
 
 /** A navigation title alone does not mean that its form is open. */
 async function hasEditableField(page: Page, selector: string): Promise<boolean> {
@@ -80,12 +81,14 @@ async function screeningIsOpen(page: Page) {
 export const workdaySteps = [
   {
     id: "workday.personal-information",
+    inspectStatus: ({ page }) => inspectWorkdayFields(page.getByLabel(/^(first name|last name|given name|family name|e.?mail(?: address)?|phone number|address line 1|city|state|postal code|country(?: \/ territory)? phone code)\s*\*?$/i)),
     matches: async ({ page }) =>
       page.getByLabel(/^first name\s*\*?$/i).first().isVisible().catch(() => false),
     run: ({ page, profile }) => fillWorkdayContact(page, profile),
   },
   {
     id: "workday.work-experience",
+    inspectStatus: ({ page }) => inspectWorkdayFields(page.locator(WORK_EXPERIENCE_SECTION).locator('input:not([type="hidden"]), textarea, select, button[aria-haspopup]')),
     matches: ({ page, profile }) =>
       profile.experience.length
         ? hasEditableField(page, WORK_EXPERIENCE_SECTION)
@@ -97,6 +100,24 @@ export const workdaySteps = [
   },
   {
     id: "workday.education",
+    inspectStatus: async ({ page }) => {
+      const schools = page.getByLabel(educationFields.institution);
+      let found = false;
+      for (let i = 0; i < await schools.count(); i++) {
+        const school = schools.nth(i);
+        if (!(await school.isVisible())) continue;
+        found = true;
+        if (!(await school.inputValue().catch(() => school.innerText())).trim()) return "needs_review";
+      }
+      const degrees = page.getByLabel(educationFields.degree);
+      for (let i = 0; i < await degrees.count(); i++) {
+        const degree = degrees.nth(i);
+        if (!(await degree.isVisible())) continue;
+        const value = (await degree.inputValue().catch(() => degree.innerText())).trim();
+        if (!value || /^(select one|select|choose.*)$/i.test(value)) return "needs_review";
+      }
+      return found ? "filled" : undefined;
+    },
     matches: ({ page, profile }) =>
       profile.education.length
         ? educationIsOpen(page)
@@ -108,6 +129,15 @@ export const workdaySteps = [
   },
   {
     id: "workday.skills",
+    inspectStatus: async ({ page }) => {
+      const sections = page.locator(skillsFields.section);
+      for (let i = 0; i < await sections.count(); i++) {
+        const section = sections.nth(i);
+        if (await section.isVisible())
+          return await section.locator(skillsFields.selected).count() > 0 ? "filled" : "ready";
+      }
+      return undefined;
+    },
     matches: async ({ page, profile }) =>
       profile.skills.length > 0 &&
       (await hasEditableField(page, skillsFields.section)),
@@ -118,6 +148,7 @@ export const workdaySteps = [
   },
   {
     id: "workday.certifications",
+    inspectStatus: ({ page }) => inspectWorkdayFields(page.getByLabel(/^(certification|certification name|issuing organization|issuer|credential id)\s*\*?$/i)),
     matches: ({ page, profile }) =>
       profile.certifications.length
         ? workdayCertificationsVisible(page)

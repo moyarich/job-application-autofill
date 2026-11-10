@@ -24,10 +24,10 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
   useEffect(() => {
-    if (!applicationId || session?.state !== "preparing") return;
+    if (!applicationId || !session) return;
     let cancelled = false;
     const timer = setInterval(() => {
-      fetch("/api/apply/" + session.id, {
+      fetch("/api/apply/active?jobId=" + encodeURIComponent(applicationId), {
         headers: {
           "X-Moya-Client": "dashboard",
           "X-Profile-Id": activeProfileId,
@@ -40,8 +40,13 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
             );
           return response.json();
         })
-        .then((updated) => {
-          if (!cancelled) setSession(updated);
+        .then((result) => {
+          if (cancelled) return;
+          setSession(result.session ?? null);
+          if (!result.session) {
+            setReviewed(false);
+            setMessage("Browser session ended. Your application has not been marked submitted. Reopen it to continue.");
+          }
         })
         .catch((error) => {
           if (!cancelled) setMessage(String(error));
@@ -51,7 +56,7 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [applicationId, session?.id, session?.state, activeProfileId]);
+  }, [applicationId, session?.id, activeProfileId]);
   useEffect(() => {
     let cancelled = false;
     if (!applicationId) return;
@@ -96,7 +101,11 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
   const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
   const setEmployerAccountStatus =
     createSetEmployerAccountStatus(reviewContext);
-  const continueAfterChallenge = createContinueAfterChallenge(reviewContext);
+  const continueAfterChallenge = createContinueAfterChallenge(reviewContext, async () => {
+    const job = workspace.jobs.find((item) => item.id === applicationId);
+    if (!job) return;
+    await createPrepareJob({ ...reviewContext, session: null })(job);
+  });
   const finalizeApplication = createFinalizeApplication(reviewContext);
 
   return {

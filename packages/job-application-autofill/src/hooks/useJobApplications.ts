@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import type { JobApplication } from "../index";
+import { usePendingSave } from "./PendingSaves";
 import { readJobs, saveJob, deleteJob } from "../utils/api/client";
 
 /** Applications have their own list, revision, and save queue. No resume state. */
@@ -121,6 +122,11 @@ export function useJobApplications({
     queue.current = operation.catch(() => {});
     await operation;
   }
+
+  usePendingSave(
+    () => jobsHydrated && !applicationId && JSON.stringify(jobs) !== savedRef.current,
+    flushJobs,
+  );
 
   return { jobs, setJobs, jobsHydrated, flushJobs, removeJob };
 }

@@ -1,4 +1,5 @@
 import "./App.css";
+import { PendingSaves } from "./hooks/PendingSaves";
 import { useLocation, useParams } from "react-router";
 import { tabForPath } from "./routes";
 import { Sidebar } from "./components/Sidebar/Sidebar";
@@ -18,7 +19,7 @@ export function App() {
   const tab = tabForPath(location.pathname);
 
   return (
-    <div className={applicationId ? "app application-page" : "app"}>
+    <PendingSaves><div className={applicationId ? "app application-page" : "app"}>
       <Sidebar />
       <main className="main">
         {applicationId ? (
@@ -41,6 +42,6 @@ export function App() {
           <PageResumeEditor />
         )}
       </main>
-    </div>
+    </div></PendingSaves>
   );
 }
