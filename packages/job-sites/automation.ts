@@ -1,3 +1,4 @@
+import { missingWorkdayRequiredFields, workdayNeedsManualReview } from "./workday/required-fields.ts";
 import { captureEmployerAnswers } from "./answer-capture.ts";
 import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
 import { chromium } from "playwright";
@@ -138,6 +139,47 @@ async function populateSession(session: ApplicationSession) {
   session.questions = outcome.questions;
 }
 
+/** Advance only through safe Workday stages, never agreements or final submission. */
+async function advanceWorkdayPages(session: ApplicationSession) {
+  const expectedHost = new URL(session.url).hostname;
+  const visited = new Set<string>();
+  let advanced = 0;
+  for (let step = 0; step < 8; step++) {
+    if (new URL(session.page.url()).hostname !== expectedHost) break;
+    const adapter = adapterForUrl(session.page.url());
+    if (!adapter) break;
+    const detection = await detectCurrentPage(session.page, adapter, expectedHost);
+    if (detection.kind !== "application") break;
+    if (await workdayNeedsManualReview(session.page)) break;
+    const required = await missingWorkdayRequiredFields(session.page);
+    if (required.length) {
+      session.missing = [...new Set([...session.missing, ...required.map((name) => "required: " + name)])];
+      break;
+    }
+    if (session.missing.some((name) =>
+      /^(experience\[|education\[|certifications\[|skill: |resume)/.test(name))) break;
+    const next = session.page.getByRole("button", { name: /^Save and Continue$/i });
+    if (await next.count() !== 1 ||
+        !(await next.isVisible().catch(() => false)) ||
+        !(await next.isEnabled().catch(() => false))) break;
+    const main = session.page.locator("#mainContent, main").first();
+    const url = session.page.url();
+    const before = (await main.innerText().catch(() => "")).slice(0, 2000);
+    const fingerprint = url + "|" + before;
+    if (visited.has(fingerprint)) break;
+    visited.add(fingerprint);
+    await next.click({ timeout: 3000 });
+    await session.page.waitForLoadState("domcontentloaded", { timeout: 5000 }).catch(() => {});
+    await session.page.waitForTimeout(350);
+    const after = (await main.innerText().catch(() => "")).slice(0, 2000);
+    if (session.page.url() === url && after === before) break;
+    advanced++;
+    if (new URL(session.page.url()).hostname !== expectedHost) break;
+    await populateSession(session);
+  }
+  return advanced;
+}
+
 /** Only actions explicitly declared by the current site's adapter are visible. */
 export async function getApplicationMenu(id: string) {
   const session = sessions.get(id);
@@ -250,9 +292,13 @@ export async function continueApplication(
     return status(session);
   }
   await populateSession(session);
+  const advanced = session.ats === "workday" ? await advanceWorkdayPages(session).catch(() => 0) : 0;
   session.state = "ready_for_review";
-  session.message =
-    "Application controls inspected. Review all fields and questions, then explicitly confirm submission.";
+  session.message = session.missing.some((name) => name.startsWith("required:"))
+    ? "Workday requires additional information. Complete the listed fields in the employer viewer."
+    : advanced > 0
+      ? "Advanced through " + advanced + " Workday step(s). Review remaining questions and employer agreements manually."
+      : "Application controls inspected. Review all fields and questions, then explicitly confirm submission.";
   await refreshScreenshot(id);
   return status(session);
 }
