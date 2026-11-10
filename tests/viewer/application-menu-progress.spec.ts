@@ -92,7 +92,7 @@ test("employer menu follows automation and page changes without reopening", asyn
     }),
   );
   await page.goto(
-    "/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
+    "/application-viewer?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
   );
   await expect(page.locator("#site-menu")).toBeVisible();
   for (const width of [1280, 375]) {
