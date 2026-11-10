@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import { requestApi } from "../../api/client";
+import { updateJobStatus } from "../../api/client";
 import { ApplicationStatus, JobApplication } from "../../types/job-application";
 
 /** Change a job status without depending on a tracker hook. */
@@ -23,12 +23,7 @@ export function changeJobStatus(
     setMessage,
   } = context;
   if (applicationId) {
-    void requestApi(
-      "/api/jobs/" + id + "/status",
-      { status },
-      activeProfileId,
-      activeResumeId ?? undefined,
-    ).catch((error) => setMessage(String(error)));
+    void updateJobStatus(id, status, activeProfileId, activeResumeId ?? undefined).catch((error) => setMessage(String(error)));
   }
   setJobs((items) =>
     items.map((item) => (item.id === id ? { ...item, status } : item)),
