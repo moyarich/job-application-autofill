@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { requestApi } from "../../utils/api/client";
 import { JobDescription } from "../JobDescription/JobDescription";
 import {
@@ -39,6 +39,17 @@ export function ApplicationReview({
   const [savingAnswers, setSavingAnswers] = useState(false);
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
   const [answerMessage, setAnswerMessage] = useState("");
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
+      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
+    }).then((response) => response.ok ? response.json() : null)
+      .then((data: { answers?: Record<string, string> } | null) => {
+        if (!cancelled && data?.answers) setSavedAnswers(data.answers);
+      }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [applicationId, activeProfileId]);
   async function saveEmployerAnswers() {
     if (!session) return;
     setSavingAnswers(true);
@@ -126,6 +137,14 @@ export function ApplicationReview({
         <details className="application-job-description">
           <summary>About this role</summary>
           <JobDescription content={job.details.description} />
+        </details>
+      )}
+      {Object.keys(savedAnswers).length > 0 && !session && (
+        <details className="panel saved-application-answers">
+          <summary>Saved screening responses ({Object.keys(savedAnswers).length})</summary>
+          {Object.entries(savedAnswers).map(([question, answer]) => (
+            <div key={question}><strong>{question}</strong><p>{answer}</p></div>
+          ))}
         </details>
       )}
       {applicationId && !session && !applyBusy && (
