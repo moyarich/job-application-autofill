@@ -66,6 +66,25 @@ type ApplicationPreparation = {
 
 const sessions = new Map<string, ApplicationSession>();
 const launchingJobs = new Set<string>();
+const applicationListeners = new Map<string, Set<() => void>>();
+
+/** Server push: a viewer only listens to its own active application session. */
+export function subscribeApplication(id: string, listener: () => void): () => void {
+  if (!sessions.has(id)) throw new Error("Unknown or expired application session.");
+  const listeners = applicationListeners.get(id) ?? new Set<() => void>();
+  listeners.add(listener);
+  applicationListeners.set(id, listeners);
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) applicationListeners.delete(id);
+  };
+}
+
+function emitApplication(id: string) {
+  for (const listener of applicationListeners.get(id) ?? []) listener();
+}
+
+
 
 const SUCCESS =
   /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
@@ -144,9 +163,11 @@ async function populateSession(session: ApplicationSession) {
       resumeUploadUrls: session.resumeUploadUrls,
       onStep: (stepId) => {
         session.currentAction = adapter.menuItems?.find((item) => item.stepId === stepId)?.label ?? stepId;
+        emitApplication(session.id);
       },
       onStepResult: (stepId, missing) => {
         (session.processedSteps ??= {})[stepId] = missing.length ? "needs_review" : "processed";
+        emitApplication(session.id);
       },
     },
     adapter,
@@ -160,6 +181,7 @@ async function populateSession(session: ApplicationSession) {
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
   session.questions = outcome.questions;
+  emitApplication(session.id);
 }
 
 /** Pause at the next safe automation boundary without closing the employer browser. */
@@ -171,6 +193,7 @@ export function pauseApplication(id: string) {
   session.pauseRequested = true;
   session.state = "paused";
   session.message = "Automation paused. Make changes in the employer browser, then continue.";
+  emitApplication(id);
   return status(session);
 }
 
@@ -212,6 +235,7 @@ async function runApplicationMenuItemInternal(id: string, itemId: string) {
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) throw new Error("Return to the employer application first.");
   session.currentAction = adapter.menuItems?.find((item) => item.id === itemId)?.label;
+  emitApplication(id);
   const outcome = await executeJobSiteMenuItem(
     {
       page: session.page,
@@ -254,11 +278,13 @@ async function withRunningSession(id: string, run: () => Promise<ReturnType<type
   if (!session) throw new Error("Unknown or expired application session.");
   if (session.running) throw new Error("Automation is already running for this application.");
   session.running = true;
+  emitApplication(id);
   try {
     await run();
   } finally {
     session.running = false;
     session.currentAction = null;
+    emitApplication(id);
   }
   return status(session);
 }
@@ -276,6 +302,7 @@ async function continueApplicationInternal(
   )
     throw new Error("This session cannot be resumed.");
   session.pauseRequested = false;
+  emitApplication(id);
   if (profile) session.profile = resumeToPlainText(profile);
   if (!adapterForUrl(session.page.url())) {
     session.state = "login_required";
@@ -356,6 +383,7 @@ export async function prepareApplicationAccount(
     { openRegistration: true, password, submitConfigured: true },
   );
   session.signupPrepared = result;
+  emitApplication(id);
   if (result.state === "manual_required") {
     session.state = "login_required";
     session.message =
@@ -399,6 +427,7 @@ export async function answerApplicationQuestions(
   }
   const result = await adapter.answerQuestions(session.page, answers);
   session.questions = await adapter.discoverQuestions(session.page);
+  emitApplication(id);
   session.message = result.unresolved.length
     ? "Some answers need manual attention in the browser viewer."
     : "Supplied answers were filled. Review their exact selections in the browser viewer.";
@@ -464,8 +493,15 @@ export async function prepareApplication({
       questions: [],
     };
     sessions.set(id, session);
-    if (typeof page.on === "function")
+    emitApplication(id);
+    if (typeof page.on === "function") {
+      // Browser navigation (including same-document navigation) updates the
+      // React steps menu without a one-second status polling loop.
+      page.on("framenavigated", (frame) => {
+        if (frame === page.mainFrame()) emitApplication(session.id);
+      });
       page.on("close", () => { void closeApplication(session.id); });
+    }
     if (typeof browser.on === "function")
       browser.on("disconnected", () => { void closeApplication(session.id); });
 
@@ -537,6 +573,7 @@ export async function prepareApplication({
 
     await populateSession(session);
     session.state = "ready_for_review";
+    emitApplication(id);
     session.message =
       "Fields prepared. Inspect the real employer form, complete missing questions and verify the destination before submitting.";
     await mkdir(resolve("screenshots"), { recursive: true });
@@ -576,6 +613,7 @@ export async function refreshApplicationState(id: string) {
     detection.kind === "challenge" ? "manual_intervention" : "login_required";
   if (session.state !== next) {
     session.state = next;
+    emitApplication(id);
     session.message = next === "ready_for_review"
       ? "Employer application is open. Continue automation for the current page."
       : next === "manual_intervention"
@@ -683,6 +721,7 @@ export async function submitApplication(id: string) {
   session.state = isSubmissionConfirmed(text)
     ? "submitted"
     : "submission_unverified";
+  emitApplication(id);
   session.message =
     session.state === "submitted"
       ? "The employer page displays an application confirmation. Verify any follow-up steps."
@@ -695,6 +734,8 @@ export async function closeApplication(id: string) {
   const session = sessions.get(id);
   if (!session) return;
   sessions.delete(id);
+  emitApplication(id);
+  applicationListeners.delete(id);
   await session.browser.close().catch(() => {});
   await rm(session.directory, { recursive: true, force: true }).catch(() => {});
   await rm(resolve("screenshots", id + ".png"), { force: true }).catch(

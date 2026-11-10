@@ -10,6 +10,35 @@ test("employer menu follows automation and page changes without reopening", asyn
   };
   let items: { id: string; label: string; available: boolean; status?: string }[] = [{ id: "contact", label: "Contact autofill", available: true }];
   let includesSession = false;
+  // Model the live progress stream: changing server state alone no longer
+  // refreshes the React menu unless the server emits an SSE notification.
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    let publish: (() => void) | undefined;
+    (window as typeof window & { __emitApplicationUpdate?: () => void }).__emitApplicationUpdate = () => publish?.();
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (!new URL(url, location.href).pathname.endsWith("/events"))
+        return originalFetch(input, init);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          publish = () => controller.enqueue(encoder.encode("event: update\ndata: {}\n\n"));
+          publish();
+          init?.signal?.addEventListener("abort", () => {
+            publish = undefined;
+            controller.close();
+          }, { once: true });
+        },
+      });
+      return Promise.resolve(new Response(stream, {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }));
+    };
+  });
+  const notify = () => page.evaluate(() =>
+    (window as typeof window & { __emitApplicationUpdate?: () => void }).__emitApplicationUpdate?.());
   await page.route("**/api/viewer/config", (route) =>
     route.fulfill({ json: { password: "fixture" } }),
   );
@@ -40,6 +69,7 @@ test("employer menu follows automation and page changes without reopening", asyn
   await expect(page.locator("#automation-state")).toHaveText("Ready for review");
   includesSession = true;
   active = { ...active, running: true, currentAction: "Skills autofill", message: "" };
+  await notify();
   await expect(page.locator("#automation-state")).toHaveText("Running — Skills autofill");
   await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Stop", exact: true })).toBeEnabled();
@@ -51,16 +81,19 @@ test("employer menu follows automation and page changes without reopening", asyn
   await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
   active = { ...active, running: false, currentAction: null, message: "Review screening questions." };
   items = [{ id: "questions", label: "Screening questions", available: true }];
+  await notify();
   await expect(page.getByRole("button", { name: "Screening questions", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Contact autofill", exact: true })).toHaveCount(0);
   await expect(page.locator("#menu-message")).toHaveText("");
   await expect(page.locator("#menu-next-step")).toHaveText("Fill Screening questions");
   active = { ...active, state: "paused", paused: true };
+  await notify();
   await expect(page.locator("#automation-state")).toHaveText("Paused — browser remains available");
   await expect(page.locator("#menu-list button")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Resume autofill", exact: true })).toBeEnabled();
   active = { ...active, state: "ready_for_review", paused: false };
   items = Array.from({ length: 24 }, (_, i) => ({ id: `step-${i}`, label: `Employer step ${i + 1}`, available: i > 1, status: i === 0 ? "processed" : i === 1 ? "needs_review" : i === 2 ? "filled" : undefined }));
+  await notify();
   await page.setViewportSize({ width: 375, height: 480 });
   await expect(page.locator("#menu-list button")).toHaveCount(24);
   await expect(page.getByRole("button", { name: "Employer step 1", exact: true }).locator("small")).toHaveText("Processed");
