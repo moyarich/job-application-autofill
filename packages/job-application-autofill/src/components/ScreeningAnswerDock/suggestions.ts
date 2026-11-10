@@ -1,4 +1,4 @@
-import { reusableAnswer, reusableQuestion, normalizedQuestion } from "@moyarich/resume/screening-policy";
+import { reusableAnswer, reusableQuestion, normalizedQuestion } from "@moyarich/job-boards/screening-policy";
 
 export type PreviousAnswer = {
   applicationId: string;

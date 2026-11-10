@@ -1,10 +1,10 @@
 import type { Page } from "playwright";
-import type { CandidateProfile } from "../../../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 import { educationFields, educationSelectors } from "./selectors.ts";
 
 export async function fillWorkdayEducation(
   page: Page,
-  entries: CandidateProfile["education"],
+  entries: Resume["education"],
 ) {
   const result: { filled: string[]; unresolved: string[] } = {
     filled: [],

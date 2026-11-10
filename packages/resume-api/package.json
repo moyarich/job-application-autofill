@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@moyarich/job-application-autofill": "0.1.0",
     "@moyarich/job-boards": "0.1.0",
     "@moyarich/resume": "0.1.0",
     "cheerio": "^1.2.0",
@@ -13,5 +12,14 @@
   },
   "devDependencies": {
     "@types/turndown": "^5.0.6"
-  }
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "dev": "node --experimental-strip-types dev.ts"
+  },
+  "files": [
+    "dist"
+  ]
 }

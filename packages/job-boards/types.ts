@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import type { CandidateProfile } from "../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 import type { ApplicationQuestion } from "./index.ts";
 
 export type AutofillResult = { filled: string[]; missing: string[] };
@@ -11,7 +11,7 @@ export type PageDetection = { kind: PageKind; url: string };
 /** Inputs shared by site-owned steps; no predefined section names or order. */
 export interface JobSiteStepContext {
   page: Page;
-  profile: CandidateProfile;
+  profile: Resume;
   directory: string;
   pendingResume: { fileName: string; buffer: Buffer } | null;
   resumeFile?: string;

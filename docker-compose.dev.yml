@@ -3,32 +3,37 @@ services:
   api:
     # The source mount shadows Dockerfile chmod; invoke the host script via Bash.
     entrypoint: ["bash", "/app/docker/start-review.sh"]
-    # Source and generated output are separate mounts. Rebuild the resume package
+    # Source and generated output are separate mounts. Rebuild workspace packages
     # inside this container on every startup so its exports cannot become stale.
+    # Offline install refreshes workspace links in cached dependency volumes after renames.
     volumes:
       - .:/app
       - /app/node_modules
       - /app/packages/resume/dist
+      - /app/packages/job-boards/dist
+      - /app/packages/job-application-autofill/dist
+      - /app/packages/resume-api/dist
       - screenshots:/app/screenshots
       - ./sqlite-data:/app/data
     command:
       - bash
       - -lc
-      - npm run build:js --workspace packages/resume && exec node --watch --experimental-strip-types packages/resume-api/index.ts
+      - npm install --offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/resume-api
 
-  # OCR dependencies and models remain in the isolated container image.
-  # Rebuild after changing the Python worker or its Poetry dependencies.
   web:
     volumes:
       - .:/app
       - /app/node_modules
       - /app/packages/resume/dist
+      - /app/packages/job-boards/dist
+      - /app/packages/job-application-autofill/dist
+      - /app/packages/resume-api/dist
     # The web and API containers have distinct dist volumes. Both must rebuild,
     # otherwise Vite can serve outdated exports from a previous development run.
     command:
       - sh
       - -c
-      - npm run build:js --workspace packages/resume && exec npm run dev --workspace packages/job-application-autofill
+      - npm install --offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/job-application-autofill
     environment:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"

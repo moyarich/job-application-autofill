@@ -1,4 +1,4 @@
-import { subscribeApplication } from "../../../job-boards/automation.ts";
+import { subscribeApplication } from "@moyarich/job-boards/automation";
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import type { ApiRequest, ApiResponse } from "./types.ts";

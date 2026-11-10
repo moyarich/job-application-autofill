@@ -1,5 +1,5 @@
 import type { Page, Locator } from "playwright";
-import type { CandidateProfile } from "../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 import { workdayCredentials } from "./workday/workday-login.ts";
 import { employerAccountIdentity } from "./employer-account.ts";
 
@@ -20,7 +20,7 @@ export async function prepareEmployerSignUp(
   page: Page,
   jobUrl: string,
   company: string,
-  profile: CandidateProfile,
+  profile: Resume,
   {
     openRegistration = true,
     password,

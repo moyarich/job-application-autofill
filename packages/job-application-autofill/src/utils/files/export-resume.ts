@@ -1,9 +1,10 @@
-import type { CandidateProfile } from "../../index";
 import {
   resumeToMarkdown,
+  markdownToEditor,
   markdownToPlainText,
-} from "@moyarich/resume/validate";
-import { markdownToEditor } from "@moyarich/resume/editor";
+} from "@moyarich/resume/markdown";
+import type { Resume } from "../../index";
+
 import { requestApi } from "../api/client";
 import { downloadJson, downloadText } from "./resume-files";
 export type ResumeExportFormat =
@@ -24,9 +25,7 @@ function downloadBlob(filename: string, blob: Blob) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export async function createResumeWord(
-  profile: CandidateProfile,
-): Promise<Blob> {
+export async function createResumeWord(profile: Resume): Promise<Blob> {
   const {
     Document,
     Packer,
@@ -113,7 +112,7 @@ export async function createResumeWord(
   );
 }
 export async function exportResume(
-  profile: CandidateProfile,
+  profile: Resume,
   name: string,
   format: ResumeExportFormat,
   profileId: string,

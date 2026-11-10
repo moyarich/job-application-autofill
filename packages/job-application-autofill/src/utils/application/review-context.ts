@@ -1,12 +1,12 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { CandidateProfile, ApplicationStatus } from "../../index";
+import type { Resume, ApplicationStatus } from "../../index";
 import type { ApplySession } from "./types";
 type Update<T> = Dispatch<SetStateAction<T>>;
 export type ApplicationReviewActionsContext = {
   applicationId: string | null;
   activeProfileId: string;
   activeResumeId: string | null;
-  profile: CandidateProfile;
+  profile: Resume;
   contactId: string | null;
   errors: string[];
   session: ApplySession | null;

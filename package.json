@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-strip-types docker/dev.ts",
-    "build": "npm run build --workspace packages/resume && npm run build --workspace packages/job-application-autofill && npm run build --workspace apps/playground && npm run build --workspace packages/resume-api --if-present && npm run build --workspace packages/job-boards --if-present",
+    "build": "npm run build:js && npm run build:python && npm run build --workspace apps/playground",
     "build:packages": "npm run build",
     "build:playground": "npm run build --workspace apps/playground",
     "test": "vitest run tests",
@@ -22,8 +22,10 @@
     "test:e2e:ui": "playwright test --ui",
     "storybook": "storybook dev",
     "build:storybook": "storybook build",
-    "dev:server": "node --experimental-strip-types packages/resume-api/index.ts",
-    "build:app": "npm run build:app --workspace packages/job-application-autofill"
+    "dev:server": "npm run build --workspace packages/resume-api && npm run start --workspace packages/resume-api",
+    "build:app": "npm run build:app --workspace packages/job-application-autofill",
+    "build:js": "npm run build:js --workspace packages/resume && npm run build --workspace packages/job-boards && npm run build --workspace packages/job-application-autofill && npm run build --workspace packages/resume-api",
+    "build:python": "node --experimental-strip-types scripts/build-resume-ocr.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

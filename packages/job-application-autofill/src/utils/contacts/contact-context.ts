@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
-import { emptyCandidate, type CandidateProfile } from "../../index";
+import { emptyCandidate, type Resume } from "../../index";
 import type { ProfileContact } from "../api/client";
-export type Contact = CandidateProfile["contact"];
+export type Contact = Resume["contact"];
 export type ContactKey = keyof Contact;
 export const contactKeys = Object.keys(emptyCandidate.contact) as ContactKey[];
 type Update<T> = Dispatch<SetStateAction<T>>;
@@ -9,10 +9,10 @@ export type ContactActionsContext = {
   contactId: string | null;
   contacts: ProfileContact[];
   contactKeys: ContactKey[];
-  profile: CandidateProfile;
+  profile: Resume;
   activeProfileId: string;
   flushPending: () => Promise<void>;
-  setProfile: Update<CandidateProfile>;
+  setProfile: Update<Resume>;
   setContacts: Update<ProfileContact[]>;
   setContactId: Update<string | null>;
   setDefaultContactId: Update<string | null>;

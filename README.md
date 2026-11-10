@@ -68,7 +68,7 @@ docker compose up --build
 
 Open http://localhost:5173. The **interactive Playwright browser viewer** is available at http://localhost:6080/vnc.html (or use the embedded **live browser viewer** in the application review panel (with a full-window option)). Enter the password configured as `WEB_VNC_PASSWORD`. Override local ports with `MOYA_WEB_PORT=5174` or `MOYA_REVIEW_PORT=6081`.
 
-Compose uses `docker/Dockerfile` for the React/Vite `web` service and local Node/Playwright/Poetry `api` service. The backend stays on the internal Docker network; only the web port is bound to `127.0.0.1`. Python OCR is installed only in the isolated `ocr` image from `packages/resume/pyproject.toml`. The API sends PDFs over an internal Docker-only network; no OCR port is published. Rebuild the image after source changes.
+Compose uses `docker/Dockerfile` for the React/Vite `web` service and the Node/Playwright/Python `api` service. The API installs the pinned `resume-ocr` wheel and invokes its module as a subprocess. No OCR HTTP service, private OCR network, or source-directory mount is required. The frontend remains free of Python and OCR dependencies. Rebuild the API image after changing its Python dependency.
 
 **Interactive browser review:** Docker launches Chromium in an Xvfb desktop with noVNC (password protected). The viewer and dashboard are published on host-loopback ports only, not on the public interface. Before final submission you must open the viewer, inspect the actual employer form, complete any mandatory fields, check the review acknowledgment, and explicitly click **Confirm & submit**. VNC password authentication uses a legacy protocol (only the first eight password bytes are significant); do not expose port 6080 externally or use this setup across an untrusted network. The display is shared among application sessions.
 
@@ -80,9 +80,9 @@ Requires Node.js 22.13+ (for built-in node:sqlite), Chromium for Playwright, Pyt
 npm ci
 npx playwright install chromium
 # Install Poetry first (e.g. pipx install poetry)
-cd packages/resume
-poetry install --with test --no-root
-cd ../..
+python -m venv .venv
+npm run build:python
+# Set PYTHON_EXECUTABLE to the installed environment reported by the build.
 ```
 
 For advanced host-only development without the Docker noVNC viewer, run these in two terminals:
@@ -123,7 +123,7 @@ If the selected resume contains unsupported characters during PDF generation, ap
 
 Import a JSON résumé conforming to [`packages/resume/src/resume-schema/resume.schema.json`](packages/resume/src/resume-schema/resume.schema.json), or optionally parse a PDF/DOCX into that structure. On the **Candidate profile** page, select **Export PDF**; the same action is available next to the parsed profile preview. The browser generates and downloads a standard US Letter PDF without uploading personal information to an external service.
 
-The standalone generator [`packages/resume/src/resume-schema/create-pdf.ts`](packages/resume/src/resume-schema/create-pdf.ts) creates a single-column, left-aligned document with ordinary headings, plain text bullets, selectable text, reverse-chronological work experience and automatic page breaks. This PDF generation functionality works directly from JSON; it does **not** depend on the extractor, Python, OCR or a source PDF file.
+The standalone generator [`packages/resume/src/create-resume/create-pdf.ts`](packages/resume/src/create-resume/create-pdf.ts) creates a single-column, left-aligned document with ordinary headings, plain text bullets, selectable text, reverse-chronological work experience and automatic page breaks. This PDF generation functionality works directly from JSON; it does **not** depend on the extractor, Python, OCR or a source PDF file.
 
 The built-in font supports Latin text; unsupported Unicode characters produce an actionable error rather than a corrupted résumé. As with any résumé, review the finished PDF and follow the employer's file-format instructions.
 
@@ -159,7 +159,7 @@ Replace the example URL with a real, publicly accessible job posting. This check
 
 ## Security & limitations
 
-In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction runs in the dedicated local OCR container over a private Compose network; browser automation runs in the Node API container. Neither uses a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
+In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction invokes the installed Python package in the API container; browser automation runs in the same container. Neither uses a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
 
 Field mapping remains rule based, and OCR may misread low-quality scans or complex layouts. Review and correct extracted fields before applying. Playwright supports common text inputs; custom selects, MFA, CAPTCHAs, account logins and unknown questions require manual intervention. It does not bypass anti-bot mechanisms. The browser is headed by default and uses Xvfb/noVNC in Docker; `HEADLESS=true` is supported for scripted testing outside the interactive-review Compose setup.
 
@@ -169,10 +169,10 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 
 - `apps/playground`: React + Vite application
 - `packages/job-application-autofill`: typed candidate and job models
-- `packages/resume`: independent reusable PDF/DOCX parsing package, with Python OCR worker and tests
+- `packages/resume`: shared resume types, Markdown/document rendering, and Node extraction
 - `packages/resume/src/extract-resume/index.ts`: Node.js resume extraction and profile heuristics
-- `packages/resume/python/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
-- `packages/resume/pyproject.toml`: Poetry dependency groups and OCR environment
+- `packages/resume-ocr/resume_ocr/pdf_ocr.py`: PDFium extraction and RapidOCR fallback
+- `packages/resume-ocr/pyproject.toml`: Poetry dependency groups and OCR environment
 - `packages/job-boards/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
 - `packages/job-boards/automation.ts`: Playwright review-before-submit sessions
 - `packages/resume-api/index.ts`: local JSON HTTP API
@@ -186,12 +186,12 @@ npm run checks
 ## PDF OCR tests
 
 ```sh
-cd packages/resume
-poetry install --with test --no-root
-poetry run python -m unittest discover -s python -p 'test_*.py' -v
+cd packages/resume-ocr
+poetry install --with test
+poetry run python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend invokes `python3`. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.
+To force a particular Python interpreter for the Node backend, set `PYTHON_EXECUTABLE`. By default, the backend checks available Python interpreters for the installed `resume_ocr` module; it does not inspect the source tree or Poetry environments. PDF extraction is local and does not contact an external parsing API. RapidOCR may initialize its inference models on first OCR use.
 
 ### Workday account automation from .env
 
@@ -242,3 +242,11 @@ npm run build:app
 
 The app serves on port 5173. `apps/playground` is a separate documentation entry
 on port 5174. Docker and the browser tests target the real application.
+
+### Workspace builds
+
+All packages under `packages/` use Vite to produce JavaScript in `dist/`.
+Run `npm run build:js` to build them in dependency order without provisioning
+the Python runtime. TypeScript emits declarations for the packages.
+The API runs compiled output: `npm run start --workspace packages/resume-api`.
+After building dependencies, `npm run dev:server` rebuilds and starts the API.

@@ -1,6 +1,6 @@
-import type { CandidateProfile, ApplicationStatus } from "../../index";
+import type { Resume, ApplicationStatus } from "../../index";
 export const fields: {
-  key: keyof CandidateProfile["contact"];
+  key: keyof Resume["contact"];
   label: string;
   placeholder?: string;
 }[] = [

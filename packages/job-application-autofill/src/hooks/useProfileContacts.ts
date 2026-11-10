@@ -6,19 +6,19 @@ import {
   type SetStateAction,
 } from "react";
 import { usePendingSave } from "./PendingSaves";
-import type { CandidateProfile } from "../index";
+import type { Resume } from "../index";
 import {
   readContacts,
   updateProfileContact,
   type ProfileContact,
 } from "../utils/api/client";
 
-const contactValues = (entry: ProfileContact): CandidateProfile["contact"] => {
+const contactValues = (entry: ProfileContact): Resume["contact"] => {
   return Object.fromEntries(
     Object.entries(entry).filter(
       ([key]) => !["id", "profileId", "name", "isDefault"].includes(key),
     ),
-  ) as CandidateProfile["contact"];
+  ) as Resume["contact"];
 };
 const signature = (entry: ProfileContact) =>
   JSON.stringify({ name: entry.name, contact: contactValues(entry) });

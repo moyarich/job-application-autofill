@@ -1,25 +1,25 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { CandidateProfile } from "../../index";
+import type { Resume } from "../../index";
 import type { ContactChoice, ProfileContact } from "../api/client";
 type Update<T> = Dispatch<SetStateAction<T>>;
-export type Contact = CandidateProfile["contact"];
+export type Contact = Resume["contact"];
 export type ContactKey = keyof Contact;
 export type ResumeImportActionsContext = {
-  profile: CandidateProfile;
+  profile: Resume;
   contactId: string | null;
   activeProfileId: string;
   activeResumeId: string | null;
   revisionRef: { current: number };
   contactKeys: ContactKey[];
-  pendingImport: CandidateProfile | null;
+  pendingImport: Resume | null;
   resume: File | null;
   flushPending: () => Promise<void>;
   setTab: (next: "parser") => void;
   setMessage: Update<string>;
   setImportChoices: Update<Partial<Record<ContactKey, ContactChoice>>>;
-  setPendingImport: Update<CandidateProfile | null>;
+  setPendingImport: Update<Resume | null>;
   setContactId: Update<string | null>;
-  setProfile: Update<CandidateProfile>;
+  setProfile: Update<Resume>;
   setResume: Update<File | null>;
   setContacts: Update<ProfileContact[]>;
   setDefaultContactId: Update<string | null>;
@@ -27,9 +27,9 @@ export type ResumeImportActionsContext = {
   setParsePreview: Update<string>;
 };
 
-export type OfferImport = (incoming: CandidateProfile) => void;
+export type OfferImport = (incoming: Resume) => void;
 export type ApplyImportedContent = (
-  incoming: CandidateProfile,
+  incoming: Resume,
   selectedId: string | null,
-  resolved: CandidateProfile["contact"],
+  resolved: Resume["contact"],
 ) => void;

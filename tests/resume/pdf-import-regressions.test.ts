@@ -48,7 +48,7 @@ Amazon Web Services`);
 
 test("joins PDF line wrapping into complete responsibilities for Slate", async () => {
   const { markdownToEditor } =
-    await import("../../packages/resume/src/resume-schema/editor-markdown.ts");
+    await import("@moyarich/resume/markdown");
   const parsed = extractProfile(`Ada Lovelace
 WORK EXPERIENCE
 Example Inc.

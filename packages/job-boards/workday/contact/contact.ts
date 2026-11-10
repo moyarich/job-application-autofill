@@ -1,5 +1,5 @@
 import type { Page, Locator } from "playwright";
-import type { CandidateProfile } from "../../../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 import type { AutofillResult } from "../../types.ts";
 import type { FieldLocatorConfig } from "./selectors.ts";
 import { workdayContactFields } from "./selectors.ts";
@@ -58,7 +58,7 @@ async function fillTarget(page: Page, target: Locator, value: string): Promise<b
 /** Fill saved profile contact fields; unsupported controls stay on the review checklist. */
 export async function fillWorkdayContact(
   page: Page,
-  profile: CandidateProfile,
+  profile: Resume,
 ): Promise<AutofillResult> {
   const filled: string[] = [];
   const missing: string[] = [];

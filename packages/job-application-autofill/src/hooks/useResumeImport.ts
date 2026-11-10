@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import type { CandidateProfile } from "../index";
-type ContactKey = keyof CandidateProfile["contact"];
+import type { Resume } from "../index";
+type ContactKey = keyof Resume["contact"];
 import type { ContactChoice } from "../utils/api/client";
 import type { ResumeImportData } from "../utils/resumes/import-data";
 import { createOfferImport } from "../utils/resumes/offerImport";
@@ -25,7 +25,7 @@ export function useResumeImport(workspace: ResumeImportData) {
     setContactId,
   } = workspace;
   const { setContacts, setDefaultContactId } = workspace;
-  const [pendingImport, setPendingImport] = useState<CandidateProfile | null>(
+  const [pendingImport, setPendingImport] = useState<Resume | null>(
     null,
   );
   const [importChoices, setImportChoices] = useState<

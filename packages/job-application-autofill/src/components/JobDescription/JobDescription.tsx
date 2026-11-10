@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { markdownToHtml } from "@moyarich/resume/validate";
+import { markdownToHtml } from "@moyarich/resume/markdown";
 import "./JobDescription.css";
 
 export function JobDescription({ content }: { content: string }) {

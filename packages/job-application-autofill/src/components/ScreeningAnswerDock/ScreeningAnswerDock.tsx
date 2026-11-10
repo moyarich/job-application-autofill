@@ -4,7 +4,7 @@ import { GripVertical, Maximize2, MessageSquareText, Minus, X } from "lucide-rea
 import { requestApi } from "../../utils/api/client";
 import { relatedAnswers, type PreviousAnswer } from "./suggestions";
 import { AnswerLibrary } from "./AnswerLibrary";
-import { reusableQuestion } from "@moyarich/resume/screening-policy";
+import { reusableQuestion } from "@moyarich/job-boards/screening-policy";
 import "./ScreeningAnswerDock.css";
 
 type Question = { label: string; kind: string; required: boolean; options: string[] };

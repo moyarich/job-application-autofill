@@ -1,5 +1,5 @@
 import type { Locator, Page } from "playwright";
-import type { CandidateProfile } from "../../../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 
 type Result = { filled: string[]; unresolved: string[] };
 
@@ -78,7 +78,7 @@ export async function workdayCertificationsVisible(page: Page): Promise<boolean>
 /** Existing Workday certification cards are filled independently and idempotently. */
 export async function fillWorkdayCertifications(
   page: Page,
-  certificates: CandidateProfile["certifications"],
+  certificates: Resume["certifications"],
 ): Promise<Result> {
   const result: Result = { filled: [], unresolved: [] };
   if (!certificates.length) return result;

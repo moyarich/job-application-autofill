@@ -1,7 +1,7 @@
-import type { CandidateProfile } from "../../index";
+import type { Resume } from "../../index";
 
 /** Derive an editable resume name only after the import has been confirmed. */
-export function defaultImportedResumeName(profile: CandidateProfile): string {
+export function defaultImportedResumeName(profile: Resume): string {
   const source = profile.source.fileName
     .trim()
     .replace(/\.(pdf|docx|json)$/i, "")

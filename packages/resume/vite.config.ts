@@ -19,7 +19,7 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: {
-        "screening-policy": resolve(import.meta.dirname, "src/screening-policy.ts"),
+        markdown: resolve(import.meta.dirname, "src/resume-schema/markdown.ts"),
         index: resolve(import.meta.dirname, "src/index.ts"),
         "extract-resume": resolve(
           import.meta.dirname,
@@ -31,17 +31,13 @@ export default defineConfig({
         ),
         "create-pdf": resolve(
           import.meta.dirname,
-          "src/resume-schema/create-pdf.ts",
+          "src/create-resume/create-pdf.ts",
         ),
         "render-html": resolve(
           import.meta.dirname,
-          "src/resume-schema/render-html.ts",
+          "src/create-resume/render-html.ts",
         ),
         validate: resolve(import.meta.dirname, "src/resume-schema/validate.ts"),
-        editor: resolve(
-          import.meta.dirname,
-          "src/resume-schema/editor-markdown.ts",
-        ),
       },
       formats: ["es"],
       fileName: (_format, entryName) => `${entryName}.js`,
@@ -52,6 +48,9 @@ export default defineConfig({
         ...builtinModules.map((name) => `node:${name}`),
         "commander",
         "playwright",
+        "unified",
+        "remark-parse",
+        "remark-stringify",
       ],
       output: {
         banner: (chunk) =>

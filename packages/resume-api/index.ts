@@ -1,11 +1,18 @@
-import { resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { openStore } from "./src/database/store.ts";
 import { createApiHandler } from "./src/server/app.ts";
 import { createNodeServer } from "./src/server/node.ts";
 
 // Local development loads .env; container builds supply environment variables.
 try {
-  process.loadEnvFile(resolve(import.meta.dirname, "../../.env"));
+  process.loadEnvFile(
+    resolve(
+      basename(import.meta.dirname) === "dist"
+        ? dirname(import.meta.dirname)
+        : import.meta.dirname,
+      "../../.env",
+    ),
+  );
 } catch (error) {
   if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
     throw error;

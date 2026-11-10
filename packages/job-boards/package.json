@@ -3,8 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./automation": {
+      "types": "./dist/automation.d.ts",
+      "import": "./dist/automation.js"
+    },
+    "./employer-account": {
+      "types": "./dist/employer-account.d.ts",
+      "import": "./dist/employer-account.js"
+    },
+    "./screening-policy": {
+      "types": "./dist/screening-policy.d.ts",
+      "import": "./dist/screening-policy.js"
+    }
+  },
   "dependencies": {
-    "playwright": "^1.56.0"
-  }
+    "playwright": "^1.56.0",
+    "@moyarich/resume": "0.1.0"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist"
+  ],
+  "types": "./dist/index.d.ts"
 }

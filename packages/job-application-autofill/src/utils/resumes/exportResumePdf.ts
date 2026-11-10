@@ -1,9 +1,9 @@
-import type { CandidateProfile } from "../../index";
+import type { Resume } from "../../index";
 import { validateCandidate, parseCandidateJson } from "../../index";
 import { requestApi } from "../api/client";
 import type { Dispatch, SetStateAction } from "react";
 export function createExportResumePdf(context: {
-  profile: CandidateProfile;
+  profile: Resume;
   activeProfileId: string;
   activeResumeId: string | null;
   setMessage: Dispatch<SetStateAction<string>>;

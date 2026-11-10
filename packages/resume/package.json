@@ -1,21 +1,17 @@
 {
   "name": "@moyarich/resume",
   "version": "0.1.0",
-  "description": "Local PDF/DOCX resume extraction with PDFium and OCR fallback",
+  "description": "Structured resume schema, validation, Markdown conversion, and document rendering",
   "private": true,
   "type": "module",
   "license": "MIT",
   "exports": {
-    "./screening-policy": {
-      "types": "./dist/screening-policy.d.ts",
-      "import": "./dist/screening-policy.js"
-    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./create-pdf": {
-      "types": "./dist/resume-schema/create-pdf.d.ts",
+      "types": "./dist/create-resume/create-pdf.d.ts",
       "import": "./dist/create-pdf.js"
     },
     "./validate": {
@@ -23,44 +19,40 @@
       "import": "./dist/validate.js"
     },
     "./render-html": {
-      "types": "./dist/resume-schema/render-html.d.ts",
+      "types": "./dist/create-resume/render-html.d.ts",
       "import": "./dist/render-html.js"
     },
-    "./editor": {
-      "types": "./dist/resume-schema/editor-markdown.d.ts",
-      "import": "./dist/editor.js"
+    "./markdown": {
+      "types": "./dist/resume-schema/markdown.d.ts",
+      "import": "./dist/markdown.js"
     }
   },
   "files": [
-    "src",
-    "python",
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:js && npm run build:python",
-    "test:python": "poetry run python -m unittest discover -s python -p 'test_*.py' -v",
+    "build": "npm run build:js",
     "build:js": "vite build && tsc -p tsconfig.build.json",
-    "build:python": "node --experimental-strip-types scripts/build-python.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "commander": "^15.0.0",
     "markdown-it": "^15.0.3",
     "playwright": "^1.56.0",
+    "unified": "^11.0.5",
     "remark-parse": "^11.0.0",
-    "remark-stringify": "^11.0.0",
-    "unified": "^11.0.5"
+    "remark-stringify": "^11.0.0"
   },
   "bin": {
-    "extract-resume": "./dist/extract-resume.js",
-    "create-resume": "./dist/create-resume.js"
+    "create-resume": "./dist/create-resume.js",
+    "extract-resume": "./dist/extract-resume.js"
   },
   "devDependencies": {
     "@types/markdown-it": "^14.2.0",
-    "@types/mdast": "^4.0.4",
     "@types/node": "^24.3.1",
     "typescript": "^5.9.2",
-    "vite": "^7.3.7"
+    "vite": "^7.3.7",
+    "@types/mdast": "^4.0.4"
   },
   "types": "./dist/index.d.ts"
 }

@@ -1,5 +1,5 @@
 import type { ResumeImportActionsContext } from "./import-context";
-import type { CandidateProfile } from "../../index";
+import type { Resume } from "../../index";
 import type { Contact } from "./import-context";
 
 export function createApplyImportedContent(
@@ -14,7 +14,7 @@ export function createApplyImportedContent(
     setResume,
   } = context;
   function applyImportedContent(
-    incoming: CandidateProfile,
+    incoming: Resume,
     selectedId: string | null,
     resolved: Contact,
   ) {

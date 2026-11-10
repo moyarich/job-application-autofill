@@ -2,7 +2,7 @@ import type {
   ResumeImportActionsContext,
   ApplyImportedContent,
 } from "./import-context";
-import type { CandidateProfile } from "../../index";
+import type { Resume } from "../../index";
 
 export function createOfferImport(
   context: ResumeImportActionsContext & {
@@ -10,7 +10,7 @@ export function createOfferImport(
   },
 ) {
   const { setMessage, setImportChoices, setPendingImport } = context;
-  function offerImport(incoming: CandidateProfile) {
+  function offerImport(incoming: Resume) {
     setImportChoices({});
     setPendingImport(incoming);
     setMessage("Resume details extracted. Review them before importing.");

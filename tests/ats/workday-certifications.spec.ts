@@ -4,7 +4,7 @@ import {
   workdayCertificationsVisible,
 } from "../../packages/job-boards/workday/certifications/certifications.ts";
 import { workdaySteps } from "../../packages/job-boards/workday/steps.ts";
-import type { CandidateProfile } from "../../packages/resume/src/types.ts";
+import type { Resume } from "../../packages/resume/src/types.ts";
 import type { JobSiteStepContext } from "../../packages/job-boards/types.ts";
 
 const certificate = (name: string) => ({
@@ -62,7 +62,7 @@ test("Workday certification step matches only an active editable card", async ({
   expect(step).toBeDefined();
   const context = {
     page,
-    profile: { certifications: [certificate("AWS Developer")] } as CandidateProfile,
+    profile: { certifications: [certificate("AWS Developer")] } as Resume,
   } as JobSiteStepContext;
   await page.setContent("<h2>Certifications</h2>");
   expect(await step!.matches(context)).toBe(false);

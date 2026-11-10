@@ -1,6 +1,6 @@
-import { markdownToHtml } from "./markdown.ts";
-import type { CandidateProfile } from "../types.js";
-import { validateResume } from "./validate.ts";
+import { markdownToHtml } from "../resume-schema/markdown-render.ts";
+import type { Resume } from "../types.js";
+import { validateResume } from "../resume-schema/validate.ts";
 
 // Chromium embeds the fonts used to render the HTML in its PDF output.
 // HTML is escaped at the boundary; resume fields must never be interpreted as markup.
@@ -90,7 +90,7 @@ function entry(
 
 /** Generate print-ready HTML, escaping every user-controlled field. */
 export function renderResumeHtml(input: unknown) {
-  const p = validateResume(input) as CandidateProfile;
+  const p = validateResume(input) as Resume;
   const c = p.contact;
   const name = [c.firstName, c.lastName].filter(Boolean).join(" ");
   const experience = [...p.experience]

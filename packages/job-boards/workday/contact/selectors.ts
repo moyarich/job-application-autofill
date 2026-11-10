@@ -1,10 +1,10 @@
-import type { CandidateProfile } from "../../../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 export type FieldLocatorConfig = {
   labels: readonly RegExp[];
   selectors?: readonly string[];
 };
 
-export type WorkdayContactField = Extract<keyof CandidateProfile["contact"], string>;
+export type WorkdayContactField = Extract<keyof Resume["contact"], string>;
 
 /** Workday labels are exact to prevent matching an unrelated control. */
 export const workdayContactFields = {

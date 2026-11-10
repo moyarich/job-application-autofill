@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { readFileSync } from "node:fs";
-import { renderResumeHtml } from "../../packages/resume/src/resume-schema/create-pdf.ts";
+import { renderResumeHtml } from "../../packages/resume/src/create-resume/create-pdf.ts";
 
 const resume = JSON.parse(
   readFileSync(

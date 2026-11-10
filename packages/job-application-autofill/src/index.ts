@@ -1,3 +1,4 @@
+import type { Resume } from "@moyarich/resume";
 import { v5 as uuidv5 } from "uuid";
 import { parseResumeJson } from "@moyarich/resume/validate";
 export type ApplicationStatus =
@@ -8,50 +9,7 @@ export type ApplicationStatus =
   | "interview"
   | "rejected";
 
-export interface EmploymentEntry {
-  company: string;
-  jobTitle: string;
-  location: string;
-  startDate: string;
-  endDate: string | null;
-  isCurrent: boolean;
-  description: string;
-}
-
-export interface CandidateProfile {
-  additionalSections?: { heading: string; content: string }[];
-  skillGroups?: { heading: string; content: string }[];
-  contact: import("@moyarich/resume").CandidateProfile["contact"];
-  summary: string;
-  experience: EmploymentEntry[];
-  skills: string[];
-  education: {
-    institution: string;
-    degree: string;
-    fieldOfStudy: string;
-    location: string;
-    startDate: string;
-    endDate: string | null;
-    description: string;
-  }[];
-  projects: {
-    name: string;
-    description: string;
-    url: string;
-    technologies: string[];
-  }[];
-  certifications: {
-    name: string;
-    issuer: string;
-    issuedDate: string;
-    expirationDate: string | null;
-    credentialId: string;
-    url: string;
-  }[];
-  languages: string[];
-  awards: string[];
-  source: { fileName: string };
-}
+export type { Resume, EmploymentEntry } from "@moyarich/resume";
 
 export type JobPostingDetails = {
   salary?: string;
@@ -74,7 +32,7 @@ export interface JobApplication {
   details?: JobPostingDetails;
 }
 
-export const emptyCandidate: CandidateProfile = {
+export const emptyCandidate: Resume = {
   contact: {
     firstName: "",
     lastName: "",
@@ -113,7 +71,7 @@ export const statuses: readonly ApplicationStatus[] = [
   "rejected",
 ];
 
-export function validateCandidate(profile: CandidateProfile): string[] {
+export function validateCandidate(profile: Resume): string[] {
   const errors: string[] = [];
   if (!profile.contact.firstName.trim()) errors.push("First name is required");
   if (!profile.contact.lastName.trim()) errors.push("Last name is required");
@@ -121,8 +79,8 @@ export function validateCandidate(profile: CandidateProfile): string[] {
     errors.push("Valid email is required");
   return errors;
 }
-export function parseCandidateJson(text: string): CandidateProfile {
-  return parseResumeJson(text) as CandidateProfile;
+export function parseCandidateJson(text: string): Resume {
+  return parseResumeJson(text) as Resume;
 }
 
 export function createApplication(

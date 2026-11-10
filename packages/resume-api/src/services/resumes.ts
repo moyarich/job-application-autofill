@@ -1,5 +1,5 @@
-import { validateResume } from "../../../resume/src/resume-schema/validate.ts";
-import { renderResumePdf } from "../../../resume/src/resume-schema/create-pdf.ts";
+import { validateResume } from "@moyarich/resume/validate";
+import { renderResumePdf } from "@moyarich/resume/create-pdf";
 
 export async function generateResumePdf(input: unknown) {
   const profile = validateResume(input);
@@ -9,7 +9,7 @@ export async function generateResumePdf(input: unknown) {
 /** Dynamic import keeps resume extraction optional for JSON-only applicants. */
 export async function parseResumeUpload(input: unknown) {
   const { decodeUpload, extractProfile, extractResumeText } =
-    await import("../../../resume/src/extract-resume/index.ts");
+    await import("@moyarich/resume");
   const upload = decodeUpload(input);
   const text = await extractResumeText(upload.buffer, upload.extension);
   const extracted = extractProfile(text);

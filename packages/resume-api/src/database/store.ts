@@ -1,4 +1,4 @@
-import { reusableAnswer } from "../../../job-boards/screening-policy.ts";
+import { reusableAnswer } from "@moyarich/job-boards/screening-policy";
 import { openConnection } from "./connection.ts";
 import { initializeDatabase } from "./schema.ts";
 import { createProfilesStatements } from "./repositories/profiles.ts";
@@ -10,8 +10,8 @@ import { randomUUID } from "node:crypto";
 import {
   OPTIONAL_CONTACT_FIELDS,
   validateResume,
-} from "../../../resume/src/resume-schema/validate.ts";
-import type { CandidateProfile } from "../../../resume/src/types.ts";
+} from "@moyarich/resume/validate";
+import type { Resume } from "@moyarich/resume";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export type LocalProfile = { id: string; name: string; createdAt: string };
@@ -22,7 +22,7 @@ export type ResumeVersion = {
   createdAt: string;
   updatedAt: string;
 };
-export type ProfileContact = CandidateProfile["contact"] & {
+export type ProfileContact = Resume["contact"] & {
   id: string;
   profileId: string;
   name: string;
@@ -42,7 +42,7 @@ const CONTACT_KEYS = [
   ...REQUIRED_CONTACT_KEYS,
   ...OPTIONAL_CONTACT_FIELDS,
 ] as const;
-function validateContact(raw: unknown): CandidateProfile["contact"] {
+function validateContact(raw: unknown): Resume["contact"] {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
     throw new Error("Invalid contact information.");
   const value = raw as Record<string, unknown>;
@@ -56,15 +56,15 @@ function validateContact(raw: unknown): CandidateProfile["contact"] {
     )
   )
     throw new Error("Invalid contact information.");
-  return value as CandidateProfile["contact"];
+  return value as Resume["contact"];
 }
-const isUsableContact = (c: CandidateProfile["contact"]) =>
+const isUsableContact = (c: Resume["contact"]) =>
   Boolean(
     c.firstName.trim() &&
     c.lastName.trim() &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim()),
   );
-const emptyContact = (): CandidateProfile["contact"] => ({
+const emptyContact = (): Resume["contact"] => ({
   firstName: "",
   lastName: "",
   email: "",
@@ -238,7 +238,7 @@ export function openStore(
   const { insertResume, listResumeRows, selectResume } =
     createResumesStatements(db);
   const { getJobs, getJobRevision } = createApplicationsStatements(db);
-  function contactValues(contact: CandidateProfile["contact"]) {
+  function contactValues(contact: Resume["contact"]) {
     return [
       ...REQUIRED_CONTACT_KEYS.map((key) => contact[key]),
       JSON.stringify(
@@ -252,7 +252,7 @@ export function openStore(
   }
   function addContact(
     profileId: string,
-    value: CandidateProfile["contact"],
+    value: Resume["contact"],
     label: string,
     isDefault = false,
   ) {
@@ -486,7 +486,7 @@ export function openStore(
     const shared = current
       ? (Object.fromEntries(
           CONTACT_KEYS.map((key) => [key, current[key] || ""]),
-        ) as CandidateProfile["contact"])
+        ) as Resume["contact"])
       : emptyContact();
     const tailored = { ...shared };
     let hasResumeDifference = false;
@@ -664,7 +664,7 @@ export function openStore(
     const contact = selectedContact
       ? (Object.fromEntries(
           CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""]),
-        ) as CandidateProfile["contact"])
+        ) as Resume["contact"])
       : null;
     if (row.contactId && !contact)
       throw new Error("Selected resume contact not found.");

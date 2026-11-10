@@ -8,11 +8,10 @@ on:
       - "tests/docker/**"
       - ".dockerignore"
       - "docker/**"
-      - "packages/resume/python/**"
       - "apps/playground/vite.config.ts"
       - "server/**"
       - "playwright-adapters/**"
-      - "packages/extract-resume/**"
+      - "packages/resume-ocr/**"
       - "resume-schema/**"
       - "tests/ats/**"
       - "package.json"
@@ -40,7 +39,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Validate Compose definition
         run: docker compose config --quiet
-      - name: Build native ARM64 API, OCR and frontend images
+      - name: Build native ARM64 API and frontend images
         run: docker compose build
 
   docker-compose:
@@ -52,40 +51,36 @@ jobs:
       - uses: actions/checkout@v7
       - name: Validate Compose definition
         run: docker compose config --quiet
-      - name: Build API, OCR and frontend images
+      - name: Build API and frontend images
         run: docker compose build
       - name: Start application
         run: |
           mkdir -p sqlite-data
           docker compose up -d --no-build --pull never
-      - name: Verify Chromium and Python OCR are compartmentalized
+      - name: Verify installed OCR and browser runtimes
         run: |
           docker compose exec -T api node -e 'const {chromium}=require("playwright"); (async()=>{const headed=await chromium.launch({headless:false}); await headed.close(); const headless=await chromium.launch({headless:true}); await headless.close()})().catch(e=>{console.error(e);process.exit(1)})'
-          docker compose exec -T api sh -c 'test ! -e /opt/venv && test -n "$OCR_SERVICE_URL"'
-          docker compose exec -T web sh -c 'test ! -e /opt/venv && ! command -v Xvfb'
-          docker compose exec -T ocr /opt/venv/bin/python -c 'import sys, pypdfium2, onnxruntime; from rapidocr import RapidOCR; assert sys.version_info[:2] == (3, 14), sys.version'
-          docker compose exec -T ocr sh -c '! command -v node && ! command -v chromium'
-      - name: Verify PDF extraction through the internal OCR service
+          docker compose exec -T api sh -c 'test ! -e /app/packages/resume-ocr'
+          docker compose exec -T api /opt/resume-ocr/bin/python -c 'import resume_ocr; from importlib.metadata import version; assert version("resume-ocr") == "0.1.0"; assert resume_ocr.__file__.startswith("/opt/resume-ocr/")'
+          docker compose exec -T web sh -c 'test ! -e /opt/resume-ocr && ! command -v Xvfb'
+      - name: Verify PDF extraction through the installed module
         run: |
           docker compose exec -T api node --input-type=module -e '
             import { chromium } from "playwright";
+            import { extractResumeText } from "@moyarich/resume";
             const browser = await chromium.launch();
             try {
               const page = await browser.newPage();
               await page.setContent("<p>Ada Lovelace resume text extraction smoke test with several words</p>");
               const pdf = await page.pdf();
-              const response = await fetch(process.env.OCR_SERVICE_URL + "/extract", {
-                method: "POST", headers: {"Content-Type":"application/pdf"}, body: new Uint8Array(pdf)
-              });
-              const result = await response.json();
-              if (!response.ok || !result.text?.includes("Ada Lovelace")) throw new Error(JSON.stringify(result));
+              const text = await extractResumeText(pdf, "pdf");
+              if (!text.includes("Ada Lovelace")) throw new Error("PDF extraction failed");
             } finally { await browser.close(); }
           '
       - name: Report image sizes
         run: |
           docker image ls job-application-autofill-api
           docker image ls job-application-autofill-web
-          docker image ls job-application-autofill-ocr
       - name: Smoke-test frontend, API and browser viewer
         run: |
           for i in $(seq 1 30); do

@@ -1,9 +1,9 @@
 import { missingWorkdayRequiredFields } from "./workday/required-fields.ts";
 import { captureEmployerAnswers } from "./answer-capture.ts";
-import { resumeToPlainText } from "../resume/src/resume-schema/markdown.ts";
+import { resumeToPlainText } from "./resume-text.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
-import type { CandidateProfile } from "../resume/src/types.ts";
+import type { Resume } from "@moyarich/resume";
 import type { ApplicationQuestion } from "./index.ts";
 import { workdayCredentials } from "./workday/workday-login.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
@@ -39,7 +39,7 @@ type ApplicationSession = {
   screenshot: string | null;
   filled: string[];
   missing: string[];
-  profile: CandidateProfile;
+  profile: Resume;
   pendingResume: ResumeAttachment | null;
   resumeFile?: string;
   resumeUploadUrls?: string[];
@@ -56,7 +56,7 @@ type ApplicationPreparation = {
   jobUrl: string;
   jobId: string;
   profileId?: string;
-  profile: CandidateProfile;
+  profile: Resume;
   resume?: ResumeAttachment;
   launchBrowser?: () => Promise<Browser>;
   accountSetupRequired?: boolean;
@@ -268,7 +268,7 @@ async function runApplicationMenuItemInternal(id: string, itemId: string) {
 
 export async function continueApplication(
   id: string,
-  profile?: CandidateProfile,
+  profile?: Resume,
 ) {
   return withRunningSession(id, () => continueApplicationInternal(id, profile));
 }
@@ -291,7 +291,7 @@ async function withRunningSession(id: string, run: () => Promise<ReturnType<type
 
 async function continueApplicationInternal(
   id: string,
-  profile?: CandidateProfile,
+  profile?: Resume,
 ) {
   const session = sessions.get(id);
   if (

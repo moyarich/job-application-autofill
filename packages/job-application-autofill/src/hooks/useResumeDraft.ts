@@ -10,7 +10,7 @@ import {
   emptyCandidate,
   parseCandidateJson,
   validateCandidate,
-  type CandidateProfile,
+  type Resume,
 } from "../index";
 import {
   readResumeContent,
@@ -34,7 +34,7 @@ export function useResumeDraft({
   setMessage: Dispatch<SetStateAction<string>>;
   applicationId: string | null;
 }) {
-  const [profile, setProfile] = useState<CandidateProfile>(() =>
+  const [profile, setProfile] = useState<Resume>(() =>
     structuredClone(emptyCandidate),
   );
   const [contactId, setContactId] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export function useResumeDraft({
                 ([key]) =>
                   !["id", "profileId", "name", "isDefault"].includes(key),
               ),
-            ) as CandidateProfile["contact"])
+            ) as Resume["contact"])
           : structuredClone(emptyCandidate.contact);
         const value = result.profile
           ? parseCandidateJson(JSON.stringify(result.profile))
