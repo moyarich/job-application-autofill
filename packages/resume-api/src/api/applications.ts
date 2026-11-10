@@ -119,7 +119,11 @@ export const handleApplications: RouteHandler = async ({
         ),
       );
     }
-    if (req.method === "POST" && action === "continue")
+    if (req.method === "POST" && action === "continue") {
+      // Capture answers on the current step before automation moves forward.
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       return reply(
         200,
         await continueApplication(
@@ -128,6 +132,7 @@ export const handleApplications: RouteHandler = async ({
             undefined,
         ),
       );
+    }
     if (req.method === "POST" && action === "paste") {
       const body = record(await req.readJson());
       return reply(200, await pasteApplicationText(id, body.text));
@@ -146,9 +151,15 @@ export const handleApplications: RouteHandler = async ({
           error:
             "Confirm submission and acknowledge reviewing the browser first.",
         });
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       return reply(200, await submitApplication(id));
     }
     if (req.method === "POST" && action === "close") {
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       await closeApplication(id);
       return reply(200, { closed: true });
     }
