@@ -156,18 +156,25 @@
       const automationState = document.getElementById("automation-state");
       let menuOpen = false;
       let menuBusy = false;
+      let menuReload = null;
+      let menuVersion = "";
+      let menuClosed = false;
+      let menuTimer;
       let suppressHandleClick = false;
       async function runSessionAction(action) {
-        if (menuBusy || !session) return;
+        if ((menuBusy && !["pause", "close"].includes(action)) || !session) return;
         if (action === "close" && !window.confirm("Stop automation and close the application browser?")) return;
         menuBusy = true;
         menuMessage.textContent = action === "pause" ? "Pausing…" : action === "continue" ? "Continuing…" : "Closing…";
+        void reloadEmployerMenu().catch(() => {});
         try {
           const response = await fetch("/api/apply/" + encodeURIComponent(session) + "/" + action, { method: "POST", headers });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.error || "Automation action failed.");
           menuMessage.textContent = result.message || "Action completed.";
           if (action === "close") {
+            menuClosed = true;
+            clearInterval(menuTimer);
             siteMenu.classList.remove("visible");
             status.textContent = "Application browser session closed";
             return;
@@ -184,12 +191,21 @@
         button.type = "button";
         button.textContent = label;
         button.className = className;
-        button.disabled = menuBusy;
+        button.disabled = menuBusy && !["pause", "close"].includes(action);
         button.addEventListener("click", () => void runSessionAction(action));
         automationActions.appendChild(button);
       }
       async function reloadEmployerMenu() {
-        if (!session) return;
+        if (!session || menuClosed) return;
+        if (menuReload) return menuReload;
+        menuReload = loadEmployerMenu();
+        try {
+          await menuReload;
+        } finally {
+          menuReload = null;
+        }
+      }
+      async function loadEmployerMenu() {
         const base = "/api/apply/" + encodeURIComponent(session);
         const [sessionResponse, response] = await Promise.all([
           fetch(base, { headers, cache: "no-store" }),
@@ -201,34 +217,41 @@
         }
         const active = await sessionResponse.json();
         const data = response.ok ? await response.json() : {};
+        if (menuClosed) return;
         const items = Array.isArray(data.items) ? data.items : [];
+        const version = JSON.stringify([active.state, active.paused, active.running, active.currentAction, active.message, items, menuBusy]);
+        if (version === menuVersion) return;
+        menuVersion = version;
         menuList.replaceChildren();
         automationActions.replaceChildren();
         const finished = ["submitted", "submission_unverified"].includes(active.state);
+        const running = active.running || active.state === "preparing" || menuBusy;
         automationState.textContent = active.paused ? "Paused — browser remains available" :
           finished ? "Application finished" :
+          running ? (active.currentAction ? "Running — " + active.currentAction : "Running") :
           active.state === "ready_for_review" ? "Ready for review" :
           active.state === "login_required" ? "Sign-in required" :
           active.state === "manual_intervention" ? "Needs attention" : "Running";
         if (!finished) {
-          if (active.paused || ["manual_intervention", "login_required", "ready_for_review"].includes(active.state))
+          if (!running && (active.paused || ["manual_intervention", "login_required", "ready_for_review"].includes(active.state)))
             addSessionAction("Continue", "continue", "primary");
           else addSessionAction("Pause", "pause");
           addSessionAction("Stop", "close", "danger");
         } else addSessionAction("Close", "close");
         siteMenu.classList.add("visible");
-        if (active.paused) menuList.replaceChildren();
-        for (const item of items) {
+        if (!menuBusy) menuMessage.textContent = active.message || "";
+        for (const item of active.paused || finished ? [] : items) {
           if (typeof item.id !== "string" || typeof item.label !== "string")
             continue;
           const button = document.createElement("button");
           button.type = "button";
           button.textContent = item.label;
-          button.disabled = !item.available || menuBusy;
+          button.disabled = !item.available || running;
           button.addEventListener("click", async () => {
             if (menuBusy) return;
             menuBusy = true;
             menuMessage.textContent = "Running " + item.label + "…";
+            void reloadEmployerMenu().catch(() => {});
             try {
               const response = await fetch(
                 "/api/apply/" + encodeURIComponent(session) + "/menu",
@@ -432,6 +455,10 @@
         if (!response.ok)
           throw new Error(config.error || "Viewer configuration unavailable.");
         await reloadEmployerMenu().catch(() => {});
+        menuTimer = setInterval(() => {
+          if (connected && !document.hidden)
+            void reloadEmployerMenu().catch(() => {});
+        }, 1000);
         const { default: RFB } = await import("/vnc/core/rfb.js");
         const socket = new URL("/vnc/websockify", location.href);
         socket.protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -487,7 +514,10 @@
               status.textContent = error.message;
             });
         });
-        window.addEventListener("pagehide", () => rfb.disconnect());
+        window.addEventListener("pagehide", () => {
+          clearInterval(menuTimer);
+          rfb.disconnect();
+        });
       } catch (error) {
         status.textContent =
           error.message || "Could not connect to application browser.";

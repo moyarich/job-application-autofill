@@ -6,7 +6,10 @@ import type {
 } from "../types.ts";
 import type { ApplicationQuestion } from "../index.ts";
 
-export type StepContext = JobSiteStepContext & { expectedHost: string };
+export type StepContext = JobSiteStepContext & {
+  expectedHost: string;
+  onStep?: (stepId: string | null) => void;
+};
 export interface StepOutcome {
   detection: PageDetection;
   filled: string[];
@@ -65,7 +68,13 @@ export async function automateCurrentStep(
       resumeUploadUrls: outcome.resumeUploadUrls,
     };
     if (!(await step.matches(current))) continue;
-    const result = await step.run(current);
+    context.onStep?.(step.id);
+    let result;
+    try {
+      result = await step.run(current);
+    } finally {
+      context.onStep?.(null);
+    }
     outcome.executed.push(step.id);
     outcome.filled.push(...result.filled);
     outcome.missing.push(...result.missing);

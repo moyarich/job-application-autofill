@@ -20,6 +20,8 @@ export type SignupPrepared = {
   missing: string[];
 };
 export type ApplySession = {
+  running?: boolean;
+  currentAction?: string | null;
   employerAccount?: EmployerAccount | null;
   signupPrepared?: SignupPrepared | null;
   id: string;

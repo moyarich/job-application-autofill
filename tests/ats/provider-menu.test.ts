@@ -45,6 +45,7 @@ describe("provider-owned floating menu", () => {
 
   it("runs only the selected declared menu step and rejects arbitrary actions", async () => {
     const calls: string[] = [];
+    const progress: Array<string | null> = [];
     const adapter: JobSiteAdapter = {
       id: "lever",
       label: "Fixture",
@@ -58,6 +59,7 @@ describe("provider-owned floating menu", () => {
           id: "fixture.portfolio",
           matches: async () => true,
           run: async () => {
+            expect(progress.at(-1)).toBe("fixture.portfolio");
             calls.push("portfolio");
             return { filled: ["portfolio"], missing: [] };
           },
@@ -72,13 +74,14 @@ describe("provider-owned floating menu", () => {
         },
       ],
     };
-    const context = createContext(fakePage());
+    const context = { ...createContext(fakePage()), onStep: (stepId: string | null) => progress.push(stepId) };
     expect(await listJobSiteMenu(context, adapter)).toEqual([
       { id: "portfolio", label: "Portfolio", available: true },
     ]);
     const result = await executeJobSiteMenuItem(context, adapter, "portfolio");
     expect(result.executed).toEqual(["fixture.portfolio"]);
     expect(calls).toEqual(["portfolio"]);
+    expect(progress).toEqual(["fixture.portfolio", null]);
     await expect(
       executeJobSiteMenuItem(context, adapter, "fixture.hidden"),
     ).rejects.toThrow("Unknown employer menu action");

@@ -48,6 +48,8 @@ type ApplicationSession = {
   loginAttempted?: boolean;
   signupPrepared?: AccountSetupResult;
   pauseRequested?: boolean;
+  running?: boolean;
+  currentAction?: string | null;
 };
 type ApplicationPreparation = {
   jobUrl: string;
@@ -101,6 +103,8 @@ function status(session: ApplicationSession) {
     questions: session.questions || [],
     signupPrepared: session.signupPrepared ?? null,
     paused: Boolean(session.pauseRequested),
+    running: Boolean(session.running),
+    currentAction: session.currentAction ?? null,
   };
 }
 
@@ -127,6 +131,9 @@ async function populateSession(session: ApplicationSession) {
       pendingResume: session.pendingResume,
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
+      onStep: (stepId) => {
+        session.currentAction = adapter.menuItems?.find((item) => item.stepId === stepId)?.label ?? stepId;
+      },
     },
     adapter,
   );
@@ -218,6 +225,10 @@ export async function getApplicationMenu(id: string) {
 
 /** A menu click invokes exactly one site-owned step; it never submits. */
 export async function runApplicationMenuItem(id: string, itemId: string) {
+  return withRunningSession(id, () => runApplicationMenuItemInternal(id, itemId));
+}
+
+async function runApplicationMenuItemInternal(id: string, itemId: string) {
   const session = sessions.get(id);
   if (
     !session ||
@@ -228,6 +239,7 @@ export async function runApplicationMenuItem(id: string, itemId: string) {
     throw new Error("Application session is not ready for this action.");
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) throw new Error("Return to the employer application first.");
+  session.currentAction = adapter.menuItems?.find((item) => item.id === itemId)?.label;
   const outcome = await executeJobSiteMenuItem(
     {
       page: session.page,
@@ -249,13 +261,34 @@ export async function runApplicationMenuItem(id: string, itemId: string) {
   session.pendingResume = outcome.pendingResume;
   session.resumeFile = outcome.resumeFile;
   session.resumeUploadUrls = outcome.resumeUploadUrls;
-  session.state = "ready_for_review";
+  session.state = session.pauseRequested ? "paused" : "ready_for_review";
   session.message =
     "Selected employer step processed. Review the fields before submitting.";
   return status(session);
 }
 
 export async function continueApplication(
+  id: string,
+  profile?: CandidateProfile,
+) {
+  return withRunningSession(id, () => continueApplicationInternal(id, profile));
+}
+
+async function withRunningSession(id: string, run: () => Promise<ReturnType<typeof status>>) {
+  const session = sessions.get(id);
+  if (!session) throw new Error("Unknown or expired application session.");
+  if (session.running) throw new Error("Automation is already running for this application.");
+  session.running = true;
+  try {
+    await run();
+  } finally {
+    session.running = false;
+    session.currentAction = null;
+  }
+  return status(session);
+}
+
+async function continueApplicationInternal(
   id: string,
   profile?: CandidateProfile,
 ) {
@@ -334,10 +367,10 @@ export async function prepareApplicationAccount(
   if (
     password !== undefined &&
     (typeof password !== "string" ||
-      password.length < 12 ||
+      password.length < 8 ||
       password.length > 128)
   )
-    throw new Error("Account password must contain 12–128 characters.");
+    throw new Error("Account password must contain 8–128 characters.");
   // The destination is compared to the original employer's exact tenant host.
   const result = await prepareRegistration(
     session.page,

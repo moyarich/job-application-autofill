@@ -19,26 +19,24 @@ export function EmployerAccountSetup({
         <div>
           <h3>
             {prepared
-              ? "Finish account verification"
+              ? "Finish account setup"
               : "Employer sign-in needs attention"}
           </h3>
           <p>
             {prepared
-              ? "Review the filled details in the browser, complete verification, then continue."
+              ? "Review the account fields and any employer message in the browser, then continue."
               : "Automation uses your configured credentials. Review the employer message in the browser below, then continue."}
           </p>
         </div>
         <div className="actions">
-          {!prepared && (
-            <button
-              className="secondary"
-              type="button"
-              disabled={applyBusy}
-              onClick={() => void prepareAccountSignUp()}
-            >
-              <UserPlus size={16} /> Retry signup
-            </button>
-          )}
+          <button
+            className="secondary"
+            type="button"
+            disabled={applyBusy}
+            onClick={() => void prepareAccountSignUp()}
+          >
+            <UserPlus size={16} /> Retry signup
+          </button>
           <button
             className="primary"
             type="button"
@@ -64,7 +62,6 @@ export function EmployerAccountSetup({
           Return to the employer website to fill account details.
         </p>
       )}
-
     </section>
   );
 }

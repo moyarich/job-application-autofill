@@ -2,7 +2,7 @@ import { test, expect, vi } from "vitest";
 import type { Page } from "playwright";
 import { prepareEmployerSignUp } from "../../packages/job-sites/account-sign-up.ts";
 
-test("employer signup fills contact identity and one-time passwords without submitting", async () => {
+test.each(["Short1!x", "secure-once-password-01234"])("employer signup fills employer-compatible password %s without submitting", async (password) => {
   const values: Record<string, string> = {};
   const click = vi.fn();
   const field = (name: string) => ({
@@ -35,7 +35,7 @@ test("employer signup fills contact identity and one-time passwords without subm
         email: "ada@example.com",
       },
     } as never,
-    { password: "secure-once-password-01234" },
+    { password },
   );
   expect(result.state).toBe("manual_required");
   expect(result.filled).toEqual([
@@ -47,7 +47,7 @@ test("employer signup fills contact identity and one-time passwords without subm
   ]);
   expect(values["/e.?mail/i"]).toBe("ada@example.com");
   expect(values["/^(?:new )?password\\s*\\*?$/i"]).toBe(
-    "secure-once-password-01234",
+    password,
   );
   expect(click).not.toHaveBeenCalled();
 });
