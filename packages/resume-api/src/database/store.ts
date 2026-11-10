@@ -893,6 +893,29 @@ export function openStore(
     if (!updated.changes) throw new Error("Application not found.");
     return { updated: true };
   }
+  /** Read reusable examples without ever changing another application's answers. */
+  function listAnswerLibrary(profileId: string, currentJobId: string) {
+    const owner = requireProfile(profileId);
+    const id = validId(currentJobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    const rows = db.prepare(`
+      SELECT a.application_id AS applicationId, a.question, a.answer,
+             a.updated_at AS updatedAt, j.company, j.role
+      FROM application_answers a
+      JOIN applications j ON j.id=a.application_id AND j.profile_id=a.profile_id
+      WHERE a.profile_id=? AND a.application_id<>?
+      ORDER BY a.updated_at DESC, a.application_id, a.question
+      LIMIT 150
+    `).all(owner, id) as {
+      applicationId: string; question: string; answer: string;
+      updatedAt: string; company: string; role: string;
+    }[];
+    // A previous version of the app may have captured a prohibited question.
+    return rows.filter(({ question }) =>
+      !/(?:password|passcode|verification|otp|social security|ssn|birth|credit card|bank|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif|agree|agreement|consent|arbitration|signature|non.disclosure|acknowledge|privacy policy|terms and conditions)/i.test(question)
+    );
+  }
+
   /** Preserve written screening answers only for the matching application. */
   function listApplicationAnswers(profileId: string, jobId: string) {
     const owner = requireProfile(profileId);
@@ -959,6 +982,7 @@ export function openStore(
     setJobStatus,
     saveApplicationAnswers,
     listApplicationAnswers,
+    listAnswerLibrary,
     close: () => db.close(),
   };
 }
