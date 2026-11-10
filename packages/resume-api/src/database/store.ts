@@ -915,11 +915,28 @@ export function openStore(
 
   }
 
+  function listCurrentAnswerRecords(profileId: string, jobId: string) {
+    const owner = requireProfile(profileId), id = validId(jobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    return (db.prepare(`
+      SELECT a.application_id AS applicationId, a.question, a.answer,
+             a.updated_at AS updatedAt, j.company, j.role
+      FROM application_answers a
+      JOIN applications j ON j.profile_id=a.profile_id AND j.id=a.application_id
+      WHERE a.profile_id=? AND a.application_id=?
+      ORDER BY a.question
+    `).all(owner, id) as {
+      applicationId: string; question: string; answer: string;
+      updatedAt: string; company: string; role: string;
+    }[]).filter(({ question, answer }) => reusableAnswer(question, answer));
+  }
+
   /** Current answers and library examples are projections of the same SQLite table. */
   function getApplicationAnswerContext(profileId: string, jobId: string) {
     return {
       answers: listApplicationAnswers(profileId, jobId),
       examples: listAnswerLibrary(profileId, jobId),
+      currentRecords: listCurrentAnswerRecords(profileId, jobId),
     };
   }
 
