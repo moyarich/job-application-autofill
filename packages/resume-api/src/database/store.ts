@@ -977,7 +977,8 @@ export function openStore(
   ) {
     const owner = requireProfile(profileId), id = validId(applicationId);
     if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
-    if (!reusableAnswer(question, expectedAnswer) || typeof expectedUpdatedAt !== "string")
+    if (typeof question !== "string" || !question.trim() || question.length > 300 ||
+        typeof expectedAnswer !== "string" || typeof expectedUpdatedAt !== "string")
       throw new Error("Invalid answer deletion.");
     const result = db.prepare(`
       DELETE FROM application_answers
@@ -995,7 +996,8 @@ export function openStore(
     const rows = db.prepare(
       "SELECT question,answer FROM application_answers WHERE profile_id=? AND application_id=? ORDER BY question"
     ).all(owner, id) as { question: string; answer: string }[];
-    return Object.fromEntries(rows.map(({ question, answer }) => [question, answer]));
+    return Object.fromEntries(rows.filter(({ question, answer }) =>
+      reusableAnswer(question, answer)).map(({ question, answer }) => [question, answer]));
   }
   function saveApplicationAnswers(profileId: string, jobId: string, answers: Record<string, string>) {
     const owner = requireProfile(profileId);
