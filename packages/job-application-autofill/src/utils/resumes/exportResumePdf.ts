@@ -2,7 +2,7 @@ import { Resume } from "@moyarich/resume";
 import { parseResumeJson } from "@moyarich/resume/validate";
 import { validateResume } from "./validateResume";
 
-import { requestApi } from "../../api/client";
+import { generateResumePdf } from "../../api/resumes";
 import type { Dispatch, SetStateAction } from "react";
 
 export function createExportResumePdf(context: {
@@ -21,12 +21,7 @@ export function createExportResumePdf(context: {
         );
       // Revalidate the entire user-supplied JSON before producing a document.
       const valid = parseResumeJson(JSON.stringify(profile));
-      const { base64 } = await requestApi<{ base64: string }>(
-        "/api/resume/pdf",
-        valid,
-        activeProfileId,
-        activeResumeId ?? undefined,
-      );
+      const { base64 } = await generateResumePdf(valid, activeProfileId, activeResumeId ?? undefined);
       const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
