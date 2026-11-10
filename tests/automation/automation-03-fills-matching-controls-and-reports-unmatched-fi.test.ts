@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Page } from "playwright";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
-import { fillWorkdayContact } from "../../packages/job-sites/workday/contact/contact.ts";
+import { fillWorkdayContact } from "../../packages/job-boards/workday/contact/contact.ts";
 
 describe("application safety", () => {
   it("Workday-owned contact handler fills matching fields and reports missing fields", async () => {

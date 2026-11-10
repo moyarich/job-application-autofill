@@ -6,7 +6,7 @@ import {
   getActiveApplication,
   closeApplication,
   refreshApplicationState,
-} from "../../packages/job-sites/automation.ts";
+} from "../../packages/job-boards/automation.ts";
 
 it("keeps concurrent applications separate and closes only the requested session", async () => {
   function browserFor(url: string): Browser {

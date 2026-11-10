@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSubmissionConfirmed } from "../../packages/job-sites/automation.ts";
+import { isSubmissionConfirmed } from "../../packages/job-boards/automation.ts";
 
 describe("application safety", () => {
   it("does not treat clicking submit as confirmation", () => {
