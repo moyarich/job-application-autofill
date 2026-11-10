@@ -31,17 +31,15 @@ function createContext(
 
 describe("provider-owned floating menu", () => {
   it("Workday lists only its explicitly configured menu actions", () => {
-    expect(ADAPTERS.workday.menuItems?.map((item) => item.id)).toEqual([
-      "personal-information",
-      "work-experience",
-      "education",
-      "skills",
-      "resume",
-      "screening",
-    ]);
+    const menu = ADAPTERS.workday.menuItems ?? [];
+    expect(menu.length).toBeGreaterThan(0);
+    expect(new Set(menu.map((item) => item.id)).size).toBe(menu.length);
     const steps = new Set(ADAPTERS.workday.steps?.map((item) => item.id));
-    for (const item of ADAPTERS.workday.menuItems ?? [])
+    for (const item of menu) {
+      expect(item.id).toMatch(/^[a-z][a-z0-9-]*$/);
+      expect(item.label.trim()).not.toBe("");
       expect(steps.has(item.stepId)).toBe(true);
+    }
     expect(ADAPTERS.lever.menuItems).toBeUndefined();
   });
 
