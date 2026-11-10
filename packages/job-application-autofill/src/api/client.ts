@@ -316,3 +316,18 @@ export async function deleteResumeVersion(
     "Could not delete resume.",
   );
 }
+
+/** Update application status without coupling the action to HTTP details. */
+export function updateJobStatus(
+  jobId: string,
+  status: string,
+  profileId: string,
+  resumeId?: string,
+) {
+  return requestApi(
+    "/api/jobs/" + encodeURIComponent(jobId) + "/status",
+    { status },
+    profileId,
+    resumeId,
+  );
+}
