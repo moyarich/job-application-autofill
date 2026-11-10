@@ -1,10 +1,10 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { workdayContactFields } from "../../packages/job-sites/workday/contact/selectors.ts";
+import { workdayContactFields } from "../../packages/job-boards/workday/contact/selectors.ts";
 import {
   fillWorkdayContact,
   findMappedField,
-} from "../../packages/job-sites/workday/contact/contact.ts";
+} from "../../packages/job-boards/workday/contact/contact.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 test("Workday selector object supports alternate labels without changing the autofill code", async () => {

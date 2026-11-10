@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { chromium } from "playwright";
-import { fillWorkdayExperience } from "../../packages/job-sites/workday/experience/experience.ts";
+import { fillWorkdayExperience } from "../../packages/job-boards/workday/experience/experience.ts";
 
 test("fills company and location in an existing imported job with required labels", async () => {
   const browser = await chromium.launch({ headless: true });
