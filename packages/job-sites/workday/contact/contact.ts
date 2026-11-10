@@ -67,7 +67,13 @@ export async function fillWorkdayContact(
     let target = await findMappedField(page, workdayContactFields, key);
     // Workday's country/state/phone selectors are often labelled buttons, not inputs.
     if (!target && ["state", "country", "phoneCountryCode", "phoneType"].includes(key)) {
-      for (const label of workdayContactFields[key].labels) {
+      const prefix = {
+        state: /^state(?:\\s|$)/i,
+        country: /^country \\/ territory(?:\\s|$)/i,
+        phoneCountryCode: /^country \\/ territory phone code(?:\\s|$)/i,
+        phoneType: /^phone device type(?:\\s|$)/i,
+      }[key as "state" | "country" | "phoneCountryCode" | "phoneType"];
+      for (const label of [prefix]) {
         const button = page.getByRole("button", { name: label });
         if (await button.count() === 1 && await button.isVisible().catch(() => false)) {
           target = button;
