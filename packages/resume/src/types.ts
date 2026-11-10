@@ -12,6 +12,8 @@ export interface CandidateProfile {
   contact: {
     firstName: string;
     lastName: string;
+    middleName?: string;
+    preferredName?: string;
     email: string;
     phone: string;
     location: string;

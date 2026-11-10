@@ -1,3 +1,4 @@
+import { reusableAnswer } from "../../../job-sites/screening-policy.ts";
 import { openConnection } from "./connection.ts";
 import { initializeDatabase } from "./schema.ts";
 import { createProfilesStatements } from "./repositories/profiles.ts";
@@ -893,6 +894,100 @@ export function openStore(
     if (!updated.changes) throw new Error("Application not found.");
     return { updated: true };
   }
+  /** Read reusable examples without ever changing another application's answers. */
+  function listAnswerLibrary(profileId: string, currentJobId: string) {
+    const owner = requireProfile(profileId);
+    const id = validId(currentJobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    const rows = db.prepare(`
+      SELECT a.application_id AS applicationId, a.question, a.answer,
+             a.updated_at AS updatedAt, j.company, j.role
+      FROM application_answers a
+      JOIN applications j ON j.id=a.application_id AND j.profile_id=a.profile_id
+      WHERE a.profile_id=? AND a.application_id<>?
+      ORDER BY a.updated_at DESC, a.application_id, a.question
+      LIMIT 150
+    `).all(owner, id) as {
+      applicationId: string; question: string; answer: string;
+      updatedAt: string; company: string; role: string;
+    }[];
+    return rows.filter(({ question, answer }) => reusableAnswer(question, answer));
+
+  }
+
+  function listCurrentAnswerRecords(profileId: string, jobId: string) {
+    const owner = requireProfile(profileId), id = validId(jobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    return (db.prepare(`
+      SELECT a.application_id AS applicationId, a.question, a.answer,
+             a.updated_at AS updatedAt, j.company, j.role
+      FROM application_answers a
+      JOIN applications j ON j.profile_id=a.profile_id AND j.id=a.application_id
+      WHERE a.profile_id=? AND a.application_id=?
+      ORDER BY a.question
+    `).all(owner, id) as {
+      applicationId: string; question: string; answer: string;
+      updatedAt: string; company: string; role: string;
+    }[]).filter(({ question, answer }) => reusableAnswer(question, answer));
+  }
+
+  /** Current answers and library examples are projections of the same SQLite table. */
+  function getApplicationAnswerContext(profileId: string, jobId: string) {
+    return {
+      answers: listApplicationAnswers(profileId, jobId),
+      examples: listAnswerLibrary(profileId, jobId),
+      currentRecords: listCurrentAnswerRecords(profileId, jobId),
+    };
+  }
+
+  /** Optimistic, application-owned CRUD on the same table used by captured answers. */
+  function createApplicationAnswer(profileId: string, applicationId: string, question: string, answer: string) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (!reusableAnswer(question, answer)) throw new Error("Invalid or restricted screening answer.");
+    const normalizedLabel = question.trim(), normalizedValue = answer.trim();
+    const timestamp = now();
+    const result = db.prepare(
+      "INSERT OR IGNORE INTO application_answers(profile_id,application_id,question,answer,updated_at) VALUES (?,?,?,?,?)"
+    ).run(owner, id, normalizedLabel, normalizedValue, timestamp);
+    if (!result.changes) throw new Error("An answer already exists for that application and question.");
+    return { applicationId: id, question: normalizedLabel, answer: normalizedValue, updatedAt: timestamp };
+  }
+
+  function updateApplicationAnswer(
+    profileId: string, applicationId: string, question: string,
+    expectedAnswer: string, expectedUpdatedAt: string, answer: string,
+  ) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (!reusableAnswer(question, answer) || typeof expectedAnswer !== "string" ||
+        typeof expectedUpdatedAt !== "string") throw new Error("Invalid answer update.");
+    const timestamp = now();
+    const result = db.prepare(`
+      UPDATE application_answers SET answer=?,updated_at=?
+      WHERE profile_id=? AND application_id=? AND question=? AND answer=? AND updated_at=?
+    `).run(answer.trim(), timestamp, owner, id, question, expectedAnswer, expectedUpdatedAt);
+    if (!result.changes) throw new Error("Answer changed or was deleted. Reload before editing.");
+    return { applicationId: id, question, answer: answer.trim(), updatedAt: timestamp };
+  }
+
+  function deleteApplicationAnswer(
+    profileId: string, applicationId: string, question: string,
+    expectedAnswer: string, expectedUpdatedAt: string,
+  ) {
+    const owner = requireProfile(profileId), id = validId(applicationId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Source application not found.");
+    if (typeof question !== "string" || !question.trim() || question.length > 300 ||
+        typeof expectedAnswer !== "string" || typeof expectedUpdatedAt !== "string")
+      throw new Error("Invalid answer deletion.");
+    const result = db.prepare(`
+      DELETE FROM application_answers
+      WHERE profile_id=? AND application_id=? AND question=? AND answer=? AND updated_at=?
+    `).run(owner, id, question, expectedAnswer, expectedUpdatedAt);
+    if (!result.changes) throw new Error("Answer changed or was deleted. Reload before deleting.");
+    return { deleted: true };
+  }
+
   /** Preserve written screening answers only for the matching application. */
   function listApplicationAnswers(profileId: string, jobId: string) {
     const owner = requireProfile(profileId);
@@ -901,7 +996,8 @@ export function openStore(
     const rows = db.prepare(
       "SELECT question,answer FROM application_answers WHERE profile_id=? AND application_id=? ORDER BY question"
     ).all(owner, id) as { question: string; answer: string }[];
-    return Object.fromEntries(rows.map(({ question, answer }) => [question, answer]));
+    return Object.fromEntries(rows.filter(({ question, answer }) =>
+      reusableAnswer(question, answer)).map(({ question, answer }) => [question, answer]));
   }
   function saveApplicationAnswers(profileId: string, jobId: string, answers: Record<string, string>) {
     const owner = requireProfile(profileId);
@@ -922,8 +1018,7 @@ export function openStore(
           throw new Error("Invalid question or answer.");
         // Only ordinary application-specific screening responses, not identity,
         // account credentials, medical/disability or voluntary demographic data.
-        if (/(?:password|passcode|verification|otp|social security|ssn|birth|credit card|bank|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif)/i.test(question))
-          continue;
+        if (!reusableAnswer(question, answer)) continue;
         statement.run(owner, id, question, answer, now());
       }
       db.exec("COMMIT");
@@ -959,6 +1054,11 @@ export function openStore(
     setJobStatus,
     saveApplicationAnswers,
     listApplicationAnswers,
+    listAnswerLibrary,
+    getApplicationAnswerContext,
+    createApplicationAnswer,
+    updateApplicationAnswer,
+    deleteApplicationAnswer,
     close: () => db.close(),
   };
 }

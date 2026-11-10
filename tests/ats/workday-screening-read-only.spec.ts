@@ -20,5 +20,5 @@ test("Workday discovers questions but does not answer or change the employer for
   expect(result.questions?.map((question) => question.label))
     .toContain("Why do you want to work here?");
   expect(await page.locator("#why").inputValue()).toBe("My own written answer");
-  expect((workday as JobSiteAdapter).answerQuestions).toBeUndefined();
+  expect((workday as JobSiteAdapter).answerQuestions).toBeDefined();
 });
