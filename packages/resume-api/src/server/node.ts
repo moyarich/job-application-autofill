@@ -1,3 +1,4 @@
+import { subscribeApplication } from "../../../job-sites/automation.ts";
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import type { ApiRequest, ApiResponse } from "./types.ts";
@@ -27,6 +28,44 @@ export function createNodeServer(
       readJson: () => readNodeJson(request),
     };
     try {
+      // Authenticate through the existing API handler before attaching a stream.
+      // This preserves the same profile/session boundary as the normal viewer API.
+      const stream = req.url.pathname.match(/^\/api\/apply\/([0-9a-f-]+)\/events$/);
+      if (stream && req.method === "GET") {
+        const verified = await handler({ ...req, url: new URL("/api/apply/" + stream[1], req.url) });
+        if (verified.status !== 200) {
+          response.writeHead(verified.status, {
+            "Content-Type": "application/json", "Cache-Control": "no-store",
+          });
+          response.end(JSON.stringify(verified.body));
+          return;
+        }
+        response.writeHead(200, {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
+          "X-Content-Type-Options": "nosniff",
+        });
+        response.write("event: update\ndata: {}\n\n");
+        let closed = false;
+        const finish = () => {
+          if (closed) return;
+          closed = true;
+          unsubscribe();
+          clearInterval(heartbeat);
+          response.end();
+        };
+        const unsubscribe = subscribeApplication(stream[1], () => {
+          if (!closed) response.write("event: update\ndata: {}\n\n");
+        });
+        const heartbeat = setInterval(() => {
+          if (!closed) response.write(": heartbeat\n\n");
+        }, 25000);
+        request.on("close", finish);
+        response.on("close", finish);
+        return;
+      }
       const result = await handler(req);
       const contentType = result.contentType ?? "application/json";
       response.writeHead(result.status, {
