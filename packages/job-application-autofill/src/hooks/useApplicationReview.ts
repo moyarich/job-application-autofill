@@ -109,8 +109,6 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
     setApplyBusy,
     reviewed,
     setReviewed,
-    questionAnswers,
-    setQuestionAnswers,
     prepareJob,
     prepareAccountSignUp,
     setEmployerAccountStatus,
