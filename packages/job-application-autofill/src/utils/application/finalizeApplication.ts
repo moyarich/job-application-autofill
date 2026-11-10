@@ -1,3 +1,4 @@
+import type { ApplySession } from "../../types/types";
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
 import { finalizeApplicationSession } from "../../api/applications";
 
