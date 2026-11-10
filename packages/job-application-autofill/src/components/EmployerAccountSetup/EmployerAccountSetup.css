@@ -75,17 +75,6 @@
   color: #277450;
   font-size: 12px;
 }
-.account-other-password {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.account-other-password summary {
-  cursor: pointer;
-}
-.account-other-password label {
-  margin: 12px 0;
-}
 @media (max-width: 700px) {
   .account-next-step .actions {
     width: 100%;
