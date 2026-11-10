@@ -21,7 +21,6 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
     setApplyBusy,
     setSession,
     setReviewed,
-    setQuestionAnswers,
   } = context;
   async function prepareJob(job: JobApplication) {
     if (!applicationId) {
@@ -88,7 +87,6 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
       );
       setSession(result);
       setReviewed(false);
-      setQuestionAnswers({});
       changeJob(
         job.id,
         result.state === "ready_for_review"
