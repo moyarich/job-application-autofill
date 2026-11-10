@@ -4,7 +4,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 
-import { fetchAnswers, requestApi } from "../api/client";
+import { fetchAnswers } from "../api/client";
+import { saveEmployerFormAnswers } from "../api/answers";
 import { AnswerMap, AnswersResponse } from "../types/api-types";
 import { ApplicationQnA } from "../types/application-q-n-a";
 
@@ -59,12 +60,7 @@ export function useApplicationAnswers(
     async (sessionId: string) => {
       setSaving(true);
       try {
-        const result = await requestApi<{ answers: AnswerMap; count: number }>(
-          `/api/apply/${sessionId}/save-answers`,
-          {},
-          profileId,
-          resumeId ?? undefined,
-        );
+        const result = await saveEmployerFormAnswers(sessionId, profileId, resumeId ?? undefined);
         setSavedAnswers(result.answers);
         setMessage(
           result.count
