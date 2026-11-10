@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { requestApi } from "../../utils/api/client";
+import { relatedAnswers, type PreviousAnswer } from "./suggestions";
 import "./ScreeningAnswerDock.css";
 
 type Question = { label: string; kind: string; required: boolean; options: string[] };
@@ -9,6 +10,7 @@ type Props = {
   resumeId?: string;
   questions: Question[];
   savedAnswers: Record<string, string>;
+  previousAnswers: PreviousAnswer[];
 };
 
 const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowledge|signature|terms and conditions|privacy policy|gender|race|ethnic|veteran|disability|birth date|social security|password)/i;
@@ -18,13 +20,14 @@ const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowled
  * automatically, and only an exact question-label match may be sent to Workday.
  */
 export function ScreeningAnswerDock({
-  sessionId, profileId, resumeId, questions, savedAnswers,
+  sessionId, profileId, resumeId, questions, savedAnswers, previousAnswers,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [completed, setCompleted] = useState<string[]>([]);
+  const [visibleSuggestions, setVisibleSuggestions] = useState<string | null>(null);
   const suggested = questions.filter((question) =>
     !blocked.test(question.label) && typeof savedAnswers[question.label] === "string" &&
     savedAnswers[question.label].trim(),
@@ -60,7 +63,7 @@ export function ScreeningAnswerDock({
       </button>
       {expanded && (
         <div className="screening-dock-content">
-          <p>Answers are scoped to this application. Nothing is inserted without your selection.</p>
+          <p>Current answers are kept with this application. Previous jobs provide labeled examples only; choose and edit one before filling.</p>
           {eligible.length === 0 && <p>There are no safe, editable screening questions detected on this step.</p>}
           {eligible.map((question) => {
             const key = question.label;
@@ -71,6 +74,29 @@ export function ScreeningAnswerDock({
                 <strong>{key}</strong>
                 {matched && <small>Saved for this application</small>}
                 {!matched && <small>No saved response for this question</small>}
+                {relatedAnswers(key, previousAnswers).length > 0 && (
+                  <div className="screening-dock-suggestions">
+                    <button type="button" className="secondary" aria-expanded={visibleSuggestions === key}
+                      onClick={() => setVisibleSuggestions((current) => current === key ? null : key)}>
+                      {visibleSuggestions === key ? "Hide previous examples" : "View related past answers"}
+                    </button>
+                    {visibleSuggestions === key && relatedAnswers(key, previousAnswers).map((example) => (
+                      <div className="screening-dock-example"
+                        key={example.applicationId + ":" + example.question}>
+                        <small>From {example.company} · {example.role}</small>
+                        <strong>{example.question}</strong>
+                        <p>{example.answer}</p>
+                        <button type="button" className="secondary"
+                          onClick={() => {
+                            setDrafts((old) => ({ ...old, [key]: example.answer }));
+                            setMessage("Copied into the draft only. Edit it for this role before filling.");
+                          }}>
+                          Adapt this response
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <textarea rows={3} value={answer} aria-label={"Suggested answer for " + key}
                   placeholder="Write a response specific to this role"
                   onChange={(event) => setDrafts((old) => ({ ...old, [key]: event.target.value }))}/>
