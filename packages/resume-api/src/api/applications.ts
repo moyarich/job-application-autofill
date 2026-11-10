@@ -39,7 +39,7 @@ export const handleApplications: RouteHandler = async ({
     // New library records are attached to this application, never an invented global owner.
     return reply(201, store.createApplicationAnswer(profileId, savedAnswers[1], payload.question, payload.answer));
   }
-  const answerRecord = url.pathname.match(/^\\/api\\/applications\\/([0-9a-f-]+)\\/answers\\/record$/);
+  const answerRecord = url.pathname.match(/^\/api\/applications\/([0-9a-f-]+)\/answers\/record$/);
   if (answerRecord && (req.method === "PATCH" || req.method === "DELETE")) {
     const payload = record(await req.readJson());
     const { applicationId, question, expectedAnswer, expectedUpdatedAt, answer } = payload;
