@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import type { ApplySession } from "../utils/application/types";
 import type { ApplicationReviewData } from "../utils/application/review-data";
 import { createPrepareJob } from "../utils/application/prepareJob";
-import { createFillCustomQuestions } from "../utils/application/fillCustomQuestions";
 import { createPrepareAccountSignUp } from "../utils/application/prepareAccountSignUp";
 import { createSetEmployerAccountStatus } from "../utils/application/setEmployerAccountStatus";
 import { createContinueAfterChallenge } from "../utils/application/continueAfterChallenge";
@@ -24,9 +23,6 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
 
   const [session, setSession] = useState<ApplySession | null>(null);
   const [reviewed, setReviewed] = useState(false);
-  const [questionAnswers, setQuestionAnswers] = useState<
-    Record<string, string>
-  >({});
   useEffect(() => {
     if (!applicationId || session?.state !== "preparing") return;
     let cancelled = false;
@@ -89,17 +85,14 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
     errors,
     session,
     reviewed,
-    questionAnswers,
     setTab,
     changeJob,
     setMessage,
     setApplyBusy,
     setSession,
     setReviewed,
-    setQuestionAnswers,
   };
   const prepareJob = createPrepareJob(reviewContext);
-  const fillCustomQuestions = createFillCustomQuestions(reviewContext);
   const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
   const setEmployerAccountStatus =
     createSetEmployerAccountStatus(reviewContext);
@@ -116,10 +109,7 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
     setApplyBusy,
     reviewed,
     setReviewed,
-    questionAnswers,
-    setQuestionAnswers,
     prepareJob,
-    fillCustomQuestions,
     prepareAccountSignUp,
     setEmployerAccountStatus,
     continueAfterChallenge,

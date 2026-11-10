@@ -26,7 +26,7 @@ describe("SQLite schema", () => {
       const db = new DatabaseSync(path);
       try {
         expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-          user_version: 3,
+          user_version: 4,
         });
         expect(
           db
@@ -39,6 +39,7 @@ describe("SQLite schema", () => {
           ["applications", "revision"],
           ["resumes", "content_revision"],
           ["profile_contact", "extra_json"],
+          ["application_answers", "answer"],
         ]) {
           expect(
             (
@@ -70,7 +71,7 @@ describe("SQLite schema", () => {
         db.prepare("SELECT name FROM profiles WHERE id=?").get("test-profile"),
       ).toMatchObject({ name: "Test" });
       expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-        user_version: 3,
+        user_version: 4,
       });
     } finally {
       db.close();
@@ -115,8 +116,38 @@ it("upgrades account and job details without dropping existing application recor
       details_json: null,
     });
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 3,
+      user_version: 4,
     });
+  } finally {
+    db.close();
+  }
+});
+
+it("upgrades schema version 3 to 4 without discarding applications", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    initializeDatabase(db);
+    db.exec("DROP TABLE application_answers; PRAGMA user_version = 3");
+    db.prepare("INSERT INTO profiles(id,name,created_at) VALUES (?,?,?)").run(
+      "existing-owner", "Existing", "2026-11-09",
+    );
+    db.prepare(
+      "INSERT INTO applications(profile_id,id,company,role,url,status,created_at) VALUES (?,?,?,?,?,?,?)",
+    ).run(
+      "existing-owner", "existing-job", "Speechify", "Engineer",
+      "https://example.com/jobs/1", "saved", "2026-11-09",
+    );
+    initializeDatabase(db);
+    expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
+      user_version: 4,
+    });
+    expect(db.prepare("SELECT company FROM applications WHERE id=?").get("existing-job"))
+      .toMatchObject({ company: "Speechify" });
+    db.prepare(
+      "INSERT INTO application_answers(profile_id,application_id,question,answer,updated_at) VALUES (?,?,?,?,?)",
+    ).run("existing-owner", "existing-job", "Why Speechify?", "My response", "2026-11-09");
+    expect(db.prepare("SELECT answer FROM application_answers WHERE application_id=?")
+      .get("existing-job")).toMatchObject({ answer: "My response" });
   } finally {
     db.close();
   }

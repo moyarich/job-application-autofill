@@ -893,6 +893,46 @@ export function openStore(
     if (!updated.changes) throw new Error("Application not found.");
     return { updated: true };
   }
+  /** Preserve written screening answers only for the matching application. */
+  function listApplicationAnswers(profileId: string, jobId: string) {
+    const owner = requireProfile(profileId);
+    const id = validId(jobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    const rows = db.prepare(
+      "SELECT question,answer FROM application_answers WHERE profile_id=? AND application_id=? ORDER BY question"
+    ).all(owner, id) as { question: string; answer: string }[];
+    return Object.fromEntries(rows.map(({ question, answer }) => [question, answer]));
+  }
+  function saveApplicationAnswers(profileId: string, jobId: string, answers: Record<string, string>) {
+    const owner = requireProfile(profileId);
+    const id = validId(jobId);
+    if (!getJobRevision.get(owner, id)) throw new Error("Application not found.");
+    if (!answers || typeof answers !== "object" || Array.isArray(answers) || Object.keys(answers).length > 100)
+      throw new Error("Invalid application answers.");
+    const statement = db.prepare(
+      `INSERT INTO application_answers(profile_id,application_id,question,answer,updated_at)
+       VALUES (?,?,?,?,?) ON CONFLICT(profile_id,application_id,question)
+       DO UPDATE SET answer=excluded.answer,updated_at=excluded.updated_at`
+    );
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      for (const [question, answer] of Object.entries(answers)) {
+        if (!question.trim() || question.length > 300 ||
+            typeof answer !== "string" || !answer.trim() || answer.length > 4000)
+          throw new Error("Invalid question or answer.");
+        // Only ordinary application-specific screening responses, not identity,
+        // account credentials, medical/disability or voluntary demographic data.
+        if (/(?:password|passcode|verification|otp|social security|ssn|birth|credit card|bank|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif)/i.test(question))
+          continue;
+        statement.run(owner, id, question, answer, now());
+      }
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return listApplicationAnswers(owner, id);
+  }
   return {
     listProfiles,
     createProfile,
@@ -917,6 +957,8 @@ export function openStore(
     updateJobRecord,
     deleteJobRecord,
     setJobStatus,
+    saveApplicationAnswers,
+    listApplicationAnswers,
     close: () => db.close(),
   };
 }

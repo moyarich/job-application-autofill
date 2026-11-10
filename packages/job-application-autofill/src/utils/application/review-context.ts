@@ -11,12 +11,10 @@ export type ApplicationReviewActionsContext = {
   errors: string[];
   session: ApplySession | null;
   reviewed: boolean;
-  questionAnswers: Record<string, string>;
   setTab: (next: "profile") => void;
   changeJob: (id: string, status: ApplicationStatus) => void;
   setMessage: Update<string>;
   setApplyBusy: Update<boolean>;
   setSession: Update<ApplySession | null>;
   setReviewed: Update<boolean>;
-  setQuestionAnswers: Update<Record<string, string>>;
 };

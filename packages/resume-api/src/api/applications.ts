@@ -15,6 +15,7 @@ import {
   getActiveApplication,
   continueApplication,
   answerApplicationQuestions,
+  snapshotEmployerAnswers,
   refreshScreenshot,
   submitApplication,
   prepareApplicationAccount,
@@ -28,6 +29,9 @@ export const handleApplications: RouteHandler = async ({
   profileId,
   resumeIdHeader,
 }) => {
+  const savedAnswers = url.pathname.match(/^\/api\/applications\/([0-9a-f-]+)\/answers$/);
+  if (savedAnswers && req.method === "GET")
+    return reply(200, { answers: store.listApplicationAnswers(profileId, savedAnswers[1]) });
   if (req.method === "GET" && url.pathname === "/api/apply/active") {
     const active = getActiveApplication(
       url.searchParams.get("jobId"),
@@ -54,7 +58,7 @@ export const handleApplications: RouteHandler = async ({
       : reply(400, { error: result.error });
   }
   const match = url.pathname.match(
-    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste|menu))?$/,
+    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|save-answers|continue|answers|account-signup|focus|paste|menu))?$/,
   );
   if (match) {
     const [, id, action] = match;
@@ -98,6 +102,13 @@ export const handleApplications: RouteHandler = async ({
           : null,
       });
     }
+    if (req.method === "GET" && action === "save-answers")
+      return reply(200, { answers: store.listApplicationAnswers(profileId, getApplication(id).jobId) });
+    if (req.method === "POST" && action === "save-answers") {
+      const captured = await snapshotEmployerAnswers(id);
+      const answers = store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
+      return reply(200, { answers, count: Object.keys(captured).length });
+    }
     if (req.method === "POST" && action === "answers") {
       const payload = record(await req.readJson());
       return reply(
@@ -108,7 +119,11 @@ export const handleApplications: RouteHandler = async ({
         ),
       );
     }
-    if (req.method === "POST" && action === "continue")
+    if (req.method === "POST" && action === "continue") {
+      // Capture answers on the current step before automation moves forward.
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       return reply(
         200,
         await continueApplication(
@@ -117,6 +132,7 @@ export const handleApplications: RouteHandler = async ({
             undefined,
         ),
       );
+    }
     if (req.method === "POST" && action === "paste") {
       const body = record(await req.readJson());
       return reply(200, await pasteApplicationText(id, body.text));
@@ -135,9 +151,15 @@ export const handleApplications: RouteHandler = async ({
           error:
             "Confirm submission and acknowledge reviewing the browser first.",
         });
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       return reply(200, await submitApplication(id));
     }
     if (req.method === "POST" && action === "close") {
+      const captured = await snapshotEmployerAnswers(id).catch(() => ({}));
+      if (Object.keys(captured).length)
+        store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
       await closeApplication(id);
       return reply(200, { closed: true });
     }

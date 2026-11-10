@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { requestApi } from "../../utils/api/client";
 import { JobDescription } from "../JobDescription/JobDescription";
 import {
   ArrowLeft,
@@ -30,13 +32,42 @@ export function ApplicationReview({
     session,
     applyBusy,
     continueAfterChallenge,
-    questionAnswers,
-    setQuestionAnswers,
-    fillCustomQuestions,
     setReviewed,
     reviewed,
     finalizeApplication,
   } = controller;
+  const [savingAnswers, setSavingAnswers] = useState(false);
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
+  const [answerMessage, setAnswerMessage] = useState("");
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
+      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
+    }).then((response) => response.ok ? response.json() : null)
+      .then((data: { answers?: Record<string, string> } | null) => {
+        if (!cancelled && data?.answers) setSavedAnswers(data.answers);
+      }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [applicationId, activeProfileId]);
+  async function saveEmployerAnswers() {
+    if (!session) return;
+    setSavingAnswers(true);
+    try {
+      const result = await requestApi<{ answers: Record<string, string>; count: number }>(
+        "/api/apply/" + session.id + "/save-answers", {}, activeProfileId,
+        activeResumeId ?? undefined,
+      );
+      setSavedAnswers(result.answers);
+      setAnswerMessage(result.count
+        ? "Saved answers from the employer form to this application."
+        : "No completed custom answers detected on the current employer page.");
+    } catch (error) {
+      setAnswerMessage(error instanceof Error ? error.message : "Unable to save answers.");
+    } finally {
+      setSavingAnswers(false);
+    }
+  }
   const job = jobs.find((item) => item.id === applicationId);
   const selectedResume = resumeVersions.find(
     (item) => item.id === job?.resumeId,
@@ -106,6 +137,14 @@ export function ApplicationReview({
         <details className="application-job-description">
           <summary>About this role</summary>
           <JobDescription content={job.details.description} />
+        </details>
+      )}
+      {Object.keys(savedAnswers).length > 0 && !session && (
+        <details className="panel saved-application-answers">
+          <summary>Saved screening responses ({Object.keys(savedAnswers).length})</summary>
+          {Object.entries(savedAnswers).map(([question, answer]) => (
+            <div key={question}><strong>{question}</strong><p>{answer}</p></div>
+          ))}
         </details>
       )}
       {applicationId && !session && !applyBusy && (
@@ -215,102 +254,31 @@ export function ApplicationReview({
                 {session.state === "ready_for_review" && (
                   <div className="application-questions">
                     <div className="panel-title">
-                      <h3>Application questions</h3>
-                      <p>
-                        Use Autofill this step after moving to another page in
-                        the employer form. Review these questions and enter your
-                        answers. Sensitive questions remain on the employer’s
-                        site.
-                      </p>
+                      <h3>Employer questions</h3>
+                      <p>Answer any custom questions directly in the employer application below. Save the completed answers with this application; they are never reused for other jobs.</p>
                     </div>
-                    {(session.questions || [])
-                      .filter(
-                        (q) =>
-                          !/password|passcode|otp|social security|ssn|date of birth|birth date|credit card|bank account|passport|tax id|gender|race|ethnic|disabil|veteran|sexual orientation|demographic|self.identif/i.test(
-                            q.label,
-                          ),
-                      )
-                      .map((q) => (
-                        <label key={q.label}>
-                          {q.label}
-                          {q.required ? " (required)" : ""}
-                          {q.options.length > 0 &&
-                          (q.kind === "select" ||
-                            q.kind === "radio" ||
-                            q.kind === "combobox") ? (
-                            <select
-                              value={questionAnswers[q.label] || ""}
-                              onChange={(e) =>
-                                setQuestionAnswers((value) => ({
-                                  ...value,
-                                  [q.label]: e.target.value,
-                                }))
-                              }
-                            >
-                              <option value="">Select an answer</option>
-                              {q.options.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          ) : q.kind === "checkbox" ? (
-                            <select
-                              value={questionAnswers[q.label] || ""}
-                              onChange={(e) =>
-                                setQuestionAnswers((value) => ({
-                                  ...value,
-                                  [q.label]: e.target.value,
-                                }))
-                              }
-                            >
-                              <option value="">Select</option>
-                              <option value="Yes">Yes</option>
-                              <option value="No">No</option>
-                            </select>
-                          ) : q.kind === "textarea" ? (
-                            <textarea
-                              rows={3}
-                              value={questionAnswers[q.label] || ""}
-                              onChange={(e) =>
-                                setQuestionAnswers((value) => ({
-                                  ...value,
-                                  [q.label]: e.target.value,
-                                }))
-                              }
-                            />
-                          ) : (
-                            <input
-                              value={questionAnswers[q.label] || ""}
-                              onChange={(e) =>
-                                setQuestionAnswers((value) => ({
-                                  ...value,
-                                  [q.label]: e.target.value,
-                                }))
-                              }
-                            />
-                          )}
-                        </label>
-                      ))}
                     <div className="actions">
-                      <button
-                        className="secondary"
-                        disabled={
-                          applyBusy ||
-                          !Object.values(questionAnswers).some(Boolean)
-                        }
-                        onClick={fillCustomQuestions}
-                      >
-                        Fill my answers
+                      <button type="button" className="secondary"
+                        disabled={applyBusy || savingAnswers} onClick={() => void saveEmployerAnswers()}>
+                        {savingAnswers ? "Saving answers…" : "Save answers from employer form"}
                       </button>
-                      <button
-                        className="secondary"
-                        disabled={applyBusy}
-                        onClick={continueAfterChallenge}
-                      >
+                      <button type="button" className="secondary"
+                        disabled={applyBusy || savingAnswers} onClick={continueAfterChallenge}>
                         Autofill this step
                       </button>
                     </div>
+                    {answerMessage && <p role="status">{answerMessage}</p>}
+                    {Object.keys(savedAnswers).length > 0 && (
+                      <details className="saved-application-answers">
+                        <summary>Saved responses ({Object.keys(savedAnswers).length})</summary>
+                        {Object.entries(savedAnswers).map(([question, answer]) => (
+                          <div key={question}>
+                            <strong>{question}</strong>
+                            <p>{answer}</p>
+                          </div>
+                        ))}
+                      </details>
+                    )}
                   </div>
                 )}
                 {session.reviewUrl && (
