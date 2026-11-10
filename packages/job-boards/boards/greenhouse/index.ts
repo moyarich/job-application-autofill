@@ -1,5 +1,5 @@
-import type { JobSiteAdapter } from "../types.ts";
-import { firstPathTenant } from "../tenant.ts";
+import type { JobSiteAdapter } from "../../types.ts";
+import { firstPathTenant } from "../../tenant.ts";
 
 // Greenhouse host and employer identity. Form behavior belongs to site-owned steps.
 export default {

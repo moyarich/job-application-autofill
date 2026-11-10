@@ -9,11 +9,11 @@ export interface ApplicationQuestion {
   options: string[];
 }
 
-import greenhouse from "./greenhouse/index.ts";
-import lever from "./lever/index.ts";
+import greenhouse from "./boards/greenhouse/index.ts";
+import lever from "./boards/lever/index.ts";
 import workday from "./workday/index.ts";
-import ashby from "./ashby/index.ts";
-import smartRecruiters from "./smart-recruiters/index.ts";
+import ashby from "./boards/ashby/index.ts";
+import smartRecruiters from "./boards/smart-recruiters/index.ts";
 
 export const ADAPTERS: Readonly<Record<string, JobSiteAdapter>> = Object.freeze(
   {

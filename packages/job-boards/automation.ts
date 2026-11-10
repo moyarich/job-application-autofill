@@ -69,8 +69,12 @@ const launchingJobs = new Set<string>();
 const applicationListeners = new Map<string, Set<() => void>>();
 
 /** Server push: a viewer only listens to its own active application session. */
-export function subscribeApplication(id: string, listener: () => void): () => void {
-  if (!sessions.has(id)) throw new Error("Unknown or expired application session.");
+export function subscribeApplication(
+  id: string,
+  listener: () => void,
+): () => void {
+  if (!sessions.has(id))
+    throw new Error("Unknown or expired application session.");
   const listeners = applicationListeners.get(id) ?? new Set<() => void>();
   listeners.add(listener);
   applicationListeners.set(id, listeners);
@@ -83,8 +87,6 @@ export function subscribeApplication(id: string, listener: () => void): () => vo
 function emitApplication(id: string) {
   for (const listener of applicationListeners.get(id) ?? []) listener();
 }
-
-
 
 const SUCCESS =
   /(?:thank you for (?:your )?appl(?:y|ication)|application (?:has been )?(?:submitted|received)|successfully (?:submitted|applied)|we(?:'ve| have) received your application)/i;
@@ -142,9 +144,12 @@ export function getActiveApplication(
 function pruneClosedSessions() {
   for (const session of sessions.values()) {
     if (
-      (typeof session.page.isClosed === "function" && session.page.isClosed()) ||
-      (typeof session.browser.isConnected === "function" && !session.browser.isConnected())
-    ) void closeApplication(session.id);
+      (typeof session.page.isClosed === "function" &&
+        session.page.isClosed()) ||
+      (typeof session.browser.isConnected === "function" &&
+        !session.browser.isConnected())
+    )
+      void closeApplication(session.id);
   }
 }
 
@@ -162,11 +167,15 @@ async function populateSession(session: ApplicationSession) {
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
       onStep: (stepId) => {
-        session.currentAction = adapter.menuItems?.find((item) => item.stepId === stepId)?.label ?? stepId;
+        session.currentAction =
+          adapter.menuItems?.find((item) => item.stepId === stepId)?.label ??
+          stepId;
         emitApplication(session.id);
       },
       onStepResult: (stepId, missing) => {
-        (session.processedSteps ??= {})[stepId] = missing.length ? "needs_review" : "processed";
+        (session.processedSteps ??= {})[stepId] = missing.length
+          ? "needs_review"
+          : "processed";
         emitApplication(session.id);
       },
     },
@@ -192,7 +201,8 @@ export function pauseApplication(id: string) {
     throw new Error("Application submission has already been attempted.");
   session.pauseRequested = true;
   session.state = "paused";
-  session.message = "Automation paused. Make changes in the employer browser, then continue.";
+  session.message =
+    "Automation paused. Make changes in the employer browser, then continue.";
   emitApplication(id);
   return status(session);
 }
@@ -220,7 +230,9 @@ export async function getApplicationMenu(id: string) {
 
 /** A menu click invokes exactly one site-owned step; it never submits. */
 export async function runApplicationMenuItem(id: string, itemId: string) {
-  return withRunningSession(id, () => runApplicationMenuItemInternal(id, itemId));
+  return withRunningSession(id, () =>
+    runApplicationMenuItemInternal(id, itemId),
+  );
 }
 
 async function runApplicationMenuItemInternal(id: string, itemId: string) {
@@ -234,7 +246,9 @@ async function runApplicationMenuItemInternal(id: string, itemId: string) {
     throw new Error("Application session is not ready for this action.");
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) throw new Error("Return to the employer application first.");
-  session.currentAction = adapter.menuItems?.find((item) => item.id === itemId)?.label;
+  session.currentAction = adapter.menuItems?.find(
+    (item) => item.id === itemId,
+  )?.label;
   emitApplication(id);
   const outcome = await executeJobSiteMenuItem(
     {
@@ -244,7 +258,9 @@ async function runApplicationMenuItemInternal(id: string, itemId: string) {
       directory: session.directory,
       pendingResume: session.pendingResume,
       onStepResult: (stepId, missing) => {
-        (session.processedSteps ??= {})[stepId] = missing.length ? "needs_review" : "processed";
+        (session.processedSteps ??= {})[stepId] = missing.length
+          ? "needs_review"
+          : "processed";
       },
       resumeFile: session.resumeFile,
       resumeUploadUrls: session.resumeUploadUrls,
@@ -273,10 +289,14 @@ export async function continueApplication(
   return withRunningSession(id, () => continueApplicationInternal(id, profile));
 }
 
-async function withRunningSession(id: string, run: () => Promise<ReturnType<typeof status>>) {
+async function withRunningSession(
+  id: string,
+  run: () => Promise<ReturnType<typeof status>>,
+) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
-  if (session.running) throw new Error("Automation is already running for this application.");
+  if (session.running)
+    throw new Error("Automation is already running for this application.");
   session.running = true;
   emitApplication(id);
   try {
@@ -296,9 +316,12 @@ async function continueApplicationInternal(
   const session = sessions.get(id);
   if (
     !session ||
-    !["paused", "manual_intervention", "login_required", "ready_for_review"].includes(
-      session.state,
-    )
+    ![
+      "paused",
+      "manual_intervention",
+      "login_required",
+      "ready_for_review",
+    ].includes(session.state)
   )
     throw new Error("This session cannot be resumed.");
   session.pauseRequested = false;
@@ -346,14 +369,19 @@ async function continueApplicationInternal(
   await populateSession(session);
   if (session.ats === "workday") {
     const required = await missingWorkdayRequiredFields(session.page);
-    session.missing = [...new Set([...session.missing, ...required.map((name) => "required: " + name)])];
+    session.missing = [
+      ...new Set([
+        ...session.missing,
+        ...required.map((name) => "required: " + name),
+      ]),
+    ];
   }
   session.state = session.pauseRequested ? "paused" : "ready_for_review";
   session.message = session.pauseRequested
     ? "Automation paused. Resume autofill when ready."
     : session.missing.some((name) => name.startsWith("required:"))
-    ? "Workday requires additional information. Complete the listed fields in the employer viewer."
-    : "Current page autofill finished. Review the fields, then use the employer’s Save and Continue button to advance.";
+      ? "Workday requires additional information. Complete the listed fields in the employer viewer."
+      : "Current page autofill finished. Review the fields, then use the employer’s Save and Continue button to advance.";
   await refreshScreenshot(id);
   return status(session);
 }
@@ -403,9 +431,13 @@ export async function prepareApplicationAccount(
 export async function snapshotEmployerAnswers(id: string) {
   const session = sessions.get(id);
   if (!session) throw new Error("Unknown or expired application session.");
-  if (!adapterForUrl(session.page.url()) ||
-      new URL(session.page.url()).hostname !== new URL(session.url).hostname)
-    throw new Error("Return to the employer application before saving answers.");
+  if (
+    !adapterForUrl(session.page.url()) ||
+    new URL(session.page.url()).hostname !== new URL(session.url).hostname
+  )
+    throw new Error(
+      "Return to the employer application before saving answers.",
+    );
   return captureEmployerAnswers(session.page);
 }
 
@@ -500,10 +532,14 @@ export async function prepareApplication({
       page.on("framenavigated", (frame) => {
         if (frame === page.mainFrame()) emitApplication(session.id);
       });
-      page.on("close", () => { void closeApplication(session.id); });
+      page.on("close", () => {
+        void closeApplication(session.id);
+      });
     }
     if (typeof browser.on === "function")
-      browser.on("disconnected", () => { void closeApplication(session.id); });
+      browser.on("disconnected", () => {
+        void closeApplication(session.id);
+      });
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
     // Account sign-in/SSO may redirect to an identity provider. Do not
@@ -603,22 +639,34 @@ export function getApplication(id: string) {
 export async function refreshApplicationState(id: string) {
   getApplication(id);
   const session = sessions.get(id)!;
-  if (session.running || session.pauseRequested ||
-      ["preparing", "submitted", "submission_unverified"].includes(session.state))
+  if (
+    session.running ||
+    session.pauseRequested ||
+    ["preparing", "submitted", "submission_unverified"].includes(session.state)
+  )
     return status(session);
   const adapter = adapterForUrl(session.page.url());
   if (!adapter) return status(session);
-  const detection = await detectCurrentPage(session.page, adapter, new URL(session.url).hostname);
-  const next = detection.kind === "application" ? "ready_for_review" :
-    detection.kind === "challenge" ? "manual_intervention" : "login_required";
+  const detection = await detectCurrentPage(
+    session.page,
+    adapter,
+    new URL(session.url).hostname,
+  );
+  const next =
+    detection.kind === "application"
+      ? "ready_for_review"
+      : detection.kind === "challenge"
+        ? "manual_intervention"
+        : "login_required";
   if (session.state !== next) {
     session.state = next;
     emitApplication(id);
-    session.message = next === "ready_for_review"
-      ? "Employer application is open. Continue automation for the current page."
-      : next === "manual_intervention"
-        ? "Complete the security challenge in the employer browser."
-        : "Complete sign-in on the employer website, then continue.";
+    session.message =
+      next === "ready_for_review"
+        ? "Employer application is open. Continue automation for the current page."
+        : next === "manual_intervention"
+          ? "Complete the security challenge in the employer browser."
+          : "Complete sign-in on the employer website, then continue.";
   }
   return status(session);
 }

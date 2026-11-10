@@ -1,5 +1,5 @@
-import type { JobSiteAdapter } from "../types.ts";
-import { firstPathTenant } from "../tenant.ts";
+import type { JobSiteAdapter } from "../../types.ts";
+import { firstPathTenant } from "../../tenant.ts";
 
 // Lever adapter.
 export default {

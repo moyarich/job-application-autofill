@@ -16,7 +16,9 @@ const certificate = (name: string) => ({
   url: "",
 });
 
-test("Workday certification cards fill idempotently without selecting another card", async ({ page }) => {
+test("Workday certification cards fill idempotently without selecting another card", async ({
+  page,
+}) => {
   await page.setContent(`
     <div role="group" aria-label="Certification 1">
       <label>Certification<input value="Existing Certificate" /></label>
@@ -33,16 +35,24 @@ test("Workday certification cards fill idempotently without selecting another ca
   const entries = [certificate("AWS Developer")];
   const first = await fillWorkdayCertifications(page, entries);
   expect(first).toEqual({ filled: ["certifications[0]"], unresolved: [] });
-  expect(await page.getByRole("group", { name: "Certification 1" }).getByLabel("Certification").inputValue())
-    .toBe("Existing Certificate");
+  expect(
+    await page
+      .getByRole("group", { name: "Certification 1" })
+      .getByLabel("Certification")
+      .inputValue(),
+  ).toBe("Existing Certificate");
   const row = page.getByRole("group", { name: "Certification 2" });
-  expect(await row.getByLabel("Certification").inputValue()).toBe("AWS Developer");
+  expect(await row.getByLabel("Certification").inputValue()).toBe(
+    "AWS Developer",
+  );
   expect(await row.getByLabel("Issue Date").inputValue()).toBe("2025-10");
   expect(await row.getByLabel("Expiration Date").inputValue()).toBe("2028-10");
   expect(await fillWorkdayCertifications(page, entries)).toEqual(first);
 });
 
-test("Workday certifications leave unsupported date widgets and conflicting values for review", async ({ page }) => {
+test("Workday certifications leave unsupported date widgets and conflicting values for review", async ({
+  page,
+}) => {
   await page.setContent(`
     <div role="group" aria-label="Certification 1">
       <label>Certification<input value="AWS Developer" /></label>
@@ -50,23 +60,35 @@ test("Workday certifications leave unsupported date widgets and conflicting valu
       <label>Issue Date<input type="date" /></label>
     </div>
   `);
-  const result = await fillWorkdayCertifications(page, [certificate("AWS Developer")]);
+  const result = await fillWorkdayCertifications(page, [
+    certificate("AWS Developer"),
+  ]);
   expect(result.filled).toEqual([]);
-  expect(result.unresolved).toEqual(["certifications[0]: issuer, issuedDate, expirationDate"]);
+  expect(result.unresolved).toEqual([
+    "certifications[0]: issuer, issuedDate, expirationDate",
+  ]);
   expect(await page.getByLabel("Issuer").inputValue()).toBe("Different issuer");
   expect(await page.getByLabel("Issue Date").inputValue()).toBe("");
 });
 
-test("Workday certification step matches only an active editable card", async ({ page }) => {
-  const step = workdaySteps.find((item) => item.id === "workday.certifications");
+test("Workday certification step matches only an active editable card", async ({
+  page,
+}) => {
+  const step = workdaySteps.find(
+    (item) => item.id === "workday.certifications",
+  );
   expect(step).toBeDefined();
   const context = {
     page,
-    profile: { certifications: [certificate("AWS Developer")] } as Resume,
+    profile: {
+      certifications: [certificate("AWS Developer")],
+    } as Resume,
   } as JobSiteStepContext;
   await page.setContent("<h2>Certifications</h2>");
   expect(await step!.matches(context)).toBe(false);
-  await page.setContent('<div role="group" aria-label="Certification 1"><label>Certification<input /></label></div>');
+  await page.setContent(
+    '<div role="group" aria-label="Certification 1"><label>Certification<input /></label></div>',
+  );
   expect(await step!.matches(context)).toBe(true);
   context.profile.certifications = [];
   expect(await step!.matches(context)).toBe(false);

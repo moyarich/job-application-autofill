@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 import type {
   JobSiteStep,
   JobSiteStepContext,
@@ -10,7 +10,10 @@ import { fillWorkdayContact } from "./contact/contact.ts";
 import { fillWorkdayExperience } from "./experience/experience.ts";
 import { fillWorkdayEducation } from "./education/education.ts";
 import { fillWorkdaySkills } from "./skills/skills.ts";
-import { fillWorkdayCertifications, workdayCertificationsVisible } from "./certifications/certifications.ts";
+import {
+  fillWorkdayCertifications,
+  workdayCertificationsVisible,
+} from "./certifications/certifications.ts";
 import { retryWorkdayResumeUpload } from "./resume/resume.ts";
 import { resumeFields } from "./resume/selectors.ts";
 import { skillsFields } from "./skills/selectors.ts";
@@ -19,144 +22,262 @@ import { SECTION as WORK_EXPERIENCE_SECTION } from "./experience/selectors.ts";
 import { educationFields } from "./education/selectors.ts";
 import { inspectWorkdayFields } from "./menu-status.ts";
 
+/* -------------------------------------------------------------------------- */
+/* Constants                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const EDITABLE_CONTROLS =
+  'input:not([type="hidden"]):not([type="file"]), textarea, select, [role="combobox"]';
+
+const SCREENING_SECTIONS =
+  '[data-automation-id="questionnaireSection"], [data-automation-id="questionnaire"]';
+
+const SCREENING_HEADING =
+  /^(?:Application Questions|Screening Questions|Additional Questions|Questionnaire)$/i;
+
+const PERSONAL_INFO_LABELS =
+  /^(first name|last name|given name|family name|e.?mail(?: address)?|phone number|address line 1|city|state|postal code|country(?: \/ territory)? phone code)\s*\*?$/i;
+
+const CERTIFICATION_LABELS =
+  /^(certification|certification name|issuing organization|issuer|credential id)\s*\*?$/i;
+
+const PLACEHOLDER_VALUE = /^(select one|select|choose.*)$/i;
+
+/* -------------------------------------------------------------------------- */
+/* Locator helpers                                                            */
+/* -------------------------------------------------------------------------- */
+
+const isVisible = (l: Locator) => l.isVisible().catch(() => false);
+const isEnabled = (l: Locator) => l.isEnabled().catch(() => false);
+
+/** Every match of `locator`, in order. */
+async function all(locator: Locator): Promise<Locator[]> {
+  const n = await locator.count();
+  return Array.from({ length: n }, (_, i) => locator.nth(i));
+}
+
+async function visible(locator: Locator): Promise<Locator[]> {
+  const out: Locator[] = [];
+  for (const l of await all(locator)) if (await isVisible(l)) out.push(l);
+  return out;
+}
+
+/** Current text of an input-like control, trimmed. */
+async function valueOf(control: Locator): Promise<string> {
+  return (await control.inputValue().catch(() => control.innerText())).trim();
+}
+
+const toStepResult = (r: { filled: string[]; unresolved: string[] }) => ({
+  filled: r.filled,
+  missing: r.unresolved,
+});
+
+/* -------------------------------------------------------------------------- */
+/* "Is this section actually open?" predicates                                */
+/* -------------------------------------------------------------------------- */
+
 /** A navigation title alone does not mean that its form is open. */
-async function hasEditableField(page: Page, selector: string): Promise<boolean> {
-  const sections = page.locator(selector);
-  for (let i = 0; i < await sections.count(); i++) {
-    const section = sections.nth(i);
-    if (!(await section.isVisible().catch(() => false))) continue;
-    const inputs = section.locator('input:not([type="hidden"]):not([type="file"]), textarea, select, [role="combobox"]');
-    for (let j = 0; j < await inputs.count(); j++) {
-      const input = inputs.nth(j);
-      if (await input.isVisible().catch(() => false) &&
-          await input.isEnabled().catch(() => false))
-        return true;
+async function hasEditableField(
+  page: Page,
+  selector: string,
+): Promise<boolean> {
+  for (const section of await visible(page.locator(selector))) {
+    for (const input of await visible(section.locator(EDITABLE_CONTROLS))) {
+      if (await isEnabled(input)) return true;
     }
   }
   return false;
 }
 
 async function educationIsOpen(page: Page): Promise<boolean> {
-  const heading = page.getByText(educationFields.heading, { exact: true });
-  for (let i = 0; i < await heading.count(); i++) {
-    const section = heading.nth(i).locator("xpath=ancestor::*[.//button][1]");
-    if (await section.isVisible().catch(() => false) &&
-        await section.getByLabel(educationFields.institution).first().isVisible().catch(() => false))
+  const headings = await all(
+    page.getByText(educationFields.heading, { exact: true }),
+  );
+  for (const heading of headings) {
+    const section = heading.locator("xpath=ancestor::*[.//button][1]");
+    if (
+      (await isVisible(section)) &&
+      (await isVisible(section.getByLabel(educationFields.institution).first()))
+    )
       return true;
   }
   return false;
 }
 
-async function resumeUploadInput(page: Page) {
-  const uploads = page.locator(resumeFields.upload);
-  for (let i = 0; i < await uploads.count(); i++) {
-    const upload = uploads.nth(i);
-    // Native file inputs can be visually hidden behind a styled upload button.
-    // Playwright can still setInputFiles on those. Require an enabled, empty
-    // file input rather than hiding valid Workday upload controls.
-    if (!(await upload.isEnabled().catch(() => false))) continue;
-    const empty = await upload.evaluate((el) =>
-      el instanceof HTMLInputElement && el.type === "file" &&
-      !el.disabled && !el.files?.length).catch(() => false);
+async function screeningIsOpen(page: Page): Promise<boolean> {
+  if (await hasEditableField(page, SCREENING_SECTIONS)) return true;
+
+  const headings = await all(
+    page.getByRole("heading", { name: SCREENING_HEADING }),
+  );
+  for (const heading of headings) {
+    const section = heading.locator(
+      "xpath=ancestor::*[.//input or .//textarea or .//select][1]",
+    );
+    if (
+      (await isVisible(section)) &&
+      (await isVisible(section.locator("input, textarea, select").first()))
+    )
+      return true;
+  }
+  return false;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Status inspection                                                          */
+/* -------------------------------------------------------------------------- */
+
+async function inspectEducation({ page }: { page: Page }) {
+  const schools = await visible(page.getByLabel(educationFields.institution));
+  for (const school of schools) {
+    if (!(await valueOf(school))) return "needs_review" as const;
+  }
+
+  for (const degree of await visible(page.getByLabel(educationFields.degree))) {
+    const value = await valueOf(degree);
+    if (!value || PLACEHOLDER_VALUE.test(value)) return "needs_review" as const;
+  }
+
+  return schools.length ? ("filled" as const) : undefined;
+}
+
+async function inspectSkills({ page }: { page: Page }) {
+  const [section] = await visible(page.locator(skillsFields.section));
+  if (!section) return undefined;
+  return (await section.locator(skillsFields.selected).count()) > 0
+    ? ("filled" as const)
+    : ("ready" as const);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Resume                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Native file inputs are often visually hidden behind a styled button, and
+ * Playwright can still setInputFiles on them — so require an enabled, empty
+ * file input rather than a visible one.
+ */
+async function resumeUploadInput(page: Page): Promise<Locator | null> {
+  for (const upload of await all(page.locator(resumeFields.upload))) {
+    if (!(await isEnabled(upload))) continue;
+    const empty = await upload
+      .evaluate(
+        (el) =>
+          el instanceof HTMLInputElement &&
+          el.type === "file" &&
+          !el.disabled &&
+          !el.files?.length,
+      )
+      .catch(() => false);
     if (empty) return upload;
   }
   return null;
 }
 
-async function screeningIsOpen(page: Page) {
-  if (await hasEditableField(page,
-    '[data-automation-id="questionnaireSection"], [data-automation-id="questionnaire"]'))
-    return true;
-  const headings = page.getByRole("heading", { name: /^(?:Application Questions|Screening Questions|Additional Questions|Questionnaire)$/i });
-  for (let i = 0; i < await headings.count(); i++) {
-    const section = headings.nth(i).locator("xpath=ancestor::*[.//input or .//textarea or .//select][1]");
-    if (await section.isVisible().catch(() => false) &&
-        await section.locator("input, textarea, select").first().isVisible().catch(() => false))
-      return true;
+async function runResumeStep(
+  context: JobSiteStepContext,
+): Promise<JobSiteStepResult> {
+  const { page } = context;
+  let { pendingResume, resumeFile } = context;
+  let resumeUploadUrls = context.resumeUploadUrls || [];
+  const filled: string[] = [];
+  const missing: string[] = [];
+  const result = () => ({
+    filled,
+    missing,
+    pendingResume,
+    resumeFile,
+    resumeUploadUrls,
+  });
+
+  const upload = await resumeUploadInput(page);
+  if (!upload || resumeUploadUrls.includes(page.url())) return result();
+
+  if (pendingResume?.buffer?.length) {
+    const filename = join(context.directory, pendingResume.fileName);
+    await writeFile(filename, pendingResume.buffer, { mode: 0o600 });
+    resumeFile = filename;
+    try {
+      await upload.setInputFiles(filename, { timeout: 3000 });
+      filled.push("resume");
+      pendingResume = null;
+      resumeUploadUrls = [...resumeUploadUrls, page.url()];
+    } catch {
+      missing.push("resume");
+    }
+  } else if (resumeFile) {
+    const r = await retryWorkdayResumeUpload(
+      page,
+      resumeFile,
+      resumeUploadUrls,
+    );
+    filled.push(...r.filled);
+    missing.push(...r.missing);
+    if (r.uploaded) resumeUploadUrls = [...resumeUploadUrls, page.url()];
   }
-  return false;
+
+  return result();
 }
+
+/* -------------------------------------------------------------------------- */
+/* Steps                                                                      */
+/* -------------------------------------------------------------------------- */
 
 /** Workday owns which operations exist and when to run each one. */
 export const workdaySteps = [
   {
     id: "workday.personal-information",
-    inspectStatus: ({ page }) => inspectWorkdayFields(page.getByLabel(/^(first name|last name|given name|family name|e.?mail(?: address)?|phone number|address line 1|city|state|postal code|country(?: \/ territory)? phone code)\s*\*?$/i)),
-    matches: async ({ page }) =>
-      page.getByLabel(/^first name\s*\*?$/i).first().isVisible().catch(() => false),
+    inspectStatus: ({ page }) =>
+      inspectWorkdayFields(page.getByLabel(PERSONAL_INFO_LABELS)),
+    matches: ({ page }) =>
+      isVisible(page.getByLabel(/^first name\s*\*?$/i).first()),
     run: ({ page, profile }) => fillWorkdayContact(page, profile),
   },
   {
     id: "workday.work-experience",
-    inspectStatus: ({ page }) => inspectWorkdayFields(page.locator(WORK_EXPERIENCE_SECTION).locator('input:not([type="hidden"]), textarea, select, button[aria-haspopup]')),
-    matches: ({ page, profile }) =>
-      profile.experience.length
-        ? hasEditableField(page, WORK_EXPERIENCE_SECTION)
-        : Promise.resolve(false),
-    run: async ({ page, profile }) => {
-      const r = await fillWorkdayExperience(page, profile.experience);
-      return { filled: r.filled, missing: r.unresolved };
-    },
+    inspectStatus: ({ page }) =>
+      inspectWorkdayFields(
+        page
+          .locator(WORK_EXPERIENCE_SECTION)
+          .locator(
+            'input:not([type="hidden"]), textarea, select, button[aria-haspopup]',
+          ),
+      ),
+    matches: async ({ page, profile }) =>
+      profile.experience.length > 0 &&
+      (await hasEditableField(page, WORK_EXPERIENCE_SECTION)),
+    run: async ({ page, profile }) =>
+      toStepResult(await fillWorkdayExperience(page, profile.experience)),
   },
   {
     id: "workday.education",
-    inspectStatus: async ({ page }) => {
-      const schools = page.getByLabel(educationFields.institution);
-      let found = false;
-      for (let i = 0; i < await schools.count(); i++) {
-        const school = schools.nth(i);
-        if (!(await school.isVisible())) continue;
-        found = true;
-        if (!(await school.inputValue().catch(() => school.innerText())).trim()) return "needs_review";
-      }
-      const degrees = page.getByLabel(educationFields.degree);
-      for (let i = 0; i < await degrees.count(); i++) {
-        const degree = degrees.nth(i);
-        if (!(await degree.isVisible())) continue;
-        const value = (await degree.inputValue().catch(() => degree.innerText())).trim();
-        if (!value || /^(select one|select|choose.*)$/i.test(value)) return "needs_review";
-      }
-      return found ? "filled" : undefined;
-    },
-    matches: ({ page, profile }) =>
-      profile.education.length
-        ? educationIsOpen(page)
-        : Promise.resolve(false),
-    run: async ({ page, profile }) => {
-      const r = await fillWorkdayEducation(page, profile.education);
-      return { filled: r.filled, missing: r.unresolved };
-    },
+    inspectStatus: inspectEducation,
+    matches: async ({ page, profile }) =>
+      profile.education.length > 0 && (await educationIsOpen(page)),
+    run: async ({ page, profile }) =>
+      toStepResult(await fillWorkdayEducation(page, profile.education)),
   },
   {
     id: "workday.skills",
-    inspectStatus: async ({ page }) => {
-      const sections = page.locator(skillsFields.section);
-      for (let i = 0; i < await sections.count(); i++) {
-        const section = sections.nth(i);
-        if (await section.isVisible())
-          return await section.locator(skillsFields.selected).count() > 0 ? "filled" : "ready";
-      }
-      return undefined;
-    },
+    inspectStatus: inspectSkills,
     matches: async ({ page, profile }) =>
       profile.skills.length > 0 &&
       (await hasEditableField(page, skillsFields.section)),
-    run: async ({ page, profile }) => {
-      const r = await fillWorkdaySkills(page, profile.skills);
-      return { filled: r.filled, missing: r.unresolved };
-    },
+    run: async ({ page, profile }) =>
+      toStepResult(await fillWorkdaySkills(page, profile.skills)),
   },
   {
     id: "workday.certifications",
-    inspectStatus: ({ page }) => inspectWorkdayFields(page.getByLabel(/^(certification|certification name|issuing organization|issuer|credential id)\s*\*?$/i)),
-    matches: ({ page, profile }) =>
-      profile.certifications.length
-        ? workdayCertificationsVisible(page)
-        : Promise.resolve(false),
-    run: async ({ page, profile }) => {
-      const result = await fillWorkdayCertifications(page, profile.certifications);
-      return { filled: result.filled, missing: result.unresolved };
-    },
+    inspectStatus: ({ page }) =>
+      inspectWorkdayFields(page.getByLabel(CERTIFICATION_LABELS)),
+    matches: async ({ page, profile }) =>
+      profile.certifications.length > 0 &&
+      (await workdayCertificationsVisible(page)),
+    run: async ({ page, profile }) =>
+      toStepResult(
+        await fillWorkdayCertifications(page, profile.certifications),
+      ),
   },
   {
     id: "workday.resume",
@@ -164,43 +285,11 @@ export const workdaySteps = [
       Boolean(pendingResume?.buffer?.length || resumeFile) &&
       !(resumeUploadUrls || []).includes(page.url()) &&
       Boolean(await resumeUploadInput(page)),
-    run: async (context: JobSiteStepContext): Promise<JobSiteStepResult> => {
-      const { page } = context;
-      let { pendingResume, resumeFile } = context;
-      let resumeUploadUrls = context.resumeUploadUrls || [];
-      const filled: string[] = [],
-        missing: string[] = [];
-      const upload = await resumeUploadInput(page);
-      if (!upload || resumeUploadUrls.includes(page.url()))
-        return { filled, missing, pendingResume, resumeFile, resumeUploadUrls };
-      if (pendingResume?.buffer?.length) {
-        const filename = join(context.directory, pendingResume.fileName);
-        await writeFile(filename, pendingResume.buffer, { mode: 0o600 });
-        resumeFile = filename;
-        try {
-          await upload.setInputFiles(filename, { timeout: 3000 });
-          filled.push("resume");
-          pendingResume = null;
-          resumeUploadUrls = [...resumeUploadUrls, page.url()];
-        } catch {
-          missing.push("resume");
-        }
-      } else if (resumeFile) {
-        const r = await retryWorkdayResumeUpload(
-          page,
-          resumeFile,
-          resumeUploadUrls,
-        );
-        filled.push(...r.filled);
-        missing.push(...r.missing);
-        if (r.uploaded) resumeUploadUrls = [...resumeUploadUrls, page.url()];
-      }
-      return { filled, missing, pendingResume, resumeFile, resumeUploadUrls };
-    },
+    run: runResumeStep,
   },
   {
     id: "workday.screening",
-    matches: async ({ page }) => screeningIsOpen(page),
+    matches: ({ page }) => screeningIsOpen(page),
     run: async ({ page }) => ({
       filled: [],
       missing: [],
