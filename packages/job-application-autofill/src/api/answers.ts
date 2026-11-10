@@ -1,3 +1,4 @@
+import { requestApi } from "./client";
 /** Mutate the current application's saved screening-answer records. */
 export async function mutateApplicationAnswer(
   applicationId: string,
@@ -22,4 +23,21 @@ export async function mutateApplicationAnswer(
   const result = await response.json();
   if (!response.ok)
     throw new Error(result.error || "Unable to update the library.");
+}
+
+export function fillApplicationAnswer(
+  sessionId: string,
+  question: string,
+  answer: string,
+  profileId: string,
+  resumeId?: string,
+) {
+  return requestApi<{
+    answerResult: { filled: string[]; unresolved: string[] };
+  }>(
+    "/api/apply/" + encodeURIComponent(sessionId) + "/answers",
+    { answers: { [question]: answer } },
+    profileId,
+    resumeId,
+  );
 }
