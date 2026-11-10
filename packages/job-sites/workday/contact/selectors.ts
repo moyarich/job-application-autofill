@@ -9,6 +9,8 @@ export type WorkdayContactField = Extract<keyof CandidateProfile["contact"], str
 /** Workday labels are exact to prevent matching an unrelated control. */
 export const workdayContactFields = {
   firstName: { labels: [/^first name\s*\*?$/i, /^given name\s*\*?$/i] },
+  middleName: { labels: [/^middle name\s*\*?$/i] },
+  preferredName: { labels: [/^(?:preferred name|preferred first name)\s*\*?$/i] },
   lastName: { labels: [/^last name\s*\*?$/i, /^family name\s*\*?$/i] },
   email: { labels: [/^e.?mail(?: address)?\s*\*?$/i] },
   phone: { labels: [/^phone number\s*\*?$/i] },
