@@ -41,19 +41,22 @@ export function ApplicationReview({
   const [savingAnswers, setSavingAnswers] = useState(false);
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
   const [previousAnswers, setPreviousAnswers] = useState<PreviousAnswer[]>([]);
+  const [currentAnswerRecords, setCurrentAnswerRecords] = useState<PreviousAnswer[]>([]);
   const [answerMessage, setAnswerMessage] = useState("");
   useEffect(() => {
     setSavedAnswers({});
     setPreviousAnswers([]);
+    setCurrentAnswerRecords([]);
     if (!applicationId) return;
     let cancelled = false;
     fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
       headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
     }).then((response) => response.ok ? response.json() : null)
-      .then((data: { answers?: Record<string, string>; examples?: PreviousAnswer[] } | null) => {
+      .then((data: { answers?: Record<string, string>; examples?: PreviousAnswer[]; currentRecords?: PreviousAnswer[] } | null) => {
         if (!cancelled) {
           setSavedAnswers(data?.answers ?? {});
           setPreviousAnswers(data?.examples ?? []);
+          setCurrentAnswerRecords(data?.currentRecords ?? []);
         }
       }).catch(() => {});
     return () => { cancelled = true; };
@@ -68,9 +71,11 @@ export function ApplicationReview({
     const data = await response.json() as {
       answers?: Record<string, string>;
       examples?: PreviousAnswer[];
+      currentRecords?: PreviousAnswer[];
     };
     setSavedAnswers(data.answers ?? {});
     setPreviousAnswers(data.examples ?? []);
+    setCurrentAnswerRecords(data.currentRecords ?? []);
   }
   async function saveEmployerAnswers() {
     if (!session) return;
@@ -314,6 +319,7 @@ export function ApplicationReview({
                       questions={session.questions ?? []}
                       savedAnswers={savedAnswers}
                       previousAnswers={previousAnswers}
+                      currentAnswerRecords={currentAnswerRecords}
                     />
                   )}
                 {session.reviewUrl && (
