@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { workdaySteps } from "../../packages/job-sites/workday/steps.ts";
 import workday from "../../packages/job-sites/workday/index.ts";
-import type { JobSiteStepContext } from "../../packages/job-sites/types.ts";
+import type { JobSiteAdapter, JobSiteStepContext } from "../../packages/job-sites/types.ts";
 
 test("Workday discovers questions but does not answer or change the employer form", async ({ page }) => {
   const screening = workdaySteps.find((entry) => entry.id === "workday.screening");
@@ -20,5 +20,5 @@ test("Workday discovers questions but does not answer or change the employer for
   expect(result.questions?.map((question) => question.label))
     .toContain("Why do you want to work here?");
   expect(await page.locator("#why").inputValue()).toBe("My own written answer");
-  expect(workday.answerQuestions).toBeUndefined();
+  expect((workday as JobSiteAdapter).answerQuestions).toBeUndefined();
 });
