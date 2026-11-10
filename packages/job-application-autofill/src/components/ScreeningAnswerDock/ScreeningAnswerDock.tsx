@@ -1,0 +1,90 @@
+import { useState } from "react";
+import { requestApi } from "../../utils/api/client";
+import "./ScreeningAnswerDock.css";
+
+type Question = { label: string; kind: string; required: boolean; options: string[] };
+type Props = {
+  sessionId: string;
+  profileId: string;
+  resumeId?: string;
+  questions: Question[];
+  savedAnswers: Record<string, string>;
+};
+
+const blocked = /(?:agree|agreement|arbitration|non.disclosure|consent|acknowledge|signature|terms and conditions|privacy policy|gender|race|ethnic|veteran|disability|birth date|social security|password)/i;
+
+/**
+ * Suggestions never leave the selected application. No suggestions are applied
+ * automatically, and only an exact question-label match may be sent to Workday.
+ */
+export function ScreeningAnswerDock({
+  sessionId, profileId, resumeId, questions, savedAnswers,
+}: Props) {
+  const [expanded, setExpanded] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [completed, setCompleted] = useState<string[]>([]);
+  const suggested = questions.filter((question) =>
+    !blocked.test(question.label) && typeof savedAnswers[question.label] === "string" &&
+    savedAnswers[question.label].trim(),
+  );
+  const eligible = questions.filter((question) => !blocked.test(question.label));
+  async function apply(label: string, answer: string) {
+    if (!answer.trim()) return;
+    setBusy(label);
+    setMessage("");
+    try {
+      const response = await requestApi<{ answerResult: { filled: string[]; unresolved: string[] } }>(
+        "/api/apply/" + encodeURIComponent(sessionId) + "/answers",
+        { answers: { [label]: answer } },
+        profileId, resumeId,
+      );
+      if (response.answerResult.filled.includes(label)) {
+        setCompleted((old) => [...new Set([...old, label])]);
+        setMessage("Answer filled in the employer form. Review it before continuing.");
+      } else setMessage("The employer field could not be matched. Enter this answer manually.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to fill this answer.");
+    } finally {
+      setBusy(null);
+    }
+  }
+  return (
+    <aside className="screening-dock" aria-label="Screening answer assistant">
+      <button type="button" className="screening-dock-toggle" aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}>
+        <span>Screening answers</span>
+        <small>{suggested.length} saved matches · {questions.length} detected questions</small>
+        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+      </button>
+      {expanded && (
+        <div className="screening-dock-content">
+          <p>Answers are scoped to this application. Nothing is inserted without your selection.</p>
+          {eligible.length === 0 && <p>There are no safe, editable screening questions detected on this step.</p>}
+          {eligible.map((question) => {
+            const key = question.label;
+            const matched = savedAnswers[key]?.trim() || "";
+            const answer = drafts[key] ?? matched;
+            return (
+              <div className="screening-dock-item" key={key}>
+                <strong>{key}</strong>
+                {matched && <small>Saved for this application</small>}
+                {!matched && <small>No saved response for this question</small>}
+                <textarea rows={3} value={answer} aria-label={"Suggested answer for " + key}
+                  placeholder="Write a response specific to this role"
+                  onChange={(event) => setDrafts((old) => ({ ...old, [key]: event.target.value }))}/>
+                <button type="button" className="secondary" disabled={!answer.trim() || busy !== null}
+                  onClick={() => void apply(key, answer)}>
+                  {busy === key ? "Filling…" : completed.includes(key) ? "Fill again" : "Use this answer"}
+                </button>
+              </div>
+            );
+          })}
+          {message && <p role="status">{message}</p>}
+          <small>Legal consent and sensitive disclosures are completed directly on the employer's form.</small>
+        </div>
+      )}
+    </aside>
+  );
+}
