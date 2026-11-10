@@ -2,7 +2,7 @@ import { useState } from "react";
 import { requestApi } from "../../utils/api/client";
 import { relatedAnswers, type PreviousAnswer } from "./suggestions";
 import { AnswerLibrary } from "./AnswerLibrary";
-import { reusableQuestion } from "../../../../job-sites/screening-policy.ts";
+import { reusableQuestion } from "@moyarich/resume";
 import "./ScreeningAnswerDock.css";
 
 type Question = { label: string; kind: string; required: boolean; options: string[] };
