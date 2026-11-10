@@ -35,15 +35,20 @@ export async function fillWorkdayScreeningAnswers(
   for (const [label, raw] of Object.entries(answers)) {
     const answer = typeof raw === "string" ? raw.trim() : "";
     const match = questions.filter((q) => normalize(q.label) === normalize(label));
-    if (!answer || match.length !== 1 || classifyQuestion(label) !== "general" ||
+    const group = page.getByRole("group", { name: label, exact: true });
+    const customButton = group.getByRole("button", { name: /^(?:Select One(?: Required)?|Select)$/i });
+    const custom = match.length === 0 && await group.count() === 1 && await customButton.count() === 1;
+    if (!answer || (match.length !== 1 && !custom) || classifyQuestion(label) !== "general" ||
       BLOCKED.test(label)) {
       result.unresolved.push(label);
       continue;
     }
     const question = match[0];
-    const group = page.getByRole("group", { name: label, exact: true });
     try {
-      if (question.kind === "radio") {
+      if (custom) {
+        await customButton.click({ timeout: 2000 });
+        if (!(await chooseOption(page, answer))) throw new Error("No exact Workday option");
+      } else if (question.kind === "radio") {
         if (await group.count() !== 1) throw new Error("Ambiguous group");
         const selected = group.getByRole("radio", { checked: true });
         if (await selected.count()) {
