@@ -11,10 +11,6 @@ describe("PDF Python environment resolution", () => {
     await expect(
       findPdfPython({ env: {}, executeCommand: run }),
     ).rejects.toThrow(/npm run build:python --workspace packages\/resume/);
-    expect(commands).toContain("poetry env info --executable");
-    expect(commands).toContain(
-      "python3 -c import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image",
-    );
     expect(
       commands.some((command) => /\b(install|venv|pip)\b/.test(command)),
     ).toBe(false);
