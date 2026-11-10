@@ -56,6 +56,9 @@ Open the dashboard at **http://localhost:5173** and the browser viewer at **http
 
 `npm run dev:web` runs **only Vite**; it is useful when the API is already running separately and does not start the full application.
 
+`npm run dev` first creates or reuses the repository-root `.venv`, builds the OCR
+wheel with Poetry, and installs the pinned Python dependency before starting Docker.
+
 ## Run with Docker Compose
 
 For manual Docker Compose usage, configure a private VNC password in an untracked `.env` file, then start the stack:

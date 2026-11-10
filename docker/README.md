@@ -6,7 +6,12 @@ Start the project from the repository root:
 npm run dev
 ```
 
-This runs the API and frontend with the development Compose override. The local
+Before starting Docker, npm runs `build:python`: it creates the repository-root
+`.venv` if missing, makes Poetry available, builds the OCR wheel, and installs the
+pinned API dependency. An existing `.venv` is reused, and the wheel is rebuilt so
+local Python changes are included. Setup failure stops startup.
+
+Docker then runs the API and frontend with the development Compose override. The local
 checkout is mounted at `/app`; dependencies and workspace build outputs stay in
 container-managed volumes. Startup refreshes npm workspace links offline before
 building the JavaScript packages. Vite watches the API and frontend source.

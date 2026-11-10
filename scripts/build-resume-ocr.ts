@@ -17,35 +17,64 @@ const version = readFileSync(requirements, "utf8").match(
 )?.[1];
 if (!version) throw new Error("The API must pin a resume-ocr version.");
 
+const environment = {
+  ...process.env,
+  VIRTUAL_ENV: venv,
+  POETRY_VIRTUALENVS_CREATE: "false",
+};
+
 function run(command: string, args: string[]) {
   const result = spawnSync(command, args, {
     cwd: root,
     stdio: "inherit",
     windowsHide: true,
-    env: {
-      ...process.env,
-      VIRTUAL_ENV: venv,
-      POETRY_VIRTUALENVS_CREATE: "false",
-    },
+    env: environment,
   });
   if (result.error) throw result.error;
   if (result.status !== 0)
     throw new Error(`${command} exited with status ${result.status}`);
 }
 
+function available(command: string) {
+  const result = spawnSync(command, ["--version"], {
+    cwd: root,
+    stdio: "ignore",
+    windowsHide: true,
+    env: environment,
+  });
+  return !result.error && result.status === 0;
+}
+
+function poetryExecutable() {
+  const explicit = process.env.POETRY_EXECUTABLE?.trim();
+  if (explicit) return explicit;
+  if (available("poetry")) return "poetry";
+  const local = resolve(
+    venv,
+    process.platform === "win32" ? "Scripts/poetry.exe" : "bin/poetry",
+  );
+  if (!available(local)) {
+    console.log("Installing Poetry in .venv for the wheel build.");
+    run(python, ["-m", "pip", "install", "poetry==2.2.1"]);
+  }
+  return local;
+}
+
 try {
-  if (!existsSync(python))
+  if (!existsSync(python)) {
+    console.log("Creating repository-root .venv.");
     run(process.platform === "win32" ? "python" : "python3", [
       "-m",
       "venv",
       venv,
     ]);
+  }
   run(python, [
     "-c",
     "import sys; assert (3, 12) <= sys.version_info[:2] < (3, 15), 'resume-ocr requires Python 3.12-3.14'",
   ]);
   const wheels = resolve(packageDir, "dist");
-  run(process.env.POETRY_EXECUTABLE || "poetry", [
+  run(poetryExecutable(), [
     "--directory",
     packageDir,
     "build",
