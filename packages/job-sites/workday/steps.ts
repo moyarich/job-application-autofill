@@ -65,7 +65,7 @@ async function screeningIsOpen(page: Page) {
   if (await hasEditableField(page,
     '[data-automation-id="questionnaireSection"], [data-automation-id="questionnaire"]'))
     return true;
-  const headings = page.getByText(/^(?:Application Questions|Screening Questions|Additional Questions|Questionnaire)$/i, { exact: true });
+  const headings = page.getByRole("heading", { name: /^(?:Application Questions|Screening Questions|Additional Questions|Questionnaire)$/i });
   for (let i = 0; i < await headings.count(); i++) {
     const section = headings.nth(i).locator("xpath=ancestor::*[.//input or .//textarea or .//select][1]");
     if (await section.isVisible().catch(() => false) &&
