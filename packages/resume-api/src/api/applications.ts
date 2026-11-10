@@ -15,6 +15,7 @@ import {
   getActiveApplication,
   continueApplication,
   answerApplicationQuestions,
+  snapshotEmployerAnswers,
   refreshScreenshot,
   submitApplication,
   prepareApplicationAccount,
@@ -54,7 +55,7 @@ export const handleApplications: RouteHandler = async ({
       : reply(400, { error: result.error });
   }
   const match = url.pathname.match(
-    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|continue|answers|account-signup|focus|paste|menu))?$/,
+    /^\/api\/apply\/([0-9a-f-]+)(?:\/(submit|close|screenshot|snapshot|save-answers|continue|answers|account-signup|focus|paste|menu))?$/,
   );
   if (match) {
     const [, id, action] = match;
@@ -97,6 +98,13 @@ export const handleApplications: RouteHandler = async ({
           ? store.getOrCreateEmployerAccount(profileId, identity)
           : null,
       });
+    }
+    if (req.method === "GET" && action === "save-answers")
+      return reply(200, { answers: store.listApplicationAnswers(profileId, getApplication(id).jobId) });
+    if (req.method === "POST" && action === "save-answers") {
+      const captured = await snapshotEmployerAnswers(id);
+      const answers = store.saveApplicationAnswers(profileId, getApplication(id).jobId, captured);
+      return reply(200, { answers, count: Object.keys(captured).length });
     }
     if (req.method === "POST" && action === "answers") {
       const payload = record(await req.readJson());
