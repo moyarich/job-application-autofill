@@ -282,8 +282,7 @@ export function ApplicationReview({
                     )}
                   </div>
                 )}
-                {session.state === "ready_for_review" && session.ats === "workday" &&
-                  session.questions?.length > 0 && (
+                {session.state === "ready_for_review" && session.ats === "workday" && (
                     <ScreeningAnswerDock
                       key={session.id}
                       sessionId={session.id}
