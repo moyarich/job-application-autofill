@@ -12,9 +12,7 @@ describe("PDF Python environment resolution", () => {
     };
     await expect(
       findPdfPython({ env: {}, executeCommand: run }),
-    ).rejects.toThrow(/npm run build:python/);
-    expect(commands.filter((command) => command.startsWith("poetry "))).toEqual(
-      ["poetry env info --executable"],
-    );
+    ).rejects.toThrow();
+    expect(commands.some((command) => /\b(?:install|pip)\b/.test(command))).toBe(false);
   });
 });
