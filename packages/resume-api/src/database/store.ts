@@ -916,6 +916,14 @@ export function openStore(
     );
   }
 
+  /** Current answers and library examples are projections of the same SQLite table. */
+  function getApplicationAnswerContext(profileId: string, jobId: string) {
+    return {
+      answers: listApplicationAnswers(profileId, jobId),
+      examples: listAnswerLibrary(profileId, jobId),
+    };
+  }
+
   /** Preserve written screening answers only for the matching application. */
   function listApplicationAnswers(profileId: string, jobId: string) {
     const owner = requireProfile(profileId);
@@ -983,6 +991,7 @@ export function openStore(
     saveApplicationAnswers,
     listApplicationAnswers,
     listAnswerLibrary,
+    getApplicationAnswerContext,
     close: () => db.close(),
   };
 }
