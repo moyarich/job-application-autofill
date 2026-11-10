@@ -154,19 +154,18 @@ const educationFields: Field<Resume["education"][number]>[] = [
   { key: "endDate", label: "End date (YYYY or YYYY-MM)", nullable: true },
   { key: "description", label: "Education details", multiline: true },
 ];
-const certificationFields: Field<Resume["certifications"][number]>[] =
-  [
-    { key: "name", label: "Certification name" },
-    { key: "issuer", label: "Issuer" },
-    { key: "issuedDate", label: "Issued date (YYYY or YYYY-MM)" },
-    {
-      key: "expirationDate",
-      label: "Expiration date (YYYY or YYYY-MM)",
-      nullable: true,
-    },
-    { key: "credentialId", label: "Credential ID" },
-    { key: "url", label: "Credential URL" },
-  ];
+const certificationFields: Field<Resume["certifications"][number]>[] = [
+  { key: "name", label: "Certification name" },
+  { key: "issuer", label: "Issuer" },
+  { key: "issuedDate", label: "Issued date (YYYY or YYYY-MM)" },
+  {
+    key: "expirationDate",
+    label: "Expiration date (YYYY or YYYY-MM)",
+    nullable: true,
+  },
+  { key: "credentialId", label: "Credential ID" },
+  { key: "url", label: "Credential URL" },
+];
 const projectFields: Field<Resume["projects"][number]>[] = [
   { key: "name", label: "Project name" },
   { key: "url", label: "Project URL" },

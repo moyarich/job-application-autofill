@@ -137,7 +137,10 @@ export function useResumeDraft({
   }
 
   usePendingSave(
-    () => hydrated && !applicationId && JSON.stringify({ profile, contactId }) !== savedRef.current,
+    () =>
+      hydrated &&
+      !applicationId &&
+      JSON.stringify({ profile, contactId }) !== savedRef.current,
     flushResume,
   );
 

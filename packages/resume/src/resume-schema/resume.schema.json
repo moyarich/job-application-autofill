@@ -139,9 +139,7 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "fileName"
-      ],
+      "required": ["fileName"],
       "properties": {
         "fileName": {
           "type": "string"
@@ -153,10 +151,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "heading",
-          "content"
-        ],
+        "required": ["heading", "content"],
         "properties": {
           "heading": {
             "type": "string"
@@ -173,10 +168,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "heading",
-          "content"
-        ],
+        "required": ["heading", "content"],
         "properties": {
           "heading": {
             "type": "string"
@@ -298,12 +290,7 @@
     "project": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "description",
-        "url",
-        "technologies"
-      ],
+      "required": ["name", "description", "url", "technologies"],
       "properties": {
         "name": {
           "type": "string",
@@ -376,13 +363,7 @@
   },
   "x-atsExportGuidance": {
     "reference": "https://resume.io/resume-templates/ats",
-    "sectionOrder": [
-      "contact",
-      "summary",
-      "experience",
-      "skills",
-      "education"
-    ],
+    "sectionOrder": ["contact", "summary", "experience", "skills", "education"],
     "headings": {
       "summary": "Professional Summary",
       "experience": "Work Experience",
@@ -391,12 +372,7 @@
     },
     "layout": "single-column",
     "contactPlacement": "main-document-body",
-    "bodyFontFamilies": [
-      "Arial",
-      "Calibri",
-      "Times New Roman",
-      "Georgia"
-    ],
+    "bodyFontFamilies": ["Arial", "Calibri", "Times New Roman", "Georgia"],
     "bodyFontSizePt": {
       "minimum": 10,
       "maximum": 12
@@ -411,10 +387,7 @@
       "decorative lines",
       "skill bars"
     ],
-    "bullets": [
-      "round",
-      "dash"
-    ],
+    "bullets": ["round", "dash"],
     "dates": "consistent year-and-month display, e.g. May 2023 to Present",
     "experienceOrder": "reverse-chronological",
     "defaultFileType": "docx",

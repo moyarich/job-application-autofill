@@ -111,7 +111,12 @@ export async function listJobSiteMenu(
   )
     return [];
   const steps = new Map((adapter.steps ?? []).map((step) => [step.id, step]));
-  const items: { id: string; label: string; available: boolean; status?: "processed" | "needs_review" | "filled" | "ready" }[] = [];
+  const items: {
+    id: string;
+    label: string;
+    available: boolean;
+    status?: "processed" | "needs_review" | "filled" | "ready";
+  }[] = [];
   for (const item of adapter.menuItems ?? []) {
     const step = steps.get(item.stepId);
     if (!step) continue;

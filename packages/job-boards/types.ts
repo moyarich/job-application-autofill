@@ -31,7 +31,9 @@ export interface JobSiteStep {
   readonly id: string;
   matches(context: JobSiteStepContext): Promise<boolean>;
   run(context: JobSiteStepContext): Promise<JobSiteStepResult>;
-  inspectStatus?(context: JobSiteStepContext): Promise<"filled" | "needs_review" | "ready" | undefined>;
+  inspectStatus?(
+    context: JobSiteStepContext,
+  ): Promise<"filled" | "needs_review" | "ready" | undefined>;
 }
 
 /** Visible menu action declared by the job site's own adapter. */

@@ -116,7 +116,9 @@ export function useJobApplications({
       await deleteJob(profileId, jobId, revisionsRef.current[jobId]);
       delete revisionsRef.current[jobId];
       const saved = JSON.parse(savedRef.current || "[]") as JobApplication[];
-      savedRef.current = JSON.stringify(saved.filter((job) => job.id !== jobId));
+      savedRef.current = JSON.stringify(
+        saved.filter((job) => job.id !== jobId),
+      );
       setJobs((items) => items.filter((job) => job.id !== jobId));
     });
     queue.current = operation.catch(() => {});
@@ -124,7 +126,10 @@ export function useJobApplications({
   }
 
   usePendingSave(
-    () => jobsHydrated && !applicationId && JSON.stringify(jobs) !== savedRef.current,
+    () =>
+      jobsHydrated &&
+      !applicationId &&
+      JSON.stringify(jobs) !== savedRef.current,
     flushJobs,
   );
 

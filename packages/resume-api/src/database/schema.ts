@@ -24,8 +24,14 @@ export function initializeDatabase(db: DatabaseSync): void {
         db.exec(
           "ALTER TABLE applications ADD COLUMN account_action TEXT CHECK(account_action IN ('signup','login'))",
         );
-      if (version < 3) db.exec("ALTER TABLE applications ADD COLUMN details_json TEXT");
-      db.exec(readFileSync(new URL("./tables/application-answers.sql", import.meta.url), "utf8"));
+      if (version < 3)
+        db.exec("ALTER TABLE applications ADD COLUMN details_json TEXT");
+      db.exec(
+        readFileSync(
+          new URL("./tables/application-answers.sql", import.meta.url),
+          "utf8",
+        ),
+      );
       db.exec("PRAGMA user_version = 4");
       db.exec("COMMIT");
     } catch (error) {

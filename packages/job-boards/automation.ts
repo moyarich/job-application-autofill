@@ -282,10 +282,7 @@ async function runApplicationMenuItemInternal(id: string, itemId: string) {
   return status(session);
 }
 
-export async function continueApplication(
-  id: string,
-  profile?: Resume,
-) {
+export async function continueApplication(id: string, profile?: Resume) {
   return withRunningSession(id, () => continueApplicationInternal(id, profile));
 }
 
@@ -309,10 +306,7 @@ async function withRunningSession(
   return status(session);
 }
 
-async function continueApplicationInternal(
-  id: string,
-  profile?: Resume,
-) {
+async function continueApplicationInternal(id: string, profile?: Resume) {
   const session = sessions.get(id);
   if (
     !session ||

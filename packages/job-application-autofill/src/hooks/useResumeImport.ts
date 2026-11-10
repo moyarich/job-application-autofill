@@ -25,9 +25,7 @@ export function useResumeImport(workspace: ResumeImportData) {
     setContactId,
   } = workspace;
   const { setContacts, setDefaultContactId } = workspace;
-  const [pendingImport, setPendingImport] = useState<Resume | null>(
-    null,
-  );
+  const [pendingImport, setPendingImport] = useState<Resume | null>(null);
   const [importChoices, setImportChoices] = useState<
     Partial<Record<ContactKey, ContactChoice>>
   >({});

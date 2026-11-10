@@ -47,8 +47,7 @@ Amazon Web Services`);
 });
 
 test("joins PDF line wrapping into complete responsibilities for Slate", async () => {
-  const { markdownToEditor } =
-    await import("@moyarich/resume/markdown");
+  const { markdownToEditor } = await import("@moyarich/resume/markdown");
   const parsed = extractProfile(`Ada Lovelace
 WORK EXPERIENCE
 Example Inc.

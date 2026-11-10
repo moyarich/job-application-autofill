@@ -8,8 +8,7 @@ services:
       target: api
     image: job-application-autofill-api:local
     entrypoint: ["/app/docker/start-review.sh"]
-    command:
-      ["node", "packages/resume-api/dist/index.js"]
+    command: ["node", "packages/resume-api/dist/index.js"]
     environment:
       NODE_ENV: "${NODE_ENV:-development}"
       AUTOFILL_PORT: "4177"

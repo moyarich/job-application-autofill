@@ -70,7 +70,11 @@ export function Opportunities({
   const [pageSize, setPageSize] = useState(10);
   const [descriptionJobId, setDescriptionJobId] = useState<string | null>(null);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState({ company: "", role: "", url: "" });
+  const [editDraft, setEditDraft] = useState({
+    company: "",
+    role: "",
+    url: "",
+  });
   const [editError, setEditError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   function startEdit(job: (typeof jobs)[number]) {
@@ -79,27 +83,43 @@ export function Opportunities({
     setEditError("");
   }
   function saveEdit(jobId: string) {
-    const company = editDraft.company.trim(), role = editDraft.role.trim(), url = editDraft.url.trim();
+    const company = editDraft.company.trim(),
+      role = editDraft.role.trim(),
+      url = editDraft.url.trim();
     if (!company || !role || !/^https?:\/\/\S+$/i.test(url)) {
       setEditError("Company, role, and a valid job posting URL are required.");
       return;
     }
-    setJobs((items) => items.map((job) =>
-      job.id === jobId ? { ...job, company, role, url } : job,
-    ));
+    setJobs((items) =>
+      items.map((job) =>
+        job.id === jobId ? { ...job, company, role, url } : job,
+      ),
+    );
     setEditingJobId(null);
     setEditError("");
   }
   async function removeJob(job: (typeof jobs)[number]) {
     if (deletingId) return;
-    if (!window.confirm("Delete the application for " + job.role + " at " + job.company +
-      "? Its saved screening answers will also be deleted.")) return;
+    if (
+      !window.confirm(
+        "Delete the application for " +
+          job.role +
+          " at " +
+          job.company +
+          "? Its saved screening answers will also be deleted.",
+      )
+    )
+      return;
     setDeletingId(job.id);
     try {
       await deleteApplication(job.id);
       setMessage("Application deleted.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not delete application.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not delete application.",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -339,16 +359,19 @@ export function Opportunities({
                       className="primary"
                       disabled={
                         !job.url ||
-                        (!["in_progress", "ready_for_review"].includes(job.status) && (
-                        !job.resumeId ||
-                        !resumeVersions.some(
-                          (resume) => resume.id === job.resumeId,
-                        )
-                        ))
+                        (!["in_progress", "ready_for_review"].includes(
+                          job.status,
+                        ) &&
+                          (!job.resumeId ||
+                            !resumeVersions.some(
+                              (resume) => resume.id === job.resumeId,
+                            )))
                       }
                       onClick={() => void prepareJob(job)}
                     >
-                      {["in_progress", "ready_for_review"].includes(job.status) ? "Continue application" : "Apply"}
+                      {["in_progress", "ready_for_review"].includes(job.status)
+                        ? "Continue application"
+                        : "Apply"}
                     </button>
                   </div>
                   <details className="job-action-menu">
@@ -380,8 +403,12 @@ export function Opportunities({
                           ))}
                         </select>
                       </label>
-                      <a className="job-menu-item" href={applicationReviewPath(job.id)}>
-                        <FileText size={16} aria-hidden="true" /> View application
+                      <a
+                        className="job-menu-item"
+                        href={applicationReviewPath(job.id)}
+                      >
+                        <FileText size={16} aria-hidden="true" /> View
+                        application
                       </a>
                       {job.details?.description && (
                         <button
@@ -428,7 +455,9 @@ export function Opportunities({
                         className="job-menu-item"
                         onClick={(event) => {
                           startEdit(job);
-                          event.currentTarget.closest(".job-action-menu")?.removeAttribute("open");
+                          event.currentTarget
+                            .closest(".job-action-menu")
+                            ?.removeAttribute("open");
                         }}
                       >
                         <Pencil size={16} aria-hidden="true" /> Edit application
@@ -440,35 +469,82 @@ export function Opportunities({
                         disabled={deletingId !== null}
                         onClick={() => void removeJob(job)}
                       >
-                        <Trash2 size={16} aria-hidden="true" /> {deletingId === job.id ? "Deleting…" : "Delete"}
+                        <Trash2 size={16} aria-hidden="true" />{" "}
+                        {deletingId === job.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </details>
                 </div>
                 {editingJobId === job.id && (
-                  <form className="application-edit-form" aria-label={"Edit " + job.role + " application"}
-                    onSubmit={(event) => { event.preventDefault(); saveEdit(job.id); }}>
+                  <form
+                    className="application-edit-form"
+                    aria-label={"Edit " + job.role + " application"}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      saveEdit(job.id);
+                    }}
+                  >
                     <h3>Edit application</h3>
                     <div className="application-edit-fields">
-                      <label>Company
-                        <input required maxLength={500} value={editDraft.company}
-                          onChange={(event) => setEditDraft((old) => ({ ...old, company: event.target.value }))} />
+                      <label>
+                        Company
+                        <input
+                          required
+                          maxLength={500}
+                          value={editDraft.company}
+                          onChange={(event) =>
+                            setEditDraft((old) => ({
+                              ...old,
+                              company: event.target.value,
+                            }))
+                          }
+                        />
                       </label>
-                      <label>Role
-                        <input required maxLength={500} value={editDraft.role}
-                          onChange={(event) => setEditDraft((old) => ({ ...old, role: event.target.value }))} />
+                      <label>
+                        Role
+                        <input
+                          required
+                          maxLength={500}
+                          value={editDraft.role}
+                          onChange={(event) =>
+                            setEditDraft((old) => ({
+                              ...old,
+                              role: event.target.value,
+                            }))
+                          }
+                        />
                       </label>
-                      <label>Job posting URL
-                        <input required type="url" maxLength={4000} value={editDraft.url}
-                          onChange={(event) => setEditDraft((old) => ({ ...old, url: event.target.value }))} />
+                      <label>
+                        Job posting URL
+                        <input
+                          required
+                          type="url"
+                          maxLength={4000}
+                          value={editDraft.url}
+                          onChange={(event) =>
+                            setEditDraft((old) => ({
+                              ...old,
+                              url: event.target.value,
+                            }))
+                          }
+                        />
                       </label>
                     </div>
                     {editError && <p role="alert">{editError}</p>}
                     <div className="actions">
-                      <button type="submit" className="primary">Save changes</button>
-                      <button type="button" className="secondary" onClick={() => {
-                        setEditingJobId(null); setEditError("");
-                      }}>Cancel</button>
+                      <button type="submit" className="primary">
+                        Save changes
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => {
+                          setEditingJobId(null);
+                          setEditError("");
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </form>
                 )}

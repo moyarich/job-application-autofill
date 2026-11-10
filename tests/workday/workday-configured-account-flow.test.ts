@@ -48,7 +48,13 @@ it("tries configured login for new employer records and keeps a pending resume u
     );
     const continued = await continueApplication(session.id);
     expect(continued.filled).toContain("resume");
-    expect(await page!.evaluate(() => (window as unknown as { navigationClicks?: number }).navigationClicks ?? 0)).toBe(0);
+    expect(
+      await page!.evaluate(
+        () =>
+          (window as unknown as { navigationClicks?: number })
+            .navigationClicks ?? 0,
+      ),
+    ).toBe(0);
     expect(
       await page!
         .locator('input[type="file"]')

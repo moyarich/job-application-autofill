@@ -52,7 +52,9 @@ export function useAutomationEvents(
         // A dropped connection is retried, not polled.
       }
       if (!stopped)
-        reconnect = setTimeout(() => { void connect(); }, 2000);
+        reconnect = setTimeout(() => {
+          void connect();
+        }, 2000);
     }
 
     void connect();

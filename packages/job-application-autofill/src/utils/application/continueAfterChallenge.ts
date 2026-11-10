@@ -43,17 +43,25 @@ export function createContinueAfterChallenge(
     } catch (error) {
       if (recoverSession) {
         try {
-          const response = await fetch("/api/apply/active?jobId=" + encodeURIComponent(session.jobId), {
-            headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
-            cache: "no-store",
-          });
+          const response = await fetch(
+            "/api/apply/active?jobId=" + encodeURIComponent(session.jobId),
+            {
+              headers: {
+                "X-Moya-Client": "dashboard",
+                "X-Profile-Id": activeProfileId,
+              },
+              cache: "no-store",
+            },
+          );
           if (response.ok && !(await response.json()).session) {
             setSession(null);
             setReviewed(false);
             await recoverSession();
             return;
           }
-        } catch { /* Retain the original error if the API is unreachable. */ }
+        } catch {
+          /* Retain the original error if the API is unreachable. */
+        }
       }
       setMessage(
         error instanceof Error ? error.message : "Challenge is not complete.",

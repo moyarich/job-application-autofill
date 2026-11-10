@@ -45,7 +45,9 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
           setSession(result.session ?? null);
           if (!result.session) {
             setReviewed(false);
-            setMessage("Browser session ended. Your application has not been marked submitted. Reopen it to continue.");
+            setMessage(
+              "Browser session ended. Your application has not been marked submitted. Reopen it to continue.",
+            );
           }
         })
         .catch((error) => {
@@ -101,11 +103,14 @@ export function useApplicationReview(workspace: ApplicationReviewData) {
   const prepareAccountSignUp = createPrepareAccountSignUp(reviewContext);
   const setEmployerAccountStatus =
     createSetEmployerAccountStatus(reviewContext);
-  const continueAfterChallenge = createContinueAfterChallenge(reviewContext, async () => {
-    const job = workspace.jobs.find((item) => item.id === applicationId);
-    if (!job) return;
-    await createPrepareJob({ ...reviewContext, session: null })(job);
-  });
+  const continueAfterChallenge = createContinueAfterChallenge(
+    reviewContext,
+    async () => {
+      const job = workspace.jobs.find((item) => item.id === applicationId);
+      if (!job) return;
+      await createPrepareJob({ ...reviewContext, session: null })(job);
+    },
+  );
   const finalizeApplication = createFinalizeApplication(reviewContext);
 
   return {

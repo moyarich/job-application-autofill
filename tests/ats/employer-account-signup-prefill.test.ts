@@ -2,55 +2,56 @@ import { test, expect, vi } from "vitest";
 import type { Page } from "playwright";
 import { prepareEmployerSignUp } from "../../packages/job-boards/account-sign-up.ts";
 
-test.each(["Short1!x", "secure-once-password-01234"])("employer signup fills employer-compatible password %s without submitting", async (password) => {
-  const values: Record<string, string> = {};
-  const click = vi.fn();
-  const field = (name: string) => ({
-    first: () => ({
-      isVisible: async () => true,
-      isEnabled: async () => true,
-      fill: async (value: string) => {
-        values[name] = value;
-      },
-    }),
-  });
-  const page = {
-    url: () => "https://acme.wd5.myworkdayjobs.com/create-account",
-    getByRole: (role: string) => ({
+test.each(["Short1!x", "secure-once-password-01234"])(
+  "employer signup fills employer-compatible password %s without submitting",
+  async (password) => {
+    const values: Record<string, string> = {};
+    const click = vi.fn();
+    const field = (name: string) => ({
       first: () => ({
-        isVisible: async () => role === "heading",
-        click,
+        isVisible: async () => true,
+        isEnabled: async () => true,
+        fill: async (value: string) => {
+          values[name] = value;
+        },
       }),
-    }),
-    getByLabel: (label: RegExp) => field(String(label)),
-  } as unknown as Page;
-  const result = await prepareEmployerSignUp(
-    page,
-    "https://acme.wd5.myworkdayjobs.com/Careers/job/42",
-    "Acme",
-    {
-      contact: {
-        firstName: "Ada",
-        lastName: "Lovelace",
-        email: "ada@example.com",
-      },
-    } as never,
-    { password },
-  );
-  expect(result.state).toBe("manual_required");
-  expect(result.filled).toEqual([
-    "firstName",
-    "lastName",
-    "email",
-    "password",
-    "confirmPassword",
-  ]);
-  expect(values["/e.?mail/i"]).toBe("ada@example.com");
-  expect(values["/^(?:new )?password\\s*\\*?$/i"]).toBe(
-    password,
-  );
-  expect(click).not.toHaveBeenCalled();
-});
+    });
+    const page = {
+      url: () => "https://acme.wd5.myworkdayjobs.com/create-account",
+      getByRole: (role: string) => ({
+        first: () => ({
+          isVisible: async () => role === "heading",
+          click,
+        }),
+      }),
+      getByLabel: (label: RegExp) => field(String(label)),
+    } as unknown as Page;
+    const result = await prepareEmployerSignUp(
+      page,
+      "https://acme.wd5.myworkdayjobs.com/Careers/job/42",
+      "Acme",
+      {
+        contact: {
+          firstName: "Ada",
+          lastName: "Lovelace",
+          email: "ada@example.com",
+        },
+      } as never,
+      { password },
+    );
+    expect(result.state).toBe("manual_required");
+    expect(result.filled).toEqual([
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "confirmPassword",
+    ]);
+    expect(values["/e.?mail/i"]).toBe("ada@example.com");
+    expect(values["/^(?:new )?password\\s*\\*?$/i"]).toBe(password);
+    expect(click).not.toHaveBeenCalled();
+  },
+);
 
 test("Workday signup uses configured credentials without returning them to the dashboard", async () => {
   vi.stubEnv("WORKDAY_USERNAME", "configured@example.com");

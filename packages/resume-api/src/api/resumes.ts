@@ -9,9 +9,16 @@ export const handleResumes: RouteHandler = async ({
 }) => {
   if (req.method === "POST" && url.pathname === "/api/resumes/import") {
     try {
-      return reply(200, store.importResumeDocument(profileId, await req.readJson()));
+      return reply(
+        200,
+        store.importResumeDocument(profileId, await req.readJson()),
+      );
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "STALE_STATE")
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "STALE_STATE"
+      )
         return reply(409, { error: error.message });
       throw error;
     }

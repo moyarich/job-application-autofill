@@ -103,7 +103,9 @@ export function useProfileContacts({
   }
 
   usePendingSave(
-    () => hydrated && contacts.some((item) => signature(item) !== saved.current.get(item.id)),
+    () =>
+      hydrated &&
+      contacts.some((item) => signature(item) !== saved.current.get(item.id)),
     flushContacts,
   );
 

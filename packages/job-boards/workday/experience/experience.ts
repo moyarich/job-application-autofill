@@ -73,12 +73,15 @@ async function date(
         [year, match[1]],
       ] as const) {
         const old = await target.inputValue();
-        if (old && Number(old) !== Number(value) && !replaceExisting) return false;
+        if (old && Number(old) !== Number(value) && !replaceExisting)
+          return false;
       }
-      if (await month.inputValue() !== match[2]) await month.fill(match[2]);
-      if (await year.inputValue() !== match[1]) await year.fill(match[1]);
-      return Number(await month.inputValue()) === Number(match[2]) &&
-        Number(await year.inputValue()) === Number(match[1]);
+      if ((await month.inputValue()) !== match[2]) await month.fill(match[2]);
+      if ((await year.inputValue()) !== match[1]) await year.fill(match[1]);
+      return (
+        Number(await month.inputValue()) === Number(match[2]) &&
+        Number(await year.inputValue()) === Number(match[1])
+      );
     } catch {
       return false;
     }
@@ -103,12 +106,20 @@ async function date(
     replaceExisting,
   );
 }
-async function fillRow(row: Locator, job: WorkExperienceEntry, replaceExisting: boolean) {
+async function fillRow(
+  row: Locator,
+  job: WorkExperienceEntry,
+  replaceExisting: boolean,
+) {
   const errors: string[] = [];
   for (const key of ["company", "jobTitle", "location", "description"] as const)
-    if (!(await put(row, key, job[key], replaceExisting)) &&
-        (job[key] || await read(row, key))) errors.push(key);
-  if (!(await date(row, "startDate", job.startDate, replaceExisting))) errors.push("startDate");
+    if (
+      !(await put(row, key, job[key], replaceExisting)) &&
+      (job[key] || (await read(row, key)))
+    )
+      errors.push(key);
+  if (!(await date(row, "startDate", job.startDate, replaceExisting)))
+    errors.push("startDate");
   const current = await input(row, "isCurrent");
   if (current) {
     try {
@@ -122,8 +133,10 @@ async function fillRow(row: Locator, job: WorkExperienceEntry, replaceExisting: 
   if (!job.isCurrent && job.endDate) {
     if (!(await date(row, "endDate", job.endDate, replaceExisting)))
       errors.push("endDate");
-  } else if (!(await put(row, "endDate", "", replaceExisting)) &&
-             (await read(row, "endDate"))?.trim()) {
+  } else if (
+    !(await put(row, "endDate", "", replaceExisting)) &&
+    (await read(row, "endDate"))?.trim()
+  ) {
     errors.push("endDate");
   }
   return errors;
@@ -140,30 +153,43 @@ export async function fillWorkdayExperience(
   if (!Array.isArray(experience) || !experience.length) return result;
   let section = page.locator(SECTION).first();
   if (!(await section.isVisible().catch(() => false))) {
-    const heading = page.getByText(/^Work Experience$/i, { exact: true }).first();
+    const heading = page
+      .getByText(/^Work Experience$/i, { exact: true })
+      .first();
     if (await heading.isVisible().catch(() => false))
       section = heading.locator("xpath=ancestor::*[.//button][1]");
   }
   if (!(await section.isVisible().catch(() => false))) {
-    result.unresolved = experience.map((_, i) => "experience[" + i + "]: section not visible");
+    result.unresolved = experience.map(
+      (_, i) => "experience[" + i + "]: section not visible",
+    );
     return result;
   }
 
   // Validate resume data before modifying any imported Workday record.
   for (const [i, job] of experience.entries()) {
-    if (!job?.company?.trim() || !job?.jobTitle?.trim() || !job.startDate?.trim())
-      result.unresolved.push("experience[" + i + "]: incomplete resume employment record");
+    if (
+      !job?.company?.trim() ||
+      !job?.jobTitle?.trim() ||
+      !job.startDate?.trim()
+    )
+      result.unresolved.push(
+        "experience[" + i + "]: incomplete resume employment record",
+      );
   }
   if (result.unresolved.length) return result;
 
   const explicit = section.locator(ROW);
   const rows = (await explicit.count())
     ? explicit
-    : section.getByText(/^Work Experience\s+\d+$/i, { exact: true })
+    : section
+        .getByText(/^Work Experience\s+\d+$/i, { exact: true })
         .locator("xpath=ancestor::*[.//input][1]");
-  const add = section.getByRole("button", {
-    name: /^(add|add another|add experience|add work experience)$/i,
-  }).last();
+  const add = section
+    .getByRole("button", {
+      name: /^(add|add another|add experience|add work experience)$/i,
+    })
+    .last();
 
   // Extra imported records are never silently retained alongside Moya's jobs.
   // Only delete from the end when each surplus card has its own clear remove control.
@@ -174,9 +200,14 @@ export async function fillWorkdayExperience(
       const remove = rows.nth(i).getByRole("button", {
         name: /^(remove|remove experience|delete|delete experience)$/i,
       });
-      if (await remove.count() !== 1 || !(await remove.isVisible().catch(() => false)) ||
-          !(await remove.isEnabled().catch(() => false))) {
-        result.unresolved.push("experience: surplus Workday-imported rows require manual removal");
+      if (
+        (await remove.count()) !== 1 ||
+        !(await remove.isVisible().catch(() => false)) ||
+        !(await remove.isEnabled().catch(() => false))
+      ) {
+        result.unresolved.push(
+          "experience: surplus Workday-imported rows require manual removal",
+        );
         return result;
       }
     }
@@ -188,7 +219,9 @@ export async function fillWorkdayExperience(
         await remove.click({ timeout: 2000 });
         await rows.nth(i).waitFor({ state: "detached", timeout: 2500 });
       } catch {
-        result.unresolved.push("experience: could not remove surplus imported row");
+        result.unresolved.push(
+          "experience: could not remove surplus imported row",
+        );
         return result;
       }
     }
@@ -198,8 +231,10 @@ export async function fillWorkdayExperience(
   // Workday may have imported too few records. Append exactly as many as required.
   // Each new row must be empty before it is assigned to a resume job.
   while (count < experience.length) {
-    if (!(await add.isVisible().catch(() => false)) ||
-        !(await add.isEnabled().catch(() => false))) {
+    if (
+      !(await add.isVisible().catch(() => false)) ||
+      !(await add.isEnabled().catch(() => false))
+    ) {
       result.unresolved.push("experience: cannot add missing employment rows");
       return result;
     }
@@ -207,20 +242,26 @@ export async function fillWorkdayExperience(
       await add.click({ timeout: 2000 });
       await rows.nth(count).waitFor({ state: "visible", timeout: 2500 });
       const newRow = rows.nth(count);
-      if ((await read(newRow, "company")) !== "" ||
-          (await read(newRow, "jobTitle")) !== "") {
+      if (
+        (await read(newRow, "company")) !== "" ||
+        (await read(newRow, "jobTitle")) !== ""
+      ) {
         result.unresolved.push("experience: added row is not empty");
         return result;
       }
       count++;
     } catch {
-      result.unresolved.push("experience: could not add missing employment row");
+      result.unresolved.push(
+        "experience: could not add missing employment row",
+      );
       return result;
     }
   }
 
-  if (await rows.count() !== experience.length) {
-    result.unresolved.push("experience: Workday row count does not match the selected resume");
+  if ((await rows.count()) !== experience.length) {
+    result.unresolved.push(
+      "experience: Workday row count does not match the selected resume",
+    );
     return result;
   }
 
