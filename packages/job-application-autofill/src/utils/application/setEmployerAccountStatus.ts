@@ -1,6 +1,5 @@
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../../api/client";
-import type { ApplySession } from "../../types/types";
+import { updateEmployerAccountStatus } from "../../api/employer-accounts";
 
 /** setEmployerAccountStatus action; no React hooks or state ownership. */
 export function createSetEmployerAccountStatus(
@@ -18,14 +17,7 @@ export function createSetEmployerAccountStatus(
     if (!session?.employerAccount) return;
     setApplyBusy(true);
     try {
-      const account = await requestApi<
-        NonNullable<ApplySession["employerAccount"]>
-      >(
-        "/api/employer-accounts/status",
-        { jobId: session.jobId, status },
-        activeProfileId,
-        activeResumeId ?? undefined,
-      );
+      const account = await updateEmployerAccountStatus(session.jobId, status, activeProfileId, activeResumeId ?? undefined);
       setSession((current) =>
         current ? { ...current, employerAccount: account } : current,
       );
