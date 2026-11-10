@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { captureEmployerAnswers } from "../../packages/job-sites/answer-capture.ts";
+import { captureEmployerAnswers } from "../../packages/job-boards/answer-capture.ts";
 
 test("captures custom written Speechify answers from the actual employer form only", async ({ page }) => {
   await page.setContent(`
