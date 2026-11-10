@@ -1,3 +1,4 @@
+import type { JobPostingDetails } from "../types/job-application";
 import { Resume } from "@moyarich/resume";
 import { JobApplication } from "../types/job-application";
 import {
@@ -330,4 +331,12 @@ export function updateJobStatus(
     profileId,
     resumeId,
   );
+}
+
+export function readJobMetadata(jobUrl: string, profileId: string) {
+  return requestApi<{
+    company: string;
+    role: string;
+    details?: JobPostingDetails;
+  }>("/api/jobs/metadata", { jobUrl }, profileId);
 }
