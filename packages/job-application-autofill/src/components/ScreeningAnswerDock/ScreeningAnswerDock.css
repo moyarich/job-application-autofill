@@ -67,3 +67,22 @@
 }
 .screening-dock-example strong { font-size: 12px; }
 .screening-dock-example small { font-weight: 600; }
+
+.answer-library { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; width: 100%; }
+.answer-library-toggle { width: 100%; text-align: left; }
+.answer-library-body { padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.answer-library-body > p { font-size: 12px; color: var(--muted); margin: 0; }
+.answer-library-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.answer-library-filters label, .answer-library-target, .answer-library-create label, .answer-library-editor {
+  display: flex; flex-direction: column; gap: 5px; font-size: 12px; width: 100%;
+}
+.answer-library-filters :is(select, input), .answer-library-target select,
+.answer-library-create input, .answer-library-create textarea, .answer-library-editor textarea {
+  width: 100%; min-width: 0;
+}
+.answer-library-create { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.answer-library-create strong { font-size: 13px; }
+.answer-library-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .answer-library-filters { grid-template-columns: minmax(0, 1fr); }
+}
