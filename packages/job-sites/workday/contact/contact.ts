@@ -68,10 +68,10 @@ export async function fillWorkdayContact(
     // Workday's country/state/phone selectors are often labelled buttons, not inputs.
     if (!target && ["state", "country", "phoneCountryCode", "phoneType"].includes(key)) {
       const prefix = {
-        state: /^state(?:\\s|$)/i,
-        country: /^country \\/ territory(?:\\s|$)/i,
-        phoneCountryCode: /^country \\/ territory phone code(?:\\s|$)/i,
-        phoneType: /^phone device type(?:\\s|$)/i,
+        state: /^state(?:\s|$)/i,
+        country: /^country \/ territory(?:\s|$)/i,
+        phoneCountryCode: /^country \/ territory phone code(?:\s|$)/i,
+        phoneType: /^phone device type(?:\s|$)/i,
       }[key as "state" | "country" | "phoneCountryCode" | "phoneType"];
       for (const label of [prefix]) {
         const button = page.getByRole("button", { name: label });
