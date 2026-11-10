@@ -25,3 +25,20 @@ export function parseResumeFile(
     warnings: string[];
   }>("/api/resume/parse", attachment, profileId, resumeId);
 }
+
+export function importResumeContent(
+  payload: {
+    resumeId: string | null;
+    revision: number;
+    name: string;
+    profile: Resume;
+    choices: Record<string, string>;
+  },
+  profileId: string,
+) {
+  return requestApi<{ resumeId: string; revision: number }>(
+    "/api/resumes/import",
+    payload,
+    profileId,
+  );
+}
