@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodePdfAttachment } from "../../packages/resume/src/resume-schema/attachment.ts";
+import { decodePdfAttachment } from "../../packages/resume-api/src/services/attachment.ts";
 
 describe("application needs structured resume JSON and a PDF attachment", () => {
   it("rejects docx and forged attachments", () => {

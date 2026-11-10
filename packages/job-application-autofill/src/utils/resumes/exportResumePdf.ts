@@ -1,9 +1,12 @@
-import type { CandidateProfile } from "../../index";
-import { validateCandidate, parseCandidateJson } from "../../index";
+import { Resume } from "@moyarich/resume";
+import { parseResumeJson } from "@moyarich/resume/validate";
+import { validateResume } from "./validateResume";
+
 import { requestApi } from "../api/client";
 import type { Dispatch, SetStateAction } from "react";
+
 export function createExportResumePdf(context: {
-  profile: CandidateProfile;
+  profile: Resume;
   activeProfileId: string;
   activeResumeId: string | null;
   setMessage: Dispatch<SetStateAction<string>>;
@@ -11,13 +14,13 @@ export function createExportResumePdf(context: {
   const { profile, activeProfileId, activeResumeId, setMessage } = context;
   async function exportResumePdf() {
     try {
-      const missing = validateCandidate(profile);
+      const missing = validateResume(profile);
       if (missing.length)
         throw new Error(
           "Complete contact information first: " + missing.join(", "),
         );
       // Revalidate the entire user-supplied JSON before producing a document.
-      const valid = parseCandidateJson(JSON.stringify(profile));
+      const valid = parseResumeJson(JSON.stringify(profile));
       const { base64 } = await requestApi<{ base64: string }>(
         "/api/resume/pdf",
         valid,

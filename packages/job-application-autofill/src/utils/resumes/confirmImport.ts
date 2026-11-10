@@ -1,13 +1,26 @@
-import type { ResumeImportActionsContext, ApplyImportedContent } from "./import-context";
+import type {
+  ResumeImportActionsContext,
+  ApplyImportedContent,
+} from "../../types/resume-import-actions-context";
 import { requestApi } from "../api/client";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
-import type { ContactChoice } from "../api/client";
+import { ContactChoice } from "../../types/api-types";
 
 export function createConfirmImport(
-  context: ResumeImportActionsContext & { applyImportedContent: ApplyImportedContent },
+  context: ResumeImportActionsContext & {
+    applyImportedContent: ApplyImportedContent;
+  },
 ) {
-  const { activeProfileId, activeResumeId, revisionRef, contactKeys, pendingImport, flushPending, setMessage } = context;
+  const {
+    activeProfileId,
+    activeResumeId,
+    revisionRef,
+    contactKeys,
+    pendingImport,
+    flushPending,
+    setMessage,
+  } = context;
   let importing = false;
   async function confirmImport(strategy: ContactChoice = "resume") {
     if (!pendingImport || importing) return;
@@ -21,7 +34,9 @@ export function createConfirmImport(
           revision: revisionRef.current,
           name: defaultImportedResumeName(pendingImport),
           profile: pendingImport,
-          choices: Object.fromEntries(contactKeys.map((key) => [key, strategy])),
+          choices: Object.fromEntries(
+            contactKeys.map((key) => [key, strategy]),
+          ),
         },
         activeProfileId,
       );
@@ -33,7 +48,9 @@ export function createConfirmImport(
       url.searchParams.set("resume", result.resumeId);
       window.location.assign(url.href);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not import resume.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not import resume.",
+      );
     } finally {
       importing = false;
     }

@@ -5,9 +5,10 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { JobApplication } from "../index";
+
 import { usePendingSave } from "./PendingSaves";
 import { readJobs, saveJob, deleteJob } from "../utils/api/client";
+import { JobApplication } from "../types/job-application";
 
 /** Applications have their own list, revision, and save queue. No resume state. */
 export function useJobApplications({
@@ -116,7 +117,9 @@ export function useJobApplications({
       await deleteJob(profileId, jobId, revisionsRef.current[jobId]);
       delete revisionsRef.current[jobId];
       const saved = JSON.parse(savedRef.current || "[]") as JobApplication[];
-      savedRef.current = JSON.stringify(saved.filter((job) => job.id !== jobId));
+      savedRef.current = JSON.stringify(
+        saved.filter((job) => job.id !== jobId),
+      );
       setJobs((items) => items.filter((job) => job.id !== jobId));
     });
     queue.current = operation.catch(() => {});
@@ -124,7 +127,10 @@ export function useJobApplications({
   }
 
   usePendingSave(
-    () => jobsHydrated && !applicationId && JSON.stringify(jobs) !== savedRef.current,
+    () =>
+      jobsHydrated &&
+      !applicationId &&
+      JSON.stringify(jobs) !== savedRef.current,
     flushJobs,
   );
 

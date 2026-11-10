@@ -1,6 +1,6 @@
 import type { RouteHandler } from "../server/types.ts";
 import { reply, record } from "../server/types.ts";
-import { employerAccountIdentity } from "../../../job-sites/employer-account.ts";
+import { employerAccountIdentity } from "@moyarich/job-boards/employer-account";
 
 export const handleEmployerAccounts: RouteHandler = async ({
   req,

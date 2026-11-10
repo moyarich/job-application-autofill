@@ -2,19 +2,19 @@ import { describe, it, expect } from "vitest";
 import { findPdfPython } from "../../packages/resume/src/extract-resume/python-runtime.ts";
 
 describe("PDF Python environment resolution", () => {
-  it("does not modify an existing Poetry environment when OCR modules are missing", async () => {
+  it("does not look up a source checkout or Poetry environment at runtime", async () => {
     const commands: string[] = [];
     const run = async (command: string, args: string[]) => {
       commands.push([command, ...args].join(" "));
-      if (command === "poetry" && args[0] === "env")
-        return { stdout: "/venv/python\n" };
       throw new Error("Missing pypdfium2");
     };
     await expect(
       findPdfPython({ env: {}, executeCommand: run }),
     ).rejects.toThrow();
-    expect(
-      commands.some((command) => /\b(?:install|pip)\b/.test(command)),
-    ).toBe(false);
+    expect(commands).toHaveLength(2);
+    expect(commands.every((command) => /^python3? -c /.test(command))).toBe(
+      true,
+    );
+    expect(commands.join(" ")).not.toMatch(/poetry|resume-ocr[\\/]/);
   });
 });

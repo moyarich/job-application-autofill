@@ -26,7 +26,7 @@ test("viewer uses the configured VNC password without putting it in the URL or s
     }),
   );
   await page.goto(
-    "/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
+    "/application-viewer?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
   );
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",

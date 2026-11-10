@@ -3,8 +3,8 @@ import type { Page } from "playwright";
 import type {
   JobSiteAdapter,
   JobSiteStepContext,
-} from "../../packages/job-sites/types.ts";
-import { automateCurrentStep } from "../../packages/job-sites/core/orchestrator.ts";
+} from "../../packages/job-boards/types.ts";
+import { automateCurrentStep } from "../../packages/job-boards/core/orchestrator.ts";
 
 it("runs only matching site-defined operations without a predefined section list", async () => {
   const page = {

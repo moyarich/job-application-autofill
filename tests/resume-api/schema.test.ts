@@ -129,25 +129,46 @@ it("upgrades schema version 3 to 4 without discarding applications", () => {
     initializeDatabase(db);
     db.exec("DROP TABLE application_answers; PRAGMA user_version = 3");
     db.prepare("INSERT INTO profiles(id,name,created_at) VALUES (?,?,?)").run(
-      "existing-owner", "Existing", "2026-11-09",
+      "existing-owner",
+      "Existing",
+      "2026-11-09",
     );
     db.prepare(
       "INSERT INTO applications(profile_id,id,company,role,url,status,created_at) VALUES (?,?,?,?,?,?,?)",
     ).run(
-      "existing-owner", "existing-job", "Speechify", "Engineer",
-      "https://example.com/jobs/1", "saved", "2026-11-09",
+      "existing-owner",
+      "existing-job",
+      "Speechify",
+      "Engineer",
+      "https://example.com/jobs/1",
+      "saved",
+      "2026-11-09",
     );
     initializeDatabase(db);
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
       user_version: 4,
     });
-    expect(db.prepare("SELECT company FROM applications WHERE id=?").get("existing-job"))
-      .toMatchObject({ company: "Speechify" });
+    expect(
+      db
+        .prepare("SELECT company FROM applications WHERE id=?")
+        .get("existing-job"),
+    ).toMatchObject({ company: "Speechify" });
     db.prepare(
       "INSERT INTO application_answers(profile_id,application_id,question,answer,updated_at) VALUES (?,?,?,?,?)",
-    ).run("existing-owner", "existing-job", "Why Speechify?", "My response", "2026-11-09");
-    expect(db.prepare("SELECT answer FROM application_answers WHERE application_id=?")
-      .get("existing-job")).toMatchObject({ answer: "My response" });
+    ).run(
+      "existing-owner",
+      "existing-job",
+      "Why Speechify?",
+      "My response",
+      "2026-11-09",
+    );
+    expect(
+      db
+        .prepare(
+          "SELECT answer FROM application_answers WHERE application_id=?",
+        )
+        .get("existing-job"),
+    ).toMatchObject({ answer: "My response" });
   } finally {
     db.close();
   }

@@ -1,6 +1,6 @@
-import type { ApplicationReviewActionsContext } from "./review-context";
+import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
 import { requestApi } from "../api/client";
-import type { ApplySession } from "./types";
+import type { ApplySession } from "../../types/types";
 
 /** setEmployerAccountStatus action; no React hooks or state ownership. */
 export function createSetEmployerAccountStatus(

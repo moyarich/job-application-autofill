@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { validateUrl } from "../../packages/job-sites/automation.ts";
+import { validateUrl } from "../../packages/job-boards/automation.ts";
 
 describe("application safety", () => {
   it("permits known ATS sites only over HTTPS", () => {

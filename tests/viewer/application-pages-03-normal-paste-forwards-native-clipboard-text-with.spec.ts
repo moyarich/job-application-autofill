@@ -29,7 +29,7 @@ test("normal paste forwards native clipboard text without a fallback panel", asy
     }),
   );
   await page.goto(
-    "/application-viewer.html?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
+    "/application-viewer?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
   );
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { ApplicationBrowser, type ApplicationBrowserHandle } from "./ApplicationBrowser";
+import {
+  ApplicationBrowser,
+  type ApplicationBrowserHandle,
+} from "./ApplicationBrowser";
 import { requestApi } from "../../utils/api/client";
 import { JobDescription } from "../JobDescription/JobDescription";
 import {
@@ -46,7 +49,9 @@ export function ApplicationReview({
   }, [session?.id, session?.state, session?.running, applyBusy]);
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
   const [previousAnswers, setPreviousAnswers] = useState<PreviousAnswer[]>([]);
-  const [currentAnswerRecords, setCurrentAnswerRecords] = useState<PreviousAnswer[]>([]);
+  const [currentAnswerRecords, setCurrentAnswerRecords] = useState<
+    PreviousAnswer[]
+  >([]);
   const [answerMessage, setAnswerMessage] = useState("");
   useEffect(() => {
     setSavedAnswers({});
@@ -54,26 +59,50 @@ export function ApplicationReview({
     setCurrentAnswerRecords([]);
     if (!applicationId) return;
     let cancelled = false;
-    fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
-      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
-    }).then((response) => response.ok ? response.json() : null)
-      .then((data: { answers?: Record<string, string>; examples?: PreviousAnswer[]; currentRecords?: PreviousAnswer[] } | null) => {
-        if (!cancelled) {
-          setSavedAnswers(data?.answers ?? {});
-          setPreviousAnswers(data?.examples ?? []);
-          setCurrentAnswerRecords(data?.currentRecords ?? []);
-        }
-      }).catch(() => {});
-    return () => { cancelled = true; };
+    fetch(
+      "/api/applications/" + encodeURIComponent(applicationId) + "/answers",
+      {
+        headers: {
+          "X-Moya-Client": "dashboard",
+          "X-Profile-Id": activeProfileId,
+        },
+      },
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then(
+        (
+          data: {
+            answers?: Record<string, string>;
+            examples?: PreviousAnswer[];
+            currentRecords?: PreviousAnswer[];
+          } | null,
+        ) => {
+          if (!cancelled) {
+            setSavedAnswers(data?.answers ?? {});
+            setPreviousAnswers(data?.examples ?? []);
+            setCurrentAnswerRecords(data?.currentRecords ?? []);
+          }
+        },
+      )
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [applicationId, activeProfileId]);
   async function refreshAnswerContext() {
     if (!applicationId) return;
-    const response = await fetch("/api/applications/" + encodeURIComponent(applicationId) + "/answers", {
-      headers: { "X-Moya-Client": "dashboard", "X-Profile-Id": activeProfileId },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      "/api/applications/" + encodeURIComponent(applicationId) + "/answers",
+      {
+        headers: {
+          "X-Moya-Client": "dashboard",
+          "X-Profile-Id": activeProfileId,
+        },
+        cache: "no-store",
+      },
+    );
     if (!response.ok) throw new Error("Could not reload saved answers.");
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       answers?: Record<string, string>;
       examples?: PreviousAnswer[];
       currentRecords?: PreviousAnswer[];
@@ -86,16 +115,25 @@ export function ApplicationReview({
     if (!session) return;
     setSavingAnswers(true);
     try {
-      const result = await requestApi<{ answers: Record<string, string>; count: number }>(
-        "/api/apply/" + session.id + "/save-answers", {}, activeProfileId,
+      const result = await requestApi<{
+        answers: Record<string, string>;
+        count: number;
+      }>(
+        "/api/apply/" + session.id + "/save-answers",
+        {},
+        activeProfileId,
         activeResumeId ?? undefined,
       );
       setSavedAnswers(result.answers);
-      setAnswerMessage(result.count
-        ? "Saved answers from the employer form to this application."
-        : "No completed custom answers detected on the current employer page.");
+      setAnswerMessage(
+        result.count
+          ? "Saved answers from the employer form to this application."
+          : "No completed custom answers detected on the current employer page.",
+      );
     } catch (error) {
-      setAnswerMessage(error instanceof Error ? error.message : "Unable to save answers.");
+      setAnswerMessage(
+        error instanceof Error ? error.message : "Unable to save answers.",
+      );
     } finally {
       setSavingAnswers(false);
     }
@@ -173,9 +211,14 @@ export function ApplicationReview({
       )}
       {Object.keys(savedAnswers).length > 0 && !session && (
         <details className="panel saved-application-answers">
-          <summary>Saved screening responses ({Object.keys(savedAnswers).length})</summary>
+          <summary>
+            Saved screening responses ({Object.keys(savedAnswers).length})
+          </summary>
           {Object.entries(savedAnswers).map(([question, answer]) => (
-            <div key={question}><strong>{question}</strong><p>{answer}</p></div>
+            <div key={question}>
+              <strong>{question}</strong>
+              <p>{answer}</p>
+            </div>
           ))}
         </details>
       )}
@@ -184,7 +227,11 @@ export function ApplicationReview({
           <div className="application-start-heading">
             <span className="application-step">1</span>
             <div>
-              <h2>{job && ["in_progress", "ready_for_review"].includes(job.status) ? "Continue your application" : "Choose your resume"}</h2>
+              <h2>
+                {job && ["in_progress", "ready_for_review"].includes(job.status)
+                  ? "Continue your application"
+                  : "Choose your resume"}
+              </h2>
               <p>
                 Confirm the version to share with{" "}
                 {job?.company || "this employer"}.
@@ -222,7 +269,12 @@ export function ApplicationReview({
                 if (job) void controller.prepareJob(job);
               }}
             >
-              {resumeBusy ? "Saving resume…" : job && ["in_progress", "ready_for_review"].includes(job.status) ? "Reopen employer application" : "Open employer application"}
+              {resumeBusy
+                ? "Saving resume…"
+                : job &&
+                    ["in_progress", "ready_for_review"].includes(job.status)
+                  ? "Reopen employer application"
+                  : "Open employer application"}
               <ArrowUpRight size={16} />
             </button>
           </div>
@@ -287,33 +339,53 @@ export function ApplicationReview({
                   <div className="application-questions">
                     <div className="panel-title">
                       <h3>Employer questions</h3>
-                      <p>Answer any custom questions directly in the employer application below. Save completed answers to this application. Previous answers are available as optional, labeled examples only.</p>
+                      <p>
+                        Answer any custom questions directly in the employer
+                        application below. Save completed answers to this
+                        application. Previous answers are available as optional,
+                        labeled examples only.
+                      </p>
                     </div>
                     <div className="actions">
-                      <button type="button" className="secondary"
-                        disabled={applyBusy || savingAnswers} onClick={() => void saveEmployerAnswers()}>
-                        {savingAnswers ? "Saving answers…" : "Save answers from employer form"}
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={applyBusy || savingAnswers}
+                        onClick={() => void saveEmployerAnswers()}
+                      >
+                        {savingAnswers
+                          ? "Saving answers…"
+                          : "Save answers from employer form"}
                       </button>
-                      <button type="button" className="secondary"
-                        disabled={applyBusy || savingAnswers} onClick={continueAfterChallenge}>
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={applyBusy || savingAnswers}
+                        onClick={continueAfterChallenge}
+                      >
                         Autofill this step
                       </button>
                     </div>
                     {answerMessage && <p role="status">{answerMessage}</p>}
                     {Object.keys(savedAnswers).length > 0 && (
                       <details className="saved-application-answers">
-                        <summary>Saved responses ({Object.keys(savedAnswers).length})</summary>
-                        {Object.entries(savedAnswers).map(([question, answer]) => (
-                          <div key={question}>
-                            <strong>{question}</strong>
-                            <p>{answer}</p>
-                          </div>
-                        ))}
+                        <summary>
+                          Saved responses ({Object.keys(savedAnswers).length})
+                        </summary>
+                        {Object.entries(savedAnswers).map(
+                          ([question, answer]) => (
+                            <div key={question}>
+                              <strong>{question}</strong>
+                              <p>{answer}</p>
+                            </div>
+                          ),
+                        )}
                       </details>
                     )}
                   </div>
                 )}
-                {session.state === "ready_for_review" && session.ats === "workday" && (
+                {session.state === "ready_for_review" &&
+                  session.ats === "workday" && (
                     <ScreeningAnswerDock
                       key={session.id}
                       sessionId={session.id}
@@ -362,7 +434,12 @@ export function ApplicationReview({
                         {session.missing.join(", ")}
                       </p>
                     )}
-                    <ApplicationBrowser key={session.id} ref={browser} sessionId={session.id} profileId={activeProfileId} />
+                    <ApplicationBrowser
+                      key={session.id}
+                      ref={browser}
+                      sessionId={session.id}
+                      profileId={activeProfileId}
+                    />
                     <label className="review-checkbox">
                       <input
                         type="checkbox"

@@ -4,7 +4,7 @@ import {
   prepareApplication,
   continueApplication,
   closeApplication,
-} from "../../packages/job-sites/automation.ts";
+} from "../../packages/job-boards/automation.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 
 it("tries configured login for new employer records and keeps a pending resume until an upload step", async () => {
@@ -48,7 +48,13 @@ it("tries configured login for new employer records and keeps a pending resume u
     );
     const continued = await continueApplication(session.id);
     expect(continued.filled).toContain("resume");
-    expect(await page!.evaluate(() => (window as unknown as { navigationClicks?: number }).navigationClicks ?? 0)).toBe(0);
+    expect(
+      await page!.evaluate(
+        () =>
+          (window as unknown as { navigationClicks?: number })
+            .navigationClicks ?? 0,
+      ),
+    ).toBe(0);
     expect(
       await page!
         .locator('input[type="file"]')

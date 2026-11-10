@@ -1,4 +1,4 @@
-import type { CandidateProfile } from "../types.ts";
+import type { Resume } from "../types.ts";
 // Platform-neutral runtime validation of the canonical resume-schema contract.
 // Does not import PDF/OCR packages or require a resume attachment.
 const STRING_FIELDS = [
@@ -94,7 +94,7 @@ function date(value: unknown) {
 function dateOrNull(value: unknown) {
   return value === null || date(value);
 }
-export function validateResume(value: unknown): CandidateProfile {
+export function validateResume(value: unknown): Resume {
   const resume = object(value, "resume");
   exactKeys(
     resume,
@@ -159,15 +159,8 @@ export function validateResume(value: unknown): CandidateProfile {
         throw new Error(field + " has invalid certification dates");
     }
   }
-  return resume as unknown as CandidateProfile;
+  return resume as unknown as Resume;
 }
-export function parseResumeJson(text: string): CandidateProfile {
+export function parseResumeJson(text: string): Resume {
   return validateResume(JSON.parse(text));
 }
-
-export {
-  markdownToHtml,
-  markdownToPlainText,
-  resumeToPlainText,
-  resumeToMarkdown,
-} from "./markdown.ts";

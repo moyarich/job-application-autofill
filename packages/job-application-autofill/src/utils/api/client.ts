@@ -1,31 +1,24 @@
-import type { CandidateProfile, JobApplication } from "../../index";
+import { Resume } from "@moyarich/resume";
+import { JobApplication } from "../../types/job-application";
+import {
+  ContactChoice,
+  LocalProfile,
+  ProfileContact,
+  ResumeVersion,
+} from "../../types/api-types";
 
 export const DEFAULT_PROFILE_ID = "00000000-0000-4000-8000-000000000001";
 export const ACTIVE_PROFILE_STORAGE_KEY =
   "job-application-autofill:active-profile";
-export type LocalProfile = { id: string; name: string; createdAt: string };
-export type ResumeVersion = {
-  id: string;
-  name: string;
-  contactId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-export type ProfileContact = CandidateProfile["contact"] & {
-  id: string;
-  profileId: string;
-  name: string;
-  isDefault: boolean;
-};
-export type ContactChoice = "resume" | "shared" | "keep";
+
 export async function resolveImportedContact(
   profileId: string,
   resumeId: string,
-  contact: CandidateProfile["contact"],
-  choices: Partial<Record<keyof CandidateProfile["contact"], ContactChoice>>,
+  contact: Resume["contact"],
+  choices: Partial<Record<keyof Resume["contact"], ContactChoice>>,
 ): Promise<{
   contactId: string | null;
-  contact: CandidateProfile["contact"];
+  contact: Resume["contact"];
   contacts: ProfileContact[];
 }> {
   return requestApi(
@@ -38,7 +31,7 @@ export async function resolveImportedContact(
 export async function addProfileContact(
   profileId: string,
   name: string,
-  contact: CandidateProfile["contact"],
+  contact: Resume["contact"],
 ): Promise<ProfileContact> {
   return requestApi("/api/profile-contacts", { name, contact }, profileId);
 }
@@ -46,7 +39,7 @@ export async function updateProfileContact(
   profileId: string,
   contactId: string,
   name: string,
-  contact: CandidateProfile["contact"],
+  contact: Resume["contact"],
 ): Promise<ProfileContact> {
   const response = await fetch(
     "/api/profile-contacts/" + encodeURIComponent(contactId),
@@ -120,7 +113,7 @@ export type ResumeContent = {
   resumeId: string;
   revision: number;
   contactId: string | null;
-  profile: CandidateProfile | null;
+  profile: Resume | null;
 };
 export type JobList = {
   jobs: JobApplication[];
@@ -209,7 +202,7 @@ export async function saveResumeContent(
   resumeId: string,
   content: {
     revision: number;
-    profile: CandidateProfile;
+    profile: Resume;
     contactId: string | null;
   },
 ): Promise<{ revision: number }> {

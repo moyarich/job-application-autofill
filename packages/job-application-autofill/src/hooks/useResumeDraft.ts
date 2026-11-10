@@ -6,17 +6,14 @@ import {
   type SetStateAction,
 } from "react";
 import { usePendingSave } from "./PendingSaves";
-import {
-  emptyCandidate,
-  parseCandidateJson,
-  validateCandidate,
-  type CandidateProfile,
-} from "../index";
-import {
-  readResumeContent,
-  saveResumeContent,
-  type ProfileContact,
-} from "../utils/api/client";
+import { Resume } from "@moyarich/resume";
+import { parseResumeJson } from "@moyarich/resume/validate";
+import { validateResume } from "../utils/resumes/validateResume";
+
+import { ProfileContact } from "../types/api-types";
+import { readResumeContent, saveResumeContent } from "../utils/api/client";
+
+import { EMPTY_CANDIDATE } from "../constants";
 
 /** Owns the selected resume's draft, revision and autosave; never writes contacts or jobs. */
 export function useResumeDraft({
@@ -34,8 +31,8 @@ export function useResumeDraft({
   setMessage: Dispatch<SetStateAction<string>>;
   applicationId: string | null;
 }) {
-  const [profile, setProfile] = useState<CandidateProfile>(() =>
-    structuredClone(emptyCandidate),
+  const [profile, setProfile] = useState<Resume>(() =>
+    structuredClone(EMPTY_CANDIDATE),
   );
   const [contactId, setContactId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -44,12 +41,12 @@ export function useResumeDraft({
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const blockedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const errors = validateCandidate(profile);
+  const errors = validateResume(profile);
 
   useEffect(() => {
     setHydrated(false);
     if (!enabled || !resumeId) {
-      setProfile(structuredClone(emptyCandidate));
+      setProfile(structuredClone(EMPTY_CANDIDATE));
       setContactId(null);
       revisionRef.current = 0;
       savedRef.current = "";
@@ -67,11 +64,11 @@ export function useResumeDraft({
                 ([key]) =>
                   !["id", "profileId", "name", "isDefault"].includes(key),
               ),
-            ) as CandidateProfile["contact"])
-          : structuredClone(emptyCandidate.contact);
+            ) as Resume["contact"])
+          : structuredClone(EMPTY_CANDIDATE.contact);
         const value = result.profile
-          ? parseCandidateJson(JSON.stringify(result.profile))
-          : { ...structuredClone(emptyCandidate), contact };
+          ? parseResumeJson(JSON.stringify(result.profile))
+          : { ...structuredClone(EMPTY_CANDIDATE), contact };
         setProfile(value);
         setContactId(result.contactId);
         revisionRef.current = result.revision;
@@ -137,7 +134,10 @@ export function useResumeDraft({
   }
 
   usePendingSave(
-    () => hydrated && !applicationId && JSON.stringify({ profile, contactId }) !== savedRef.current,
+    () =>
+      hydrated &&
+      !applicationId &&
+      JSON.stringify({ profile, contactId }) !== savedRef.current,
     flushResume,
   );
 

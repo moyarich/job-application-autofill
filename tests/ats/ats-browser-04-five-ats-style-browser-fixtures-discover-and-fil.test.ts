@@ -6,7 +6,7 @@ import {
   adapterForUrl,
   discoverQuestions,
   fillQuestionAnswers,
-} from "../../packages/job-sites/index.ts";
+} from "../../packages/job-boards/index.ts";
 
 const samples = {
   greenhouse: [

@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { employerAccountIdentity } from "../../packages/job-sites/employer-account.ts";
+import { employerAccountIdentity } from "../../packages/job-boards/employer-account.ts";
 
 test("a shared ATS keeps each company's account separate", () => {
   const cases = [

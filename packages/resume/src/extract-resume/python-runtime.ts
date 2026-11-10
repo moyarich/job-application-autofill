@@ -1,5 +1,6 @@
 import { execFile, type ExecFileOptions } from "node:child_process";
 import { promisify } from "node:util";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -7,17 +8,16 @@ import { dirname, resolve } from "node:path";
 const run = promisify(execFile);
 export function resumePackageDir() {
   let directory = dirname(fileURLToPath(import.meta.url));
-  while (!existsSync(resolve(directory, "pyproject.toml"))) {
+  while (!existsSync(resolve(directory, "package.json"))) {
     const parent = dirname(directory);
     if (parent === directory)
-      throw new Error("Resume package Python configuration not found.");
+      throw new Error("Resume package configuration not found.");
     directory = parent;
   }
   return directory;
 }
-const packageDir = resumePackageDir();
 const dependencyProbe =
-  "import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image";
+  "import resume_ocr; import pypdfium2; from rapidocr import RapidOCR; import onnxruntime; from PIL import Image";
 type ExecuteCommand = (
   command: string,
   args: string[],
@@ -30,7 +30,7 @@ async function execute(
   options: ExecFileOptions = {},
 ) {
   return run(command, args, {
-    cwd: packageDir,
+    cwd: tmpdir(),
     timeout: 12000,
     windowsHide: true,
     ...options,
@@ -39,27 +39,18 @@ async function execute(
 }
 async function check(python: string, executeCommand: ExecuteCommand) {
   try {
-    await executeCommand(python, ["-c", dependencyProbe], { timeout: 12000 });
+    await executeCommand(python, ["-c", dependencyProbe], {
+      timeout: 12000,
+      cwd: tmpdir(),
+    });
     return true;
   } catch {
     return false;
   }
 }
-async function poetryPython(executeCommand: ExecuteCommand) {
-  try {
-    const { stdout } = await executeCommand(
-      "poetry",
-      ["env", "info", "--executable"],
-      { timeout: 12000 },
-    );
-    return stdout.trim();
-  } catch {
-    return "";
-  }
-}
 /**
  * Resolve the interpreter that actually has the PDFium/OCR dependencies.
- * Provisioning is exclusively the responsibility of scripts/build-python.ts.
+ * Provisioning is exclusively the responsibility of scripts/build-resume-ocr.ts.
  * Runtime detection never installs packages or modifies an environment.
  */
 export async function findPdfPython({
@@ -73,18 +64,16 @@ export async function findPdfPython({
   if (explicit) {
     if (await check(explicit, executeCommand)) return explicit;
     throw new Error(
-      "Configured PYTHON_EXECUTABLE is missing PDF dependencies: " +
+      "Configured PYTHON_EXECUTABLE is missing the installed resume-ocr package or PDF dependencies: " +
         explicit +
         ". Check the selected environment or rebuild the Docker image.",
     );
   }
-  const managed = await poetryPython(executeCommand);
-  if (managed && (await check(managed, executeCommand))) return managed;
   for (const python of ["python3", "python"]) {
     if (await check(python, executeCommand)) return python;
   }
   throw new Error(
-    "Python PDF dependencies are unavailable. Run npm run build:python --workspace packages/resume to provision the OCR environment, or start the containerized app with npm run dev. Set PYTHON_EXECUTABLE to an existing interpreter with PDF/OCR dependencies if needed.",
+    "Python PDF dependencies are unavailable. Install the versioned resume-ocr dependency in your Python environment and set PYTHON_EXECUTABLE to that interpreter, or start the containerized app with npm run dev.",
   );
 }
 export function getPdfPython() {

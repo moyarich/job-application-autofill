@@ -1,5 +1,5 @@
 import { extractEmploymentHistory } from "./experience.ts";
-import { getPdfPython, resumePackageDir } from "./python-runtime.ts";
+import { getPdfPython } from "./python-runtime.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
@@ -146,49 +146,24 @@ export async function extractResumeText(
   extension: "pdf" | "docx",
 ) {
   if (extension === "docx") return extractDocxText(buffer);
-  // Inside Docker, PDFium and RapidOCR run exclusively in the private OCR
-  // container. Preserve the existing local Python subprocess for standalone CLI.
-  const serviceUrl = process.env.OCR_SERVICE_URL?.trim();
-  if (serviceUrl) {
-    const endpoint = new URL("/extract", serviceUrl);
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/pdf" },
-      body: new Uint8Array(buffer),
-      signal: AbortSignal.timeout(120000),
-    });
-    const body: unknown = await response.json();
-    if (!body || typeof body !== "object") {
-      throw new Error("OCR service returned an invalid response.");
-    }
-    const result = body as { text?: unknown; error?: unknown };
-    if (!response.ok) {
-      throw new Error(
-        "PDF extraction failed: " +
-          (typeof result.error === "string"
-            ? result.error
-            : "OCR service error"),
-      );
-    }
-    if (typeof result.text !== "string" || !result.text.trim())
-      throw new Error("PDF extraction found no readable text.");
-    return result.text;
-  }
   // Python PDFium extracts selectable text and invokes RapidOCR only for scanned pages.
   const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
-  const { join, resolve } = await import("node:path");
+  const { join } = await import("node:path");
   const dir = await mkdtemp(join(tmpdir(), "moya-resume-"));
   try {
     const input = join(dir, "resume.pdf");
     await writeFile(input, buffer, { mode: 0o600 });
     const python = await getPdfPython();
-    const script = resolve(resumePackageDir(), "python/pdf_ocr.py");
-    const { stdout } = await execFileAsync(python, [script, input], {
-      timeout: 120000,
-      maxBuffer: 15 * 1024 * 1024,
-      windowsHide: true,
-    });
+    const { stdout } = await execFileAsync(
+      python,
+      ["-m", "resume_ocr", input],
+      {
+        timeout: 120000,
+        maxBuffer: 15 * 1024 * 1024,
+        windowsHide: true,
+      },
+    );
     let result;
     try {
       result = JSON.parse(stdout);

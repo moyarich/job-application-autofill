@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
-import {
-  createApplication,
-  type ApplicationStatus,
-  type JobPostingDetails,
-} from "../index";
+
 import { changeJobStatus } from "../utils/application/changeJobStatus";
 import { requestApi } from "../utils/api/client";
-import type { JobTrackerData } from "../utils/application/job-tracker-data";
+import type { JobTrackerData } from "../types/job-tracker-data";
+import { JobPostingDetails, ApplicationStatus } from "../types/job-application";
+import { createApplication } from "../utils/application/createApplication";
+
 export function useJobTracker(workspace: JobTrackerData) {
   const { jobs, setJobs, setMessage, activeProfileId } = workspace;
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });

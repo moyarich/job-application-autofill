@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { fillWorkdayExperience } from "../../packages/job-sites/workday/experience/experience.ts";
+import { fillWorkdayExperience } from "../../packages/job-boards/workday/experience/experience.ts";
 
 const jobs = [
   {

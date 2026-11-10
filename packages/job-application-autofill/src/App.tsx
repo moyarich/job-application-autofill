@@ -19,29 +19,31 @@ export function App() {
   const tab = tabForPath(location.pathname);
 
   return (
-    <PendingSaves><div className={applicationId ? "app application-page" : "app"}>
-      <Sidebar />
-      <main className="main">
-        {applicationId ? (
-          <PageApplicationReview />
-        ) : tab === "applications" ? (
-          <PageApplications />
-        ) : tab === "parser" ? (
-          <PageResumeImport />
-        ) : tab === "view" ? (
-          <PageResumeView />
-        ) : tab === "resumes" ? (
-          <PageResumes />
-        ) : tab === "personal" ? (
-          <PageProfile />
-        ) : tab === "contacts" ? (
-          <PageContacts />
-        ) : tab === "workspace" ? (
-          <PageWorkspace />
-        ) : (
-          <PageResumeEditor />
-        )}
-      </main>
-    </div></PendingSaves>
+    <PendingSaves>
+      <div className={applicationId ? "app application-page" : "app"}>
+        <Sidebar />
+        <main className="main">
+          {applicationId ? (
+            <PageApplicationReview />
+          ) : tab === "applications" ? (
+            <PageApplications />
+          ) : tab === "parser" ? (
+            <PageResumeImport />
+          ) : tab === "view" ? (
+            <PageResumeView />
+          ) : tab === "resumes" ? (
+            <PageResumes />
+          ) : tab === "personal" ? (
+            <PageProfile />
+          ) : tab === "contacts" ? (
+            <PageContacts />
+          ) : tab === "workspace" ? (
+            <PageWorkspace />
+          ) : (
+            <PageResumeEditor />
+          )}
+        </main>
+      </div>
+    </PendingSaves>
   );
 }

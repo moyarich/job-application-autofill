@@ -1,7 +1,7 @@
 import type { ResumeSectionsData } from "../feature-props";
 import { RichTextEditor } from "../RichTextEditor/RichTextEditor";
 import { Plus, Trash2 } from "lucide-react";
-import type { CandidateProfile } from "../../index";
+import { Resume } from "@moyarich/resume";
 
 type Field<T> = {
   key: keyof T;
@@ -145,7 +145,7 @@ function Entries<T extends object>({
   );
 }
 
-const educationFields: Field<CandidateProfile["education"][number]>[] = [
+const educationFields: Field<Resume["education"][number]>[] = [
   { key: "institution", label: "Institution" },
   { key: "degree", label: "Degree" },
   { key: "fieldOfStudy", label: "Field of study" },
@@ -154,20 +154,19 @@ const educationFields: Field<CandidateProfile["education"][number]>[] = [
   { key: "endDate", label: "End date (YYYY or YYYY-MM)", nullable: true },
   { key: "description", label: "Education details", multiline: true },
 ];
-const certificationFields: Field<CandidateProfile["certifications"][number]>[] =
-  [
-    { key: "name", label: "Certification name" },
-    { key: "issuer", label: "Issuer" },
-    { key: "issuedDate", label: "Issued date (YYYY or YYYY-MM)" },
-    {
-      key: "expirationDate",
-      label: "Expiration date (YYYY or YYYY-MM)",
-      nullable: true,
-    },
-    { key: "credentialId", label: "Credential ID" },
-    { key: "url", label: "Credential URL" },
-  ];
-const projectFields: Field<CandidateProfile["projects"][number]>[] = [
+const certificationFields: Field<Resume["certifications"][number]>[] = [
+  { key: "name", label: "Certification name" },
+  { key: "issuer", label: "Issuer" },
+  { key: "issuedDate", label: "Issued date (YYYY or YYYY-MM)" },
+  {
+    key: "expirationDate",
+    label: "Expiration date (YYYY or YYYY-MM)",
+    nullable: true,
+  },
+  { key: "credentialId", label: "Credential ID" },
+  { key: "url", label: "Credential URL" },
+];
+const projectFields: Field<Resume["projects"][number]>[] = [
   { key: "name", label: "Project name" },
   { key: "url", label: "Project URL" },
   { key: "technologies", label: "Technologies (comma-separated)", list: true },

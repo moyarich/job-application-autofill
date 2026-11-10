@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { navigateTo } from "./navigateTo";
 
 export function createSwitchProfile(context: ProfileResumeActionsContext) {

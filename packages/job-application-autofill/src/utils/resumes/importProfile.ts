@@ -1,5 +1,10 @@
-import type { ResumeImportActionsContext, OfferImport } from "./import-context";
-import { parseCandidateJson } from "../../index";
+import { parseResumeJson } from "@moyarich/resume/validate";
+
+import type {
+  ResumeImportActionsContext,
+  OfferImport,
+} from "../../types/resume-import-actions-context";
+
 import type React from "react";
 
 export function createImportProfile(
@@ -10,7 +15,7 @@ export function createImportProfile(
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      offerImport(parseCandidateJson(await file.text()));
+      offerImport(parseResumeJson(await file.text()));
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Invalid JSON profile",

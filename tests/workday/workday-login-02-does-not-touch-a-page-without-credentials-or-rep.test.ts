@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Page } from "playwright";
-import { helpWorkdaySignIn } from "../../packages/job-sites/workday/workday-login.ts";
+import { helpWorkdaySignIn } from "../../packages/job-boards/workday/workday-login.ts";
 const env = {
   WORKDAY_USER_EMAIL: "test@example.com",
   WORKDAY_PASSWORD: "test-only",

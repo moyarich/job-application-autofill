@@ -1,4 +1,4 @@
-import type { JobApplication, ApplicationStatus } from "../../index";
+import { ApplicationStatus, JobApplication } from "../../types/job-application";
 
 export type ApplicationSort =
   "newest" | "oldest" | "company" | "role" | "status";

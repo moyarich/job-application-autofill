@@ -4,7 +4,7 @@ import {
   prepareApplication,
   pasteApplicationText,
   closeApplication,
-} from "../../packages/job-sites/automation.ts";
+} from "../../packages/job-boards/automation.ts";
 import { emptyCandidate } from "../../packages/job-application-autofill/src/index.ts";
 it("pastes complete text into a focused field and refuses noneditable or other-host destinations", async () => {
   const browser = await chromium.launch({ headless: true });

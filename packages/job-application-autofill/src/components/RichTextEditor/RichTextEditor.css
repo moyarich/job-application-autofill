@@ -205,7 +205,11 @@
   border-radius: 0 0 10px 10px;
   box-shadow: none;
   color: #222b3c;
-  font: 400 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    400 13px/1.6 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
   resize: vertical;
 }
 

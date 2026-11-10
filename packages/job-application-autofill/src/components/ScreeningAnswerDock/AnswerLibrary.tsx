@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { filterAnswerLibrary, type LibraryFilters, type PreviousAnswer } from "./suggestions";
+import {
+  filterAnswerLibrary,
+  type LibraryFilters,
+  type PreviousAnswer,
+} from "./suggestions";
 
 type Props = {
   examples: PreviousAnswer[];
@@ -11,9 +15,19 @@ type Props = {
 };
 
 /** The historical library is read-only. Adapting only updates the current draft. */
-export function AnswerLibrary({ examples, questions, onAdapt, currentJobId, profileId, onChanged }: Props) {
+export function AnswerLibrary({
+  examples,
+  questions,
+  onAdapt,
+  currentJobId,
+  profileId,
+  onChanged,
+}: Props) {
   const [filters, setFilters] = useState<LibraryFilters>({
-    search: "", company: "", role: "", sort: "recent",
+    search: "",
+    company: "",
+    role: "",
+    sort: "recent",
   });
   const [target, setTarget] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -24,137 +38,309 @@ export function AnswerLibrary({ examples, questions, onAdapt, currentJobId, prof
   const [working, setWorking] = useState(false);
   const [feedback, setFeedback] = useState("");
 
-  async function mutate(method: "POST" | "PATCH" | "DELETE", payload: Record<string, string>) {
+  async function mutate(
+    method: "POST" | "PATCH" | "DELETE",
+    payload: Record<string, string>,
+  ) {
     setWorking(true);
     setFeedback("");
     try {
-      const url = "/api/applications/" + encodeURIComponent(currentJobId) + "/answers" +
+      const url =
+        "/api/applications/" +
+        encodeURIComponent(currentJobId) +
+        "/answers" +
         (method === "POST" ? "" : "/record");
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "X-Moya-Client": "dashboard", "X-Profile-Id": profileId },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Moya-Client": "dashboard",
+          "X-Profile-Id": profileId,
+        },
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to update the library.");
+      if (!response.ok)
+        throw new Error(data.error || "Unable to update the library.");
       await onChanged();
       setEditing(null);
-      if (method === "POST") { setNewQuestion(""); setNewAnswer(""); }
+      if (method === "POST") {
+        setNewQuestion("");
+        setNewAnswer("");
+      }
       setFeedback(method === "DELETE" ? "Answer deleted." : "Answer saved.");
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Unable to save the answer.");
-    } finally { setWorking(false); }
+      setFeedback(
+        error instanceof Error ? error.message : "Unable to save the answer.",
+      );
+    } finally {
+      setWorking(false);
+    }
   }
-  const keyFor = (item: PreviousAnswer) => item.applicationId + ":" + item.question;
-  const companies = useMemo(() =>
-    [...new Set(examples.map((item) => item.company).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b)), [examples]);
-  const roles = useMemo(() =>
-    [...new Set(examples.filter((item) => !filters.company || item.company === filters.company)
-      .map((item) => item.role).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b)), [examples, filters.company]);
-  const found = useMemo(() => filterAnswerLibrary(examples, filters),
-    [examples, filters]);
+  const keyFor = (item: PreviousAnswer) =>
+    item.applicationId + ":" + item.question;
+  const companies = useMemo(
+    () =>
+      [...new Set(examples.map((item) => item.company).filter(Boolean))].sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [examples],
+  );
+  const roles = useMemo(
+    () =>
+      [
+        ...new Set(
+          examples
+            .filter(
+              (item) => !filters.company || item.company === filters.company,
+            )
+            .map((item) => item.role)
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [examples, filters.company],
+  );
+  const found = useMemo(
+    () => filterAnswerLibrary(examples, filters),
+    [examples, filters],
+  );
   return (
-    <section className="answer-library" aria-label="Previous application answers">
-      <button className="secondary answer-library-toggle" type="button"
-        aria-expanded={expanded} onClick={() => setExpanded((old) => !old)}>
-        {expanded ? "Hide answer library" : "Browse answer library"} ({examples.length})
+    <section
+      className="answer-library"
+      aria-label="Previous application answers"
+    >
+      <button
+        className="secondary answer-library-toggle"
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((old) => !old)}
+      >
+        {expanded ? "Hide answer library" : "Browse answer library"} (
+        {examples.length})
       </button>
       {expanded && (
         <div className="answer-library-body">
-          <p>Past answers are examples, not approved responses for this job. Select a current question and adapt the wording before filling.</p>
+          <p>
+            Past answers are examples, not approved responses for this job.
+            Select a current question and adapt the wording before filling.
+          </p>
           <div className="answer-library-filters">
-            <label>Search questions and answers
-              <input type="search" value={filters.search}
+            <label>
+              Search questions and answers
+              <input
+                type="search"
+                value={filters.search}
                 placeholder="Search keywords, employer or answer"
-                onChange={(event) => setFilters((old) => ({ ...old, search: event.target.value }))}/>
+                onChange={(event) =>
+                  setFilters((old) => ({ ...old, search: event.target.value }))
+                }
+              />
             </label>
-            <label>Employer
-              <select value={filters.company}
-                onChange={(event) => setFilters((old) => ({ ...old, company: event.target.value, role: "" }))}>
+            <label>
+              Employer
+              <select
+                value={filters.company}
+                onChange={(event) =>
+                  setFilters((old) => ({
+                    ...old,
+                    company: event.target.value,
+                    role: "",
+                  }))
+                }
+              >
                 <option value="">All employers</option>
-                {companies.map((company) => <option key={company} value={company}>{company}</option>)}
+                {companies.map((company) => (
+                  <option key={company} value={company}>
+                    {company}
+                  </option>
+                ))}
               </select>
             </label>
-            <label>Job title
-              <select value={filters.role}
-                onChange={(event) => setFilters((old) => ({ ...old, role: event.target.value }))}>
+            <label>
+              Job title
+              <select
+                value={filters.role}
+                onChange={(event) =>
+                  setFilters((old) => ({ ...old, role: event.target.value }))
+                }
+              >
                 <option value="">All job titles</option>
-                {roles.map((role) => <option key={role} value={role}>{role}</option>)}
+                {roles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
               </select>
             </label>
-            <label>Sort
-              <select value={filters.sort}
-                onChange={(event) => setFilters((old) => ({ ...old, sort: event.target.value as LibraryFilters["sort"] }))}>
+            <label>
+              Sort
+              <select
+                value={filters.sort}
+                onChange={(event) =>
+                  setFilters((old) => ({
+                    ...old,
+                    sort: event.target.value as LibraryFilters["sort"],
+                  }))
+                }
+              >
                 <option value="recent">Most recent</option>
                 <option value="company">Employer</option>
                 <option value="question">Question</option>
               </select>
             </label>
           </div>
-          <label className="answer-library-target">Adapt for current question
-            <select value={target} onChange={(event) => setTarget(event.target.value)}>
+          <label className="answer-library-target">
+            Adapt for current question
+            <select
+              value={target}
+              onChange={(event) => setTarget(event.target.value)}
+            >
               <option value="">Select a current question</option>
-              {questions.map((question) => <option key={question} value={question}>{question}</option>)}
+              {questions.map((question) => (
+                <option key={question} value={question}>
+                  {question}
+                </option>
+              ))}
             </select>
           </label>
-          <form className="answer-library-create" onSubmit={(event) => {
-            event.preventDefault();
-            void mutate("POST", { question: newQuestion, answer: newAnswer });
-          }}>
+          <form
+            className="answer-library-create"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void mutate("POST", { question: newQuestion, answer: newAnswer });
+            }}
+          >
             <strong>New answer for this application</strong>
-            <label>Question
-              <input required maxLength={300} value={newQuestion}
-                onChange={(event) => setNewQuestion(event.target.value)}/>
+            <label>
+              Question
+              <input
+                required
+                maxLength={300}
+                value={newQuestion}
+                onChange={(event) => setNewQuestion(event.target.value)}
+              />
             </label>
-            <label>Answer
-              <textarea required maxLength={4000} rows={3} value={newAnswer}
-                onChange={(event) => setNewAnswer(event.target.value)}/>
+            <label>
+              Answer
+              <textarea
+                required
+                maxLength={4000}
+                rows={3}
+                value={newAnswer}
+                onChange={(event) => setNewAnswer(event.target.value)}
+              />
             </label>
-            <button type="submit" className="secondary" disabled={working || !newQuestion.trim() || !newAnswer.trim()}>
+            <button
+              type="submit"
+              className="secondary"
+              disabled={working || !newQuestion.trim() || !newAnswer.trim()}
+            >
               Save new answer
             </button>
           </form>
           {feedback && <p role="status">{feedback}</p>}
-          <p role="status">{found.length} matching {found.length === 1 ? "answer" : "answers"}</p>
-          {found.length === 0 && <p>No matching saved answers. Try different filters.</p>}
+          <p role="status">
+            {found.length} matching {found.length === 1 ? "answer" : "answers"}
+          </p>
+          {found.length === 0 && (
+            <p>No matching saved answers. Try different filters.</p>
+          )}
           {found.slice(0, 40).map((item) => (
-            <article className="screening-dock-example" key={item.applicationId + ":" + item.question}>
-              <small>{item.company} · {item.role}</small>
+            <article
+              className="screening-dock-example"
+              key={item.applicationId + ":" + item.question}
+            >
+              <small>
+                {item.company} · {item.role}
+              </small>
               <strong>{item.question}</strong>
               {editing === keyFor(item) ? (
-                <label className="answer-library-editor">Edit saved answer
-                  <textarea rows={4} maxLength={4000} value={editValue}
-                    onChange={(event) => setEditValue(event.target.value)}/>
+                <label className="answer-library-editor">
+                  Edit saved answer
+                  <textarea
+                    rows={4}
+                    maxLength={4000}
+                    value={editValue}
+                    onChange={(event) => setEditValue(event.target.value)}
+                  />
                 </label>
-              ) : <p>{item.answer}</p>}
+              ) : (
+                <p>{item.answer}</p>
+              )}
               <div className="answer-library-actions">
-                <button type="button" className="secondary" disabled={!target || working}
-                  onClick={() => onAdapt(target, item.answer)}>Adapt into draft</button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={!target || working}
+                  onClick={() => onAdapt(target, item.answer)}
+                >
+                  Adapt into draft
+                </button>
                 {editing === keyFor(item) ? (
                   <>
-                    <button type="button" className="secondary" disabled={working || !editValue.trim()}
-                      onClick={() => void mutate("PATCH", {
-                        applicationId: item.applicationId, question: item.question,
-                        expectedAnswer: item.answer, expectedUpdatedAt: item.updatedAt, answer: editValue,
-                      })}>Save changes</button>
-                    <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancel</button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={working || !editValue.trim()}
+                      onClick={() =>
+                        void mutate("PATCH", {
+                          applicationId: item.applicationId,
+                          question: item.question,
+                          expectedAnswer: item.answer,
+                          expectedUpdatedAt: item.updatedAt,
+                          answer: editValue,
+                        })
+                      }
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => setEditing(null)}
+                    >
+                      Cancel
+                    </button>
                   </>
-                ) : <button type="button" className="secondary" disabled={working}
-                  onClick={() => { setEditing(keyFor(item)); setEditValue(item.answer); }}>Edit</button>}
-                <button type="button" className="secondary" disabled={working}
+                ) : (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={working}
+                    onClick={() => {
+                      setEditing(keyFor(item));
+                      setEditValue(item.answer);
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={working}
                   onClick={() => {
-                    if (window.confirm("Delete this saved answer from " + item.company + "?"))
+                    if (
+                      window.confirm(
+                        "Delete this saved answer from " + item.company + "?",
+                      )
+                    )
                       void mutate("DELETE", {
-                        applicationId: item.applicationId, question: item.question,
-                        expectedAnswer: item.answer, expectedUpdatedAt: item.updatedAt,
+                        applicationId: item.applicationId,
+                        question: item.question,
+                        expectedAnswer: item.answer,
+                        expectedUpdatedAt: item.updatedAt,
                       });
-                  }}>Delete</button>
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </article>
           ))}
-          {found.length > 40 && <p>Showing the first 40 results. Narrow your search to see more.</p>}
+          {found.length > 40 && (
+            <p>Showing the first 40 results. Narrow your search to see more.</p>
+          )}
         </div>
       )}
     </section>

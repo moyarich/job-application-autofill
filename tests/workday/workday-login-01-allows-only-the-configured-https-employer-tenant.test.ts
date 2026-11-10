@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { workdayCredentials } from "../../packages/job-sites/workday/workday-login.ts";
+import { workdayCredentials } from "../../packages/job-boards/workday/workday-login.ts";
 const env = {
   WORKDAY_USER_EMAIL: "test@example.com",
   WORKDAY_PASSWORD: "test-only",

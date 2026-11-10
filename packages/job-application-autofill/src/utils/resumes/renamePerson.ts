@@ -1,4 +1,4 @@
-import type { ProfileResumeActionsContext } from "./library-context";
+import type { ProfileResumeActionsContext } from "../../types/profile-resume-actions-context";
 import { renameLocalProfile } from "../api/client";
 
 export function createRenamePerson(context: ProfileResumeActionsContext) {
