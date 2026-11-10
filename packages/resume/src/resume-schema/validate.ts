@@ -12,6 +12,8 @@ const STRING_FIELDS = [
   "website",
 ];
 export const OPTIONAL_CONTACT_FIELDS = [
+  "middleName",
+  "preferredName",
   "addressLine1",
   "addressLine2",
   "city",
