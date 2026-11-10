@@ -1,3 +1,4 @@
+import type { AnswerMap } from "../types/api-types";
 import { requestApi } from "./client";
 /** Mutate the current application's saved screening-answer records. */
 export async function mutateApplicationAnswer(
@@ -37,6 +38,19 @@ export function fillApplicationAnswer(
   }>(
     "/api/apply/" + encodeURIComponent(sessionId) + "/answers",
     { answers: { [question]: answer } },
+    profileId,
+    resumeId,
+  );
+}
+
+export function saveEmployerFormAnswers(
+  sessionId: string,
+  profileId: string,
+  resumeId?: string,
+) {
+  return requestApi<{ answers: AnswerMap; count: number }>(
+    "/api/apply/" + encodeURIComponent(sessionId) + "/save-answers",
+    {},
     profileId,
     resumeId,
   );
