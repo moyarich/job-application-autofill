@@ -59,6 +59,22 @@ describe("transport-neutral resume API", () => {
       store.close();
     }
   });
+  it("never exposes environment VNC credentials in an API response", async () => {
+    const store = openStore(":memory:");
+    const original = process.env.WEB_VNC_PASSWORD;
+    process.env.WEB_VNC_PASSWORD = "private-vnc-secret";
+    try {
+      const handler = createApiHandler(store, { origin: "http://localhost:5173" });
+      const response = await handler(request("/api/viewer/config"));
+      expect(response.status).toBe(404);
+      expect(JSON.stringify(response.body)).not.toContain("private-vnc-secret");
+    } finally {
+      if (original === undefined) delete process.env.WEB_VNC_PASSWORD;
+      else process.env.WEB_VNC_PASSWORD = original;
+      store.close();
+    }
+  });
+
   it("never sends resume PII from unexpected errors to the browser or server logs", async () => {
     const store = openStore(":memory:");
     const pii = "private-person@example.test / 555-0101";

@@ -3,9 +3,6 @@ import { test, expect } from "@playwright/test";
 test("viewer uses the configured VNC password without putting it in the URL or storage", async ({
   page,
 }) => {
-  await page.route("**/api/viewer/config", (route) =>
-    route.fulfill({ json: { password: "test-viewer-password" } }),
-  );
   await page.route("**/api/apply/*/focus", (route) =>
     route.fulfill({ json: {} }),
   );
@@ -28,6 +25,8 @@ test("viewer uses the configured VNC password without putting it in the URL or s
   await page.goto(
     "/application-viewer?session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa",
   );
+  await page.getByLabel("Browser viewer password").fill("test-viewer-password");
+  await page.getByRole("button", { name: "Connect viewer" }).click();
   await expect(page.getByRole("status")).toHaveText(
     "Connected to application browser",
   );

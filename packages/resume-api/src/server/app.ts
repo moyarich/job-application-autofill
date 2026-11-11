@@ -28,12 +28,6 @@ function singleHeader(headers: Headers, name: string, label: string) {
   return value;
 }
 
-function viewerConfig(): ApiResponse {
-  const password = process.env.WEB_VNC_PASSWORD;
-  if (!password) throw new Error("WEB_VNC_PASSWORD is not configured.");
-  return reply(200, { password });
-}
-
 /** Transport-independent API: pass the same request shape from Node, Express, Fastify, etc. */
 export function createApiHandler(store: Store, options: { origin: string }) {
   return async (req: ApiRequest): Promise<ApiResponse> => {
@@ -49,10 +43,6 @@ export function createApiHandler(store: Store, options: { origin: string }) {
         return reply(403, {
           error: "Only the local dashboard may access this API.",
         });
-      }
-
-      if (method === "GET" && url.pathname === "/api/viewer/config") {
-        return viewerConfig();
       }
 
       const profileId =

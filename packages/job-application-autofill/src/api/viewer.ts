@@ -98,11 +98,3 @@ export function pasteViewerText(
   );
 }
 
-export function readViewerConfig(profile: string, signal?: AbortSignal) {
-  return viewerRequest<{ password: string }>(
-    "/api/viewer/config",
-    profile,
-    undefined,
-    signal,
-  );
-}
