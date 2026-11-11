@@ -3,6 +3,26 @@
 Installable Python package for PDF text extraction with OCR fallback. PDFium reads
 selectable text; RapidOCR recovers text from scanned pages. Python 3.12–3.14 is supported.
 
+```text
+PDF Resume
+    │
+    ▼
+pypdfium2
+    │
+    ├── Selectable text → Extract directly
+    │
+    └── Scanned page → Render as image
+                              │
+                              ▼
+                           RapidOCR
+                              │
+                              ▼
+                         ONNX Runtime
+                              │
+                              ▼
+                        Recognized text
+```
+       
 ## Install
 
 From the repository root, install into your Python environment:
