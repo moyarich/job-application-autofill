@@ -19,7 +19,7 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: {
-        markdown: resolve(import.meta.dirname, "src/resume-schema/markdown.ts"),
+        markdown: resolve(import.meta.dirname, "src/markdown/markdown.ts"),
         index: resolve(import.meta.dirname, "src/index.ts"),
         "extract-resume": resolve(
           import.meta.dirname,
