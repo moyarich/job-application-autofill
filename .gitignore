@@ -70,7 +70,9 @@ data/
 # Standalone application build
 **/dist-app/
 
-# PDF files
+# Private resume documents
 *.pdf
+*.docx
+*.doc
 
 testing-gliner

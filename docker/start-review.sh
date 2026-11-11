@@ -70,7 +70,7 @@ start_fluxbox() {
 # @exitcode 1 Password file creation failed.
 start_x11vnc() {
   # RFB authentication stays inside the container.
-  # The local API provides viewer authentication to the authorized dashboard.
+  # The Node RFB adapter authenticates to x11vnc using this server-side secret.
   x11vnc -storepasswd "$WEB_VNC_PASSWORD" "$VNC_AUTH_FILE" \
     >/dev/null 2>&1
 
@@ -82,7 +82,7 @@ start_x11vnc() {
 # @description Starts the noVNC WebSocket proxy.
 # @description The published endpoint is restricted by Compose configuration.
 start_websockify() {
-  websockify --web=/usr/share/novnc 0.0.0.0:6080 localhost:5900 \
+  websockify --web=/usr/share/novnc 127.0.0.1:6080 localhost:5901 \
     >/tmp/moya-websockify.log 2>&1 &
 }
 

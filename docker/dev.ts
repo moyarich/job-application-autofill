@@ -12,7 +12,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_PORTS = "MOYA_WEB_PORT=5173\nMOYA_REVIEW_PORT=6080\n";
+const DEFAULT_PORTS = "MOYA_WEB_PORT=5173\n";
 export function makePassword(bytes: Buffer = randomBytes(6)) {
   // VNC's classic password scheme only considers the first eight bytes.
   return bytes.toString("base64url").slice(0, 8);
@@ -144,11 +144,6 @@ export function main() {
     const composeEnv = credentialEnvironment();
     if (generated) {
       console.log("Created .env with a random viewer password (private file).");
-      console.log(
-        "First-run noVNC password: " +
-          generated +
-          " (also saved as WEB_VNC_PASSWORD in .env)",
-      );
     }
     console.log(
       "Starting job-application-autofill: React, API, SQLite, Chromium and noVNC via Docker Compose.",
@@ -156,11 +151,7 @@ export function main() {
     console.log(
       "Dashboard: http://localhost:" + (process.env.MOYA_WEB_PORT || "5173"),
     );
-    console.log(
-      "Browser viewer: http://localhost:" +
-        (process.env.MOYA_REVIEW_PORT || "6080") +
-        "/vnc.html",
-    );
+    console.log("Browser viewer: open an application in the dashboard.");
     const rebuild = process.argv.slice(2).includes("--build");
     const unknown = process.argv.slice(2).filter((arg) => arg !== "--build");
     if (unknown.length)

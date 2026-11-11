@@ -16,7 +16,7 @@ services:
       AUTOFILL_ORIGIN: "http://localhost:${MOYA_WEB_PORT:-5173}"
       HEADLESS: "false"
       DISPLAY: ":99"
-      BROWSER_REVIEW_URL: "http://localhost:${MOYA_REVIEW_PORT:-6080}/vnc.html"
+      BROWSER_REVIEW_URL: "http://localhost:${MOYA_WEB_PORT:-5173}/application-viewer"
       WEB_VNC_PASSWORD: "${WEB_VNC_PASSWORD:?Set WEB_VNC_PASSWORD in .env before starting Docker Compose}"
       WORKDAY_USERNAME: "${WORKDAY_USERNAME:-}"
       WORKDAY_USER_EMAIL: "${WORKDAY_USER_EMAIL:-}"
@@ -27,8 +27,6 @@ services:
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
     expose:
       - "4177"
-    ports:
-      - "127.0.0.1:${MOYA_REVIEW_PORT:-6080}:6080"
     init: true
     shm_size: "1gb"
     healthcheck:

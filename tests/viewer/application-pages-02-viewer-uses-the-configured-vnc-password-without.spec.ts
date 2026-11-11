@@ -1,11 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-test("viewer uses the configured VNC password without putting it in the URL or storage", async ({
+test("viewer connects through the session-scoped proxy without receiving an environment password", async ({
   page,
 }) => {
-  await page.route("**/api/viewer/config", (route) =>
-    route.fulfill({ json: { password: "test-viewer-password" } }),
-  );
   await page.route("**/api/apply/*/focus", (route) =>
     route.fulfill({ json: {} }),
   );
@@ -16,7 +13,8 @@ test("viewer uses the configured VNC password without putting it in the URL or s
     export default class RFB extends EventTarget {
       constructor(target,url,options) {
         super();
-        if(options.credentials.password !== 'test-viewer-password') throw new Error('Missing configured password');
+        if(options.credentials?.password) throw new Error('Browser must not receive VNC password');
+        if(!url.includes('session=aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa')) throw new Error('Missing session');
         target.textContent='Authenticated viewer';
         setTimeout(()=>this.dispatchEvent(new Event('connect')),0);
       }

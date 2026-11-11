@@ -2,7 +2,6 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   focusViewerBrowser,
   pasteViewerText,
-  readViewerConfig,
 } from "../../api/viewer";
 
 interface RemoteFrame extends EventTarget {
@@ -190,7 +189,6 @@ export const NoVncView = forwardRef<
     void (async () => {
       if (!session)
         throw new Error("Open the browser from an application page.");
-      const config = await readViewerConfig(profile, signal);
       const modulePath = "/vnc/core/rfb.js";
       const { default: RFB } = (await import(
         /* @vite-ignore */ modulePath
@@ -203,10 +201,10 @@ export const NoVncView = forwardRef<
       };
       if (disposed) return;
       const socket = new URL("/vnc/websockify", location.href);
+      socket.searchParams.set("session", session);
+      socket.searchParams.set("profile", profile);
       socket.protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      rfb = new RFB(target, socket.href, {
-        credentials: { password: config.password },
-      });
+      rfb = new RFB(target, socket.href, {});
       setFit(fit.current);
       rfb.resizeSession = false;
       rfb.addEventListener("connect", () => {
@@ -234,7 +232,7 @@ export const NoVncView = forwardRef<
       });
       rfb.addEventListener("securityfailure", () =>
         report(
-          "Browser authentication failed. Check WEB_VNC_PASSWORD and restart the app.",
+          "Browser authentication failed. Reopen the application viewer.",
         ),
       );
     })().catch((error: Error) => {

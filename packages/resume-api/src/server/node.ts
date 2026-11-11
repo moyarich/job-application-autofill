@@ -1,5 +1,6 @@
 import { subscribeApplication } from "@moyarich/job-boards/automation";
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
+import type { IncomingHttpHeaders } from "node:http";
 import type { IncomingMessage } from "node:http";
 import type { ApiRequest, ApiResponse } from "../types/types.ts";
 
@@ -19,8 +20,9 @@ export async function readNodeJson(req: IncomingMessage): Promise<unknown> {
 /** This is the sole node:http adapter. Swap this file for Express/Fastify. */
 export function createNodeServer(
   handler: (req: ApiRequest) => Promise<ApiResponse>,
+  allowedOrigin = "http://localhost:5173",
 ) {
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const req: ApiRequest = {
       method: request.method || "GET",
       url: new URL(request.url || "/", "http://localhost"),
@@ -28,6 +30,27 @@ export function createNodeServer(
       readJson: () => readNodeJson(request),
     };
     try {
+      // Only the Node server may reach the internal noVNC static asset server.
+      if (req.method === "GET" && req.url.pathname.startsWith("/vnc/")) {
+        const upstream = httpRequest({
+          hostname: "127.0.0.1", port: 6080,
+          path: req.url.pathname.slice(4), method: "GET",
+        }, (source) => {
+          response.writeHead(source.statusCode ?? 502, {
+            "Content-Type": source.headers["content-type"] ?? "application/octet-stream",
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+          });
+          source.pipe(response);
+        });
+        upstream.on("error", () => {
+          if (!response.headersSent) response.writeHead(502);
+          response.end();
+        });
+        upstream.end();
+        return;
+      }
       // Authenticate through the existing API handler before attaching a stream.
       // This preserves the same profile/session boundary as the normal viewer API.
       const stream = req.url.pathname.match(
@@ -78,6 +101,7 @@ export function createNodeServer(
       response.writeHead(result.status, {
         "Content-Type": contentType,
         "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
         "X-Content-Type-Options": "nosniff",
       });
       const body =
@@ -87,16 +111,69 @@ export function createNodeServer(
       if (typeof body !== "string" && !Buffer.isBuffer(body))
         throw new Error("Unsupported response body.");
       response.end(body);
-    } catch (error) {
+    } catch {
       response.writeHead(400, {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
       });
-      response.end(
-        JSON.stringify({
-          error: error instanceof Error ? error.message : "Request failed",
-        }),
-      );
+      // Parsing errors can include private request content; return a fixed error.
+      response.end(JSON.stringify({ error: "Invalid request." }));
     }
   });
+  // A WebSocket cannot supply dashboard headers. Validate the browser origin
+  // and existing application session before tunneling to loopback websockify.
+  server.on("upgrade", (request, socket, head) => {
+    void (async () => {
+      const url = new URL(request.url ?? "/", "http://localhost");
+      const session = url.searchParams.get("session");
+      const profile = url.searchParams.get("profile");
+      const validId = (id: string | null) => !!id && /^[0-9a-f-]{36}$/i.test(id);
+      if (
+        url.pathname !== "/vnc/websockify" ||
+        request.headers.origin !== allowedOrigin ||
+        request.headers["sec-fetch-site"] === "cross-site" ||
+        !validId(session) || !validId(profile)
+      ) {
+        socket.end("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+        return;
+      }
+      const verified = await handler({
+        method: "GET",
+        url: new URL("/api/apply/" + session, "http://localhost"),
+        headers: {
+          ...request.headers,
+          "x-moya-client": "dashboard",
+          "x-profile-id": profile!,
+        },
+        readJson: async () => undefined,
+      });
+      if (verified.status !== 200) {
+        socket.end("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+        return;
+      }
+      const upstream = httpRequest({
+        hostname: "127.0.0.1", port: 6080, path: "/websockify",
+        headers: {
+          ...(request.headers as IncomingHttpHeaders),
+          host: "127.0.0.1:6080",
+        },
+      });
+      upstream.once("upgrade", (reply, tunnel, tunnelHead) => {
+        socket.write(`HTTP/1.1 101 Switching Protocols\r\n${reply.rawHeaders.reduce((lines, value, index, array) => index % 2 === 0 ? lines + value + ": " + array[index + 1] + "\r\n" : lines, "")}\r\n`);
+        if (head.length) tunnel.write(head);
+        if (tunnelHead.length) socket.write(tunnelHead);
+        socket.on("error", () => tunnel.destroy());
+        tunnel.on("error", () => socket.destroy());
+        socket.pipe(tunnel);
+        tunnel.pipe(socket);
+      });
+      upstream.once("response", () => socket.destroy());
+      upstream.once("error", () => socket.destroy());
+      socket.once("close", () => upstream.destroy());
+      upstream.end();
+    })().catch(() => socket.destroy());
+  });
+  return server;
 }

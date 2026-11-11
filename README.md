@@ -52,7 +52,7 @@ npm run dev
 
 Run this from the repository root with **Docker Engine/Desktop and Docker Compose v2 installed and running**. It starts the entire stack: React/Vite, the Node API, SQLite storage, Playwright Chromium, and the interactive noVNC browser viewer. The first start creates a private `.env` with a randomly generated VNC password (printed once and saved in the file), unless `WEB_VNC_PASSWORD` is already configured. Custom passwords are preserved. To change ports, edit `.env`.
 
-Open the dashboard at **http://localhost:5173** and the browser viewer at **http://localhost:6080/vnc.html**. Use the password in `.env` when prompted for the viewer. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the local `./sqlite-data/` directory after a normal stop.
+Open the dashboard at **http://localhost:5173** and access the browser viewer from an application page; the server uses the VNC password from `.env` internally. Stop the stack with Ctrl+C or `npm run dev:down`. View logs with `npm run dev:logs`. SQLite data remains in the local `./sqlite-data/` directory after a normal stop.
 
 `npm run dev:web` runs **only Vite**; it is useful when the API is already running separately and does not start the full application.
 
@@ -69,11 +69,11 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open http://localhost:5173. The **interactive Playwright browser viewer** is available at http://localhost:6080/vnc.html (or use the embedded **live browser viewer** in the application review panel (with a full-window option)). Enter the password configured as `WEB_VNC_PASSWORD`. Override local ports with `MOYA_WEB_PORT=5174` or `MOYA_REVIEW_PORT=6081`.
+Open http://localhost:5173. The interactive browser viewer is embedded in the application review panel, with a full-window option. The Node server authenticates to VNC using `WEB_VNC_PASSWORD` without exposing the value through the API. Override the dashboard port with `MOYA_WEB_PORT=5174`.
 
 Compose uses `docker/Dockerfile` for the React/Vite `web` service and the Node/Playwright/Python `api` service. The API installs the pinned `resume-ocr` wheel and invokes its module as a subprocess. No OCR HTTP service, private OCR network, or source-directory mount is required. The frontend remains free of Python and OCR dependencies. Rebuild the API image after changing its Python dependency.
 
-**Interactive browser review:** Docker launches Chromium in an Xvfb desktop with noVNC (password protected). The viewer and dashboard are published on host-loopback ports only, not on the public interface. Before final submission you must open the viewer, inspect the actual employer form, complete any mandatory fields, check the review acknowledgment, and explicitly click **Confirm & submit**. VNC password authentication uses a legacy protocol (only the first eight password bytes are significant); do not expose port 6080 externally or use this setup across an untrusted network. The display is shared among application sessions.
+**Interactive browser review:** Docker launches Chromium in an Xvfb desktop with noVNC (password protected). Only the dashboard is published on the host loopback interface. VNC services are internal to the API container. Before final submission you must open the viewer, inspect the actual employer form, complete any mandatory fields, check the review acknowledgment, and explicitly click **Confirm & submit**. VNC password authentication uses a legacy protocol (only the first eight password bytes are significant); do not expose VNC ports externally or use this setup across an untrusted network. Node authenticates internally, and the embedded viewer never receives or stores the environment password. The display is shared among application sessions.
 
 ## Run without Docker
 
@@ -162,6 +162,11 @@ Replace the example URL with a real, publicly accessible job posting. This check
 
 ## Security & limitations
 
+**Private local use only:** This application has no user sign-in or remote authentication. The Docker dashboard is bound to `127.0.0.1` on the host, while the VNC service is accessible only inside the API container. Do not publish the web port, VNC port, or API through a public reverse proxy or tunnel. Anyone who can access an authorized local dashboard can access the selected profile's resume information; the client marker and profile header are not an authentication mechanism.
+
+The server sends `Cache-Control: no-store` for API responses and returns generic messages for unexpected failures rather than including resume details in logs or error bodies. `.gitignore` and `.dockerignore` exclude common local PDF/DOCX resumes, SQLite files, and sensitive runtime data. These rules do not protect files already committed to Git history or JSON files deliberately added to the repository; review staged files before committing and keep private resume JSON in `sqlite-data/` or another ignored local directory.
+
+
 In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction invokes the installed Python package in the API container; browser automation runs in the same container. Neither uses a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
 
 Field mapping remains rule based, and OCR may misread low-quality scans or complex layouts. Review and correct extracted fields before applying. Playwright supports common text inputs; custom selects, MFA, CAPTCHAs, account logins and unknown questions require manual intervention. It does not bypass anti-bot mechanisms. The browser is headed by default and uses Xvfb/noVNC in Docker; `HEADLESS=true` is supported for scripted testing outside the interactive-review Compose setup.
@@ -221,9 +226,9 @@ blocked as a duplicate. Existing saved IDs remain unchanged. Each page retrieves
 only the browser session for its application, and different jobs can have open
 sessions at the same time. Application status updates are saved individually.
 
-The embedded viewer authenticates using `WEB_VNC_PASSWORD` from `.env`; it does
-not put credentials in URLs or browser storage. Its authenticated local API route
-and same-origin VNC proxy are used by the dashboard. Browser windows have separate
+The Node API authenticates with x11vnc using `WEB_VNC_PASSWORD` from `.env`.
+The browser uses a session-checked WebSocket proxy without receiving the password
+in an API response, URL, or browser storage. Browser windows have separate
 application contexts but share the local virtual desktop; focusing an application
 viewer brings that job's browser window forward.
 
