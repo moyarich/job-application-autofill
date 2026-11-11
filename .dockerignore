@@ -38,3 +38,8 @@ data/
 # Private SQLite bind mount must not enter the image build context
 sqlite-data/
 **/sqlite-data/
+
+# Never package private resume documents into container images
+*.pdf
+*.docx
+*.doc

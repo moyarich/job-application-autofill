@@ -162,6 +162,11 @@ Replace the example URL with a real, publicly accessible job posting. This check
 
 ## Security & limitations
 
+**Private local use only:** This application has no user sign-in or remote authentication. The Docker dashboard and browser viewer are bound to `127.0.0.1` on the host. Do not publish the web port, VNC port, or API through a public reverse proxy or tunnel. Anyone who can access an authorized local dashboard can access the selected profile's resume information; the client marker and profile header are not an authentication mechanism.
+
+The server sends `Cache-Control: no-store` for API responses and returns generic messages for unexpected failures rather than including resume details in logs or error bodies. `.gitignore` and `.dockerignore` exclude common local PDF/DOCX resumes, SQLite files, and sensitive runtime data. These rules do not protect files already committed to Git history or JSON files deliberately added to the repository; review staged files before committing and keep private resume JSON in `sqlite-data/` or another ignored local directory.
+
+
 In Docker the API listens on the internal Compose network and checks the dashboard origin and custom header. Resume extraction invokes the installed Python package in the API container; browser automation runs in the same container. Neither uses a cloud service. Uploaded resumes are written to temporary files for applying and removed when the session closes. Profile fields in the UI use localStorage; browser selected file bytes only exist for the current page session.
 
 Field mapping remains rule based, and OCR may misread low-quality scans or complex layouts. Review and correct extracted fields before applying. Playwright supports common text inputs; custom selects, MFA, CAPTCHAs, account logins and unknown questions require manual intervention. It does not bypass anti-bot mechanisms. The browser is headed by default and uses Xvfb/noVNC in Docker; `HEADLESS=true` is supported for scripted testing outside the interactive-review Compose setup.
