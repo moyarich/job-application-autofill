@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from .recognize import recognize_page
+from .ocr import recognize_page
 from .settings import MAX_FILE_BYTES, MAX_PAGES, MIN_TEXT_CHARS, OCR_DPI
 from .text import readable_length, recover_vector_bullets
 

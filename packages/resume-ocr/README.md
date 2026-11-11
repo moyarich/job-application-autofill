@@ -27,7 +27,7 @@ installs the wheel and the API's pinned requirement into the repository-root `.v
 
 - `extract.py` coordinates page extraction and the OCR fallback.
 - `text.py` reads selectable text and restores drawn list markers.
-- `recognize.py` renders scanned pages and invokes RapidOCR.
+- `ocr.py` renders scanned pages and invokes RapidOCR.
 - `settings.py` defines extraction limits and defaults.
 - `cli.py` owns argument parsing, JSON output, and exit codes.
 - `__main__.py` supports `python -m resume_ocr`.
