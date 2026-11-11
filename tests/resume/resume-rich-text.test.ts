@@ -5,7 +5,7 @@ import { renderResumeHtml } from "../../packages/resume/src/create-resume/create
 import {
   markdownToPlainText,
   markdownToHtml,
-} from "../../packages/resume/src/resume-schema/markdown.ts";
+} from "../../packages/resume/src/markdown/markdown.ts";
 import {
   markdownToEditor,
   editorToMarkdown,

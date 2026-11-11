@@ -129,6 +129,7 @@ export function extractEmploymentHistory(text: unknown) {
     isCurrent: boolean;
     begin: number;
     end: number;
+    context: string[];
   }> = [];
   for (let i = 0; i < lines.length; i++) {
     const m = RANGE.exec(lines[i]);
@@ -192,7 +193,19 @@ export function extractEmploymentHistory(text: unknown) {
         if (id) end = i + 2;
       }
     }
-    if (id) jobs.push({ ...id, startDate, endDate, isCurrent, begin, end });
+    if (id) {
+      const employerLine = parts.findIndex((line) =>
+        line
+          .split(/\s+[|•]\s+/)
+          .map(clean)
+          .includes(id.company),
+      );
+      const context =
+        employerLine >= 0 && /\s+[|•]\s+/.test(parts[employerLine])
+          ? parts.slice(employerLine + 1).filter((line) => line !== id.jobTitle)
+          : [];
+      jobs.push({ ...id, startDate, endDate, isCurrent, begin, end, context });
+    }
   }
   return jobs.map((j, n) => ({
     company: j.company,
@@ -201,12 +214,17 @@ export function extractEmploymentHistory(text: unknown) {
     startDate: j.startDate,
     endDate: j.endDate,
     isCurrent: j.isCurrent,
-    description: joinDescription(
-      lines.slice(
-        j.end + 1,
-        n + 1 < jobs.length ? jobs[n + 1].begin : lines.length,
+    description: [
+      ...j.context,
+      joinDescription(
+        lines.slice(
+          j.end + 1,
+          n + 1 < jobs.length ? jobs[n + 1].begin : lines.length,
+        ),
       ),
-    ),
+    ]
+      .filter(Boolean)
+      .join("\n"),
   }));
 }
 
