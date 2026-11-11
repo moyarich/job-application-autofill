@@ -1,6 +1,6 @@
 # resume-ocr
 
-Installable Python package for PDF text extraction with OCR fallback. PDFium reads
+Installable Python package using the `src/resume_ocr/` layout for PDF text extraction with OCR fallback. PDFium reads
 selectable text; RapidOCR recovers text from scanned pages. Python 3.12–3.14 is supported.
 
 ## Install
@@ -22,6 +22,15 @@ Poetry builds a wheel and source distribution in `dist/`. Repository-wide Python
 provisioning is also available through `npm run build:python`; that build script
 lives outside this Python package. It runs `poetry build --format wheel`, then
 installs the wheel and the API's pinned requirement into the repository-root `.venv`.
+
+## Source modules
+
+- `extract.py` coordinates page extraction and the OCR fallback.
+- `text.py` reads selectable text and restores drawn list markers.
+- `recognize.py` renders scanned pages and invokes RapidOCR.
+- `settings.py` defines extraction limits and defaults.
+- `cli.py` owns argument parsing, JSON output, and exit codes.
+- `__main__.py` supports `python -m resume_ocr`.
 
 ## CLI
 

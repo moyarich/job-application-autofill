@@ -3,7 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from resume_ocr.pdf_ocr import extract_pdf, readable_length
+from resume_ocr import extract_pdf
+from resume_ocr.text import readable_length
 
 
 class TestPdfPipeline(unittest.TestCase):

@@ -1,3 +1,3 @@
-from .pdf_ocr import main
+from .cli import main
 
 raise SystemExit(main())

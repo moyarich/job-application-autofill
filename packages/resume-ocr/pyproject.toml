@@ -4,10 +4,10 @@ version = "0.1.0"
 description = "Local PDF text extraction with scanned-page OCR fallback for job-application-autofill"
 authors = ["job-application-autofill contributors"]
 readme = "README.md"
-packages = [{ include = "resume_ocr" }]
+packages = [{ include = "resume_ocr", from = "src" }]
 
 [tool.poetry.scripts]
-resume-ocr = "resume_ocr.pdf_ocr:main"
+resume-ocr = "resume_ocr.cli:main"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.15"
