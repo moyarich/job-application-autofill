@@ -1,0 +1,20 @@
+[project]
+name = "resume-llm"
+version = "0.1.0"
+description = "Local schema-guided extraction of structured resumes"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "huggingface-hub==2.4.0",
+    "jsonschema==4.26.0",
+    "pypdfium2>=5.15,<6",
+    "torch==2.15.0",
+    "transformers==5.22.2",
+]
+
+[project.scripts]
+resume-llm = "resume_llm.cli:main"
+
+[build-system]
+requires = ["poetry-core>=2.0,<3.0"]
+build-backend = "poetry.core.masonry.api"

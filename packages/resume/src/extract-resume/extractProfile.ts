@@ -35,16 +35,16 @@ export function extractProfile(text: string) {
     .split(LINE_BREAK_RE)
     .map((line) => line.trim())
     .filter(Boolean);
-  const contactText = lines
-    .slice(0, lines.findIndex(isSectionHeading) >>> 0)
-    .join("\n");
-  const email = text.match(EMAIL_RE)?.[0] || "";
-  const phone = text.match(PHONE_RE)?.[0]?.trim() || "";
-  const linkedIn = text.match(LINKEDIN_RE)?.[0] || "";
-  const github = text.match(GITHUB_RE)?.[0] || "";
+  const firstSection = lines.findIndex(isSectionHeading);
+  const contactLines = firstSection < 0 ? lines : lines.slice(0, firstSection);
+  const contactText = contactLines.join("\n");
+  const email = contactText.match(EMAIL_RE)?.[0] || "";
+  const phone = contactText.match(PHONE_RE)?.[0]?.trim() || "";
+  const linkedIn = contactText.match(LINKEDIN_RE)?.[0] || "";
+  const github = contactText.match(GITHUB_RE)?.[0] || "";
   const website = contactText.match(WEBSITE_RE)?.[0] || "";
   const heading =
-    lines.find(
+    contactLines.find(
       (line) =>
         line.length <= 65 &&
         NAME_CHARS_RE.test(line) &&

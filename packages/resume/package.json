@@ -22,13 +22,15 @@
       "types": "./dist/create-resume/render-html.d.ts",
       "import": "./dist/render-html.js"
     },
+    "./resume.schema.json": "./src/resume-schema/resume.schema.json",
     "./markdown": {
-      "types": "./dist/resume-schema/markdown.d.ts",
+      "types": "./dist/markdown/markdown.d.ts",
       "import": "./dist/markdown.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src/resume-schema/resume.schema.json"
   ],
   "scripts": {
     "build": "npm run build:js",

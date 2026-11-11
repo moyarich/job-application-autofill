@@ -1,4 +1,4 @@
-import { markdownToHtml } from "../resume-schema/markdown-render.ts";
+import { markdownToHtml } from "../markdown/markdown-render.ts";
 import type { Resume } from "../types.js";
 import { validateResume } from "../resume-schema/validate.ts";
 
