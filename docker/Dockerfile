@@ -7,7 +7,7 @@ RUN python -m pip install --no-cache-dir "poetry==2.2.1" \
 ENV VIRTUAL_ENV=/opt/resume-ocr \
     POETRY_VIRTUALENVS_CREATE=false
 COPY packages/resume-ocr/pyproject.toml packages/resume-ocr/README.md packages/resume-ocr/poetry.lock ./
-COPY packages/resume-ocr/resume_ocr ./resume_ocr
+COPY packages/resume-ocr/src ./src
 COPY packages/resume-api/requirements.txt /build/api-requirements.txt
 RUN poetry install --only main --no-root --no-interaction \
     && poetry build --format wheel --output /wheels \
