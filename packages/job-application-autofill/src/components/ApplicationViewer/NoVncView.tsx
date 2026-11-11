@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   focusViewerBrowser,
   pasteViewerText,
@@ -28,8 +28,6 @@ export const NoVncView = forwardRef<
     onConnected: (connected: boolean) => void;
   }
 >(function NoVncView({ session, profile, onStatus, onConnected }, ref) {
-  const [password, setPassword] = useState("");
-  const [submittedPassword, setSubmittedPassword] = useState<string | null>(null);
   const screen = useRef<HTMLDivElement>(null);
   const paste = useRef<HTMLTextAreaElement>(null);
   const controls = useRef<NoVncHandle | null>(null);
@@ -49,7 +47,6 @@ export const NoVncView = forwardRef<
     [],
   );
   useEffect(() => {
-    if (submittedPassword === null) return;
     const target = screen.current!,
       input = paste.current!;
     const controller = new AbortController();
@@ -204,10 +201,10 @@ export const NoVncView = forwardRef<
       };
       if (disposed) return;
       const socket = new URL("/vnc/websockify", location.href);
+      socket.searchParams.set("session", session);
+      socket.searchParams.set("profile", profile);
       socket.protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      rfb = new RFB(target, socket.href, {
-        credentials: { password: submittedPassword },
-      });
+      rfb = new RFB(target, socket.href, {});
       setFit(fit.current);
       rfb.resizeSession = false;
       rfb.addEventListener("connect", () => {
@@ -235,7 +232,7 @@ export const NoVncView = forwardRef<
       });
       rfb.addEventListener("securityfailure", () =>
         report(
-          "Browser authentication failed. Check WEB_VNC_PASSWORD and restart the app.",
+          "Browser authentication failed. Reopen the application viewer.",
         ),
       );
     })().catch((error: Error) => {
@@ -248,23 +245,9 @@ export const NoVncView = forwardRef<
       controls.current = null;
       rfb?.disconnect();
     };
-  }, [session, profile, onStatus, onConnected, submittedPassword]);
+  }, [session, profile, onStatus, onConnected]);
   return (
     <>
-      {submittedPassword === null && (
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          if (password) {
-            setSubmittedPassword(password);
-            setPassword("");
-          }
-        }}>
-          <label htmlFor="viewer-password">Browser viewer password</label>
-          <input id="viewer-password" type="password" autoComplete="off"
-            value={password} onChange={(event) => setPassword(event.target.value)} required />
-          <button type="submit">Connect viewer</button>
-        </form>
-      )}
       <div id="screen" ref={screen} />
       <textarea
         id="paste-input"

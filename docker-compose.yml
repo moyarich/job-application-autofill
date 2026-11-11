@@ -27,8 +27,6 @@ services:
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
     expose:
       - "4177"
-    ports:
-      - "127.0.0.1:${MOYA_REVIEW_PORT:-6080}:6080"
     init: true
     shm_size: "1gb"
     healthcheck:

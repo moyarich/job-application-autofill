@@ -9,9 +9,9 @@ export default defineConfig({
     proxy: {
       "/api": process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:4177",
       "/vnc": {
-        target: process.env.VITE_VNC_PROXY_TARGET || "http://127.0.0.1:6080",
+        target: process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:4177",
         ws: true,
-        rewrite: (path) => path.replace(/^\/vnc/, ""),
+        
       },
     },
   },
