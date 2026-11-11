@@ -78,6 +78,7 @@ export function createNodeServer(
       response.writeHead(result.status, {
         "Content-Type": contentType,
         "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
         "X-Content-Type-Options": "nosniff",
       });
       const body =
@@ -87,16 +88,15 @@ export function createNodeServer(
       if (typeof body !== "string" && !Buffer.isBuffer(body))
         throw new Error("Unsupported response body.");
       response.end(body);
-    } catch (error) {
+    } catch {
       response.writeHead(400, {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
       });
-      response.end(
-        JSON.stringify({
-          error: error instanceof Error ? error.message : "Request failed",
-        }),
-      );
+      // Parsing errors can include private request content; return a fixed error.
+      response.end(JSON.stringify({ error: "Invalid request." }));
     }
   });
 }

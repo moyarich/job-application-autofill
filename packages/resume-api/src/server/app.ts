@@ -12,7 +12,11 @@ type Headers = ApiRequest["headers"];
 function isDashboardRequest(headers: Headers, allowedOrigin: string): boolean {
   const { origin } = headers;
   const originAllowed = !origin || origin === allowedOrigin;
-  return originAllowed && headers["x-moya-client"] === DASHBOARD_CLIENT;
+  // Fetch Metadata prevents a different website from reading local resume data,
+  // even if it attempts to supply the dashboard marker header.
+  const fetchSite = headers["sec-fetch-site"];
+  const sameSite = !fetchSite || fetchSite === "same-origin" || fetchSite === "none";
+  return originAllowed && sameSite && headers["x-moya-client"] === DASHBOARD_CLIENT;
 }
 
 /** Read a header that must not be repeated. */
@@ -63,10 +67,9 @@ export function createApiHandler(store: Store, options: { origin: string }) {
 
       return reply(404, { error: "Unknown API route." });
     } catch (error) {
-      console.error(error);
-      return reply(400, {
-        error: error instanceof Error ? error.message : "Request failed",
-      });
+      // Validation and downstream exceptions may contain uploaded resume text,
+      // names, emails or employer form values. Never echo/log raw exceptions.
+      return reply(400, { error: "Request could not be processed." });
     }
   };
 }
