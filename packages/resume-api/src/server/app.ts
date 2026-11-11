@@ -56,7 +56,7 @@ export function createApiHandler(store: Store, options: { origin: string }) {
       }
 
       return reply(404, { error: "Unknown API route." });
-    } catch (error) {
+    } catch {
       // Validation and downstream exceptions may contain uploaded resume text,
       // names, emails or employer form values. Never echo/log raw exceptions.
       return reply(400, { error: "Request could not be processed." });
