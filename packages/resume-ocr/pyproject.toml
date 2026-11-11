@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local PDF text extraction with scanned-page OCR fallback for job-application-autofill"
 authors = ["job-application-autofill contributors"]
 readme = "README.md"
-packages = [{ include = "resume_ocr", from = "src" }]
+packages = [{ include = "resume_ocr" }]
 
 [tool.poetry.scripts]
 resume-ocr = "resume_ocr.cli:main"
