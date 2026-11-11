@@ -1,9 +1,8 @@
-import { Resume } from "@moyarich/resume";
 import type {
   ResumeImportActionsContext,
   OfferImport,
 } from "../../types/resume-import-actions-context";
-import { requestApi } from "../../api/client";
+import { parseResumeFile } from "../../api/resumes";
 import { filePayload } from "../files/resume-files";
 
 export function createParseResume(
@@ -29,12 +28,7 @@ export function createParseResume(
     setMessage("");
     try {
       const upload = await filePayload(resume);
-      const result = await requestApi<{
-        profile: Resume;
-        preview: string;
-        warnings: string[];
-      }>(
-        "/api/resume/parse",
+      const result = await parseResumeFile(
         upload,
         activeProfileId,
         activeResumeId ?? undefined,

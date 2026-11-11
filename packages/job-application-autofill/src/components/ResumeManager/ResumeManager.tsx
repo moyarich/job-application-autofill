@@ -3,7 +3,7 @@ import {
   resumeExportFormats,
   type ResumeExportFormat,
 } from "../../utils/files/export-resume";
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import {
   Copy,
   FilePenLine,
@@ -58,7 +58,7 @@ export function ResumeManager({
     );
     setError("");
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form) return;
     const title = name.trim();

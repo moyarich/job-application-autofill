@@ -56,7 +56,12 @@ function validateContact(raw: unknown): Resume["contact"] {
     )
   )
     throw new Error("Invalid contact information.");
-  return value as Resume["contact"];
+  const contact = emptyContact();
+  for (const key of CONTACT_KEYS) {
+    const field = value[key];
+    if (typeof field === "string") contact[key] = field;
+  }
+  return contact;
 }
 const isUsableContact = (c: Resume["contact"]) =>
   Boolean(
@@ -74,6 +79,11 @@ const emptyContact = (): Resume["contact"] => ({
   github: "",
   website: "",
 });
+function copyContactFields(source: Resume["contact"]): Resume["contact"] {
+  const contact = emptyContact();
+  for (const key of CONTACT_KEYS) contact[key] = source[key] || "";
+  return contact;
+}
 export type EmployerAccount = {
   provider: string;
   employerKey: string;
@@ -483,11 +493,7 @@ export function openStore(
           selectContact.get(owner, resume.contactId),
         ) as unknown as ProfileContact)
       : null;
-    const shared = current
-      ? (Object.fromEntries(
-          CONTACT_KEYS.map((key) => [key, current[key] || ""]),
-        ) as Resume["contact"])
-      : emptyContact();
+    const shared = current ? copyContactFields(current) : emptyContact();
     const tailored = { ...shared };
     let hasResumeDifference = false;
     for (const key of CONTACT_KEYS) {
@@ -661,11 +667,7 @@ export function openStore(
     const selectedContact = row.contactId
       ? decodeContact(selectContact.get(owner, row.contactId))
       : null;
-    const contact = selectedContact
-      ? (Object.fromEntries(
-          CONTACT_KEYS.map((key) => [key, selectedContact[key] || ""]),
-        ) as Resume["contact"])
-      : null;
+    const contact = selectedContact ? copyContactFields(selectedContact) : null;
     if (row.contactId && !contact)
       throw new Error("Selected resume contact not found.");
     const document = row.json ? validateResume(JSON.parse(row.json)) : null;

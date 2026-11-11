@@ -2,12 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import type React from "react";
 
 import { changeJobStatus } from "../utils/application/changeJobStatus";
-import { requestApi } from "../api/client";
+import { readJobMetadata } from "../api/client";
 import type { JobTrackerData } from "../types/job-tracker-data";
 import { JobPostingDetails, ApplicationStatus } from "../types/job-application";
 import { createApplication } from "../utils/application/createApplication";
 
-export function useJobTracker(workspace: JobTrackerData) {
+interface JobTracker {
+  jobDetails: JobPostingDetails | null;
+  newJob: {
+    company: string;
+    role: string;
+    url: string;
+  };
+  setNewJob: React.Dispatch<
+    React.SetStateAction<{
+      company: string;
+      role: string;
+      url: string;
+    }>
+  >;
+  metadataBusy: boolean;
+  metadataError: string;
+  search: string;
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
+  notesJobId: string | null;
+  setNotesJobId: React.Dispatch<React.SetStateAction<string | null>>;
+  addJob: (event: React.SubmitEvent<HTMLFormElement>) => void;
+  changeJob: (id: string, status: ApplicationStatus) => void;
+}
+
+export function useJobTracker(workspace: JobTrackerData): JobTracker {
   const { jobs, setJobs, setMessage, activeProfileId } = workspace;
   const [newJob, setNewJob] = useState({ company: "", role: "", url: "" });
   const [jobDetails, setJobDetails] = useState<JobPostingDetails | null>(null);
@@ -29,11 +53,7 @@ export function useJobTracker(workspace: JobTrackerData) {
       setMetadataBusy(true);
       setMetadataError("");
       try {
-        const details = await requestApi<{
-          company: string;
-          role: string;
-          details?: JobPostingDetails;
-        }>("/api/jobs/metadata", { jobUrl: url }, activeProfileId);
+        const details = await readJobMetadata(url, activeProfileId);
         if (cancelled) return;
         setJobDetails(details.details ?? null);
         setNewJob((current) => {
@@ -82,7 +102,7 @@ export function useJobTracker(workspace: JobTrackerData) {
   }, [newJob.url, activeProfileId]);
   const [notesJobId, setNotesJobId] = useState<string | null>(null);
 
-  function addJob(event: React.FormEvent) {
+  function addJob(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       const job = {

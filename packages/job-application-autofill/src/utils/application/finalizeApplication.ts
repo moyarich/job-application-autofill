@@ -1,6 +1,6 @@
-import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../../api/client";
 import type { ApplySession } from "../../types/types";
+import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
+import { finalizeApplicationSession } from "../../api/applications";
 
 /** finalizeApplication action; no React hooks or state ownership. */
 export function createFinalizeApplication(
@@ -33,11 +33,10 @@ export function createFinalizeApplication(
       return;
     setApplyBusy(true);
     try {
-      const result = await requestApi<ApplySession | { closed: boolean }>(
-        "/api/apply/" + session.id + "/" + (submit ? "submit" : "close"),
-        submit
-          ? { confirm: true, reviewed: session.reviewUrl ? reviewed : true }
-          : {},
+      const result = await finalizeApplicationSession(
+        session.id,
+        submit,
+        session.reviewUrl ? reviewed : true,
         activeProfileId,
         activeResumeId ?? undefined,
       );

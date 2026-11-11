@@ -1,3 +1,4 @@
+import type { JobPostingDetails } from "../types/job-application";
 import { Resume } from "@moyarich/resume";
 import { JobApplication } from "../types/job-application";
 import {
@@ -315,4 +316,27 @@ export async function deleteResumeVersion(
     }),
     "Could not delete resume.",
   );
+}
+
+/** Update application status without coupling the action to HTTP details. */
+export function updateJobStatus(
+  jobId: string,
+  status: string,
+  profileId: string,
+  resumeId?: string,
+) {
+  return requestApi(
+    "/api/jobs/" + encodeURIComponent(jobId) + "/status",
+    { status },
+    profileId,
+    resumeId,
+  );
+}
+
+export function readJobMetadata(jobUrl: string, profileId: string) {
+  return requestApi<{
+    company: string;
+    role: string;
+    details?: JobPostingDetails;
+  }>("/api/jobs/metadata", { jobUrl }, profileId);
 }

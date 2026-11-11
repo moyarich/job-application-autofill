@@ -1,3 +1,4 @@
+import { EMPTY_CANDIDATE } from "../../constants";
 import type {
   ContactActionsContext,
   Contact,
@@ -14,9 +15,8 @@ export function createChooseContact(context: ContactActionsContext) {
     const selected = contacts.find((item) => item.id === id);
     if (!selected) return;
     setContactId(id);
-    const contact = Object.fromEntries(
-      contactKeys.map((key) => [key, selected[key] || ""]),
-    ) as Contact;
+    const contact: Contact = { ...EMPTY_CANDIDATE.contact };
+    for (const key of contactKeys) contact[key] = selected[key] || "";
     setProfile((previous) => ({ ...previous, contact }));
   }
   return chooseContact;

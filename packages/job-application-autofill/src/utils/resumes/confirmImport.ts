@@ -2,7 +2,7 @@ import type {
   ResumeImportActionsContext,
   ApplyImportedContent,
 } from "../../types/resume-import-actions-context";
-import { requestApi } from "../../api/client";
+import { importResumeContent } from "../../api/resumes";
 import { routes } from "../../routes";
 import { defaultImportedResumeName } from "./importedResumeName";
 import { ContactChoice } from "../../types/api-types";
@@ -27,8 +27,7 @@ export function createConfirmImport(
     importing = true;
     try {
       await flushPending();
-      const result = await requestApi<{ resumeId: string; revision: number }>(
-        "/api/resumes/import",
+      const result = await importResumeContent(
         {
           resumeId: activeResumeId,
           revision: revisionRef.current,

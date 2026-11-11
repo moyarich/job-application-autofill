@@ -12,7 +12,7 @@ import {
   Minus,
   X,
 } from "lucide-react";
-import { requestApi } from "../../api/client";
+import { fillApplicationAnswer } from "../../api/answers";
 
 import { AnswerLibrary } from "./AnswerLibrary";
 import { reusableQuestion } from "@moyarich/job-boards/screening-policy";
@@ -157,11 +157,10 @@ export function ScreeningAnswerDock({
     setBusy(label);
     setMessage("");
     try {
-      const response = await requestApi<{
-        answerResult: { filled: string[]; unresolved: string[] };
-      }>(
-        "/api/apply/" + encodeURIComponent(sessionId) + "/answers",
-        { answers: { [label]: answer } },
+      const response = await fillApplicationAnswer(
+        sessionId,
+        label,
+        answer,
         profileId,
         resumeId,
       );

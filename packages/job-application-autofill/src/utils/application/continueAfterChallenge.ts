@@ -1,6 +1,6 @@
+import { readActiveApplication } from "../../api/applications";
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
-import { requestApi } from "../../api/client";
-import type { ApplySession } from "../../types/types";
+import { continueApplicationSession } from "../../api/applications";
 
 /** continueAfterChallenge action; no React hooks or state ownership. */
 export function createContinueAfterChallenge(
@@ -21,9 +21,8 @@ export function createContinueAfterChallenge(
     if (!session) return;
     setApplyBusy(true);
     try {
-      const updated = await requestApi<ApplySession>(
-        "/api/apply/" + session.id + "/continue",
-        {},
+      const updated = await continueApplicationSession(
+        session.id,
         activeProfileId,
         activeResumeId ?? undefined,
       );
@@ -43,17 +42,11 @@ export function createContinueAfterChallenge(
     } catch (error) {
       if (recoverSession) {
         try {
-          const response = await fetch(
-            "/api/apply/active?jobId=" + encodeURIComponent(session.jobId),
-            {
-              headers: {
-                "X-Moya-Client": "dashboard",
-                "X-Profile-Id": activeProfileId,
-              },
-              cache: "no-store",
-            },
+          const result = await readActiveApplication(
+            session.jobId,
+            activeProfileId,
           );
-          if (response.ok && !(await response.json()).session) {
+          if (!result.session) {
             setSession(null);
             setReviewed(false);
             await recoverSession();

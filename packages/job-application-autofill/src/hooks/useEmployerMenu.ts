@@ -1,18 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   menuError,
-  viewerRequest,
+  readViewerMenu,
+  readViewerSession,
+  runViewerAction,
   type MenuItem,
   type ViewerSession,
-} from "./api";
+} from "../api/viewer";
 import { useAutomationEvents } from "./useAutomationEvents";
 
+interface EmployerMenu {
+  active: ViewerSession | null;
+  items: MenuItem[];
+  busy: boolean;
+  refreshing: boolean;
+  error: string;
+  refresh: () => Promise<void>;
+  run: (
+    action: "continue" | "pause" | "close" | "menu",
+    itemId?: string,
+  ) => Promise<void>;
+}
 export function useEmployerMenu(
   session: string,
   profile: string,
   _connected: boolean,
   onClosed: () => void,
-) {
+): EmployerMenu {
   const [active, setActive] = useState<ViewerSession | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -23,7 +37,6 @@ export function useEmployerMenu(
   const pending = useRef<Promise<void> | null>(null);
   const refreshAgain = useRef(false);
   const actions = useRef(new Set<string>());
-  const base = "/api/apply/" + encodeURIComponent(session);
   const refresh = useCallback(async () => {
     if (!session || closed.current || !mounted.current) return;
     if (pending.current) {
@@ -37,13 +50,10 @@ export function useEmployerMenu(
       do {
         refreshAgain.current = false;
         try {
-          const data = await viewerRequest<{
-            items?: MenuItem[];
-            session?: ViewerSession;
-          }>(base + "/menu", profile);
+          const data = await readViewerMenu(session, profile);
           const nextItems = Array.isArray(data.items) ? data.items : [];
           let next =
-            data.session ?? (await viewerRequest<ViewerSession>(base, profile));
+            data.session ?? (await readViewerSession(session, profile));
           if (
             !data.session &&
             next.state === "login_required" &&
@@ -73,7 +83,7 @@ export function useEmployerMenu(
       if (mounted.current) setRefreshing(false);
     });
     return pending.current;
-  }, [base, profile, session]);
+  }, [profile, session]);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -101,11 +111,7 @@ export function useEmployerMenu(
     setBusy(true);
     setError("");
     try {
-      await viewerRequest(
-        base + "/" + action,
-        profile,
-        action === "menu" ? { itemId } : {},
-      );
+      await runViewerAction(session, profile, action, itemId);
       if (action === "close") {
         closed.current = true;
         if (mounted.current) {

@@ -14,6 +14,14 @@ import { ProfileContact } from "../types/api-types";
 import { readResumeContent, saveResumeContent } from "../api/client";
 
 import { EMPTY_CANDIDATE } from "../constants";
+interface ResumeDraft {
+  profileId: string;
+  resumeId: string | null;
+  enabled: boolean;
+  contacts: ProfileContact[];
+  setMessage: Dispatch<SetStateAction<string>>;
+  applicationId: string | null;
+}
 
 /** Owns the selected resume's draft, revision and autosave; never writes contacts or jobs. */
 export function useResumeDraft({
@@ -23,14 +31,7 @@ export function useResumeDraft({
   contacts,
   setMessage,
   applicationId,
-}: {
-  profileId: string;
-  resumeId: string | null;
-  enabled: boolean;
-  contacts: ProfileContact[];
-  setMessage: Dispatch<SetStateAction<string>>;
-  applicationId: string | null;
-}) {
+}: ResumeDraft) {
   const [profile, setProfile] = useState<Resume>(() =>
     structuredClone(EMPTY_CANDIDATE),
   );

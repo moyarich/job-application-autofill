@@ -1,7 +1,7 @@
+import type { Contact } from "@moyarich/resume";
 import type { ContactManagerData } from "../../types/feature-props";
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import { Resume } from "@moyarich/resume";
 
 import {
   addProfileContact,
@@ -12,7 +12,6 @@ import {
 import { fields } from "../../constants/fields";
 import "./ContactManager.css";
 
-type Contact = Resume["contact"];
 const blank = (): Contact => ({
   firstName: "",
   lastName: "",
@@ -24,9 +23,10 @@ const blank = (): Contact => ({
   website: "",
 });
 const values = (entry: Contact) =>
-  Object.fromEntries(
-    fields.map(({ key }) => [key, entry[key] || ""]),
-  ) as Contact;
+  Object.assign(
+    blank(),
+    Object.fromEntries(fields.map(({ key }) => [key, entry[key] || ""])),
+  );
 
 export function ContactManager({
   controller,
@@ -72,7 +72,7 @@ export function ContactManager({
       setWorking(false);
     }
   }
-  function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
       !label.trim() ||

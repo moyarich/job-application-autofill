@@ -2,9 +2,9 @@ import { parseResumeJson } from "@moyarich/resume/validate";
 
 import type { ApplicationReviewActionsContext } from "../../types/application-review-actions-context";
 
-import { requestApi } from "../../api/client";
+import { generateResumePdf } from "../../api/resumes";
+import { prepareApplicationSession } from "../../api/applications";
 import { filePayload } from "../files/resume-files";
-import type { ApplySession } from "../../types/types";
 import { JobApplication } from "../../types/job-application";
 
 /** prepareJob action; no React hooks or state ownership. */
@@ -60,8 +60,7 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
       // The JSON drives autofill. The application also needs a PDF attachment.
       // Generate from resolved data, never attach an outdated imported PDF.
       const validProfile = parseResumeJson(JSON.stringify(profile));
-      const generated = await requestApi<{ base64: string }>(
-        "/api/resume/pdf",
+      const generated = await generateResumePdf(
         validProfile,
         activeProfileId,
         activeResumeId ?? undefined,
@@ -76,8 +75,7 @@ export function createPrepareJob(context: ApplicationReviewActionsContext) {
         { type: "application/pdf" },
       );
       const upload = await filePayload(attachment);
-      const result = await requestApi<ApplySession>(
-        "/api/apply/prepare",
+      const result = await prepareApplicationSession(
         {
           jobUrl: job.url,
           jobId: job.id,
