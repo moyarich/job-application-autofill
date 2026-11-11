@@ -2,14 +2,14 @@
 
 from pathlib import Path
 
-from .ocr import recognize_page
+import pypdfium2 as pdfium
+
+from .ocr import ocr_page
 from .settings import MAX_FILE_BYTES, MAX_PAGES, MIN_TEXT_CHARS, OCR_DPI
 from .text import readable_length, recover_vector_bullets
 
 
 def extract_pdf(pdf_path, *, threshold=MIN_TEXT_CHARS, dpi=OCR_DPI, ocr_factory=None):
-    import pypdfium2 as pdfium
-
     source = Path(pdf_path)
     if not source.is_file() or source.stat().st_size > MAX_FILE_BYTES:
         raise ValueError("PDF file is missing or exceeds 10 MB")
@@ -45,7 +45,7 @@ def extract_pdf(pdf_path, *, threshold=MIN_TEXT_CHARS, dpi=OCR_DPI, ocr_factory=
 
                         ocr = RapidOCR()
 
-                recovered = recognize_page(page, ocr, dpi)
+                recovered = ocr_page(page, ocr, dpi)
                 # Retain selectable text when OCR finds no more readable content.
                 pages.append(
                     recovered

@@ -1,7 +1,7 @@
 """Rasterize one scanned PDF page and read it with RapidOCR."""
 
 
-def recognize_page(page, ocr, dpi: int) -> str:
+def ocr_page(page, ocr, dpi: int) -> str:
     bitmap = page.render(scale=dpi / 72)
     try:
         image = bitmap.to_pil()
