@@ -3,36 +3,99 @@ import { getPdfPython } from "./python-runtime.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { inflateRawSync } from "node:zlib";
+import { skillWords } from "./skillWords.ts";
 const execFileAsync = promisify(execFile);
 const MAX_RESUME = 10 * 1024 * 1024;
-const skillWords = [
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Next.js",
-  "Vue",
-  "Node.js",
-  "Python",
-  "FastAPI",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-  "PostgreSQL",
-  "DynamoDB",
-  "Redis",
-  "GraphQL",
-  "Java",
-  "C#",
-  "Go",
-  "SQL",
-  "Playwright",
-  "Git",
-  "Azure",
-  "GCP",
-  "LangChain",
-  "Machine Learning",
-  "Generative AI",
-];
+
+// ---------------------------------------------------------------------------
+// Regex constants
+// None of the shared patterns use the `g` flag with `.test()`/`.match()`, so
+// there is no stateful `lastIndex` hazard. `g` patterns are only used with
+// `.replace()`, which resets `lastIndex`.
+// ---------------------------------------------------------------------------
+
+// Upload validation
+const RESUME_EXT_RE = /\.(pdf|docx)$/;
+const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
+const UNSAFE_FILENAME_CHARS_RE = /[^a-z0-9._-]/gi;
+
+// DOCX XML -> text
+const XML_PARAGRAPH_END_RE = /<\/w:p>/g;
+const XML_TAB_RE = /<w:tab\b[^>]*\/?\s*>/g;
+const XML_BREAK_RE = /<w:br\b[^>]*\/?\s*>/g;
+const XML_TAG_RE = /<[^>]+>/g;
+const XML_ENTITY_RE = /&(?:amp|lt|gt|quot|apos|#(\d+)|#x([0-9a-f]+));/gi;
+const XML_NAMED_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&apos;": "'",
+};
+
+// Section headings
+const HEADING_TRAILING_COLON_RE = /[:：]$/;
+const sectionNames = {
+  summary: /^(?:professional summary|summary|profile|professional profile)$/i,
+  skills: /^(?:technical skills|skills|core competencies)$/i,
+  experience:
+    /^(?:professional experience|work experience|experience|employment history)$/i,
+  education: /^(?:education|academic background)$/i,
+  certifications:
+    /^(?:certification|certifications|licenses and certifications)$/i,
+  projects: /^projects$/i,
+  languages: /^languages$/i,
+  awards: /^awards$/i,
+  other:
+    /^(?:community leadership(?: and technical writing)?|technical writing|creative technology and design|design portfolio)$/i,
+};
+
+// Education
+const DEGREE_RE =
+  /^(Bachelor[^:]*|Master[^:]*|Associate[^:]*|Doctor[^:]*|PhD|B\.?S\.?|M\.?S\.?)(?::|\s+in\s+|$)\s*(.*)/i;
+const INSTITUTION_RE = /university|college|institute|school/i;
+const INSTITUTION_LOCATION_SPLIT_RE = /\s+[-–—]\s+/;
+const PIPE_SPLIT_RE = /\s*\|\s*/;
+
+// Profile / contact
+const LINE_BREAK_RE = /\r?\n/;
+const WHITESPACE_RE = /\s+/;
+const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+const PHONE_RE = /(?:\+?\d[\d\s.()-]{8,}\d)/;
+const LINKEDIN_RE = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i;
+const GITHUB_RE = /(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/i;
+const WEBSITE_RE = /https?:\/\/(?!www\.(?:linkedin|github)\.com)[^\s)]+/i;
+const NAME_CHARS_RE = /^[\p{L}][\p{L} .'-]+$/u;
+const NON_NAME_WORDS_RE =
+  /resume|experience|skills|education|summary|curriculum/i;
+
+// Skills
+const SKILL_GROUP_RE = /^([^:]+):\s*(.*)$/;
+const SKILL_CATEGORY_PREFIX_RE = /^[A-Za-z][A-Za-z &/-]*:\s*/;
+const SKILL_SPLIT_RE = /[,;•]/;
+const REGEXP_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g;
+
+// Certifications
+const AWS_ISSUER_LINE_RE = /^Amazon Web Services(?:\s*\(AWS\))?$/i;
+const AWS_CERT_RE = /^AWS Certified\b/i;
+
+// ---------------------------------------------------------------------------
+
+function escapeRegExp(value: string) {
+  return value.replace(REGEXP_SPECIAL_CHARS_RE, "\\$&");
+}
+
+function isSectionHeading(line: string) {
+  const heading = line.replace(HEADING_TRAILING_COLON_RE, "");
+  return Object.values(sectionNames).some((pattern) => pattern.test(heading));
+}
+
+function decodeXmlEntity(match: string, dec?: string, hex?: string) {
+  if (dec) return String.fromCodePoint(Number(dec));
+  if (hex) return String.fromCodePoint(parseInt(hex, 16));
+  return XML_NAMED_ENTITIES[match] || match;
+}
+
 export function decodeUpload(payload: unknown) {
   if (
     !payload ||
@@ -43,11 +106,11 @@ export function decodeUpload(payload: unknown) {
     typeof payload.base64 !== "string"
   )
     throw new Error("A resume filename and base64 content are required.");
-  const ext = payload.fileName.toLowerCase().match(/\.(pdf|docx)$/)?.[1];
+  const ext = payload.fileName.toLowerCase().match(RESUME_EXT_RE)?.[1];
   if (!ext) throw new Error("Only PDF and DOCX resumes are supported.");
   if (payload.base64.length > Math.ceil((MAX_RESUME * 4) / 3) + 8)
     throw new Error("Resume exceeds 10 MB.");
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(payload.base64))
+  if (!BASE64_RE.test(payload.base64))
     throw new Error("Invalid base64 resume data.");
   const buffer = Buffer.from(payload.base64, "base64");
   if (!buffer.length || buffer.length > MAX_RESUME)
@@ -59,9 +122,10 @@ export function decodeUpload(payload: unknown) {
   return {
     buffer,
     extension: ext as "pdf" | "docx",
-    fileName: payload.fileName.replace(/[^a-z0-9._-]/gi, "_"),
+    fileName: payload.fileName.replace(UNSAFE_FILENAME_CHARS_RE, "_"),
   };
 }
+
 export function extractDocxText(buffer: Buffer) {
   // Read ZIP central directory; standard DOCX files are ZIP archives.
   let eocd = -1;
@@ -116,31 +180,15 @@ export function extractDocxText(buffer: Buffer) {
             })()
     ).toString("utf8");
     return xml
-      .replace(/<\/w:p>/g, "\n")
-      .replace(/<w:tab\b[^>]*\/?\s*>/g, "\t")
-      .replace(/<w:br\b[^>]*\/?\s*>/g, "\n")
-      .replace(/<[^>]+>/g, "")
-      .replace(
-        /&(?:amp|lt|gt|quot|apos|#(\d+)|#x([0-9a-f]+));/gi,
-        (match, dec, hex) => {
-          if (dec) return String.fromCodePoint(Number(dec));
-          if (hex) return String.fromCodePoint(parseInt(hex, 16));
-          return (
-            (
-              {
-                "&amp;": "&",
-                "&lt;": "<",
-                "&gt;": ">",
-                "&quot;": '"',
-                "&apos;": "'",
-              } as Record<string, string>
-            )[match] || match
-          );
-        },
-      );
+      .replace(XML_PARAGRAPH_END_RE, "\n")
+      .replace(XML_TAB_RE, "\t")
+      .replace(XML_BREAK_RE, "\n")
+      .replace(XML_TAG_RE, "")
+      .replace(XML_ENTITY_RE, decodeXmlEntity);
   }
   throw new Error("DOCX is missing word/document.xml.");
 }
+
 export async function extractResumeText(
   buffer: Buffer,
   extension: "pdf" | "docx",
@@ -200,26 +248,13 @@ export async function extractResumeText(
     await rm(dir, { recursive: true, force: true });
   }
 }
-const sectionNames = {
-  summary: /^(?:professional summary|summary|profile|professional profile)$/i,
-  skills: /^(?:technical skills|skills|core competencies)$/i,
-  experience:
-    /^(?:professional experience|work experience|experience|employment history)$/i,
-  education: /^(?:education|academic background)$/i,
-  certifications:
-    /^(?:certification|certifications|licenses and certifications)$/i,
-  projects: /^projects$/i,
-  languages: /^languages$/i,
-  awards: /^awards$/i,
-  other:
-    /^(?:community leadership(?: and technical writing)?|technical writing|creative technology and design|design portfolio)$/i,
-};
+
 function resumeSections(lines: string[]) {
   const sections: Record<string, string[]> = {};
   let current = "";
   const additionalSections: { heading: string; content: string }[] = [];
   for (const line of lines) {
-    const heading = line.replace(/[:：]$/, "");
+    const heading = line.replace(HEADING_TRAILING_COLON_RE, "");
     const kind = Object.keys(sectionNames).find((key) =>
       sectionNames[key as keyof typeof sectionNames].test(heading),
     );
@@ -240,6 +275,7 @@ function resumeSections(lines: string[]) {
     })),
   };
 }
+
 function extractEducation(lines: string[] = []) {
   if (!lines.length) return [];
   const entries: Array<{
@@ -252,18 +288,18 @@ function extractEducation(lines: string[] = []) {
     description: string;
   }> = [];
   for (const line of lines) {
-    const degree = line.match(
-      /^(Bachelor[^:]*|Master[^:]*|Associate[^:]*|Doctor[^:]*|PhD|B\.?S\.?|M\.?S\.?)(?::|\s+in\s+|$)\s*(.*)/i,
-    );
+    const degree = line.match(DEGREE_RE);
     if (degree && entries.length) {
-      const parts = line.split(/\s*\|\s*/);
+      const parts = line.split(PIPE_SPLIT_RE);
       Object.assign(entries.at(-1)!, {
         degree: parts.length > 1 ? parts[0] : degree[1],
         fieldOfStudy: parts.length > 1 ? parts[1] : degree[2],
         ...(parts.length > 2 ? { location: parts.slice(2).join(" | ") } : {}),
       });
-    } else if (/university|college|institute|school/i.test(line)) {
-      const [institution, location = ""] = line.split(/\s+[-–—]\s+/);
+    } else if (INSTITUTION_RE.test(line)) {
+      const [institution, location = ""] = line.split(
+        INSTITUTION_LOCATION_SPLIT_RE,
+      );
       entries.push({
         institution,
         degree: "",
@@ -280,64 +316,51 @@ function extractEducation(lines: string[] = []) {
   }
   return entries;
 }
+
 export function extractProfile(text: string) {
   // Some PDF fonts encode visible hyphens as control characters.
   text = text.replaceAll("\u0002", "-").replaceAll("\u00ad", "-");
   const lines = text
-    .split(/\r?\n/)
+    .split(LINE_BREAK_RE)
     .map((line) => line.trim())
     .filter(Boolean);
   const contactText = lines
-    .slice(
-      0,
-      lines.findIndex((line) =>
-        Object.values(sectionNames).some((pattern) =>
-          pattern.test(line.replace(/[:：]$/, "")),
-        ),
-      ) >>> 0,
-    )
+    .slice(0, lines.findIndex(isSectionHeading) >>> 0)
     .join("\n");
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const phone = text.match(/(?:\+?\d[\d\s.()-]{8,}\d)/)?.[0]?.trim() || "";
-  const linkedIn =
-    text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i)?.[0] ||
-    "";
-  const github =
-    text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/i)?.[0] || "";
-  const website =
-    contactText.match(
-      /https?:\/\/(?!www\.(?:linkedin|github)\.com)[^\s)]+/i,
-    )?.[0] || "";
+  const email = text.match(EMAIL_RE)?.[0] || "";
+  const phone = text.match(PHONE_RE)?.[0]?.trim() || "";
+  const linkedIn = text.match(LINKEDIN_RE)?.[0] || "";
+  const github = text.match(GITHUB_RE)?.[0] || "";
+  const website = contactText.match(WEBSITE_RE)?.[0] || "";
   const heading =
     lines.find(
       (line) =>
         line.length <= 65 &&
-        /^[\p{L}][\p{L} .'-]+$/u.test(line) &&
-        line.split(/\s+/).length >= 2 &&
-        line.split(/\s+/).length <= 4 &&
-        !/resume|experience|skills|education|summary|curriculum/i.test(line),
+        NAME_CHARS_RE.test(line) &&
+        line.split(WHITESPACE_RE).length >= 2 &&
+        line.split(WHITESPACE_RE).length <= 4 &&
+        !NON_NAME_WORDS_RE.test(line),
     ) || "";
-  const parts = heading.split(/\s+/).filter(Boolean);
+  const parts = heading.split(WHITESPACE_RE).filter(Boolean);
   const { sections, additionalSections } = resumeSections(lines);
   const skillGroups: { heading: string; content: string }[] = [];
   for (const line of sections.skills || []) {
-    const match = line.match(/^([^:]+):\s*(.*)$/);
+    const match = line.match(SKILL_GROUP_RE);
     if (match) skillGroups.push({ heading: match[1], content: match[2] });
     else if (skillGroups.length) skillGroups.at(-1)!.content += " " + line;
   }
+  // Dynamic per-word patterns can't be constants, but the escaping can be shared.
   const skills = skillWords.filter((word) =>
     new RegExp(
-      "(^|[^a-z0-9])" +
-        word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-        "($|[^a-z0-9])",
+      "(^|[^a-z0-9])" + escapeRegExp(word) + "($|[^a-z0-9])",
       "i",
     ).test(text),
   );
   // Join wrapped category values before splitting, preserving skills beyond the fallback vocabulary.
   const explicitSkills = (sections.skills || [])
-    .map((line) => line.replace(/^[A-Za-z][A-Za-z &/-]*:\s*/, ","))
+    .map((line) => line.replace(SKILL_CATEGORY_PREFIX_RE, ","))
     .join(" ")
-    .split(/[,;•]/)
+    .split(SKILL_SPLIT_RE)
     .map((value) => value.trim())
     .filter(Boolean);
   const parsedSkills = explicitSkills.length
@@ -366,13 +389,13 @@ export function extractProfile(text: string) {
         (name, index, lines) =>
           !(
             index > 0 &&
-            /^Amazon Web Services(?:\s*\(AWS\))?$/i.test(name) &&
-            /^AWS Certified\b/i.test(lines[index - 1])
+            AWS_ISSUER_LINE_RE.test(name) &&
+            AWS_CERT_RE.test(lines[index - 1])
           ),
       )
       .map((name) => ({
         name,
-        issuer: /^AWS Certified\b/i.test(name) ? "Amazon Web Services" : "",
+        issuer: AWS_CERT_RE.test(name) ? "Amazon Web Services" : "",
         issuedDate: "",
         expirationDate: null,
         credentialId: "",
