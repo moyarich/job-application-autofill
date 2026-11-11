@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{ include = "resume_ocr" }]
 
 [tool.poetry.scripts]
-resume-ocr = "resume_ocr.pdf_ocr:main"
+resume-ocr = "resume_ocr.cli:main"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.15"
