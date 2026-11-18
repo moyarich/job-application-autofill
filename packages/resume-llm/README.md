@@ -28,3 +28,19 @@ profile = extractor.extract_file("resume.pdf")
 ```
 
 Omit the input file to extract a single employment header from standard input. The Python API for this operation is `EmploymentHeaderExtractor`.
+
+## Local HTTP service
+
+From the repository root, start the service in the Python environment where
+`resume-llm` is installed.
+
+```sh
+python -m resume_llm.server --schema packages/resume/src/resume-schema/resume.schema.json
+```
+
+Add `--offline` to use a cached model. The service loads Qwen at startup and
+reuses it to handle requests serially. The Node API sends extracted resume text
+as `{"text":"..."}` to `POST http://127.0.0.1:4178/parse` by default and
+receives a schema-validated resume. Set `RESUME_LLM_URL` only if the API needs a
+different endpoint, such as the address of a service on a private container network.
+Bind the service to loopback or a private network because requests contain resume data.
