@@ -23,6 +23,7 @@ services:
       WORKDAY_PASSWORD: "${WORKDAY_PASSWORD:-}"
       RESUME_SITE_PASSWORD: "${RESUME_SITE_PASSWORD:-}"
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
+      RESUME_LLM_EXECUTABLE: "${RESUME_LLM_EXECUTABLE:-}"
       CONTAINER_MODE: "true"
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite
     expose:

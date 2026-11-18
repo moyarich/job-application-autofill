@@ -147,6 +147,13 @@
   border-radius: 12px;
   margin-bottom: 4px;
 }
+.resume-parser-choice {
+  display: grid;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 12px;
+}
+
 .parser-button {
   margin-top: 16px;
   width: 100%;
