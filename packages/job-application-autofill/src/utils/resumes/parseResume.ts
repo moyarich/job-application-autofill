@@ -2,7 +2,7 @@ import type {
   ResumeImportActionsContext,
   OfferImport,
 } from "../../types/resume-import-actions-context";
-import { parseResumeFile } from "../../api/resumes";
+import { parseResumeFile, type ResumeParserChoice } from "../../api/resumes";
 import { filePayload } from "../files/resume-files";
 
 export function createParseResume(
@@ -18,7 +18,7 @@ export function createParseResume(
     setParsePreview,
     offerImport,
   } = context;
-  async function parseResume() {
+  async function parseResume(parser: ResumeParserChoice = "standard") {
     if (!resume) {
       setMessage("Choose a PDF or DOCX resume first.");
       setTab("parser");
@@ -32,6 +32,7 @@ export function createParseResume(
         upload,
         activeProfileId,
         activeResumeId ?? undefined,
+        parser,
       );
       offerImport(result.profile);
       setParsePreview(result.preview);

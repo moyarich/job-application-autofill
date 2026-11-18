@@ -14,16 +14,19 @@ export function generateResumePdf(
   );
 }
 
+export type ResumeParserChoice = "standard" | "qwen";
+
 export function parseResumeFile(
-  attachment: unknown,
+  attachment: { fileName: string; base64: string },
   profileId: string,
   resumeId?: string,
+  parser: ResumeParserChoice = "standard",
 ) {
   return requestApi<{
     profile: Resume;
     preview: string;
     warnings: string[];
-  }>("/api/resume/parse", attachment, profileId, resumeId);
+  }>("/api/resume/parse", { ...attachment, parser }, profileId, resumeId);
 }
 
 export function importResumeContent(

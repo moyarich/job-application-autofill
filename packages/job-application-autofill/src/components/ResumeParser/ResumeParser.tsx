@@ -8,6 +8,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import type { ResumeParserChoice } from "../../api/resumes";
 import type { ResumeImportData } from "../../types/feature-props";
 import "./ResumeParser.css";
 
@@ -27,6 +28,7 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
     parsePreview,
     pendingImport,
   } = controller;
+  const [parser, setParser] = useState<ResumeParserChoice>("standard");
   const [dragging, setDragging] = useState(false);
   const selected = controller.resumeVersions.find(
     (item) => item.id === controller.activeResumeId,
@@ -181,12 +183,25 @@ export function ResumeParser({ controller }: { controller: ResumeImportData }) {
               )}
             </div>
           </div>
+          <label className="resume-parser-choice">
+            Resume parser
+            <select
+              value={parser}
+              disabled={parseBusy}
+              onChange={(event) =>
+                setParser(event.target.value as ResumeParserChoice)
+              }
+            >
+              <option value="standard">Standard</option>
+              <option value="qwen">Local AI (Qwen)</option>
+            </select>
+          </label>
           {!pendingImport && (
             <button
               className="primary parser-button"
               type="button"
               disabled={parseBusy || !resume}
-              onClick={parseResume}
+              onClick={() => parseResume(parser)}
             >
               {parseBusy ? (
                 <LoaderCircle size={17} className="import-spinner" />

@@ -60,7 +60,18 @@ for (const width of [1440, 375]) {
       mimeType: "application/pdf",
       buffer: Buffer.from("%PDF-1.4"),
     });
+    const parser = page.getByRole("combobox", { name: "Resume parser" });
+    await expect(parser).toHaveValue("standard");
+    const selectedParser = width === 375 ? "standard" : "qwen";
+    await parser.selectOption(selectedParser);
+    const parseRequest = page.waitForRequest(
+      (request) => new URL(request.url()).pathname === "/api/resume/parse",
+    );
     await page.getByRole("button", { name: "Extract details" }).click();
+    expect((await parseRequest).postDataJSON()).toMatchObject({
+      parser: selectedParser,
+      fileName: "resume.pdf",
+    });
     await expect(
       page.getByRole("region", { name: "Extraction complete" }),
     ).toBeVisible();
