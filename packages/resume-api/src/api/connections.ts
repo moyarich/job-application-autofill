@@ -7,6 +7,9 @@ export const handleConnections: RouteHandler = async ({
   store,
   profileId,
 }) => {
+  if (url.pathname === "/api/connectors/mcp-endpoints" && req.method === "GET") {
+    return reply(200, store.listMcpEndpoints());
+  }
   if (url.pathname === "/api/connectors" && req.method === "GET") {
     return reply(200, store.listConnectors());
   }
@@ -47,7 +50,7 @@ export const handleConnections: RouteHandler = async ({
       return reply(200, await store.exportConnectionApplication(profileId, id, await req.readJson()));
   }
   const match = url.pathname.match(
-    /^\/api\/connections\/([0-9a-f-]{36})(?:\/(tools)(?:\/([a-zA-Z0-9_-]+))?)?$/i,
+    /^\/api\/connections\/([0-9a-f-]{36})(?:\/(tools)(?:\/([a-zA-Z0-9_.-]+))?)?$/i,
   );
   if (!match) return undefined;
   const [, id, tools, name] = match;

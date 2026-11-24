@@ -3,11 +3,56 @@ import type { DatabaseSync } from "node:sqlite";
 import {
   createAirtableConnector,
   createConnectorRegistry,
+  createMcpConnector,
+  type ConnectorManifest,
+  type ConnectorTool,
 } from "@moyarich/connectors";
 import Ajv, { type AnySchema } from "ajv";
 
 const registry = createConnectorRegistry();
 registry.register(createAirtableConnector());
+
+const mcpManifest: ConnectorManifest = {
+  id: "mcp",
+  name: "Custom MCP server",
+  description: "Connect to an administrator-approved remote MCP endpoint.",
+  version: "0.1.0",
+  authentication: "token",
+};
+
+function canonicalEndpoint(value: unknown): string {
+  if (typeof value !== "string" || value.length > 2048)
+    throw new Error("Invalid MCP endpoint.");
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash)
+    throw new Error("MCP endpoint must be HTTPS without credentials, query or fragment.");
+  return url.href;
+}
+
+export function approvedMcpEndpoints(): string[] {
+  return [...new Set((process.env.MOYA_MCP_ENDPOINTS ?? "").split(",")
+    .map((value) => value.trim()).filter(Boolean).map(canonicalEndpoint))];
+}
+
+function requireEndpoint(value: unknown): string {
+  const endpoint = canonicalEndpoint(value);
+  if (!approvedMcpEndpoints().includes(endpoint)) throw new Error("MCP endpoint is not approved.");
+  return endpoint;
+}
+
+type McpConfig = { endpoint: string; authentication: "none" | "token"; tools: Record<string, ConnectorTool["access"]> };
+function parseMcpConfig(value: Record<string, unknown>): McpConfig {
+  const endpoint = requireEndpoint(value.endpoint);
+  if (value.authentication !== "none" && value.authentication !== "token")
+    throw new Error("Invalid MCP authentication.");
+  if (!value.tools || typeof value.tools !== "object" || Array.isArray(value.tools))
+    throw new Error("Explicit MCP tool permissions are required.");
+  const entries = Object.entries(value.tools);
+  if (!entries.length || entries.length > 50 || entries.some(([name, access]) =>
+    !/^[A-Za-z0-9_.-]{1,128}$/.test(name) || (access !== "read" && access !== "write")))
+    throw new Error("Invalid MCP tool permissions.");
+  return { endpoint, authentication: value.authentication, tools: Object.fromEntries(entries) as McpConfig["tools"] };
+}
 
 function key() {
   const value = process.env.MOYA_CONNECTOR_KEY ?? "";
@@ -66,7 +111,7 @@ export function createConnections(
 ) {
   const columns = "id,connector_id AS connectorId,name,allow_writes AS allowWrites,created_at AS createdAt";
   const ajv = new Ajv();
-  const listConnectors = () => registry.list();
+  const listConnectors = () => [...registry.list(), ...(approvedMcpEndpoints().length ? [mcpManifest] : [])];
   function listConnections(profileId: string) {
     return (
       db.prepare(
@@ -81,15 +126,19 @@ export function createConnections(
       throw new Error("Invalid connection.");
     }
     const value = raw as Record<string, unknown>;
+    const isMcp = value.connectorId === "mcp";
+    const config = isMcp ? parseMcpConfig(value) : null;
+    const needsToken = !config || config.authentication === "token";
     if (
       Object.keys(value).some(
-        (field) => !["connectorId", "name", "accessToken", "allowWrites"].includes(field),
+        (field) => !["connectorId", "name", "accessToken", "allowWrites", ...(isMcp ? ["endpoint", "authentication", "tools"] : [])].includes(field),
       ) ||
       typeof value.name !== "string" ||
       !value.name.trim() ||
       value.name.length > 120 ||
       typeof value.accessToken !== "string" ||
-      !value.accessToken.trim() ||
+      (needsToken && !value.accessToken.trim()) ||
+      (!needsToken && value.accessToken !== "") ||
       value.accessToken.length > 4096 ||
       /\s/.test(value.accessToken) ||
       (value.allowWrites !== undefined && typeof value.allowWrites !== "boolean") ||
@@ -98,6 +147,8 @@ export function createConnections(
       throw new Error("Invalid connection configuration.");
     }
     const id = randomUUID();
+    db.exec("BEGIN IMMEDIATE");
+    try {
     db.prepare(
       "INSERT INTO connections VALUES(?,?,?,?,?,?,?)",
     ).run(
@@ -106,9 +157,16 @@ export function createConnections(
       String(value.connectorId),
       value.name.trim(),
       Number(value.allowWrites === true),
-      encrypt(value.accessToken, owner + ":" + id),
+      needsToken ? encrypt(value.accessToken, owner + ":" + id) : "",
       new Date().toISOString(),
     );
+    if (config) db.prepare("INSERT INTO connection_mcp VALUES(?,?,?,?)")
+      .run(id, config.endpoint, config.authentication, JSON.stringify(config.tools));
+    db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
     return listConnections(owner).find((item) => item.id === id)!;
   }
 
@@ -130,13 +188,27 @@ export function createConnections(
       "SELECT " + columns + ",credential FROM connections WHERE profile_id=? AND id=?",
     ).get(owner, id) as (ConnectionRow & { credential: string }) | undefined;
     if (!row) throw new Error("Connection not found.");
-    const session = await registry.connect(row.connectorId, {
+    const context = {
       connectionId: id,
       profileId: owner,
       configuration: { allowWrites: Boolean(row.allowWrites) },
-      getSecret: async (name) =>
+      getSecret: async (name: string) =>
         name === "accessToken" ? decrypt(row.credential, owner + ":" + id) : undefined,
-    });
+    };
+    let session;
+    if (row.connectorId === "mcp") {
+      const stored = db.prepare("SELECT endpoint,authentication,tools_json AS toolsJson FROM connection_mcp WHERE connection_id=?").get(id) as { endpoint: string; authentication: string; toolsJson: string } | undefined;
+      if (!stored) throw new Error("MCP configuration not found.");
+      const config = parseMcpConfig({ ...stored, tools: JSON.parse(stored.toolsJson) });
+      const connector = createMcpConnector({
+        manifest: { ...mcpManifest, authentication: config.authentication },
+        endpoint: config.endpoint,
+        tools: config.tools,
+      });
+      session = await connector.connect(context);
+    } else {
+      session = await registry.connect(row.connectorId, context);
+    }
     try {
       return await action(session);
     } finally {
@@ -165,6 +237,7 @@ export function createConnections(
   }
 
   return {
+    listMcpEndpoints: approvedMcpEndpoints,
     listConnectors,
     listConnections,
     addConnection,
