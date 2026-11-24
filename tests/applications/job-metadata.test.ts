@@ -56,3 +56,15 @@ it("keeps an explicitly posted salary range with the description", () => {
     parseJobMetadata("<main><h1>Developer</h1></main>").details?.salary,
   ).toBeUndefined();
 });
+
+it("reads Greenhouse employer and job details when Open Graph only supplies the role", () => {
+  const html = `<title>Job Application for Senior Full Stack Developer at Example Health</title>
+    <meta property="og:title" content="Senior Full Stack Developer">
+    <div class="job__location">Remote</div>
+    <div class="job__description"><p>Build web applications.</p></div>`;
+  expect(parseJobMetadata(html)).toEqual({
+    company: "Example Health",
+    role: "Senior Full Stack Developer",
+    details: { location: "Remote", description: "Build web applications." },
+  });
+});

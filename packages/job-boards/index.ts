@@ -1,3 +1,20 @@
+import ashbyPreferences from "./boards/ashby/application_preferences_schema.json" with { type: "json" };
+import greenhousePreferences from "./boards/greenhouse/application_preferences_schema.json" with { type: "json" };
+import leverPreferences from "./boards/lever/application_preferences_schema.json" with { type: "json" };
+import smartRecruitersPreferences from "./boards/smart-recruiters/application_preferences_schema.json" with { type: "json" };
+import workdayPreferences from "./boards/workday/application_preferences_schema.json" with { type: "json" };
+
+export const applicationPreferenceSchemas = {
+  ashby: { label: "Ashby", schema: ashbyPreferences },
+  greenhouse: { label: "Greenhouse", schema: greenhousePreferences },
+  lever: { label: "Lever", schema: leverPreferences },
+  "smart-recruiters": {
+    label: "SmartRecruiters",
+    schema: smartRecruitersPreferences,
+  },
+  workday: { label: "Workday", schema: workdayPreferences },
+};
+
 import type { Page } from "playwright";
 import type { JobSiteAdapter } from "./types.ts";
 export type { JobSiteAdapter } from "./types.ts";
@@ -11,7 +28,7 @@ export interface ApplicationQuestion {
 
 import greenhouse from "./boards/greenhouse/index.ts";
 import lever from "./boards/lever/index.ts";
-import workday from "./workday/index.ts";
+import workday from "./boards/workday/index.ts";
 import ashby from "./boards/ashby/index.ts";
 import smartRecruiters from "./boards/smart-recruiters/index.ts";
 

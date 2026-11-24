@@ -1,4 +1,4 @@
-import type { JobSiteAdapter } from "../types.ts";
+import type { JobSiteAdapter } from "../../types.ts";
 import { workdayEmployerTenant } from "./identity.ts";
 import { detectWorkdayPage } from "./detection.ts";
 import { workdaySteps, workdayScreening } from "./steps.ts";

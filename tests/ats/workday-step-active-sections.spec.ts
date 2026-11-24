@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { workdaySteps } from "../../packages/job-boards/workday/steps.ts";
+import { workdaySteps } from "../../packages/job-boards/boards/workday/steps.ts";
 import type { JobSiteStepContext } from "../../packages/job-boards/types.ts";
 
 test("Workday runs steps only when their editable sections are present", async ({

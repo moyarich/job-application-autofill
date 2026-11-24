@@ -35,6 +35,11 @@ const menuGroups = [
     pages: [
       { path: routes.profile, label: "Profiles", icon: UserRound },
       { path: routes.contacts, label: "Contacts", icon: ContactRound },
+      {
+        path: routes.applicationPreferences,
+        label: "Application preferences",
+        icon: BriefcaseBusiness,
+      },
     ],
   },
 ] as const;

@@ -1,0 +1,127 @@
+.floating-dialog {
+  position: fixed;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  width: 760px;
+  height: 760px;
+  min-width: min(340px, calc(100vw - 24px));
+  min-height: min(300px, calc(100dvh - 48px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 48px);
+  resize: both;
+  overflow: hidden;
+  border: 1px solid #dce3ed;
+  border-radius: 16px;
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 24px 80px #172c4933;
+}
+.floating-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.floating-dialog::backdrop {
+  background: #15213566;
+  backdrop-filter: blur(3px);
+}
+.floating-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+  background: white;
+}
+.floating-dialog-header h2 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.floating-dialog-grip {
+  flex-shrink: 0;
+  color: #98a2b3;
+}
+.floating-dialog .floating-dialog-header > button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+}
+.floating-dialog .floating-dialog-header > button:hover {
+  background: #f1f4f8;
+}
+.floating-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.floating-dialog-footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+  background: #fafbfe;
+}
+.floating-dialog-footer button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.floating-dialog-footer .primary {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: white;
+}
+.floating-dialog-footer .secondary {
+  border: 1px solid #dbe3ee;
+  background: white;
+  color: var(--ink);
+}
+@media (max-width: 540px) {
+  .floating-dialog-header {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+  .floating-dialog-header h2 {
+    font-size: 16px;
+  }
+  .floating-dialog-body {
+    padding: 16px;
+  }
+  .floating-dialog-footer {
+    padding: 12px 16px;
+  }
+}
+
+.floating-dialog-header button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

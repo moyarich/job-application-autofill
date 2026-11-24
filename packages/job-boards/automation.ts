@@ -1,11 +1,11 @@
-import { missingWorkdayRequiredFields } from "./workday/required-fields.ts";
+import { missingWorkdayRequiredFields } from "./boards/workday/required-fields.ts";
 import { captureEmployerAnswers } from "./answer-capture.ts";
 import { resumeToPlainText } from "./resume-text.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { Resume } from "@moyarich/resume";
 import type { ApplicationQuestion } from "./index.ts";
-import { workdayCredentials } from "./workday/workday-login.ts";
+import { workdayCredentials } from "./boards/workday/workday-login.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
 import {

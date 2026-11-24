@@ -340,8 +340,15 @@ export function parseJobMetadata(html: string): JobMetadata {
           key,
       )
       ?.attr("content") ?? "";
+  const documentTitle = text($("title").text());
+  const greenhouseTitle = documentTitle.match(
+    /^Job Application for (.+) at (.+)$/,
+  );
   const pageTitle = text(
-    meta("og:title") || meta("twitter:title") || $("title").text(),
+    meta("og:title") ||
+      meta("twitter:title") ||
+      greenhouseTitle?.[1] ||
+      documentTitle,
   );
   const titleParts = pageTitle.split(/\s+(?:\||–|—|-)\s+/);
   const organization = posting?.hiringOrganization as
@@ -364,6 +371,7 @@ export function parseJobMetadata(html: string): JobMetadata {
     .trim();
   const company =
     text(organization?.name) ||
+    greenhouseTitle?.[2] ||
     text(
       $("[itemprop='hiringOrganization'],[data-automation-id='companyName']")
         .first()
@@ -386,7 +394,9 @@ export function parseJobMetadata(html: string): JobMetadata {
         .filter(Boolean)
         .join(", ")
     : text(
-        $("[data-automation-id='locations'],[itemprop='jobLocation']")
+        $(
+          "[data-automation-id='locations'],[itemprop='jobLocation'],.job__location",
+        )
           .first()
           .text(),
       );
@@ -400,7 +410,7 @@ export function parseJobMetadata(html: string): JobMetadata {
       : posting?.employmentType,
   );
   const descriptionHtml = $(
-    "[data-automation-id='jobPostingDescription'],[itemprop='description']",
+    "[data-automation-id='jobPostingDescription'],[itemprop='description'],.job__description",
   )
     .first()
     .html();

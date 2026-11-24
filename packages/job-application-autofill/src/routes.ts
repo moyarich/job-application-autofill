@@ -11,6 +11,7 @@ export const routes = {
   resumeView: "/resumes/view",
   resumeImport: "/resumes/import",
   workspace: "/workspace",
+  applicationPreferences: "/application-preferences",
   notFound: "*",
 } as const;
 
@@ -23,6 +24,7 @@ export const pageRoutes = [
   routes.resumeView,
   routes.resumeImport,
   routes.workspace,
+  routes.applicationPreferences,
 ] as const;
 
 export const tabRoutes: Record<string, string> = {
@@ -34,6 +36,7 @@ export const tabRoutes: Record<string, string> = {
   contacts: routes.contacts,
   parser: routes.resumeImport,
   workspace: routes.workspace,
+  preferences: routes.applicationPreferences,
 };
 
 export type WorkspaceTab = keyof typeof tabRoutes;

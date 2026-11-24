@@ -5,7 +5,7 @@ import type {
   JobSiteStep,
   JobSiteStepContext,
   JobSiteStepResult,
-} from "../types.ts";
+} from "../../types.ts";
 import { fillWorkdayContact } from "./contact/contact.ts";
 import { fillWorkdayExperience } from "./experience/experience.ts";
 import { fillWorkdayEducation } from "./education/education.ts";
@@ -17,7 +17,7 @@ import {
 import { retryWorkdayResumeUpload } from "./resume/resume.ts";
 import { resumeFields } from "./resume/selectors.ts";
 import { skillsFields } from "./skills/selectors.ts";
-import { discoverQuestions } from "../index.ts";
+import { discoverQuestions } from "../../index.ts";
 import { SECTION as WORK_EXPERIENCE_SECTION } from "./experience/selectors.ts";
 import { educationFields } from "./education/selectors.ts";
 import { inspectWorkdayFields } from "./menu-status.ts";

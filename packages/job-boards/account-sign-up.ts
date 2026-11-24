@@ -1,6 +1,6 @@
 import type { Page, Locator } from "playwright";
 import type { Resume } from "@moyarich/resume";
-import { workdayCredentials } from "./workday/workday-login.ts";
+import { workdayCredentials } from "./boards/workday/workday-login.ts";
 import { employerAccountIdentity } from "./employer-account.ts";
 
 export type AccountSetupResult = {

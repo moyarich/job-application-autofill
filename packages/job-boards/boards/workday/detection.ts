@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import type { PageKind } from "../types.ts";
+import type { PageKind } from "../../types.ts";
 
 /** Workday pages may put sign-in and registration inside the application path. */
 export async function detectWorkdayPage(

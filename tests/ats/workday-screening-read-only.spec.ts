@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { workdaySteps } from "../../packages/job-boards/workday/steps.ts";
-import workday from "../../packages/job-boards/workday/index.ts";
+import { workdaySteps } from "../../packages/job-boards/boards/workday/steps.ts";
+import workday from "../../packages/job-boards/boards/workday/index.ts";
 import type {
   JobSiteAdapter,
   JobSiteStepContext,

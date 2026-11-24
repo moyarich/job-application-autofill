@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import type { AutofillResult } from "../../types.ts";
+import type { AutofillResult } from "../../../types.ts";
 import { resumeFields } from "./selectors.ts";
 
 /** Restore an already-saved resume on a subsequent Workday upload step. */

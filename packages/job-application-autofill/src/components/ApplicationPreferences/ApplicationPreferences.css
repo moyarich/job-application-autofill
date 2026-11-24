@@ -1,0 +1,349 @@
+.application-preferences {
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.application-preferences h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+.application-preferences h3 {
+  font-size: 15px;
+  margin: 22px 0 12px;
+}
+.preference-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.preference-toolbar label,
+.preference-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.preference-toolbar select {
+  min-width: 220px;
+  max-width: 100%;
+}
+.preference-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+.preference-details dt {
+  color: #667085;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.preference-details dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.preference-form fieldset {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.preference-form input:not([type="checkbox"]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+.preference-form .preference-default {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+.preference-form .preference-default input {
+  width: auto;
+}
+.preference-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.preference-caption svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.preference-form .preference-section {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.preference-section legend,
+.preference-options legend {
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.preference-input-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.preference-form .preference-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 0;
+}
+.preference-form .preference-options label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+}
+.preference-form .preference-options input {
+  width: auto;
+  margin: 0;
+}
+.preference-form > fieldset {
+  gap: 12px;
+}
+.preference-form .preference-identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
+}
+.preference-form .preference-default {
+  min-height: 30px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.preference-form .preference-section {
+  padding: 20px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  gap: 16px;
+}
+.preference-section > legend {
+  padding: 0 10px 0 0;
+  font-size: 14px;
+}
+.preference-section > legend .preference-caption svg {
+  color: var(--accent);
+}
+.preference-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.preference-fields-grid > label:first-child {
+  grid-column: 1 / -1;
+}
+.preference-form label {
+  font-size: 12px;
+  font-weight: 550;
+}
+.preference-form input:not([type="checkbox"]),
+.preference-form select {
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 42px;
+  font-size: 13px;
+}
+.preference-form .preference-options {
+  gap: 8px;
+  padding: 0;
+}
+.preference-options legend {
+  margin-bottom: 10px;
+  padding: 0;
+}
+.preference-form .preference-options label {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  gap: 8px;
+}
+.preference-form .preference-options label:has(input:checked) {
+  border-color: #a9b6f1;
+  background: #f0f3ff;
+  color: #354cbe;
+}
+.preference-form input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+@media (max-width: 540px) {
+  .preference-fields-grid {
+    grid-template-columns: 1fr;
+  }
+  .preference-form .preference-identity {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+.preference-select {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+.preference-form .preference-select select,
+.application-preferences .preference-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 40px;
+  cursor: pointer;
+}
+.preference-select > svg {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #667085;
+  pointer-events: none;
+}
+.preference-select:has(select:disabled) > svg {
+  opacity: 0.5;
+}
+.preference-form > form {
+  margin-top: 16px;
+}
+
+.preference-schema-fields {
+  --board-accent: var(--accent);
+  --board-tint: #f6f7ff;
+  --board-line: #dbe0f1;
+}
+.preference-schema-ashby {
+  --board-accent: #6043a2;
+  --board-tint: #f7f3fd;
+  --board-line: #e5d9f7;
+}
+.preference-schema-greenhouse {
+  --board-accent: #14634c;
+  --board-tint: #eff9f4;
+  --board-line: #cfe9dc;
+}
+.preference-schema-lever {
+  --board-accent: #315484;
+  --board-tint: #f3f7fc;
+  --board-line: #d6e2f1;
+}
+.preference-schema-smart-recruiters {
+  --board-accent: #176758;
+  --board-tint: #f1f9f7;
+  --board-line: #cfe7e1;
+}
+.preference-schema-workday {
+  --board-accent: #205c9e;
+  --board-tint: #f0f7ff;
+  --board-line: #d2e5fb;
+}
+.preference-schema-sections {
+  display: grid;
+  gap: 16px;
+}
+.preference-form .preference-schema-section {
+  padding: 10px 16px 14px;
+  border: 1px solid var(--board-line);
+  border-radius: 12px;
+  background: var(--board-tint);
+}
+.preference-schema-section > legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  color: var(--board-accent);
+  font-size: 14px;
+  font-weight: 650;
+}
+.preference-schema-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 12px;
+}
+.preference-schema-field {
+  min-width: 0;
+}
+.preference-schema-field:is(
+  [data-field="country"],
+  [data-field="salary"],
+  [data-field="availability"],
+  [data-field="workArrangement"],
+  [data-field="employmentType"]
+) {
+  grid-column: 1 / -1;
+}
+.preference-schema-fields :is(input:not([type="checkbox"]), select, textarea) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  color: var(--ink);
+}
+.preference-schema-fields textarea {
+  min-height: 60px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+.preference-schema-fields :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--board-accent);
+  outline-offset: 2px;
+}
+.preference-schema-fields .checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 6px;
+}
+.preference-schema-fields .checkbox label {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid var(--board-line);
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  cursor: pointer;
+}
+.preference-schema-fields .checkbox label > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.preference-schema-fields .checkbox label:has(input:checked) {
+  border-color: var(--board-accent);
+  color: var(--board-accent);
+}
+.preference-schema-fields .checkbox input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--board-accent);
+}
+.preference-schema-fields .checkbox label:has(input:disabled) {
+  cursor: default;
+}
+.preference-schema-fields :is(.text-destructive, .border-destructive) {
+  color: #b42318;
+}
+.preference-schema-fields input.border-destructive {
+  border-color: #b42318;
+}
+@media (max-width: 540px) {
+  .preference-schema-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .preference-form .preference-schema-section {
+    padding-inline: 12px;
+  }
+}
