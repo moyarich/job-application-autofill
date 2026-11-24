@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMcpConnector } from "../../packages/connectors/src/mcp.ts";
 
-function fixture(allowWrites = false) {
+function fixture(allowWrites = false, discoveryOnly = false) {
   const request = vi.fn<typeof fetch>(async (_url, init) => {
     const message = JSON.parse(String(init?.body)) as {
       id: number;
@@ -33,6 +33,7 @@ function fixture(allowWrites = false) {
       },
       endpoint: "https://example.com/mcp",
       tools: { read: "read", write: "write" },
+      discoveryOnly,
     },
     request,
   );
@@ -46,6 +47,14 @@ function fixture(allowWrites = false) {
 }
 
 describe("MCP connector", () => {
+  it("discovers unapproved tools without permitting any execution", async () => {
+    const { request, session } = fixture(false, true);
+    const connection = await session;
+    expect((await connection.listTools()).map((tool) => tool.name)).toEqual(["read", "write", "unknown"]);
+    await expect(connection.callTool("read", {})).rejects.toThrow("cannot execute");
+    expect(request).toHaveBeenCalledTimes(1);
+    await connection.close();
+  });
   it("discovers only explicitly allowed tools", async () => {
     const { session } = fixture();
     expect((await (await session).listTools()).map((tool) => tool.name)).toEqual([

@@ -4,6 +4,8 @@ export interface McpOptions {
   manifest: ConnectorManifest;
   endpoint: string;
   tools: Readonly<Record<string, ConnectorTool["access"]>>;
+  /** Discovery-only sessions cannot invoke tools, even if an allowlist is supplied. */
+  discoveryOnly?: boolean;
 }
 
 const version = "2026-07-28";
@@ -113,11 +115,12 @@ export function createMcpConnector(
           }
           for (const entry of result.tools) {
             const item = record(entry);
-            if (typeof item.name !== "string") continue;
-            const access = allowed.get(item.name);
+            if (typeof item.name !== "string" || !/^[A-Za-z0-9_.-]{1,128}$/.test(item.name)) continue;
+            const access = options.discoveryOnly ? "write" : allowed.get(item.name);
             if (!access) continue;
-            if (access === "write" && context.configuration.allowWrites !== true)
+            if (!options.discoveryOnly && access === "write" && context.configuration.allowWrites !== true)
               continue;
+            if (found.size >= 500 && !found.has(item.name)) throw new Error("MCP tool limit exceeded.");
             found.set(item.name, {
               name: item.name,
               description:
@@ -140,6 +143,7 @@ export function createMcpConnector(
       return {
         listTools,
         async callTool(name, input) {
+          if (options.discoveryOnly) throw new Error("MCP discovery session cannot execute tools.");
           const tools = await listTools();
           if (!tools.some((tool) => tool.name === name)) {
             throw new Error("MCP tool is not allowed.");
