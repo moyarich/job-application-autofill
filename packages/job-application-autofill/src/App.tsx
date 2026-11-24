@@ -1,3 +1,4 @@
+import { PageConnections } from "./pages/connections/PageConnections";
 import { PageApplicationPreferences } from "./pages/preferences/PageApplicationPreferences";
 import "./App.css";
 import { PendingSaves } from "./hooks/PendingSaves";
@@ -26,6 +27,8 @@ export function App() {
         <main className="main">
           {applicationId ? (
             <PageApplicationReview />
+          ) : tab === "connections" ? (
+            <PageConnections />
           ) : tab === "preferences" ? (
             <PageApplicationPreferences />
           ) : tab === "applications" ? (

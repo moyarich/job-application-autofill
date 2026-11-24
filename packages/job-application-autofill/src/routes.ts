@@ -11,6 +11,7 @@ export const routes = {
   resumeView: "/resumes/view",
   resumeImport: "/resumes/import",
   workspace: "/workspace",
+  connections: "/connections",
   applicationPreferences: "/application-preferences",
   notFound: "*",
 } as const;
@@ -24,6 +25,7 @@ export const pageRoutes = [
   routes.resumeView,
   routes.resumeImport,
   routes.workspace,
+  routes.connections,
   routes.applicationPreferences,
 ] as const;
 
@@ -36,6 +38,7 @@ export const tabRoutes: Record<string, string> = {
   contacts: routes.contacts,
   parser: routes.resumeImport,
   workspace: routes.workspace,
+  connections: routes.connections,
   preferences: routes.applicationPreferences,
 };
 

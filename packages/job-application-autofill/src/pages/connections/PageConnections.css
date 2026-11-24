@@ -1,0 +1,62 @@
+.connections-panel {
+  padding: 22px;
+}
+.connections-heading,
+.connection-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.connections-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.connections-heading h2,
+.connection-identity h3 {
+  margin: 0;
+}
+.connection-identity p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.connections-page button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.connections-form,
+.connection-inspection,
+.connections-confirm {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.connections-form label {
+  display: grid;
+  gap: 6px;
+}
+.connections-form label.connections-checkbox {
+  display: flex;
+  align-items: center;
+}
+.connections-form p,
+.connection-inspection p,
+.connections-confirm p {
+  margin: 0;
+  color: var(--muted);
+}
+.connection-item {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+.connection-inspection ul {
+  margin: 0;
+  padding-left: 22px;
+}
+.connection-inspection li + li {
+  margin-top: 10px;
+}

@@ -6,6 +6,7 @@ import {
   FileText,
   FileUp,
   Menu,
+  Plug,
   UserRound,
   X,
 } from "lucide-react";
@@ -41,6 +42,10 @@ const menuGroups = [
         icon: BriefcaseBusiness,
       },
     ],
+  },
+  {
+    label: "Integrations",
+    pages: [{ path: routes.connections, label: "Connections", icon: Plug }],
   },
 ] as const;
 
