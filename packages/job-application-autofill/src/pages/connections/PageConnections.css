@@ -78,3 +78,21 @@
   white-space: pre-wrap;
   border-bottom: 1px solid var(--line);
 }
+
+.mcp-tool-runner[open],
+.mcp-tool-field {
+  display: grid;
+  gap: 8px;
+}
+.mcp-tool-runner pre {
+  max-width: 100%;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mcp-tool-runner textarea {
+  width: 100%;
+  min-height: 100px;
+  box-sizing: border-box;
+}
