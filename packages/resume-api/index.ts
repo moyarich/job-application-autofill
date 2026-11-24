@@ -21,7 +21,15 @@ try {
 const port = Number(process.env.AUTOFILL_PORT || 4177);
 const host = process.env.AUTOFILL_HOST || "127.0.0.1";
 const origin = process.env.AUTOFILL_ORIGIN || "http://localhost:5173";
-const handler = createApiHandler(openStore(), { origin });
+const store = openStore();
+const handler = createApiHandler(store, { origin });
+// Runs only while the local API is alive. No timers are created by openStore().
+const scheduleTimer = setInterval(() => {
+  void store.runDueConnectionSchedules().catch(() => {
+    console.error("Connection scheduler tick failed.");
+  });
+}, 60000);
+scheduleTimer.unref();
 // Password stays in Node; only the loopback RFB adapter can reach x11vnc.
 if (process.env.CONTAINER_MODE === "true")
   createAuthenticatedVncBridge(process.env.WEB_VNC_PASSWORD ?? "").listen(5901, "127.0.0.1");

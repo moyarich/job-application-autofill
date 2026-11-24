@@ -64,10 +64,11 @@ describe("application transfer", () => {
   it("imports new URLs only and skips existing exports", async () => {
     const db = new DatabaseSync(":memory:");
     try {
-      db.exec("CREATE TABLE connections(id TEXT PRIMARY KEY); CREATE TABLE applications(profile_id TEXT, id TEXT, PRIMARY KEY(profile_id,id)); CREATE TABLE connection_mappings(connection_id TEXT PRIMARY KEY, mapping_json TEXT)");
+      db.exec("CREATE TABLE connections(id TEXT PRIMARY KEY, profile_id TEXT NOT NULL); CREATE TABLE applications(profile_id TEXT, id TEXT, PRIMARY KEY(profile_id,id)); CREATE TABLE connection_mappings(connection_id TEXT PRIMARY KEY, mapping_json TEXT)");
       db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-transfers.sql", import.meta.url), "utf8"));
       db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-sync-runs.sql", import.meta.url), "utf8"));
-      db.exec("INSERT INTO connections VALUES('connection'); INSERT INTO applications VALUES('profile','job')");
+      db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-schedules.sql", import.meta.url), "utf8"));
+      db.exec("INSERT INTO connections VALUES('connection','profile'); INSERT INTO applications VALUES('profile','job')");
       const listConnections = vi.fn(() => [
         { id: "connection", connectorId: "airtable", allowWrites: true },
       ]);
@@ -92,6 +93,12 @@ describe("application transfer", () => {
       expect(callConnectionTool).toHaveBeenCalledTimes(2);
       expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
       expect(sync.listConnectionRecordLinks("profile", "connection")).toEqual([]);
+      expect(sync.getConnectionSchedule("profile", "connection")).toBeNull();
+      expect(() => sync.saveConnectionSchedule("profile", "connection", { intervalMinutes: 1 })).toThrow();
+      expect(sync.saveConnectionSchedule("profile", "connection", { intervalMinutes: 60 })).toMatchObject({ intervalMinutes: 60 });
+      await sync.runDueConnectionSchedules();
+      expect(callConnectionTool).toHaveBeenCalledTimes(2);
+      expect(sync.saveConnectionSchedule("profile", "connection", { intervalMinutes: null })).toBeNull();
       db.prepare("INSERT INTO connection_record_links VALUES(?,?,?,?,?,?,?,?,?)")
         .run("connection", "profile", "job", "app123", "tbl123", "rec1", "old-local", "old-remote", "2026-11-24");
       const report = await sync.reviewConnectionChanges("profile", "connection");
