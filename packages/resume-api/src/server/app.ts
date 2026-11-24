@@ -39,6 +39,15 @@ export function createApiHandler(store: Store, options: { origin: string }) {
         return reply(200, { ok: true });
       }
 
+      // OAuth callback is authenticated by one-time state, PKCE and issuer checks.
+      if (method === "GET" && url.pathname === "/api/connectors/mcp-oauth/callback") {
+        try {
+          await store.completeMcpOAuth(url.searchParams);
+          return reply(200, "Authorization completed. Close this tab and return to Connections.", "text/plain; charset=utf-8");
+        } catch {
+          return reply(400, "Authorization failed or expired. Return to Connections and start again.", "text/plain; charset=utf-8");
+        }
+      }
       if (!isDashboardRequest(headers, options.origin)) {
         return reply(403, {
           error: "Only the local dashboard may access this API.",

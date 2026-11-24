@@ -8,6 +8,7 @@ import {
   type ConnectorTool,
 } from "@moyarich/connectors";
 import Ajv, { type AnySchema } from "ajv";
+import { createMcpOAuth, type OAuthGrant } from "./mcp-oauth.ts";
 
 const registry = createConnectorRegistry();
 registry.register(createAirtableConnector());
@@ -40,10 +41,10 @@ function requireEndpoint(value: unknown): string {
   return endpoint;
 }
 
-type McpConfig = { endpoint: string; authentication: "none" | "token"; tools: Record<string, ConnectorTool["access"]> };
+type McpConfig = { endpoint: string; authentication: "none" | "token" | "oauth2"; tools: Record<string, ConnectorTool["access"]> };
 function parseMcpConfig(value: Record<string, unknown>): McpConfig {
   const endpoint = requireEndpoint(value.endpoint);
-  if (value.authentication !== "none" && value.authentication !== "token")
+  if (value.authentication !== "none" && value.authentication !== "token" && value.authentication !== "oauth2")
     throw new Error("Invalid MCP authentication.");
   if (!value.tools || typeof value.tools !== "object" || Array.isArray(value.tools))
     throw new Error("Explicit MCP tool permissions are required.");
@@ -111,6 +112,8 @@ export function createConnections(
 ) {
   const columns = "id,connector_id AS connectorId,name,allow_writes AS allowWrites,created_at AS createdAt";
   const ajv = new Ajv();
+  const oauth = createMcpOAuth();
+  const refreshing = new Map<string, Promise<string>>();
   const listConnectors = () => [...registry.list(), ...(approvedMcpEndpoints().length ? [mcpManifest] : [])];
   function listConnections(profileId: string) {
     return (
@@ -129,9 +132,10 @@ export function createConnections(
     const isMcp = value.connectorId === "mcp";
     const config = isMcp ? parseMcpConfig(value) : null;
     const needsToken = !config || config.authentication === "token";
+    const grant = config?.authentication === "oauth2" ? oauth.grant(owner, config.endpoint, value.flowId) : undefined;
     if (
       Object.keys(value).some(
-        (field) => !["connectorId", "name", "accessToken", "allowWrites", ...(isMcp ? ["endpoint", "authentication", "tools"] : [])].includes(field),
+        (field) => !["connectorId", "name", "accessToken", "allowWrites", ...(isMcp ? ["endpoint", "authentication", "tools", "flowId"] : [])].includes(field),
       ) ||
       typeof value.name !== "string" ||
       !value.name.trim() ||
@@ -157,7 +161,7 @@ export function createConnections(
       String(value.connectorId),
       value.name.trim(),
       Number(value.allowWrites === true),
-      needsToken ? encrypt(value.accessToken, owner + ":" + id) : "",
+      grant ? encrypt(JSON.stringify(grant), owner + ":" + id) : needsToken ? encrypt(value.accessToken, owner + ":" + id) : "",
       new Date().toISOString(),
     );
     if (config) db.prepare("INSERT INTO connection_mcp VALUES(?,?,?,?)")
@@ -167,6 +171,7 @@ export function createConnections(
       db.exec("ROLLBACK");
       throw error;
     }
+    if (grant) oauth.consume(String(value.flowId));
     return listConnections(owner).find((item) => item.id === id)!;
   }
 
@@ -176,6 +181,24 @@ export function createConnections(
     ).run(requireProfile(profileId), id);
     if (!result.changes) throw new Error("Connection not found.");
     return { deleted: true };
+  }
+
+  async function oauthToken(owner: string, id: string, credential: string, endpoint: string) {
+    const active = refreshing.get(id);
+    if (active) return active;
+    const task = (async () => {
+      const current = JSON.parse(decrypt(credential, owner + ":" + id)) as OAuthGrant;
+      if (current.config.endpoint !== endpoint) throw new Error("OAuth resource mismatch.");
+      const next = await oauth.refresh(current);
+      if (next !== current) {
+        const update = db.prepare("UPDATE connections SET credential=? WHERE id=? AND profile_id=? AND credential=?")
+          .run(encrypt(JSON.stringify(next), owner + ":" + id), id, owner, credential);
+        if (!update.changes) throw new Error("OAuth connection changed.");
+      }
+      return next.tokens.accessToken;
+    })();
+    refreshing.set(id, task);
+    try { return await task; } finally { refreshing.delete(id); }
   }
 
   async function withConnection<T>(
@@ -201,11 +224,11 @@ export function createConnections(
       if (!stored) throw new Error("MCP configuration not found.");
       const config = parseMcpConfig({ ...stored, tools: JSON.parse(stored.toolsJson) });
       const connector = createMcpConnector({
-        manifest: { ...mcpManifest, authentication: config.authentication },
+        manifest: { ...mcpManifest, authentication: config.authentication === "oauth2" ? "token" : config.authentication },
         endpoint: config.endpoint,
         tools: config.tools,
       });
-      session = await connector.connect(context);
+      session = await connector.connect(config.authentication === "oauth2" ? { ...context, getSecret: async (name) => name === "accessToken" ? oauthToken(owner, id, row.credential, config.endpoint) : undefined } : context);
     } else {
       session = await registry.connect(row.connectorId, context);
     }
@@ -223,13 +246,14 @@ export function createConnections(
     const endpoint = requireEndpoint(value.endpoint);
     const authentication = value.authentication;
     const token = value.accessToken;
-    if ((authentication !== "token" && authentication !== "none") ||
+    if ((authentication !== "token" && authentication !== "none" && authentication !== "oauth2") ||
       typeof token !== "string" || token.length > 4096 || /\s/.test(token) ||
       (authentication === "token" ? !token : token !== "") ||
-      Object.keys(value).some((key) => !["endpoint", "authentication", "accessToken"].includes(key)))
+      Object.keys(value).some((key) => !["endpoint", "authentication", "accessToken", "flowId"].includes(key)))
       throw new Error("Invalid discovery credentials.");
+    const grant = authentication === "oauth2" ? oauth.grant(owner, endpoint, value.flowId) : undefined;
     const connector = createMcpConnector({
-      manifest: { ...mcpManifest, authentication },
+      manifest: { ...mcpManifest, authentication: authentication === "oauth2" ? "token" : authentication },
       endpoint,
       tools: {},
       discoveryOnly: true,
@@ -238,7 +262,7 @@ export function createConnections(
       connectionId: "discovery",
       profileId: owner,
       configuration: { allowWrites: false },
-      getSecret: async (name) => name === "accessToken" && authentication === "token" ? token : undefined,
+      getSecret: async (name) => name === "accessToken" ? grant?.tokens.accessToken ?? (authentication === "token" ? token : undefined) : undefined,
     });
     try {
       return (await session.listTools()).map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
@@ -269,6 +293,9 @@ export function createConnections(
 
   return {
     listMcpEndpoints: approvedMcpEndpoints,
+    listMcpOAuthEndpoints: () => oauth.endpoints().filter((endpoint) => approvedMcpEndpoints().includes(endpoint)),
+    beginMcpOAuth: (profileId: string, endpoint: unknown) => oauth.begin(requireProfile(profileId), requireEndpoint(endpoint)),
+    completeMcpOAuth: (params: URLSearchParams) => oauth.callback(params),
     discoverMcpTools,
     listConnectors,
     listConnections,
