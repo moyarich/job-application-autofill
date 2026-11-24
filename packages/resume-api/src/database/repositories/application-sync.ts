@@ -156,9 +156,16 @@ export function createApplicationSync(
   function listConnectionHistory(profileId: string, id: string) {
     requireConnection(profileId, id);
     return db.prepare(
-      "SELECT id,direction,status,started_at AS startedAt,finished_at AS finishedAt,result_json AS resultJson FROM connection_transfer_runs WHERE connection_id=? ORDER BY started_at DESC,id DESC LIMIT 50",
-    ).all(id).map(({ resultJson, ...row }) => ({
+      `SELECT id,direction,status,started_at AS startedAt,finished_at AS finishedAt,result_json AS resultJson,NULL AS failureCode
+      FROM connection_transfer_runs WHERE connection_id=?
+      UNION ALL
+      SELECT id,'sync' AS direction,status,started_at AS startedAt,finished_at AS finishedAt,result_json AS resultJson,failure_code AS failureCode
+      FROM connection_sync_runs WHERE connection_id=?
+      ORDER BY startedAt DESC,id DESC LIMIT 50`,
+    ).all(id, id).map(({ resultJson, ...row }) => ({
       ...row,
+      status: row.status === "running" && !running.has(id) && !syncing.has(id)
+        ? "interrupted" : row.status,
       result: typeof resultJson === "string" ? JSON.parse(resultJson) as unknown : null,
     }));
   }
@@ -446,8 +453,14 @@ export function createApplicationSync(
     const connection = requireConnection(profileId, id);
     if (running.has(id) || syncing.has(id)) throw new Error("Transfer in progress.");
     syncing.add(id);
+    const runId = randomUUID();
+    let started = false;
+    let reviewed = false;
     try {
+      db.prepare("INSERT INTO connection_sync_runs(id,connection_id,status,started_at) VALUES(?,?,'running',?)").run(runId, id, new Date().toISOString());
+      started = true;
       const report = await reviewConnectionChanges(profileId, id, true);
+      reviewed = true;
       const result = { checked: report.changes.length, pulled: 0, pushed: 0, converged: 0, unchanged: 0, needsReview: 0, deferred: 0, failed: 0 };
       let attempts = 0;
       for (const change of report.changes) {
@@ -469,7 +482,14 @@ export function createApplicationSync(
           break;
         }
       }
+      db.prepare("UPDATE connection_sync_runs SET status=?,finished_at=?,result_json=?,failure_code=? WHERE id=?").run(
+        result.failed ? "partial" : "completed", new Date().toISOString(), JSON.stringify(result),
+        result.failed ? "resolution_failed" : null, runId,
+      );
       return result;
+    } catch (error) {
+      if (started) db.prepare("UPDATE connection_sync_runs SET status='failed',finished_at=?,failure_code=? WHERE id=?").run(new Date().toISOString(), reviewed ? "run_failed" : "review_failed", runId);
+      throw error;
     } finally {
       syncing.delete(id);
     }
