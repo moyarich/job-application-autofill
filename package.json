@@ -24,7 +24,7 @@
     "build:storybook": "storybook build",
     "dev:server": "npm run build --workspace packages/resume-api && npm run start --workspace packages/resume-api",
     "build:app": "npm run build:app --workspace packages/job-application-autofill",
-    "build:js": "npm run build:js --workspace packages/resume && npm run build --workspace packages/job-boards && npm run build --workspace packages/job-application-autofill && npm run build --workspace packages/resume-api",
+    "build:js": "npm run build --workspace packages/connectors && npm run build:js --workspace packages/resume && npm run build --workspace packages/job-boards && npm run build --workspace packages/job-application-autofill && npm run build --workspace packages/resume-api",
     "build:python": "node --experimental-strip-types scripts/build-resume-ocr.ts",
     "predev": "npm run build:python",
     "pretypecheck": "npm run build:js"
