@@ -13,4 +13,15 @@ their schemas, enforce read/write permissions, and provide a scoped secret
 resolver. Connectors must not expose credentials in tool output or metadata.
 
 This package does not yet implement persistent connections, OAuth, MCP
-transport, Airtable, or synchronization. Those belong in subsequent changes.
+transport, or synchronization. Those belong in subsequent changes.
+
+## Airtable
+
+Register `createAirtableConnector()` with the registry. Provide a personal
+access token through the context secret resolver under `accessToken`. Grant
+`schema.bases:read` and `data.records:read` on the intended bases. For writes,
+also grant `data.records:write` and set `configuration.allowWrites` to true.
+The host must authorize that setting; never accept it directly from an
+untrusted caller. The adapter returns one page at a time with the Airtable
+pagination offset. HTTP 429 is reported to the caller for retry scheduling;
+record writes are never retried automatically. No record deletion is exposed.

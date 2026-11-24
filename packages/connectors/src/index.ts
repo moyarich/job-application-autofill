@@ -73,3 +73,5 @@ export class ConnectorRegistry {
 export function createConnectorRegistry(): ConnectorRegistry {
   return new ConnectorRegistry();
 }
+
+export { createAirtableConnector } from "./airtable.js";
