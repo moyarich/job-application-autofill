@@ -98,6 +98,10 @@ describe("application transfer", () => {
       expect(sync.saveConnectionSchedule("profile", "connection", { intervalMinutes: 60 })).toMatchObject({ intervalMinutes: 60 });
       await sync.runDueConnectionSchedules();
       expect(callConnectionTool).toHaveBeenCalledTimes(2);
+      db.prepare("UPDATE connection_schedules SET next_run_at=? WHERE connection_id=?").run("2000-01-01T00:00:00.000Z", "connection");
+      await sync.runDueConnectionSchedules();
+      expect(sync.getConnectionSchedule("profile", "connection")).toMatchObject({ intervalMinutes: 60 });
+      expect(callConnectionTool).toHaveBeenCalledTimes(3);
       expect(sync.saveConnectionSchedule("profile", "connection", { intervalMinutes: null })).toBeNull();
       db.prepare("INSERT INTO connection_record_links VALUES(?,?,?,?,?,?,?,?,?)")
         .run("connection", "profile", "job", "app123", "tbl123", "rec1", "old-local", "old-remote", "2026-11-24");
@@ -106,8 +110,8 @@ describe("application transfer", () => {
       expect(report.changes[0].state).toBe("converged");
       expect(report.changes[0].reviewToken).toMatch(/^[a-f0-9]{64}$/);
       expect(save).not.toHaveBeenCalled();
-      expect(callConnectionTool.mock.calls).toHaveLength(3);
-      expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
+      expect(callConnectionTool.mock.calls).toHaveLength(4);
+      expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(3);
       callConnectionTool.mockResolvedValueOnce({
         records: [],
       });
