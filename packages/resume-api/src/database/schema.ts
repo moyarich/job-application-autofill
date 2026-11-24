@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 
-const CURRENT_SCHEMA_VERSION = 8;
+const CURRENT_SCHEMA_VERSION = 9;
 const initialTables = [
   "profiles.sql",
   "profile-contact.sql",
@@ -14,6 +14,7 @@ const initialTables = [
   "application-preferences.sql",
   "connections.sql",
   "connection-mappings.sql",
+  "connection-transfers.sql",
 ] as const;
 
 function tableSql(name: string): string {
@@ -84,6 +85,7 @@ export function initializeDatabase(db: DatabaseSync): void {
       migratePreferenceBoards(db);
       db.exec(tableSql("connections.sql"));
       db.exec(tableSql("connection-mappings.sql"));
+      db.exec(tableSql("connection-transfers.sql"));
       db.exec("PRAGMA user_version = " + CURRENT_SCHEMA_VERSION);
       db.exec("COMMIT");
     } catch (error) {

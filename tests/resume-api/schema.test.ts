@@ -26,7 +26,7 @@ describe("SQLite schema", () => {
       const db = new DatabaseSync(path);
       try {
         expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-          user_version: 8,
+          user_version: 9,
         });
         expect(
           db
@@ -73,7 +73,7 @@ describe("SQLite schema", () => {
         db.prepare("SELECT name FROM profiles WHERE id=?").get("test-profile"),
       ).toMatchObject({ name: "Test" });
       expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-        user_version: 8,
+        user_version: 9,
       });
     } finally {
       db.close();
@@ -118,7 +118,7 @@ it("upgrades account and job details without dropping existing application recor
       details_json: null,
     });
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 8,
+      user_version: 9,
     });
   } finally {
     db.close();
@@ -148,7 +148,7 @@ it("upgrades schema version 3 to the current version without discarding applicat
     );
     initializeDatabase(db);
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 8,
+      user_version: 9,
     });
     expect(
       db
@@ -214,7 +214,7 @@ it("upgrades version 4 while preserving existing application answers", () => {
       db.prepare("SELECT count(*) AS count FROM application_preferences").get(),
     ).toMatchObject({ count: 0 });
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 8,
+      user_version: 9,
     });
   } finally {
     db.close();
