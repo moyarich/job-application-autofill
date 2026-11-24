@@ -66,6 +66,7 @@ describe("application transfer", () => {
     try {
       db.exec("CREATE TABLE connections(id TEXT PRIMARY KEY); CREATE TABLE applications(profile_id TEXT, id TEXT, PRIMARY KEY(profile_id,id)); CREATE TABLE connection_mappings(connection_id TEXT PRIMARY KEY, mapping_json TEXT)");
       db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-transfers.sql", import.meta.url), "utf8"));
+      db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-sync-runs.sql", import.meta.url), "utf8"));
       db.exec("INSERT INTO connections VALUES('connection'); INSERT INTO applications VALUES('profile','job')");
       const listConnections = vi.fn(() => [
         { id: "connection", connectorId: "airtable", allowWrites: true },
@@ -110,6 +111,15 @@ describe("application transfer", () => {
         choice: "remote",
       })).rejects.toThrow("Invalid Airtable record");
       expect(save).not.toHaveBeenCalled();
+      const outcome = await sync.syncConnectionApplications("profile", "connection");
+      expect(outcome.failed).toBe(1);
+      expect(sync.listConnectionHistory("profile", "connection")).toEqual(
+        expect.arrayContaining([expect.objectContaining({ direction: "sync", status: "partial", failureCode: "resolution_failed", result: expect.objectContaining({ failed: 1 }) })]),
+      );
+      db.prepare("INSERT INTO connection_sync_runs(id,connection_id,status,started_at) VALUES(?,?,?,?)").run("interrupted", "connection", "running", "2026-11-24");
+      expect(sync.listConnectionHistory("profile", "connection")).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: "interrupted", status: "interrupted" })]),
+      );
     } finally {
       db.close();
     }
