@@ -1,7 +1,6 @@
 import { ADAPTERS } from "./boards/index.ts";
 export { ADAPTERS, applicationPreferenceSchemas } from "./boards/index.ts";
 import type { Page } from "playwright";
-import type { JobSiteAdapter } from "./types.ts";
 export type { JobSiteAdapter } from "./types.ts";
 
 export interface ApplicationQuestion {
