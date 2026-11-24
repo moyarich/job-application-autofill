@@ -100,6 +100,13 @@ export function classifyChange(
   return "diverged";
 }
 
+/** Only propagate changes from a previously matching baseline. */
+export function automaticChoice(state: ChangeState, allowWrites: boolean): "local" | "remote" | null {
+  if (state === "converged" || state === "remote_changed") return "remote";
+  if (state === "local_changed" && allowWrites) return "local";
+  return null;
+}
+
 export function createApplicationSync(
   db: DatabaseSync,
   connections: ReturnType<typeof createConnections>,
@@ -107,6 +114,7 @@ export function createApplicationSync(
   saveJob: (raw: unknown, profileId: string) => unknown,
 ) {
   const running = new Set<string>();
+  const syncing = new Set<string>();
   const hash = (values: unknown[]) =>
     createHash("sha256").update(JSON.stringify(values)).digest("hex");
   const localHash = (job: Job, mapping: Mapping) =>
@@ -173,7 +181,7 @@ export function createApplicationSync(
   }
   async function saveConnectionMapping(profileId: string, id: string, raw: unknown) {
     requireConnection(profileId, id);
-    if (running.has(id)) throw new Error("Transfer in progress.");
+    if (running.has(id) || syncing.has(id)) throw new Error("Transfer in progress.");
     const mapping = parseMapping(raw);
     const schema = await connections.callConnectionTool(profileId, id, "get_schema", { baseId: mapping.baseId }) as {
       tables: { id: string; fields: { id: string; type: string; options?: { choices?: { name: string }[] } }[] }[];
@@ -193,7 +201,7 @@ export function createApplicationSync(
         throw new Error("Choose an existing single-select option or text value for each status.");
     }
     requireConnection(profileId, id);
-    if (running.has(id)) throw new Error("Transfer in progress.");
+    if (running.has(id) || syncing.has(id)) throw new Error("Transfer in progress.");
     const previous = getConnectionMapping(profileId, id);
     if (previous && JSON.stringify(previous) !== JSON.stringify(mapping) &&
       db.prepare("SELECT 1 FROM connection_record_links WHERE connection_id=? LIMIT 1").get(id)) {
@@ -220,10 +228,10 @@ export function createApplicationSync(
     } while (offset);
     return result;
   }
-  async function reviewConnectionChanges(profileId: string, id: string) {
+  async function reviewConnectionChanges(profileId: string, id: string, internal = false) {
     const mapping = getConnectionMapping(profileId, id);
     if (!mapping) throw new Error("Save a field mapping first.");
-    if (running.has(id)) throw new Error("Transfer in progress.");
+    if (running.has(id) || (!internal && syncing.has(id))) throw new Error("Transfer in progress.");
     running.add(id);
     try {
       const remote = await records(profileId, id, mapping);
@@ -257,6 +265,7 @@ export function createApplicationSync(
           applicationId: job.id,
           remoteId: link.remoteId,
           state,
+          matchingBaseline: link.localHash === link.remoteHash,
           reviewToken: hash([id, mapping, job.id, link.remoteId, link.localHash, link.remoteHash, currentLocal, currentRemote]),
           local: { ...Object.fromEntries(keys.map((key) => [key, job[key]])),
             ...(mapping.status ? { status: job.status ?? "", statusLabel: encodeStatus(mapping.status, job.status) } : {}) },
@@ -270,7 +279,7 @@ export function createApplicationSync(
     }
   }
 
-  function resolveConnectionChange(profileId: string, id: string, raw: unknown) {
+  function resolveConnectionChange(profileId: string, id: string, raw: unknown, internal = false) {
     const input = raw as { applicationId?: unknown; reviewToken?: unknown; choice?: unknown } | null;
     if (!input || typeof input.applicationId !== "string" ||
       typeof input.reviewToken !== "string" || !/^[a-f0-9]{64}$/.test(input.reviewToken) ||
@@ -346,12 +355,12 @@ export function createApplicationSync(
       ).run(nextLocal, nextRemote, id, profileId, mapping.baseId, mapping.tableId, applicationId, link.remoteId, link.localHash, link.remoteHash);
       if (!result.changes) throw new Error("Record association changed. Review again.");
       return { resolved: true, choice, applicationId };
-    });
+    }, internal);
   }
 
-  async function transfer<T>(profileId: string, id: string, direction: "import" | "export", action: () => Promise<T>) {
+  async function transfer<T>(profileId: string, id: string, direction: "import" | "export", action: () => Promise<T>, internal = false) {
     requireConnection(profileId, id);
-    if (running.has(id)) throw new Error("Transfer in progress.");
+    if (running.has(id) || (!internal && syncing.has(id))) throw new Error("Transfer in progress.");
     running.add(id);
     const runId = randomUUID();
     try {
@@ -433,5 +442,37 @@ export function createApplicationSync(
       return { created: true };
     });
   }
-  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges, resolveConnectionChange };
+  async function syncConnectionApplications(profileId: string, id: string) {
+    const connection = requireConnection(profileId, id);
+    if (running.has(id) || syncing.has(id)) throw new Error("Transfer in progress.");
+    syncing.add(id);
+    try {
+      const report = await reviewConnectionChanges(profileId, id, true);
+      const result = { checked: report.changes.length, pulled: 0, pushed: 0, converged: 0, unchanged: 0, needsReview: 0, deferred: 0, failed: 0 };
+      let attempts = 0;
+      for (const change of report.changes) {
+        if (change.state === "unchanged") { result.unchanged++; continue; }
+        const choice = change.matchingBaseline || change.state === "converged"
+          ? automaticChoice(change.state, connection.allowWrites) : null;
+        if (!choice) { result.needsReview++; continue; }
+        if (attempts >= 20) { result.deferred++; continue; }
+        attempts++;
+        try {
+          await resolveConnectionChange(profileId, id, { applicationId: change.applicationId, reviewToken: change.reviewToken, choice }, true);
+          if (change.state === "converged") result.converged++;
+          else if (choice === "local") result.pushed++;
+          else result.pulled++;
+        } catch {
+          result.failed++;
+          // Stop after an uncertain write or stale snapshot; re-review before continuing.
+          result.deferred += report.changes.slice(report.changes.indexOf(change) + 1).length;
+          break;
+        }
+      }
+      return result;
+    } finally {
+      syncing.delete(id);
+    }
+  }
+  return { syncConnectionApplications, getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges, resolveConnectionChange };
 }

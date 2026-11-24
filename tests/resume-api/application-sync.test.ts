@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   createApplicationSync,
   classifyChange,
+  automaticChoice,
   normalizedUrl,
   parseMapping,
   parseStatusMapping,
@@ -18,6 +19,15 @@ const mapping = {
 };
 
 describe("application transfer", () => {
+  it("only chooses safe synchronization directions", () => {
+    expect(automaticChoice("local_changed", true)).toBe("local");
+    expect(automaticChoice("local_changed", false)).toBeNull();
+    expect(automaticChoice("remote_changed", false)).toBe("remote");
+    expect(automaticChoice("converged", false)).toBe("remote");
+    for (const state of ["conflict", "diverged", "remote_missing", "unchanged"] as const) {
+      expect(automaticChoice(state, true)).toBeNull();
+    }
+  });
   it("supports optional one-to-one status mappings and rejects ambiguous values", () => {
     const status = {
       fieldId: "fld5",
