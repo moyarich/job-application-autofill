@@ -1,3 +1,4 @@
+import { handleConnections } from "./connections.ts";
 import { handleApplicationPreferences } from "./application-preferences.ts";
 import { handleProfiles } from "./profiles.ts";
 import { handleEmployerAccounts } from "./employer-accounts.ts";
@@ -8,6 +9,7 @@ import { handleResumeProcessing } from "./resume-processing.ts";
 import { handleApplications } from "./applications.ts";
 import type { RouteHandler } from "../types/types.ts";
 export const routes: readonly RouteHandler[] = [
+  handleConnections,
   handleApplicationPreferences,
   handleProfiles,
   handleEmployerAccounts,

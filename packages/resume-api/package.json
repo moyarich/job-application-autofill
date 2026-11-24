@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@moyarich/connectors": "0.1.0",
     "@moyarich/job-boards": "0.1.0",
     "@moyarich/resume": "0.1.0",
     "ajv": "^8.20.0",
