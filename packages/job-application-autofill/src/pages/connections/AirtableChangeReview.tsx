@@ -4,6 +4,7 @@ import { connectionRequest } from "../../api/connections";
 type Change = {
   applicationId: string;
   remoteId: string;
+  reviewToken: string;
   state: "unchanged" | "local_changed" | "remote_changed" | "conflict" | "converged" | "diverged" | "remote_missing";
   local: Record<string, string>;
   remote: Record<string, unknown> | null;
@@ -34,18 +35,44 @@ export function AirtableChangeReview({
   profileId,
   connectionId,
   disabled,
+  allowWrites,
 }: {
   profileId: string;
   connectionId: string;
   disabled: boolean;
+  allowWrites: boolean;
 }) {
   const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState<{ item: Change; choice: "local" | "remote" } | null>(null);
+  const [notice, setNotice] = useState("");
+  async function resolve() {
+    if (!pending || busy || disabled) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await connectionRequest(profileId, "connections/" + encodeURIComponent(connectionId) + "/resolve", "POST", {
+        applicationId: pending.item.applicationId,
+        reviewToken: pending.item.reviewToken,
+        choice: pending.choice,
+      });
+      setNotice("Resolution applied. Check for changes again.");
+    } catch {
+      setError("Resolution could not be confirmed. Check for changes again before retrying.");
+    } finally {
+      setPending(null);
+      setReport(null);
+      setBusy(false);
+    }
+  }
   async function review() {
     setBusy(true);
     setError("");
     setReport(null);
+    setPending(null);
+    setNotice("");
     try {
       setReport(await connectionRequest<Report>(
         profileId,
@@ -66,6 +93,7 @@ export function AirtableChangeReview({
         {busy ? "Checking changes…" : "Check for changes"}
       </button>
       {error && <p role="alert">{error}</p>}
+      {notice && <p role="status">{notice}</p>}
       {report && (
         <>
           <p role="status">
@@ -93,6 +121,20 @@ export function AirtableChangeReview({
                   </table>
                 </div>
               ) : <p>The linked Airtable record was not found. Nothing was deleted.</p>}
+              {item.remote && (
+                <div className="actions">
+                  {allowWrites && <button type="button" disabled={busy || disabled} onClick={() => setPending({ item, choice: "local" })}>Keep local</button>}
+                  <button type="button" disabled={busy || disabled} onClick={() => setPending({ item, choice: "remote" })}>Keep Airtable</button>
+                  <button type="button" disabled={busy || disabled} onClick={() => { setPending(null); setReport((current) => current ? { ...current, changes: current.changes.filter((change) => change.applicationId !== item.applicationId) } : null); }}>Skip</button>
+                </div>
+              )}
+              {pending?.item.applicationId === item.applicationId && (
+                <div className="connections-confirm">
+                  <p>Replace the mapped fields in {pending.choice === "local" ? "Airtable" : "the local application"} with the reviewed version?</p>
+                  <button type="button" disabled={busy || disabled} onClick={() => void resolve()}>Confirm resolution</button>
+                  <button type="button" disabled={busy} onClick={() => setPending(null)}>Cancel</button>
+                </div>
+              )}
             </details>
           ))}
         </>

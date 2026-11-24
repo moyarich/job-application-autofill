@@ -73,6 +73,7 @@ describe("application transfer", () => {
       const report = await sync.reviewConnectionChanges("profile", "connection");
       expect(report.changes).toHaveLength(1);
       expect(report.changes[0].state).toBe("converged");
+      expect(report.changes[0].reviewToken).toMatch(/^[a-f0-9]{64}$/);
       expect(save).not.toHaveBeenCalled();
       expect(callConnectionTool.mock.calls).toHaveLength(3);
       expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);

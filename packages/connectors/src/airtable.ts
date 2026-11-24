@@ -41,6 +41,13 @@ const tools = [
     ["baseId", "tableId"],
   ),
   tool(
+    "get_record",
+    "Read one record",
+    "read",
+    { baseId, tableId, recordId },
+    ["baseId", "tableId", "recordId"],
+  ),
+  tool(
     "create_record",
     "Create a record",
     "write",
@@ -132,10 +139,18 @@ export function createAirtableConnector(
             }
             body = JSON.stringify({ fields: values });
           }
+          if (name === "get_record") {
+            path += "/" + identifier(data.recordId, "rec");
+          }
           const url = new URL("https://api.airtable.com/v0/" + path);
           if (name === "list_records") {
             url.searchParams.set("pageSize", "100");
+          }
+          if (name === "list_records" || name === "get_record") {
             url.searchParams.set("returnFieldsByFieldId", "true");
+          }
+          if (body) {
+            body = JSON.stringify({ ...JSON.parse(body), returnFieldsByFieldId: true });
           }
           if (data.offset !== undefined) {
             if (typeof data.offset !== "string" || !data.offset) {

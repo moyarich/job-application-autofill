@@ -40,6 +40,7 @@ describe("Airtable connector", () => {
       "read",
       "read",
       "read",
+      "read",
     ]);
     await expect(connection.callTool("create_record", {})).rejects.toThrow(
       "unavailable",
@@ -60,7 +61,7 @@ describe("Airtable connector", () => {
     );
     expect(request.mock.calls[0][1]).toMatchObject({
       method: "PATCH",
-      body: JSON.stringify({ fields: { fld123: "Applied" } }),
+      body: JSON.stringify({ fields: { fld123: "Applied" }, returnFieldsByFieldId: true }),
     });
   });
 
