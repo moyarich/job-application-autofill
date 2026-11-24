@@ -2,14 +2,15 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { createConnections } from "./connections.ts";
 import Ajv, { type AnySchema } from "ajv";
+import { remoteIdentifier, validRemotePointer, type createMcpLinks } from "./mcp-links.ts";
 
 const statuses = new Set(["saved", "in_progress", "ready_for_review", "submitted", "interview", "rejected"]);
 const required = ["company", "role", "url"] as const;
 const optional = ["notes", "status"] as const;
 type Field = (typeof required)[number] | (typeof optional)[number];
 type Mapping = Record<(typeof required)[number], string> & Partial<Record<(typeof optional)[number], string>>;
-type Workflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Mapping };
-type Candidate = { index: number; company: string; role: string; url: string; notes: string; status: string };
+type Workflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Mapping; remoteIdPath?: string };
+type Candidate = { index: number; remoteId?: string; company: string; role: string; url: string; notes: string; status: string };
 type Preview = { owner: string; connectionId: string; config: string; expires: number; records: Candidate[] };
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -30,15 +31,15 @@ export function pointer(value: unknown, path: string): unknown {
   return value;
 }
 export function parseImportWorkflow(raw: unknown): Workflow {
-  if (!object(raw) || Object.keys(raw).some((key) => !["tool", "args", "recordsPath", "fields"].includes(key)) ||
+  if (!object(raw) || Object.keys(raw).some((key) => !["tool", "args", "recordsPath", "fields", "remoteIdPath"].includes(key)) ||
     typeof raw.tool !== "string" || !/^[A-Za-z0-9_.-]{1,128}$/.test(raw.tool) ||
     !object(raw.args) || JSON.stringify(raw.args).length > 16000 ||
-    !pathValid(raw.recordsPath) || !object(raw.fields)) throw new Error("Invalid import workflow.");
+    !pathValid(raw.recordsPath) || (raw.remoteIdPath !== undefined && !validRemotePointer(raw.remoteIdPath)) || !object(raw.fields)) throw new Error("Invalid import workflow.");
   const fields = raw.fields;
   if (required.some((field) => !pathValid(fields[field]) || fields[field] === "") ||
     Object.entries(fields).some(([key, value]) => ![...required, ...optional].includes(key as Field) || !pathValid(value) || value === ""))
     throw new Error("Invalid response mapping.");
-  return { tool: raw.tool, args: raw.args, recordsPath: raw.recordsPath, fields: fields as Mapping };
+  return { tool: raw.tool, args: raw.args, recordsPath: raw.recordsPath, fields: fields as Mapping, ...(typeof raw.remoteIdPath === "string" ? { remoteIdPath: raw.remoteIdPath } : {}) };
 }
 export function normalizeImportUrl(value: unknown): string | undefined {
   if (typeof value !== "string" || value.length > 4000) return;
@@ -49,14 +50,18 @@ export function normalizeImportUrl(value: unknown): string | undefined {
     return url.href.length <= 4000 ? url.href : undefined;
   } catch { return; }
 }
-export function mapImportRecords(workflow: Workflow, result: unknown, existing: Iterable<string>) {
+export function mapImportRecords(workflow: Workflow, result: unknown, existing: Iterable<string>, linkedIds: Iterable<string> = []) {
   if (!object(result) || result.isError === true) throw new Error("Remote tool reported failure.");
   const source = pointer(result.structuredContent, workflow.recordsPath);
   if (!Array.isArray(source) || source.length > 500) throw new Error("Expected a structured record array of at most 500 entries.");
   const urls = new Set(existing);
+  const remoteIds = new Set(linkedIds);
   const records: Candidate[] = [];
   let invalid = 0, duplicates = 0;
   for (const [index, row] of source.entries()) {
+    const remoteId = workflow.remoteIdPath ? remoteIdentifier(pointer(row, workflow.remoteIdPath)) : undefined;
+    if (workflow.remoteIdPath && !remoteId) { invalid++; continue; }
+    if (remoteId && remoteIds.has(remoteId)) { duplicates++; continue; }
     const company = pointer(row, workflow.fields.company);
     const role = pointer(row, workflow.fields.role);
     const url = normalizeImportUrl(pointer(row, workflow.fields.url));
@@ -69,7 +74,8 @@ export function mapImportRecords(workflow: Workflow, result: unknown, existing: 
     }
     if (urls.has(url)) { duplicates++; continue; }
     urls.add(url);
-    records.push({ index, company: company.trim(), role: role.trim(), url, notes, status });
+    if (remoteId) remoteIds.add(remoteId);
+    records.push({ index, ...(remoteId ? { remoteId } : {}), company: company.trim(), role: role.trim(), url, notes, status });
   }
   return { records, invalid, duplicates };
 }
@@ -79,6 +85,7 @@ export function createMcpImports(
   connections: ReturnType<typeof createConnections>,
   getJobs: (profileId: string) => { jobs: { url: string }[] },
   saveJob: (raw: unknown, profileId: string) => unknown,
+  links: ReturnType<typeof createMcpLinks>,
 ) {
   const previews = new Map<string, Preview>();
   const pending = new Set<string>();
@@ -103,6 +110,7 @@ export function createMcpImports(
     await validateTool(profileId, id, workflow);
     requireConnection(profileId, id);
     if (pending.has(id)) throw new Error("Import preview in progress.");
+    links.assertMappingMutable(profileId, id, getMcpImport(profileId, id), workflow);
     db.prepare("INSERT INTO connection_import_workflows VALUES(?,?) ON CONFLICT(connection_id) DO UPDATE SET config_json=excluded.config_json").run(id, JSON.stringify(workflow));
     for (const [key, preview] of previews) if (preview.connectionId === id) previews.delete(key);
     return workflow;
@@ -121,7 +129,7 @@ export function createMcpImports(
       await validateTool(profileId, id, workflow);
       const result = await connections.callConnectionTool(profileId, id, workflow.tool, workflow.args);
       if (JSON.stringify(getMcpImport(profileId, id)) !== JSON.stringify(workflow)) throw new Error("Workflow changed.");
-      const mapped = mapImportRecords(workflow, result, existingUrls(profileId));
+      const mapped = mapImportRecords(workflow, result, existingUrls(profileId), links.listMcpLinks(profileId, id).map((row) => row.remoteId));
       if (JSON.stringify(mapped.records).length > 2 * 1024 * 1024) throw new Error("Import preview too large.");
       prune();
       for (const [key, preview] of previews) if (preview.connectionId === id) previews.delete(key);
@@ -149,9 +157,21 @@ export function createMcpImports(
     let imported = 0, skipped = 0;
     try {
       const urls = existingUrls(profileId);
-      for (const { company, role, url, notes, status } of selected) {
-        if (urls.has(url)) { skipped++; continue; }
-        saveJob({ revision: 0, job: { id: randomUUID(), company, role, url, notes, status, createdAt: new Date().toISOString() } }, profileId);
+      const remoteIds = new Set(links.listMcpLinks(profileId, id).map((row) => row.remoteId));
+      for (const { remoteId, company, role, url, notes, status } of selected) {
+        if (urls.has(url) || (remoteId && remoteIds.has(remoteId))) { skipped++; continue; }
+        const applicationId = randomUUID();
+        const job = { id: applicationId, company, role, url, notes, status, createdAt: new Date().toISOString() };
+        if (remoteId) {
+          db.exec("BEGIN IMMEDIATE");
+          try {
+            db.prepare("INSERT INTO applications(profile_id,id,company,role,url,status,created_at,notes,revision) VALUES(?,?,?,?,?,?,?,?,1)")
+              .run(profileId, applicationId, company, role, url, status, job.createdAt, notes);
+            links.insertLink(profileId, id, applicationId, remoteId, "import", job);
+            db.exec("COMMIT");
+          } catch (error) { db.exec("ROLLBACK"); throw error; }
+          remoteIds.add(remoteId);
+        } else saveJob({ revision: 0, job }, profileId);
         urls.add(url);
         imported++;
       }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { connectionRequest, type ConnectionTool } from "../../api/connections";
 
 const fieldNames = ["company", "role", "url", "notes", "status"] as const;
-type Workflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Record<string, string> };
+type Workflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Record<string, string>; remoteIdPath?: string };
 type Candidate = { index: number; company: string; role: string; url: string; notes: string; status: string };
 type Preview = { previewId: string; records: Candidate[]; invalid: number; duplicates: number };
 
@@ -15,6 +15,7 @@ export function McpApplicationImport({ profileId, connectionId }: { profileId: s
   const [args, setArgs] = useState("{}");
   const [recordsPath, setRecordsPath] = useState("/records");
   const [fields, setFields] = useState<Record<string, string>>({ company: "/company", role: "/role", url: "/url" });
+  const [remoteIdPath, setRemoteIdPath] = useState("");
   const [saved, setSaved] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
@@ -40,6 +41,7 @@ export function McpApplicationImport({ profileId, connectionId }: { profileId: s
         setArgs(JSON.stringify(existing?.args ?? {}, null, 2));
         setRecordsPath(existing?.recordsPath ?? "/records");
         setFields(existing?.fields ?? { company: "/company", role: "/role", url: "/url" });
+        setRemoteIdPath(existing?.remoteIdPath ?? "");
         setSaved(!!existing); setOpen(true);
       });
     }}>{open ? "Close import workflow" : "Configure import"}</button>
@@ -56,9 +58,11 @@ export function McpApplicationImport({ profileId, connectionId }: { profileId: s
       {fieldNames.map((field) => <label key={field}>{field} {["company", "role", "url"].includes(field) ? "(required)" : "(optional)"}
         <input value={fields[field] ?? ""} placeholder={"/" + field} onChange={(event) => { setFields((current) => ({ ...current, [field]: event.target.value })); invalidate(); }} />
       </label>)}
+      <label>Remote record ID pointer (optional)<input value={remoteIdPath} placeholder="/id" onChange={(event) => { setRemoteIdPath(event.target.value); invalidate(); }} /></label>
+      <p>Set a stable record ID to track linked records even when their URLs change.</p>
       <p>Unmapped status defaults to saved. Mapped statuses must use local status identifiers. Only HTTPS job URLs are imported.</p>
       <button type="button" disabled={!tool || !fields.company || !fields.role || !fields.url} onClick={() => void run(async () => {
-        await connectionRequest(profileId, path + "/import-workflow", "PUT", { tool, args: JSON.parse(args), recordsPath, fields: Object.fromEntries(Object.entries(fields).filter(([, value]) => !!value)) });
+        await connectionRequest(profileId, path + "/import-workflow", "PUT", { tool, args: JSON.parse(args), recordsPath, ...(remoteIdPath ? { remoteIdPath } : {}), fields: Object.fromEntries(Object.entries(fields).filter(([, value]) => !!value)) });
         setSaved(true); setNotice("Import workflow saved.");
       })}>Save import workflow</button>
       <button type="button" disabled={!saved} onClick={() => void run(async () => {

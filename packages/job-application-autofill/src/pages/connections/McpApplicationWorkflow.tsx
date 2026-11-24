@@ -5,7 +5,7 @@ import type { JobApplication } from "../../types/job-application";
 
 const sources = ["id", "company", "role", "url", "status", "createdAt", "notes"] as const;
 type Source = (typeof sources)[number];
-type Workflow = { tool: string; fields: Record<string, Source>; constants: Record<string, unknown> };
+type Workflow = { tool: string; fields: Record<string, Source>; constants: Record<string, unknown>; remoteIdPath?: string };
 type Preview = { tool: string; args: Record<string, unknown>; reviewToken: string };
 export function McpApplicationWorkflow({ profileId, connectionId }: { profileId: string; connectionId: string }) {
   const [open, setOpen] = useState(false);
@@ -15,6 +15,7 @@ export function McpApplicationWorkflow({ profileId, connectionId }: { profileId:
   const [tool, setTool] = useState("");
   const [fields, setFields] = useState<Record<string, Source>>({});
   const [constants, setConstants] = useState("{}");
+  const [remoteIdPath, setRemoteIdPath] = useState("");
   const [saved, setSaved] = useState(false);
   const [jobId, setJobId] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -42,6 +43,7 @@ export function McpApplicationWorkflow({ profileId, connectionId }: { profileId:
         setTools(available.filter((item) => item.access === "write"));
         setJobs(applications.jobs);
         setTool(existing?.tool ?? ""); setFields(existing?.fields ?? {});
+        setRemoteIdPath(existing?.remoteIdPath ?? "");
         setConstants(JSON.stringify(existing?.constants ?? {}, null, 2)); setSaved(!!existing); setOpen(true);
       });
     }}>{open ? "Close workflow" : "Configure workflow"}</button>
@@ -59,9 +61,11 @@ export function McpApplicationWorkflow({ profileId, connectionId }: { profileId:
         invalidate();
       }}><option value="">Not mapped / constant</option>{sources.map((source) => <option key={source} value={source}>{source}</option>)}</select></label>)}
       <label>Constant arguments (JSON object)<textarea value={constants} onChange={(event) => { setConstants(event.target.value); invalidate(); }} /></label>
+      <label>Returned record ID pointer (optional)<input value={remoteIdPath} placeholder="/id" onChange={(event) => { setRemoteIdPath(event.target.value); invalidate(); }} /></label>
+      <p>Tracked exports with uncertain outcomes block repeat exports of that application.</p>
       <p>Use constants for destination IDs and other fixed parameters, not secrets. Notes may contain private information.</p>
       <button type="button" disabled={!tool || !Object.keys(fields).length} onClick={() => void run(async () => {
-        await connectionRequest(profileId, path + "/workflow", "PUT", { tool, fields, constants: JSON.parse(constants) });
+        await connectionRequest(profileId, path + "/workflow", "PUT", { tool, fields, constants: JSON.parse(constants), ...(remoteIdPath ? { remoteIdPath } : {}) });
         setSaved(true); setNotice("Workflow saved.");
       })}>Save workflow</button>
       <label>Application<select value={jobId} onChange={(event) => { setJobId(event.target.value); setPreview(null); }}>

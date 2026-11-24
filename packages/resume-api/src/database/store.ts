@@ -1,3 +1,4 @@
+import { createMcpLinks } from "./repositories/mcp-links.ts";
 import { createMcpImports } from "./repositories/mcp-import.ts";
 import { createMcpWorkflows } from "./repositories/mcp-workflows.ts";
 import { createApplicationSync } from "./repositories/application-sync.ts";
@@ -1182,10 +1183,13 @@ export function openStore(
     return listApplicationAnswers(owner, id);
   }
   const connections = createConnections(db, requireProfile);
+  const links = createMcpLinks(db, connections);
   return {
     ...connections,
-    ...createMcpWorkflows(db, connections, getJobList),
-    ...createMcpImports(db, connections, getJobList, updateJobRecord),
+    listMcpLinks: links.listMcpLinks,
+    listMcpUncertainExports: links.listMcpUncertainExports,
+    ...createMcpWorkflows(db, connections, getJobList, links),
+    ...createMcpImports(db, connections, getJobList, updateJobRecord, links),
     ...createApplicationSync(db, connections, getJobList, updateJobRecord),
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
