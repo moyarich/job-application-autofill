@@ -49,6 +49,24 @@ export function AirtableChangeReview({
   const [error, setError] = useState("");
   const [pending, setPending] = useState<{ item: Change; choice: "local" | "remote" } | null>(null);
   const [notice, setNotice] = useState("");
+  const [confirmSync, setConfirmSync] = useState(false);
+  async function syncNow() {
+    if (busy || disabled) return;
+    setBusy(true);
+    setConfirmSync(false);
+    setReport(null);
+    setPending(null);
+    setError("");
+    setNotice("");
+    try {
+      const result = await connectionRequest<{ pulled: number; pushed: number; converged: number; needsReview: number; deferred: number; failed: number }>(profileId, "connections/" + encodeURIComponent(connectionId) + "/sync", "POST", {});
+      setNotice("Pulled " + result.pulled + "; pushed " + result.pushed + "; converged " + result.converged + "; needs review " + result.needsReview + "; deferred " + result.deferred + "; failed " + result.failed + ". Check for changes before retrying.");
+    } catch {
+      setError("Synchronization could not be confirmed. Check for changes before retrying.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function resolve() {
     if (!pending || busy || disabled) return;
     setBusy(true);
@@ -94,6 +112,12 @@ export function AirtableChangeReview({
       <button type="button" disabled={busy || disabled} onClick={() => void review()}>
         {busy ? "Checking changes…" : "Check for changes"}
       </button>
+      <button type="button" disabled={busy || disabled} onClick={() => setConfirmSync(true)}>Sync now</button>
+      {confirmSync && <div className="connections-confirm">
+        <p>Apply non-conflicting changes to linked applications? {allowWrites ? "Local changes may also be written to Airtable." : "Airtable will remain read only."} Conflicts and missing records will not be overwritten or deleted.</p>
+        <button type="button" disabled={busy || disabled} onClick={() => void syncNow()}>Confirm sync</button>
+        <button type="button" onClick={() => setConfirmSync(false)}>Cancel</button>
+      </div>}
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       {report && (
