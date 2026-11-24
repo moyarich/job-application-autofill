@@ -44,3 +44,7 @@ OAuth uses only Authorization Code + S256 PKCE, issuer verification, and a publi
 ## Generic MCP application workflows
 
 Writable MCP connections can save a manual export mapping from application fields to declared write-tool arguments, with optional fixed JSON parameters. Preview validates the arguments and produces a review token; execution rechecks the current application, tool schema and mapping before calling the tool. Only mapped fields are sent. Generic tools do not guarantee idempotency or record identity: no automatic imports, deduplication, bidirectional sync or scheduling is implied. Do not put secrets in constant arguments.
+
+### Generic imports
+
+Configure an approved read tool and fixed JSON arguments, a JSON Pointer to the array within `structuredContent`, and relative pointers to company, role, URL and optional notes/status. Preview skips malformed and duplicate HTTPS URLs. Select candidates and confirm within five minutes. The API holds the exact reviewed candidate values in memory, rechecks duplicates on confirmation, and records transfer counts. No existing application is overwritten. Only one structured response of up to 500 records is supported; pagination, text-only results, status translation, remote record associations and automatic sync are not supported. Do not store secrets in fixed arguments. Restarting the server invalidates previews; a failed multi-record import can leave earlier records saved.

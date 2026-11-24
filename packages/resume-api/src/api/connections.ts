@@ -29,6 +29,14 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const importWorkflow = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/import-workflow(?:\/(preview|execute))?$/i);
+  if (importWorkflow) {
+    const [, id, action] = importWorkflow;
+    if (!action && req.method === "GET") return reply(200, store.getMcpImport(profileId, id));
+    if (!action && req.method === "PUT") return reply(200, await store.saveMcpImport(profileId, id, await req.readJson()));
+    if (action === "preview" && req.method === "POST") return reply(200, await store.previewMcpImport(profileId, id));
+    if (action === "execute" && req.method === "POST") return reply(200, store.executeMcpImport(profileId, id, await req.readJson()));
+  }
   const workflow = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/workflow(?:\/(preview|execute))?$/i);
   if (workflow) {
     const [, id, action] = workflow;
