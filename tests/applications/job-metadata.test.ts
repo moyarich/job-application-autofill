@@ -68,3 +68,19 @@ it("reads Greenhouse employer and job details when Open Graph only supplies the 
     details: { location: "Remote", description: "Build web applications." },
   });
 });
+
+it("imports the employer and job details from a Rippling posting", () => {
+  const html = `<meta property="og:site_name" content="Rippling Recruiting">
+    <meta property="og:title" content="Senior Software Engineer | Careers at Aalyria">
+    <script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"apiData":{"jobPost":{"companyName":"Aalyria","employmentType":{"id":"Salaried, full-time"}},"workLocations":["Remote (United States)"]}}}}</script>
+    <main><h1>Senior Software Engineer</h1><div class="ATS_htmlPreview"><p>Build APIs.</p></div></main>`;
+  expect(parseJobMetadata(html)).toEqual({
+    company: "Aalyria",
+    role: "Senior Software Engineer",
+    details: {
+      location: "Remote (United States)",
+      employmentType: "Salaried, full-time",
+      description: "Build APIs.",
+    },
+  });
+});

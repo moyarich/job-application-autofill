@@ -54,3 +54,16 @@ export async function helpWorkdaySignUp(
   }
   return { state: "manual_required", emailFilled };
 }
+
+export async function openWorkdayRegistrationGateway(page: Page) {
+  const emailGateway = page
+    .getByRole("button", { name: "Sign in with email", exact: true })
+    .last();
+  if (!(await emailGateway.isVisible().catch(() => false))) return;
+  await emailGateway.click({ timeout: 5000 });
+  await page
+    .getByRole("link", { name: /^create (?:an? )?account$/i })
+    .first()
+    .waitFor({ state: "visible", timeout: 5000 })
+    .catch(() => {});
+}

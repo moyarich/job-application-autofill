@@ -56,6 +56,15 @@ export interface JobSiteAdapter {
   readonly menuItems?: readonly JobSiteMenuItem[];
   detectPage?(page: Page, text: string): Promise<PageKind | null>;
   openApplication?(page: Page): Promise<void>;
+  accountCredentials?(
+    url: string,
+    employerHost?: string,
+  ): {
+    email: string;
+    password: string;
+  } | null;
+  openRegistrationGateway?(page: Page): Promise<void>;
+  missingRequiredFields?(page: Page): Promise<string[]>;
   helpSignIn?(session: BrowserSignInSession): Promise<void>;
   loginFailureMessage?(text: string): string | null;
   discoverQuestions?(page: Page): Promise<ApplicationQuestion[]>;

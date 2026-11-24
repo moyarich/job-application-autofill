@@ -340,6 +340,22 @@ export function parseJobMetadata(html: string): JobMetadata {
           key,
       )
       ?.attr("content") ?? "";
+  const site = text(meta("og:site_name"));
+  let rippling:
+    | {
+        jobPost?: { companyName?: unknown; employmentType?: { id?: unknown } };
+        jobBoard?: { companyName?: unknown };
+        workLocations?: unknown[];
+      }
+    | undefined;
+  if (site === "Rippling Recruiting") {
+    try {
+      rippling = JSON.parse($("#__NEXT_DATA__").text())?.props?.pageProps
+        ?.apiData;
+    } catch {
+      // Fall back to the public posting markup.
+    }
+  }
   const documentTitle = text($("title").text());
   const greenhouseTitle = documentTitle.match(
     /^Job Application for (.+) at (.+)$/,
@@ -365,21 +381,29 @@ export function parseJobMetadata(html: string): JobMetadata {
       .trim();
   const generic =
     /^(workday|linkedin|indeed|greenhouse|lever|jobs?|careers?)$/i;
-  const site = text(meta("og:site_name"));
+  const ripplingCompany =
+    site === "Rippling Recruiting"
+      ? pageTitle.match(/\s\| Careers at (.+)$/i)?.[1]
+      : undefined;
   const titleCompany = (titleParts[1] ?? "")
     .replace(/\s+(?:Jobs?|Careers?)$/i, "")
     .trim();
   const company =
     text(organization?.name) ||
     greenhouseTitle?.[2] ||
+    text(rippling?.jobPost?.companyName) ||
+    text(rippling?.jobBoard?.companyName) ||
+    ripplingCompany ||
     text(
       $("[itemprop='hiringOrganization'],[data-automation-id='companyName']")
         .first()
         .text(),
     ) ||
-    (site && !generic.test(site)
+    (site && site !== "Rippling Recruiting" && !generic.test(site)
       ? site
-      : titleCompany && !generic.test(titleCompany)
+      : site !== "Rippling Recruiting" &&
+          titleCompany &&
+          !generic.test(titleCompany)
         ? titleCompany
         : "");
   const locationRecord = (
@@ -393,7 +417,13 @@ export function parseJobMetadata(html: string): JobMetadata {
         .map((value) => text(value))
         .filter(Boolean)
         .join(", ")
-    : text(
+    : (Array.isArray(rippling?.workLocations)
+        ? rippling.workLocations
+            .map((value) => text(value))
+            .filter(Boolean)
+            .join(", ")
+        : "") ||
+      text(
         $(
           "[data-automation-id='locations'],[itemprop='jobLocation'],.job__location",
         )
@@ -404,11 +434,12 @@ export function parseJobMetadata(html: string): JobMetadata {
   const requisitionId =
     text(identifier?.value) ||
     text($("[data-automation-id='jobReqId']").first().text());
-  const employmentType = text(
-    Array.isArray(posting?.employmentType)
-      ? posting.employmentType.join(", ")
-      : posting?.employmentType,
-  );
+  const employmentType =
+    text(
+      Array.isArray(posting?.employmentType)
+        ? posting.employmentType.join(", ")
+        : posting?.employmentType,
+    ) || text(rippling?.jobPost?.employmentType?.id);
   const descriptionHtml = $(
     "[data-automation-id='jobPostingDescription'],[itemprop='description'],.job__description",
   )
@@ -416,6 +447,9 @@ export function parseJobMetadata(html: string): JobMetadata {
     .html();
   const description = descriptionMarkdown(
     descriptionHtml ??
+      (site === "Rippling Recruiting"
+        ? $("main .ATS_htmlPreview").html()
+        : undefined) ??
       (typeof posting?.description === "string" ? posting.description : ""),
   );
   const salary = salaryText(posting, description);
