@@ -4,12 +4,40 @@ import type { createConnections } from "./connections.ts";
 
 const keys = ["company", "role", "url", "notes"] as const;
 type Field = (typeof keys)[number];
+const statuses = ["saved", "in_progress", "ready_for_review", "submitted", "interview", "rejected"] as const;
+type Status = (typeof statuses)[number];
+type StatusMapping = { fieldId: string; values: Record<Status, string> };
+
+export function parseStatusMapping(raw: unknown, used: string[]): StatusMapping {
+  const value = raw as Partial<StatusMapping> | null;
+  if (!value || typeof value.fieldId !== "string" ||
+    !/^fld[A-Za-z0-9]+$/.test(value.fieldId) || used.includes(value.fieldId) ||
+    !value.values || statuses.some((status) =>
+      typeof value.values?.[status] !== "string" ||
+      !value.values[status].trim() || value.values[status].length > 500) ||
+    new Set(statuses.map((status) => value.values?.[status])).size !== statuses.length)
+    throw new Error("Map each application status to a distinct Airtable value.");
+  return {
+    fieldId: value.fieldId,
+    values: Object.fromEntries(statuses.map((status) => [status, value.values![status]])) as StatusMapping["values"],
+  };
+}
+
+export function decodeStatus(mapping: StatusMapping, value: unknown): Status | undefined {
+  return statuses.find((status) => mapping.values[status] === value);
+}
+
+function encodeStatus(mapping: StatusMapping, status: unknown): string {
+  if (!statuses.includes(status as Status)) throw new Error("Unknown local application status.");
+  return mapping.values[status as Status];
+}
 type Mapping = {
   baseId: string;
   tableId: string;
   fields: Record<Field, string>;
+  status?: StatusMapping;
 };
-type Job = { id: string; company: string; role: string; url: string; notes: string };
+type Job = { id: string; company: string; role: string; url: string; notes: string; status?: string };
 type RemoteRecord = { id: string; fields: Record<string, unknown> };
 
 export function parseMapping(raw: unknown): Mapping {
@@ -29,6 +57,7 @@ export function parseMapping(raw: unknown): Mapping {
     baseId: value.baseId,
     tableId: value.tableId,
     fields: Object.fromEntries(keys.map((key) => [key, value.fields![key]])) as Mapping["fields"],
+    ...(value.status === undefined ? {} : { status: parseStatusMapping(value.status, Object.values(value.fields)) }),
   };
 }
 
@@ -80,12 +109,24 @@ export function createApplicationSync(
   const running = new Set<string>();
   const hash = (values: unknown[]) =>
     createHash("sha256").update(JSON.stringify(values)).digest("hex");
-  const localHash = (job: Job) =>
-    hash(keys.map((key) => key === "url" ? normalizedUrl(job.url) : job[key]));
+  const localHash = (job: Job, mapping: Mapping) =>
+    hash([
+      ...keys.map((key) => key === "url" ? normalizedUrl(job.url) : job[key]),
+      ...(mapping.status ? [encodeStatus(mapping.status, job.status)] : []),
+    ]);
   const remoteHash = (record: RemoteRecord, mapping: Mapping) =>
-    hash(keys.map((key) => key === "url"
-      ? normalizedUrl(record.fields[mapping.fields.url])
-      : record.fields[mapping.fields[key]] ?? ""));
+    hash([
+      ...keys.map((key) => key === "url"
+        ? normalizedUrl(record.fields[mapping.fields.url])
+        : record.fields[mapping.fields[key]] ?? ""),
+      ...(mapping.status ? [record.fields[mapping.status.fieldId] ?? null] : []),
+    ]);
+  function outgoingFields(job: Job, mapping: Mapping, url: string) {
+    return {
+      ...Object.fromEntries(keys.map((key) => [mapping.fields[key], key === "url" ? url : job[key]])),
+      ...(mapping.status ? { [mapping.status.fieldId]: encodeStatus(mapping.status, job.status) } : {}),
+    };
+  }
   function linkedRemote(id: string, mapping: Mapping, remoteId: string) {
     return db.prepare(
       "SELECT application_id FROM connection_record_links WHERE connection_id=? AND base_id=? AND table_id=? AND remote_id=?",
@@ -102,7 +143,7 @@ export function createApplicationSync(
     db.prepare(
       "INSERT INTO connection_record_links VALUES(?,?,?,?,?,?,?,?,?)",
     ).run(id, profileId, job.id, mapping.baseId, mapping.tableId, record.id,
-      localHash(job), remoteHash(record, mapping), new Date().toISOString());
+      localHash(job, mapping), remoteHash(record, mapping), new Date().toISOString());
   }
   function listConnectionHistory(profileId: string, id: string) {
     requireConnection(profileId, id);
@@ -135,7 +176,7 @@ export function createApplicationSync(
     if (running.has(id)) throw new Error("Transfer in progress.");
     const mapping = parseMapping(raw);
     const schema = await connections.callConnectionTool(profileId, id, "get_schema", { baseId: mapping.baseId }) as {
-      tables: { id: string; fields: { id: string; type: string }[] }[];
+      tables: { id: string; fields: { id: string; type: string; options?: { choices?: { name: string }[] } }[] }[];
     };
     const table = schema.tables.find((item) => item.id === mapping.tableId);
     const textTypes = ["singleLineText", "multilineText", "url"];
@@ -143,6 +184,14 @@ export function createApplicationSync(
       field.id === mapping.fields[key] &&
       (key === "url" ? textTypes.includes(field.type) : ["singleLineText", "multilineText"].includes(field.type)),
     ))) throw new Error("Mapped fields must be compatible text or URL fields.");
+    if (mapping.status) {
+      const status = mapping.status;
+      const field = table.fields.find((item) => item.id === status.fieldId);
+      if (!field || !["singleSelect", "singleLineText"].includes(field.type) ||
+        (field.type === "singleSelect" && Object.values(status.values).some((label) =>
+          !field.options?.choices?.some((choice) => choice.name === label))))
+        throw new Error("Choose an existing single-select option or text value for each status.");
+    }
     requireConnection(profileId, id);
     if (running.has(id)) throw new Error("Transfer in progress.");
     const previous = getConnectionMapping(profileId, id);
@@ -201,7 +250,7 @@ export function createApplicationSync(
         const job = jobs.get(link.applicationId);
         if (!job) return [];
         const record = remoteById.get(link.remoteId);
-        const currentLocal = localHash(job);
+        const currentLocal = localHash(job, mapping);
         const currentRemote = record ? remoteHash(record, mapping) : null;
         const state = classifyChange(link.localHash, link.remoteHash, currentLocal, currentRemote);
         return [{
@@ -209,8 +258,10 @@ export function createApplicationSync(
           remoteId: link.remoteId,
           state,
           reviewToken: hash([id, mapping, job.id, link.remoteId, link.localHash, link.remoteHash, currentLocal, currentRemote]),
-          local: Object.fromEntries(keys.map((key) => [key, job[key]])),
-          remote: record ? Object.fromEntries(keys.map((key) => [key, record.fields[mapping.fields[key]] ?? ""])) : null,
+          local: { ...Object.fromEntries(keys.map((key) => [key, job[key]])),
+            ...(mapping.status ? { status: job.status ?? "", statusLabel: encodeStatus(mapping.status, job.status) } : {}) },
+          remote: record ? { ...Object.fromEntries(keys.map((key) => [key, record.fields[mapping.fields[key]] ?? ""])),
+            ...(mapping.status ? { status: decodeStatus(mapping.status, record.fields[mapping.status.fieldId]) ?? "Unmapped", statusLabel: record.fields[mapping.status.fieldId] ?? "" } : {}) } : null,
         }];
       });
       return { checkedAt: new Date().toISOString(), changes };
@@ -248,7 +299,7 @@ export function createApplicationSync(
       const snapshot = getJobs(profileId);
       const job = snapshot.jobs.find((item) => item.id === applicationId);
       if (!job) throw new Error("Application not found.");
-      const currentLocal = localHash(job);
+      const currentLocal = localHash(job, mapping);
       const currentRemote = remoteHash(record, mapping);
       if (reviewToken !== hash([id, mapping, job.id, link.remoteId, link.localHash, link.remoteHash, currentLocal, currentRemote]))
         throw new Error("Records changed since review. Check changes again.");
@@ -264,7 +315,12 @@ export function createApplicationSync(
         typeof role !== "string" || !role.trim() || role.length > 500 ||
         typeof notes !== "string" || notes.length > 50000)
         throw new Error("Chosen version contains invalid application fields.");
-      const nextJob = { ...job, company, role, url, notes };
+      const status = mapping.status
+        ? choice === "local" ? job.status : decodeStatus(mapping.status, record.fields[mapping.status.fieldId])
+        : undefined;
+      if (mapping.status && !statuses.includes(status as Status))
+        throw new Error("Chosen Airtable status has no local mapping.");
+      const nextJob = { ...job, company, role, url, notes, ...(mapping.status ? { status } : {}) };
       let nextLocal = currentLocal;
       let nextRemote = currentRemote;
       if (choice === "remote" && currentLocal !== currentRemote) {
@@ -273,14 +329,14 @@ export function createApplicationSync(
         const revision = snapshot.revisions?.[job.id];
         if (!Number.isSafeInteger(revision)) throw new Error("Application revision unavailable.");
         saveJob({ revision, job: nextJob }, profileId);
-        nextLocal = localHash(nextJob);
+        nextLocal = localHash(nextJob, mapping);
       } else if (choice === "local" && currentLocal !== currentRemote) {
-        const fields = Object.fromEntries(keys.map((key) => [mapping.fields[key], nextJob[key]]));
+        const fields = outgoingFields(nextJob, mapping, url);
         const updated = await connections.callConnectionTool(profileId, id, "update_record", {
           baseId: mapping.baseId, tableId: mapping.tableId, recordId: link.remoteId, fields,
         }) as RemoteRecord;
         if (!updated || updated.id !== link.remoteId || !updated.fields ||
-          remoteHash(updated, mapping) !== localHash(nextJob))
+          remoteHash(updated, mapping) !== localHash(nextJob, mapping))
           throw new Error("Airtable update could not be verified. Review again.");
         nextRemote = remoteHash(updated, mapping);
       }
@@ -340,8 +396,13 @@ export function createApplicationSync(
           skipped++;
           continue;
         }
+        const status = mapping.status ? decodeStatus(mapping.status, fields[mapping.status.fieldId]) : "saved";
+        if (!status) {
+          skipped++;
+          continue;
+        }
         const job = { id: randomUUID(), company, role, url, notes,
-          status: "saved", createdAt: new Date().toISOString() };
+          status, createdAt: new Date().toISOString() };
         saveJob({ revision: 0, job }, profileId);
         link(profileId, id, mapping, job, record);
         existing.add(url);
@@ -363,7 +424,7 @@ export function createApplicationSync(
       const remote = await records(profileId, id, mapping);
       if (remote.some((record) => normalizedUrl(record.fields[mapping.fields.url]) === url))
         return { created: false, reason: "already exists" };
-      const fields = Object.fromEntries(keys.map((key) => [mapping.fields[key], key === "url" ? url : job[key]]));
+      const fields = outgoingFields(job, mapping, url);
       const record = await connections.callConnectionTool(profileId, id, "create_record", {
         baseId: mapping.baseId, tableId: mapping.tableId, fields,
       }) as RemoteRecord;

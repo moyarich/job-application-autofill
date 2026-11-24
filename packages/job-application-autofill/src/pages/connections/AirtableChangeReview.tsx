@@ -24,6 +24,8 @@ const fields = [
   ["role", "Job title"],
   ["url", "Job URL"],
   ["notes", "Notes"],
+  ["status", "Application status"],
+  ["statusLabel", "Airtable status value"],
 ] as const;
 
 function display(value: unknown): string {
@@ -110,7 +112,7 @@ export function AirtableChangeReview({
                       <tr><th>Field</th><th>Local</th><th>Airtable</th></tr>
                     </thead>
                     <tbody>
-                      {fields.map(([key, label]) => (
+                      {fields.filter(([key]) => Object.hasOwn(item.local, key)).map(([key, label]) => (
                         <tr key={key}>
                           <th scope="row">{label}</th>
                           <td>{display(item.local[key])}</td>

@@ -6,6 +6,8 @@ import {
   classifyChange,
   normalizedUrl,
   parseMapping,
+  parseStatusMapping,
+  decodeStatus,
 } from "../../packages/resume-api/src/database/repositories/application-sync.ts";
 import type { createConnections } from "../../packages/resume-api/src/database/repositories/connections.ts";
 
@@ -16,6 +18,17 @@ const mapping = {
 };
 
 describe("application transfer", () => {
+  it("supports optional one-to-one status mappings and rejects ambiguous values", () => {
+    const status = {
+      fieldId: "fld5",
+      values: { saved: "New", in_progress: "Working", ready_for_review: "Review", submitted: "Applied", interview: "Interviewing", rejected: "Declined" },
+    };
+    expect(parseMapping({ ...mapping, status })).toEqual({ ...mapping, status });
+    expect(decodeStatus(parseStatusMapping(status, []), "Applied")).toBe("submitted");
+    expect(decodeStatus(parseStatusMapping(status, []), "Unknown")).toBeUndefined();
+    expect(() => parseStatusMapping({ ...status, values: { ...status.values, rejected: "New" } }, [])).toThrow();
+    expect(() => parseStatusMapping(status, ["fld5"])).toThrow();
+  });
   it("distinguishes independent edits, conflicts, convergence and missing records", () => {
     expect(classifyChange("a", "a", "a", "a")).toBe("unchanged");
     expect(classifyChange("a", "a", "b", "a")).toBe("local_changed");
