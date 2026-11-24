@@ -494,5 +494,62 @@ export function createApplicationSync(
       syncing.delete(id);
     }
   }
-  return { syncConnectionApplications, getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges, resolveConnectionChange };
+  function getConnectionSchedule(profileId: string, id: string) {
+    requireConnection(profileId, id);
+    const row = db.prepare(
+      "SELECT interval_minutes AS intervalMinutes,next_run_at AS nextRunAt FROM connection_schedules WHERE connection_id=?",
+    ).get(id) as { intervalMinutes: number; nextRunAt: string } | undefined;
+    return row ?? null;
+  }
+
+  function saveConnectionSchedule(profileId: string, id: string, raw: unknown) {
+    requireConnection(profileId, id);
+    const interval = (raw as { intervalMinutes?: unknown } | null)?.intervalMinutes;
+    if (interval === null) {
+      db.prepare("DELETE FROM connection_schedules WHERE connection_id=?").run(id);
+      return null;
+    }
+    if (typeof interval !== "number" || ![15, 30, 60, 180, 360, 720, 1440].includes(interval))
+      throw new Error("Choose a supported synchronization interval.");
+    if (!getConnectionMapping(profileId, id)) throw new Error("Save a mapping first.");
+    const nextRunAt = new Date(Date.now() + interval * 60000).toISOString();
+    db.prepare(
+      "INSERT INTO connection_schedules VALUES(?,?,?) ON CONFLICT(connection_id) DO UPDATE SET interval_minutes=excluded.interval_minutes,next_run_at=excluded.next_run_at",
+    ).run(id, interval, nextRunAt);
+    return { intervalMinutes: interval, nextRunAt };
+  }
+
+  let scheduledTickActive = false;
+  async function runDueConnectionSchedules() {
+    if (scheduledTickActive) return;
+    scheduledTickActive = true;
+    try {
+      const due = db.prepare(
+        "SELECT s.connection_id AS id,c.profile_id AS profileId,s.interval_minutes AS intervalMinutes,s.next_run_at AS nextRunAt FROM connection_schedules s JOIN connections c ON c.id=s.connection_id WHERE s.next_run_at<=? ORDER BY s.next_run_at,s.connection_id LIMIT 10",
+      ).all(new Date().toISOString()) as { id: string; profileId: string; intervalMinutes: number; nextRunAt: string }[];
+      for (const item of due) {
+        if (running.has(item.id) || syncing.has(item.id)) continue;
+        // Claim before awaiting network operations; missed intervals are not replayed.
+        const next = new Date(Date.now() + item.intervalMinutes * 60000).toISOString();
+        const claimed = db.prepare(
+          "UPDATE connection_schedules SET next_run_at=? WHERE connection_id=? AND next_run_at=? AND interval_minutes=?",
+        ).run(next, item.id, item.nextRunAt, item.intervalMinutes);
+        if (!claimed.changes) continue;
+        try {
+          const result = await syncConnectionApplications(item.profileId, item.id);
+          // Pause after an uncertain update rather than repeatedly attempting writes.
+          if (result.failed) db.prepare(
+            "DELETE FROM connection_schedules WHERE connection_id=? AND next_run_at=?",
+          ).run(item.id, next);
+        } catch {
+          db.prepare(
+            "DELETE FROM connection_schedules WHERE connection_id=? AND next_run_at=?",
+          ).run(item.id, next);
+        }
+      }
+    } finally {
+      scheduledTickActive = false;
+    }
+  }
+  return { getConnectionSchedule, saveConnectionSchedule, runDueConnectionSchedules, syncConnectionApplications, getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges, resolveConnectionChange };
 }

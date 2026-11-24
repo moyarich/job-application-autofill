@@ -19,10 +19,14 @@ export const handleConnections: RouteHandler = async ({
     }
   }
   const sync = url.pathname.match(
-    /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export|history|links|changes|resolve|sync)$/i,
+    /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export|history|links|changes|resolve|sync|schedule)$/i,
   );
   if (sync) {
     const [, id, action] = sync;
+    if (action === "schedule" && req.method === "GET")
+      return reply(200, store.getConnectionSchedule(profileId, id));
+    if (action === "schedule" && req.method === "PUT")
+      return reply(200, store.saveConnectionSchedule(profileId, id, await req.readJson()));
     if (action === "sync" && req.method === "POST")
       return reply(200, await store.syncConnectionApplications(profileId, id));
     if (action === "resolve" && req.method === "POST")

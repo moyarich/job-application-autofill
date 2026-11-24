@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConnectionSchedule } from "./ConnectionSchedule";
 import { ConnectionHistory } from "./ConnectionHistory";
 import { AirtableChangeReview } from "./AirtableChangeReview";
 import { connectionRequest, type Connection } from "../../api/connections";
@@ -126,6 +127,7 @@ export function AirtableMapping({
         {open ? "Close application mapping" : "Configure application mapping"}
       </button>
       <ConnectionHistory profileId={profileId} connectionId={connection.id} />
+      <ConnectionSchedule profileId={profileId} connectionId={connection.id} allowWrites={connection.allowWrites} />
       {open && (
         <>
           {error && <p role="alert">{error}</p>}
