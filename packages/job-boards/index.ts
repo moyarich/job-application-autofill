@@ -1,5 +1,6 @@
+import { ADAPTERS } from "./boards/index.ts";
+export { ADAPTERS, applicationPreferenceSchemas } from "./boards/index.ts";
 import type { Page } from "playwright";
-import type { JobSiteAdapter } from "./types.ts";
 export type { JobSiteAdapter } from "./types.ts";
 
 export interface ApplicationQuestion {
@@ -9,21 +10,6 @@ export interface ApplicationQuestion {
   options: string[];
 }
 
-import greenhouse from "./boards/greenhouse/index.ts";
-import lever from "./boards/lever/index.ts";
-import workday from "./workday/index.ts";
-import ashby from "./boards/ashby/index.ts";
-import smartRecruiters from "./boards/smart-recruiters/index.ts";
-
-export const ADAPTERS: Readonly<Record<string, JobSiteAdapter>> = Object.freeze(
-  {
-    greenhouse,
-    lever,
-    workday,
-    ashby,
-    "smart-recruiters": smartRecruiters,
-  },
-);
 const UNSAFE_QUESTIONS =
   /(?:password|passcode|verification code|otp|one.time code|social security|ssn|date of birth|birth date|credit card|bank account|passport|driver.?s license|tax id|national id)/i;
 const HONEYPOT_QUESTIONS =

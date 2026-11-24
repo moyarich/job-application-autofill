@@ -1,11 +1,9 @@
-import { missingWorkdayRequiredFields } from "./workday/required-fields.ts";
 import { captureEmployerAnswers } from "./answer-capture.ts";
 import { resumeToPlainText } from "./resume-text.ts";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { Resume } from "@moyarich/resume";
 import type { ApplicationQuestion } from "./index.ts";
-import { workdayCredentials } from "./workday/workday-login.ts";
 import { prepareRegistration } from "./handlers/registration.ts";
 import { prepareSignIn } from "./handlers/sign-in.ts";
 import {
@@ -99,9 +97,7 @@ export function validateUrl(input: string) {
     url.username ||
     url.password
   )
-    throw new Error(
-      "Apply supports HTTPS Greenhouse, Lever, Ashby, Workday, and SmartRecruiters pages only.",
-    );
+    throw new Error("Enter an HTTPS job URL from a supported job board.");
   return url.toString();
 }
 
@@ -361,8 +357,8 @@ async function continueApplicationInternal(id: string, profile?: Resume) {
     return status(session);
   }
   await populateSession(session);
-  if (session.ats === "workday") {
-    const required = await missingWorkdayRequiredFields(session.page);
+  if (adapter?.missingRequiredFields) {
+    const required = await adapter.missingRequiredFields(session.page);
     session.missing = [
       ...new Set([
         ...session.missing,
@@ -374,8 +370,8 @@ async function continueApplicationInternal(id: string, profile?: Resume) {
   session.message = session.pauseRequested
     ? "Automation paused. Resume autofill when ready."
     : session.missing.some((name) => name.startsWith("required:"))
-      ? "Workday requires additional information. Complete the listed fields in the employer viewer."
-      : "Current page autofill finished. Review the fields, then use the employer’s Save and Continue button to advance.";
+      ? `${adapter?.label ?? "The employer"} requires additional information. Complete the listed fields in the employer viewer.`
+      : "Current page autofill finished. Review the fields, then continue in the employer viewer when ready.";
   await refreshScreenshot(id);
   return status(session);
 }
@@ -562,7 +558,7 @@ export async function prepareApplication({
         {
           openRegistration:
             accountAction === "signup" ||
-            (Boolean(workdayCredentials(page.url())) &&
+            (Boolean(adapter?.accountCredentials?.(page.url())) &&
               formState(
                 await page
                   .locator("body")

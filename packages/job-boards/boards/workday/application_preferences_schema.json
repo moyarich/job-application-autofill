@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "country": {
+      "title": "Employment country",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "workAuthorization": {
+      "title": "Work authorization",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Authorized", "Not authorized", "Unsure"]
+    },
+    "sponsorship": {
+      "title": "Sponsorship requirements",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Required now", "Required in future", "Not required", "Unsure"]
+    },
+    "salaryMinimum": {
+      "title": "Minimum salary",
+      "type": "number",
+      "minimum": 0
+    },
+    "salaryMaximum": {
+      "title": "Maximum salary",
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "title": "Salary currency",
+      "type": "string",
+      "maxLength": 1000,
+      "pattern": "^[A-Z]{3}$"
+    },
+    "salaryPeriod": {
+      "title": "Salary period",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Per year", "Per month", "Per week", "Per day", "Per hour"]
+    },
+    "salary": {
+      "title": "Salary notes",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "availabilityType": {
+      "title": "Availability",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Immediately", "Notice period", "Specific date", "Negotiable"]
+    },
+    "startDate": {
+      "title": "Earliest start date",
+      "type": "string",
+      "maxLength": 1000,
+      "format": "date"
+    },
+    "noticePeriod": {
+      "title": "Notice period",
+      "type": "integer",
+      "minimum": 0
+    },
+    "noticeUnit": {
+      "title": "Notice period unit",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Days", "Weeks", "Months"]
+    },
+    "availability": {
+      "title": "Availability notes",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "relocation": {
+      "title": "Relocation preferences",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["Yes", "No", "Depends on location"]
+    },
+    "workArrangement": {
+      "title": "Work arrangement",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["Remote", "Hybrid", "Onsite"]
+      }
+    },
+    "travel": {
+      "title": "Travel preferences",
+      "type": "string",
+      "maxLength": 1000,
+      "enum": ["None", "Up to 25%", "Up to 50%", "Up to 75%", "Unrestricted"]
+    },
+    "employmentType": {
+      "title": "Employment type",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "Full-time",
+          "Part-time",
+          "Contract",
+          "Temporary",
+          "Internship"
+        ]
+      }
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { ApplicationPreferences } from "../ApplicationPreferences/ApplicationPreferences";
 import { useEffect, useRef } from "react";
 import {
   ArrowLeft,
@@ -167,6 +168,14 @@ export function ApplicationReview({
           job={job}
           resume={selectedResume}
           backHref={applicationsHref}
+        />
+      )}
+
+      {applicationId && job && (
+        <ApplicationPreferences
+          key={activeProfileId + applicationId}
+          profileId={activeProfileId}
+          applicationId={applicationId}
         />
       )}
 

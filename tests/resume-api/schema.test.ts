@@ -26,7 +26,7 @@ describe("SQLite schema", () => {
       const db = new DatabaseSync(path);
       try {
         expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-          user_version: 4,
+          user_version: 6,
         });
         expect(
           db
@@ -40,6 +40,8 @@ describe("SQLite schema", () => {
           ["resumes", "content_revision"],
           ["profile_contact", "extra_json"],
           ["application_answers", "answer"],
+          ["application_preferences", "revision"],
+          ["application_preference_selections", "preference_id"],
         ]) {
           expect(
             (
@@ -71,7 +73,7 @@ describe("SQLite schema", () => {
         db.prepare("SELECT name FROM profiles WHERE id=?").get("test-profile"),
       ).toMatchObject({ name: "Test" });
       expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-        user_version: 4,
+        user_version: 6,
       });
     } finally {
       db.close();
@@ -116,14 +118,14 @@ it("upgrades account and job details without dropping existing application recor
       details_json: null,
     });
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 4,
+      user_version: 6,
     });
   } finally {
     db.close();
   }
 });
 
-it("upgrades schema version 3 to 4 without discarding applications", () => {
+it("upgrades schema version 3 to the current version without discarding applications", () => {
   const db = new DatabaseSync(":memory:");
   try {
     initializeDatabase(db);
@@ -146,7 +148,7 @@ it("upgrades schema version 3 to 4 without discarding applications", () => {
     );
     initializeDatabase(db);
     expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
-      user_version: 4,
+      user_version: 6,
     });
     expect(
       db
@@ -169,6 +171,51 @@ it("upgrades schema version 3 to 4 without discarding applications", () => {
         )
         .get("existing-job"),
     ).toMatchObject({ answer: "My response" });
+  } finally {
+    db.close();
+  }
+});
+
+it("upgrades version 4 while preserving existing application answers", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    initializeDatabase(db);
+    db.exec(
+      "DROP TABLE application_preference_selections; DROP TABLE application_preferences; PRAGMA user_version = 4",
+    );
+    db.prepare("INSERT INTO profiles VALUES(?,?,?)").run(
+      "owner",
+      "Owner",
+      "2026-11-18",
+    );
+    db.prepare(
+      "INSERT INTO applications(profile_id,id,company,role,url,status,created_at) VALUES(?,?,?,?,?,?,?)",
+    ).run(
+      "owner",
+      "job",
+      "Render",
+      "Engineer",
+      "https://example.com",
+      "saved",
+      "2026-11-18",
+    );
+    db.prepare("INSERT INTO application_answers VALUES(?,?,?,?,?)").run(
+      "owner",
+      "job",
+      "Availability",
+      "Two weeks",
+      "2026-11-18",
+    );
+    initializeDatabase(db);
+    expect(
+      db.prepare("SELECT answer FROM application_answers").get(),
+    ).toMatchObject({ answer: "Two weeks" });
+    expect(
+      db.prepare("SELECT count(*) AS count FROM application_preferences").get(),
+    ).toMatchObject({ count: 0 });
+    expect(db.prepare("PRAGMA user_version").get()).toMatchObject({
+      user_version: 6,
+    });
   } finally {
     db.close();
   }

@@ -1,4 +1,4 @@
-import type { JobSiteAdapter } from "../types.ts";
+import type { JobSiteAdapter } from "../../types.ts";
 import { workdayEmployerTenant } from "./identity.ts";
 import { detectWorkdayPage } from "./detection.ts";
 import { workdaySteps, workdayScreening } from "./steps.ts";
@@ -7,9 +7,11 @@ import {
   helpWorkdaySignIn,
   openWorkdayApplication,
   workdayLoginFailureMessage,
+  workdayCredentials,
 } from "./workday-login.ts";
 
-// Workday adapter.
+import { missingWorkdayRequiredFields } from "./required-fields.ts";
+import { openWorkdayRegistrationGateway } from "./workday-sign-up.ts";
 export default {
   id: "workday",
   label: "Workday",
@@ -45,6 +47,10 @@ export default {
   discoverQuestions: workdayScreening.discover,
   answerQuestions: fillWorkdayScreeningAnswers,
   openApplication: openWorkdayApplication,
+  accountCredentials: (url, employerHost) =>
+    workdayCredentials(url, process.env, { employerHost }),
+  openRegistrationGateway: openWorkdayRegistrationGateway,
+  missingRequiredFields: missingWorkdayRequiredFields,
   helpSignIn: helpWorkdaySignIn,
   loginFailureMessage: workdayLoginFailureMessage,
 } satisfies JobSiteAdapter;

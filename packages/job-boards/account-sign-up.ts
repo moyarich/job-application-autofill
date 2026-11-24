@@ -1,6 +1,6 @@
 import type { Page, Locator } from "playwright";
 import type { Resume } from "@moyarich/resume";
-import { workdayCredentials } from "./workday/workday-login.ts";
+import { adapterForUrl } from "./index.ts";
 import { employerAccountIdentity } from "./employer-account.ts";
 
 export type AccountSetupResult = {
@@ -52,12 +52,8 @@ export async function prepareEmployerSignUp(
     }
   };
   if (!safe()) return unavailable;
-  const configured =
-    identity.provider === "workday"
-      ? workdayCredentials(page.url(), process.env, {
-          employerHost: identity.host,
-        })
-      : null;
+  const adapter = adapterForUrl(jobUrl);
+  const configured = adapter?.accountCredentials?.(page.url(), identity.host);
   const signupPassword = password ?? configured?.password;
   const credentialSource = password
     ? ("provided" as const)
@@ -82,21 +78,11 @@ export async function prepareEmployerSignUp(
   };
   if (
     openRegistration &&
-    identity.provider === "workday" &&
+    adapter?.openRegistrationGateway &&
     !(await signupPage())
   ) {
-    const emailGateway = page
-      .getByRole("button", { name: "Sign in with email", exact: true })
-      .last();
-    if (await visible(emailGateway)) {
-      await emailGateway.click({ timeout: 5000 });
-      await page
-        .getByRole("link", { name: /^create (?:an? )?account$/i })
-        .first()
-        .waitFor({ state: "visible", timeout: 5000 })
-        .catch(() => {});
-      if (!safe()) return unavailable;
-    }
+    await adapter.openRegistrationGateway(page);
+    if (!safe()) return unavailable;
   }
   if (openRegistration && !(await signupPage())) {
     const choices = [

@@ -1,3 +1,4 @@
+import { PageApplicationPreferences } from "./pages/preferences/PageApplicationPreferences";
 import "./App.css";
 import { PendingSaves } from "./hooks/PendingSaves";
 import { useLocation, useParams } from "react-router";
@@ -25,6 +26,8 @@ export function App() {
         <main className="main">
           {applicationId ? (
             <PageApplicationReview />
+          ) : tab === "preferences" ? (
+            <PageApplicationPreferences />
           ) : tab === "applications" ? (
             <PageApplications />
           ) : tab === "parser" ? (

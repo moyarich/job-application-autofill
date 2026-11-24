@@ -1,6 +1,6 @@
 import type { Page, Locator } from "playwright";
 import type { Resume } from "@moyarich/resume";
-import type { AutofillResult } from "../../types.ts";
+import type { AutofillResult } from "../../../types.ts";
 import type { FieldLocatorConfig } from "./selectors.ts";
 import { workdayContactFields } from "./selectors.ts";
 

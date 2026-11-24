@@ -5,7 +5,7 @@ services:
     entrypoint: ["bash", "/app/docker/start-review.sh"]
     # Source and generated output are separate mounts. Rebuild workspace packages
     # inside this container on every startup so its exports cannot become stale.
-    # Offline install refreshes workspace links in cached dependency volumes after renames.
+    # Reuse cached packages and fetch missing dependencies when the lockfile changes.
     volumes:
       - .:/app
       - /app/node_modules
@@ -18,7 +18,7 @@ services:
     command:
       - bash
       - -lc
-      - npm install --offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/resume-api
+      - npm install --prefer-offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/resume-api
 
   web:
     volumes:
@@ -33,7 +33,7 @@ services:
     command:
       - sh
       - -c
-      - npm install --offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/job-application-autofill
+      - npm install --prefer-offline --ignore-scripts --no-audit --no-fund && npm run build:js && exec npm run dev --workspace packages/job-application-autofill
     environment:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
