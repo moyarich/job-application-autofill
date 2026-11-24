@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AirtableChangeReview } from "./AirtableChangeReview";
 import { connectionRequest, type Connection } from "../../api/connections";
 import { readJobs } from "../../api/client";
 import type { JobApplication } from "../../types/job-application";
@@ -189,6 +190,7 @@ export function AirtableMapping({
               Save mapping
             </button>
           </fieldset>
+          {saved && <AirtableChangeReview profileId={profileId} connectionId={connection.id} disabled={busy} />}
           <p>Transfers create new records only. Matching job URLs are skipped; existing records are not overwritten. Imported applications start as Saved.</p>
           <button
             type="button"

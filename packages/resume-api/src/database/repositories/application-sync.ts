@@ -44,6 +44,33 @@ export function normalizedUrl(value: unknown): string | null {
   }
 }
 
+export type ChangeState =
+  | "unchanged"
+  | "local_changed"
+  | "remote_changed"
+  | "conflict"
+  | "converged"
+  | "diverged"
+  | "remote_missing";
+
+/** Compare each side to its own baseline; never infer a winner from timestamps. */
+export function classifyChange(
+  baselineLocal: string,
+  baselineRemote: string,
+  currentLocal: string,
+  currentRemote: string | null,
+): ChangeState {
+  if (currentRemote === null) return "remote_missing";
+  const localChanged = baselineLocal !== currentLocal;
+  const remoteChanged = baselineRemote !== currentRemote;
+  if (currentLocal === currentRemote)
+    return localChanged || remoteChanged ? "converged" : "unchanged";
+  if (localChanged && remoteChanged) return "conflict";
+  if (localChanged) return "local_changed";
+  if (remoteChanged) return "remote_changed";
+  return "diverged";
+}
+
 export function createApplicationSync(
   db: DatabaseSync,
   connections: ReturnType<typeof createConnections>,
@@ -144,6 +171,53 @@ export function createApplicationSync(
     } while (offset);
     return result;
   }
+  async function reviewConnectionChanges(profileId: string, id: string) {
+    const mapping = getConnectionMapping(profileId, id);
+    if (!mapping) throw new Error("Save a field mapping first.");
+    if (running.has(id)) throw new Error("Transfer in progress.");
+    running.add(id);
+    try {
+      const remote = await records(profileId, id, mapping);
+      requireConnection(profileId, id);
+      const jobs = new Map(getJobs(profileId).jobs.map((job) => [job.id, job]));
+      const remoteById = new Map<string, RemoteRecord>();
+      for (const record of remote) {
+        if (!record || !/^rec[A-Za-z0-9]+$/.test(record.id) ||
+          !record.fields || typeof record.fields !== "object" ||
+          Array.isArray(record.fields) || remoteById.has(record.id)) {
+          throw new Error("Invalid or duplicate Airtable record.");
+        }
+        remoteById.set(record.id, record);
+      }
+      const links = db.prepare(
+        "SELECT application_id AS applicationId,remote_id AS remoteId,local_hash AS localHash,remote_hash AS remoteHash FROM connection_record_links WHERE connection_id=? AND profile_id=? AND base_id=? AND table_id=? ORDER BY application_id",
+      ).all(id, profileId, mapping.baseId, mapping.tableId) as {
+        applicationId: string;
+        remoteId: string;
+        localHash: string;
+        remoteHash: string;
+      }[];
+      const changes = links.flatMap((link) => {
+        const job = jobs.get(link.applicationId);
+        if (!job) return [];
+        const record = remoteById.get(link.remoteId);
+        const currentLocal = localHash(job);
+        const currentRemote = record ? remoteHash(record, mapping) : null;
+        const state = classifyChange(link.localHash, link.remoteHash, currentLocal, currentRemote);
+        return [{
+          applicationId: job.id,
+          remoteId: link.remoteId,
+          state,
+          local: Object.fromEntries(keys.map((key) => [key, job[key]])),
+          remote: record ? Object.fromEntries(keys.map((key) => [key, record.fields[mapping.fields[key]] ?? ""])) : null,
+        }];
+      });
+      return { checkedAt: new Date().toISOString(), changes };
+    } finally {
+      running.delete(id);
+    }
+  }
+
   async function transfer<T>(profileId: string, id: string, direction: "import" | "export", action: () => Promise<T>) {
     requireConnection(profileId, id);
     if (running.has(id)) throw new Error("Transfer in progress.");
@@ -223,5 +297,5 @@ export function createApplicationSync(
       return { created: true };
     });
   }
-  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks };
+  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges };
 }
