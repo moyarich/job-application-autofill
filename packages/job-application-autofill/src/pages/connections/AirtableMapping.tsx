@@ -190,7 +190,7 @@ export function AirtableMapping({
               Save mapping
             </button>
           </fieldset>
-          {saved && <AirtableChangeReview profileId={profileId} connectionId={connection.id} disabled={busy} />}
+          {saved && <AirtableChangeReview profileId={profileId} connectionId={connection.id} disabled={busy} allowWrites={connection.allowWrites} />}
           <p>Transfers create new records only. Matching job URLs are skipped; existing records are not overwritten. Imported applications start as Saved.</p>
           <button
             type="button"

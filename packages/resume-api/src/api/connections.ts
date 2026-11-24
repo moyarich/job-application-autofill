@@ -19,10 +19,12 @@ export const handleConnections: RouteHandler = async ({
     }
   }
   const sync = url.pathname.match(
-    /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export|history|links|changes)$/i,
+    /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export|history|links|changes|resolve)$/i,
   );
   if (sync) {
     const [, id, action] = sync;
+    if (action === "resolve" && req.method === "POST")
+      return reply(200, await store.resolveConnectionChange(profileId, id, await req.readJson()));
     if (action === "changes" && req.method === "GET")
       return reply(200, await store.reviewConnectionChanges(profileId, id));
     if (action === "history" && req.method === "GET")

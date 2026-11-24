@@ -73,9 +73,20 @@ describe("application transfer", () => {
       const report = await sync.reviewConnectionChanges("profile", "connection");
       expect(report.changes).toHaveLength(1);
       expect(report.changes[0].state).toBe("converged");
+      expect(report.changes[0].reviewToken).toMatch(/^[a-f0-9]{64}$/);
       expect(save).not.toHaveBeenCalled();
       expect(callConnectionTool.mock.calls).toHaveLength(3);
       expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
+      callConnectionTool.mockResolvedValueOnce({
+        records: [],
+      });
+      // A stale review must fail before either side is written.
+      await expect(sync.resolveConnectionChange("profile", "connection", {
+        applicationId: "job",
+        reviewToken: report.changes[0].reviewToken,
+        choice: "remote",
+      })).rejects.toThrow("Invalid Airtable record");
+      expect(save).not.toHaveBeenCalled();
     } finally {
       db.close();
     }

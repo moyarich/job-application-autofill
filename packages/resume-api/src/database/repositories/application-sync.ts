@@ -74,7 +74,7 @@ export function classifyChange(
 export function createApplicationSync(
   db: DatabaseSync,
   connections: ReturnType<typeof createConnections>,
-  getJobs: (profileId: string) => { jobs: Job[] },
+  getJobs: (profileId: string) => { jobs: Job[]; revisions?: Record<string, number> },
   saveJob: (raw: unknown, profileId: string) => unknown,
 ) {
   const running = new Set<string>();
@@ -208,6 +208,7 @@ export function createApplicationSync(
           applicationId: job.id,
           remoteId: link.remoteId,
           state,
+          reviewToken: hash([id, mapping, job.id, link.remoteId, link.localHash, link.remoteHash, currentLocal, currentRemote]),
           local: Object.fromEntries(keys.map((key) => [key, job[key]])),
           remote: record ? Object.fromEntries(keys.map((key) => [key, record.fields[mapping.fields[key]] ?? ""])) : null,
         }];
@@ -216,6 +217,80 @@ export function createApplicationSync(
     } finally {
       running.delete(id);
     }
+  }
+
+  function resolveConnectionChange(profileId: string, id: string, raw: unknown) {
+    const input = raw as { applicationId?: unknown; reviewToken?: unknown; choice?: unknown } | null;
+    if (!input || typeof input.applicationId !== "string" ||
+      typeof input.reviewToken !== "string" || !/^[a-f0-9]{64}$/.test(input.reviewToken) ||
+      (input.choice !== "local" && input.choice !== "remote")) {
+      throw new Error("Choose a reviewed application and resolution.");
+    }
+    const { applicationId, reviewToken, choice } = input;
+    return transfer(profileId, id, choice === "local" ? "export" : "import", async () => {
+      if (choice === "local" && !requireConnection(profileId, id).allowWrites)
+        throw new Error("Connection is read only.");
+      const mapping = getConnectionMapping(profileId, id);
+      if (!mapping) throw new Error("Save a field mapping first.");
+      const link = db.prepare(
+        "SELECT remote_id AS remoteId,local_hash AS localHash,remote_hash AS remoteHash FROM connection_record_links WHERE connection_id=? AND profile_id=? AND base_id=? AND table_id=? AND application_id=?",
+      ).get(id, profileId, mapping.baseId, mapping.tableId, applicationId) as {
+        remoteId: string; localHash: string; remoteHash: string;
+      } | undefined;
+      if (!link) throw new Error("Linked application not found.");
+      const record = await connections.callConnectionTool(profileId, id, "get_record", {
+        baseId: mapping.baseId, tableId: mapping.tableId, recordId: link.remoteId,
+      }) as RemoteRecord;
+      requireConnection(profileId, id);
+      if (!record || record.id !== link.remoteId || !record.fields ||
+        typeof record.fields !== "object" || Array.isArray(record.fields))
+        throw new Error("Invalid Airtable record.");
+      const snapshot = getJobs(profileId);
+      const job = snapshot.jobs.find((item) => item.id === applicationId);
+      if (!job) throw new Error("Application not found.");
+      const currentLocal = localHash(job);
+      const currentRemote = remoteHash(record, mapping);
+      if (reviewToken !== hash([id, mapping, job.id, link.remoteId, link.localHash, link.remoteHash, currentLocal, currentRemote]))
+        throw new Error("Records changed since review. Check changes again.");
+      const values = choice === "local" ? job : {
+        company: record.fields[mapping.fields.company],
+        role: record.fields[mapping.fields.role],
+        url: record.fields[mapping.fields.url],
+        notes: record.fields[mapping.fields.notes] ?? "",
+      };
+      const { company, role, notes } = values;
+      const url = normalizedUrl(values.url);
+      if (!url || typeof company !== "string" || !company.trim() || company.length > 500 ||
+        typeof role !== "string" || !role.trim() || role.length > 500 ||
+        typeof notes !== "string" || notes.length > 50000)
+        throw new Error("Chosen version contains invalid application fields.");
+      const nextJob = { ...job, company, role, url, notes };
+      let nextLocal = currentLocal;
+      let nextRemote = currentRemote;
+      if (choice === "remote" && currentLocal !== currentRemote) {
+        if (snapshot.jobs.some((other) => other.id !== job.id && normalizedUrl(other.url) === url))
+          throw new Error("Another local application uses this URL.");
+        const revision = snapshot.revisions?.[job.id];
+        if (!Number.isSafeInteger(revision)) throw new Error("Application revision unavailable.");
+        saveJob({ revision, job: nextJob }, profileId);
+        nextLocal = localHash(nextJob);
+      } else if (choice === "local" && currentLocal !== currentRemote) {
+        const fields = Object.fromEntries(keys.map((key) => [mapping.fields[key], nextJob[key]]));
+        const updated = await connections.callConnectionTool(profileId, id, "update_record", {
+          baseId: mapping.baseId, tableId: mapping.tableId, recordId: link.remoteId, fields,
+        }) as RemoteRecord;
+        if (!updated || updated.id !== link.remoteId || !updated.fields ||
+          remoteHash(updated, mapping) !== localHash(nextJob))
+          throw new Error("Airtable update could not be verified. Review again.");
+        nextRemote = remoteHash(updated, mapping);
+      }
+      requireConnection(profileId, id);
+      const result = db.prepare(
+        "UPDATE connection_record_links SET local_hash=?,remote_hash=? WHERE connection_id=? AND profile_id=? AND base_id=? AND table_id=? AND application_id=? AND remote_id=? AND local_hash=? AND remote_hash=?",
+      ).run(nextLocal, nextRemote, id, profileId, mapping.baseId, mapping.tableId, applicationId, link.remoteId, link.localHash, link.remoteHash);
+      if (!result.changes) throw new Error("Record association changed. Review again.");
+      return { resolved: true, choice, applicationId };
+    });
   }
 
   async function transfer<T>(profileId: string, id: string, direction: "import" | "export", action: () => Promise<T>) {
@@ -297,5 +372,5 @@ export function createApplicationSync(
       return { created: true };
     });
   }
-  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges };
+  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks, reviewConnectionChanges, resolveConnectionChange };
 }
