@@ -29,6 +29,17 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const workflow = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/workflow(?:\/(preview|execute))?$/i);
+  if (workflow) {
+    const [, id, action] = workflow;
+    if (!action && req.method === "GET") return reply(200, store.getMcpWorkflow(profileId, id));
+    if (!action && req.method === "PUT") return reply(200, await store.saveMcpWorkflow(profileId, id, await req.readJson()));
+    if (action === "preview" && req.method === "POST") {
+      const body = await req.readJson() as { jobId?: unknown } | null;
+      return reply(200, await store.previewMcpWorkflow(profileId, id, body?.jobId));
+    }
+    if (action === "execute" && req.method === "POST") return reply(200, await store.executeMcpWorkflow(profileId, id, await req.readJson()));
+  }
   const sync = url.pathname.match(
     /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export|history|links|changes|resolve|sync|schedule)$/i,
   );

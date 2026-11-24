@@ -1,3 +1,4 @@
+import { McpApplicationWorkflow } from "./McpApplicationWorkflow";
 import { McpToolRunner } from "./McpToolRunner";
 import { AirtableMapping } from "./AirtableMapping";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -399,6 +400,7 @@ function Connections({ profileId }: { profileId: string }) {
                 </button>
               </div>
             </div>
+            {connection.connectorId === "mcp" && connection.allowWrites && <McpApplicationWorkflow profileId={profileId} connectionId={connection.id} />}
             {connection.connectorId === "airtable" && (
               <AirtableMapping profileId={profileId} connection={connection} />
             )}
