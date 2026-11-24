@@ -12,8 +12,7 @@ caller, authorize profile and connection access, validate tool inputs against
 their schemas, enforce read/write permissions, and provide a scoped secret
 resolver. Connectors must not expose credentials in tool output or metadata.
 
-This package does not yet implement persistent connections, OAuth, MCP
-transport, or synchronization. Those belong in subsequent changes.
+This package does not yet implement persistent connections, OAuth or synchronization. Those belong in subsequent changes.
 
 ## Airtable
 
@@ -25,3 +24,15 @@ The host must authorize that setting; never accept it directly from an
 untrusted caller. The adapter returns one page at a time with the Airtable
 pagination offset. HTTP 429 is reported to the caller for retry scheduling;
 record writes are never retried automatically. No record deletion is exposed.
+
+## Remote MCP
+
+Register `createMcpConnector({ manifest, endpoint, tools })` with an explicit
+host-approved HTTPS endpoint and a tool-name to read/write access map.
+Never derive endpoint or permissions from untrusted requests. The deployment
+must enforce outbound network restrictions, including private network access.
+Token authentication uses the scoped `accessToken` secret; writes additionally
+require `configuration.allowWrites`. The adapter uses the stateless 2026-07-28
+protocol with JSON responses only. SSE, older session-based servers, OAuth,
+stdio and interactive input requests are not supported by this initial adapter.
+No AI or model credentials are needed.
