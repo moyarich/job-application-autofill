@@ -7,6 +7,11 @@ export const handleConnections: RouteHandler = async ({
   store,
   profileId,
 }) => {
+  if (url.pathname === "/api/connectors/mcp-oauth" && req.method === "GET") return reply(200, store.listMcpOAuthEndpoints());
+  if (url.pathname === "/api/connectors/mcp-oauth" && req.method === "POST") {
+    const value = await req.readJson() as { endpoint?: unknown } | null;
+    return reply(200, await store.beginMcpOAuth(profileId, value?.endpoint));
+  }
   if (url.pathname === "/api/connectors/mcp-discover" && req.method === "POST") {
     return reply(200, await store.discoverMcpTools(profileId, await req.readJson()));
   }

@@ -25,6 +25,7 @@ services:
       RESUME_SITE_EMAIL: "${RESUME_SITE_EMAIL:-}"
       RESUME_LLM_URL: "${RESUME_LLM_URL:-http://host.docker.internal:4178/parse}"
       CONTAINER_MODE: "true"
+      MOYA_MCP_OAUTH_CONFIG: "${MOYA_MCP_OAUTH_CONFIG:-[]}"
       MOYA_MCP_ENDPOINTS: "${MOYA_MCP_ENDPOINTS:-}"
       MOYA_CONNECTOR_KEY: "${MOYA_CONNECTOR_KEY:-}"
       MOYA_DB_PATH: /app/data/job_application_autofill.sqlite

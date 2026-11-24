@@ -25,7 +25,9 @@ function Connections({ profileId }: { profileId: string }) {
   const [name, setName] = useState("");
   const [endpoints, setEndpoints] = useState<string[]>([]);
   const [endpoint, setEndpoint] = useState("");
-  const [authentication, setAuthentication] = useState<"none" | "token">("token");
+  const [authentication, setAuthentication] = useState<"none" | "token" | "oauth2">("token");
+  const [oauthEndpoints, setOauthEndpoints] = useState<string[]>([]);
+  const [oauthFlow, setOauthFlow] = useState<{ authorizationUrl: string; flowId: string } | null>(null);
   const [discovered, setDiscovered] = useState<Omit<ConnectionTool, "access">[] | null>(null);
   const [permissions, setPermissions] = useState<Record<string, "read" | "write">>({});
   const [allowWrites, setAllowWrites] = useState(false);
@@ -57,11 +59,13 @@ function Connections({ profileId }: { profileId: string }) {
         scope.signal,
       ),
       connectionRequest<string[]>(profileId, "connectors/mcp-endpoints", "GET", undefined, scope.signal),
+      connectionRequest<string[]>(profileId, "connectors/mcp-oauth", "GET", undefined, scope.signal),
     ])
-      .then(([available, saved, approved]) => {
+      .then(([available, saved, approved, oauthAvailable]) => {
         if (scope.signal.aborted) return;
         setConnectors(available);
         setEndpoints(approved);
+        setOauthEndpoints(oauthAvailable);
         setEndpoint(approved[0] ?? "");
         setConnections(saved);
         setConnectorId(available[0]?.id ?? "");
@@ -96,6 +100,15 @@ function Connections({ profileId }: { profileId: string }) {
     setPermissions({});
   }
 
+  function beginOAuth() {
+    setOauthFlow(null);
+    resetDiscovery();
+    void run(async (signal) => {
+      const result = await connectionRequest<{ authorizationUrl: string; flowId: string }>(profileId, "connectors/mcp-oauth", "POST", { endpoint }, signal);
+      if (!signal.aborted) setOauthFlow(result);
+    });
+  }
+
   function discover() {
     const accessToken = authentication === "token" ? token.current?.value ?? "" : "";
     if (authentication === "token" && !accessToken) {
@@ -106,7 +119,7 @@ function Connections({ profileId }: { profileId: string }) {
     void run(async (signal) => {
       const tools = await connectionRequest<Omit<ConnectionTool, "access">[]>(
         profileId, "connectors/mcp-discover", "POST",
-        { endpoint, authentication, accessToken }, signal,
+        { endpoint, authentication, accessToken, ...(authentication === "oauth2" ? { flowId: oauthFlow?.flowId } : {}) }, signal,
       );
       if (!signal.aborted) setDiscovered(tools);
     });
@@ -127,12 +140,13 @@ function Connections({ profileId }: { profileId: string }) {
         profileId,
         "connections",
         "POST",
-        { connectorId, name, accessToken, allowWrites, ...(isMcp ? { endpoint, authentication, tools } : {}) },
+        { connectorId, name, accessToken, allowWrites, ...(isMcp ? { endpoint, authentication, tools, ...(authentication === "oauth2" ? { flowId: oauthFlow?.flowId } : {}) } : {}) },
         signal,
       );
       if (signal.aborted) return;
       setConnections((current) => [...current, saved]);
       setShowForm(false);
+      setOauthFlow(null);
       resetDiscovery();
       setName("");
       setAllowWrites(false);
@@ -245,14 +259,15 @@ function Connections({ profileId }: { profileId: string }) {
             </label>
             {connectorId === "mcp" && <>
               <label>Approved MCP endpoint
-                <select disabled={busy} value={endpoint} onChange={(event) => { setEndpoint(event.target.value); resetDiscovery(); if (token.current) token.current.value = ""; }}>
+                <select disabled={busy} value={endpoint} onChange={(event) => { setEndpoint(event.target.value); setAuthentication("token"); setOauthFlow(null); resetDiscovery(); if (token.current) token.current.value = ""; }}>
                   {endpoints.map((url) => <option key={url} value={url}>{url}</option>)}
                 </select>
               </label>
               <label>Authentication
-                <select disabled={busy} value={authentication} onChange={(event) => { setAuthentication(event.target.value === "none" ? "none" : "token"); resetDiscovery(); }}>
+                <select disabled={busy} value={authentication} onChange={(event) => { setAuthentication(event.target.value === "oauth2" ? "oauth2" : event.target.value === "none" ? "none" : "token"); setOauthFlow(null); resetDiscovery(); }}>
                   <option value="token">Bearer token</option>
                   <option value="none">None</option>
+                  {oauthEndpoints.includes(endpoint) && <option value="oauth2">OAuth 2.1</option>}
                 </select>
               </label>
 
@@ -288,7 +303,11 @@ function Connections({ profileId }: { profileId: string }) {
               Allow external record creation and updates
             </label>
             {connectorId === "mcp" && <>
-              <button type="button" disabled={busy || !endpoint} onClick={discover}>Discover tools</button>
+              {authentication === "oauth2" && <>
+                <button type="button" disabled={busy || !endpoint} onClick={beginOAuth}>Prepare authorization</button>
+                {oauthFlow && <p><a href={oauthFlow.authorizationUrl} target="_blank" rel="noopener noreferrer">Authorize in a new tab</a>, then return here and discover tools.</p>}
+              </>}
+              <button type="button" disabled={busy || !endpoint || (authentication === "oauth2" && !oauthFlow)} onClick={discover}>Discover tools</button>
               {discovered && <fieldset disabled={busy} className="connections-form">
                 <legend>Approve discovered tools</legend>
                 {discovered.length === 0 && <p>No supported tools discovered.</p>}
