@@ -75,3 +75,5 @@ export function createConnectorRegistry(): ConnectorRegistry {
 }
 
 export { createAirtableConnector } from "./airtable.js";
+
+export { createMcpConnector, type McpOptions } from "./mcp.js";
