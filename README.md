@@ -35,6 +35,23 @@ docker run --rm \
 
 Run `npm run dev` and verify your saved résumé and application history. Keep the old volume until you confirm the migration; `docker compose down` does not delete it. This step is needed only when migrating from the previous named-volume configuration.
 
+## Connect Airtable
+
+Use **Integrations → Connections** to share tracked applications with an Airtable table. This is optional and does not require an AI model or OpenAI account.
+
+1. Generate a private encryption key with `openssl rand -hex 32`, add it to your untracked `.env` as `MOYA_CONNECTOR_KEY`, and restart the API.
+2. Create an [Airtable personal access token](https://airtable.com/create/tokens) restricted to the intended bases. Grant `schema.bases:read` and `data.records:read`; add `data.records:write` only if you want to export or push changes.
+3. Add an Airtable connection in the dashboard, enter the token, and choose **Test connection**. Connections are read-only by default.
+4. Configure the application mapping: select a base, table, and distinct fields for company, job title, URL and notes. Optionally map all six application statuses to distinct Airtable values.
+5. Import new applications or export a selected application (writes must be enabled). Existing matching URLs are skipped, not automatically linked.
+6. Use **Check for changes** to review linked records, or **Sync now** to apply non-conflicting changes. Conflicts require explicit review. Optional scheduled sync runs only while the local API is running.
+
+Tokens are encrypted in SQLite using the separate encryption key. Keep the key private and back it up separately; losing it prevents decryption. Disconnecting removes the local token and connection history, but does not revoke the Airtable token. Revoke it in Airtable if needed.
+
+Synchronization sends only mapped application fields to the selected Airtable base, not résumé contents or employer credentials. Notes may contain private information: review them before enabling writes. No records are automatically deleted. Remote concurrent edits can race with updates; inspect history and review records after interrupted or failed runs.
+
+See [connector developer documentation](packages/connectors/README.md) for the SDK and [integration architecture](docs/connectors.md) for implementation details.
+
 ## Employer account automation
 
 The dashboard tracks candidate account setup **per local person, ATS provider, and employer tenant**. Workday employers have separate accounts even when they share the Workday platform. Greenhouse, Lever, Ashby, and SmartRecruiters use the same employer-scoped flow **when a particular site requires signup**. An application at the same employer can reuse the existing account.
@@ -183,6 +200,7 @@ The screenshot is an approximate visual reference, not proof of real ATS coverag
 - `packages/resume-ocr/pyproject.toml`: Poetry dependency groups and OCR environment
 - `packages/job-boards/`: separate Greenhouse, Lever, Workday, Ashby and SmartRecruiters modules
 - `packages/job-boards/automation.ts`: Playwright review-before-submit sessions
+- `packages/connectors`: AI-independent connector SDK and native Airtable / remote MCP adapters
 - `packages/resume-api/index.ts`: local JSON HTTP API
 
 ## Checks
