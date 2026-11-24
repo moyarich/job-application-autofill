@@ -2,20 +2,31 @@ import { useState } from "react";
 import { AirtableChangeReview } from "./AirtableChangeReview";
 import { connectionRequest, type Connection } from "../../api/connections";
 import { readJobs } from "../../api/client";
-import type { JobApplication } from "../../types/job-application";
+import type { ApplicationStatus, JobApplication } from "../../types/job-application";
 
 const fields = ["company", "role", "url", "notes"] as const;
 type Field = (typeof fields)[number];
+const statuses: { id: ApplicationStatus; label: string }[] = [
+  { id: "saved", label: "Saved" },
+  { id: "in_progress", label: "In progress" },
+  { id: "ready_for_review", label: "Ready for review" },
+  { id: "submitted", label: "Submitted" },
+  { id: "interview", label: "Interview" },
+  { id: "rejected", label: "Rejected" },
+];
+type StatusMapping = { fieldId: string; values: Record<ApplicationStatus, string> };
+const emptyStatusValues = () => Object.fromEntries(statuses.map(({ id }) => [id, ""])) as StatusMapping["values"];
 type Mapping = {
   baseId: string;
   tableId: string;
   fields: Record<Field, string>;
+  status?: StatusMapping;
 };
 type Base = { id: string; name: string };
 type Table = {
   id: string;
   name: string;
-  fields: { id: string; name: string; type: string }[];
+  fields: { id: string; name: string; type: string; options?: { choices?: { name: string }[] } }[];
 };
 
 const emptyMapping = (): Mapping => ({
@@ -106,6 +117,8 @@ export function AirtableMapping({
   }
 
   const table = tables.find((item) => item.id === mapping.tableId);
+  const statusField = table?.fields.find((item) => item.id === mapping.status?.fieldId);
+  const statusValid = !mapping.status || (statuses.every(({ id }) => mapping.status?.values[id].trim()) && new Set(Object.values(mapping.status.values)).size === statuses.length);
   return (
     <div className="connection-inspection">
       <button type="button" disabled={busy} onClick={configure}>
@@ -178,9 +191,41 @@ export function AirtableMapping({
                 </select>
               </label>
             ))}
+            <label>
+              Application status (optional)
+              <select value={mapping.status?.fieldId ?? ""} onChange={(event) => {
+                const fieldId = event.target.value;
+                const next = { ...mapping };
+                if (fieldId) next.status = { fieldId, values: emptyStatusValues() };
+                else delete next.status;
+                setMapping(next);
+                setSaved(false);
+              }}>
+                <option value="">Do not synchronize status</option>
+                {table?.fields.filter((item) => ["singleSelect", "singleLineText"].includes(item.type) && !Object.values(mapping.fields).includes(item.id)).map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            {mapping.status && statuses.map(({ id, label }) => {
+              const update = (value: string) => {
+                if (!mapping.status) return;
+                setMapping({ ...mapping, status: { ...mapping.status, values: { ...mapping.status.values, [id]: value } } });
+                setSaved(false);
+              };
+              return <label key={id}>
+                {label} in Airtable
+                {statusField?.type === "singleSelect" ? (
+                  <select value={mapping.status?.values[id] ?? ""} onChange={(event) => update(event.target.value)}>
+                    <option value="">Choose an option</option>
+                    {statusField.options?.choices?.map((choice) => <option key={choice.name} value={choice.name}>{choice.name}</option>)}
+                  </select>
+                ) : <input maxLength={500} value={mapping.status?.values[id] ?? ""} onChange={(event) => update(event.target.value)} />}
+              </label>;
+            })}
             <button
               type="button"
-              disabled={!mapping.tableId || fields.some((field) => !mapping.fields[field])}
+              disabled={!mapping.tableId || fields.some((field) => !mapping.fields[field]) || !statusValid}
               onClick={() => void run(async () => {
                 await connectionRequest(profileId, path + "/mapping", "PUT", mapping);
                 setSaved(true);
@@ -191,7 +236,7 @@ export function AirtableMapping({
             </button>
           </fieldset>
           {saved && <AirtableChangeReview profileId={profileId} connectionId={connection.id} disabled={busy} allowWrites={connection.allowWrites} />}
-          <p>Transfers create new records only. Matching job URLs are skipped; existing records are not overwritten. Imported applications start as Saved.</p>
+          <p>Transfers create new records only. Matching job URLs are skipped; existing records are not overwritten. Imported applications use the mapped status, or Saved when status mapping is disabled. Unknown mapped statuses are skipped.</p>
           <button
             type="button"
             disabled={busy || !saved}
