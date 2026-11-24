@@ -18,6 +18,20 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const sync = url.pathname.match(
+    /^\/api\/connections\/([0-9a-f-]{36})\/(mapping|import|export)$/i,
+  );
+  if (sync) {
+    const [, id, action] = sync;
+    if (action === "mapping" && req.method === "GET")
+      return reply(200, store.getConnectionMapping(profileId, id));
+    if (action === "mapping" && req.method === "PUT")
+      return reply(200, await store.saveConnectionMapping(profileId, id, await req.readJson()));
+    if (action === "import" && req.method === "POST")
+      return reply(200, await store.importConnectionApplications(profileId, id));
+    if (action === "export" && req.method === "POST")
+      return reply(200, await store.exportConnectionApplication(profileId, id, await req.readJson()));
+  }
   const match = url.pathname.match(
     /^\/api\/connections\/([0-9a-f-]{36})(?:\/(tools)(?:\/([a-zA-Z0-9_-]+))?)?$/i,
   );
