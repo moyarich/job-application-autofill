@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildToolArguments, describeToolForm } from "../../packages/job-application-autofill/src/pages/connections/tool-form-schema.ts";
+import { buildToolArguments, describeToolForm, type ToolDraft } from "../../packages/job-application-autofill/src/pages/connections/tool-form-schema.ts";
 
 describe("MCP tool argument forms", () => {
   const schema = {
@@ -21,7 +21,8 @@ describe("MCP tool argument forms", () => {
   });
   it("rejects missing required values, bad numbers and invalid choices", () => {
     const fields = describeToolForm(schema)!;
-    for (const draft of [{}, { query: "" }, { query: "x", count: "0" }, { query: "x", count: "1.5" }, { query: "x", sort: "99" }])
+    const drafts: ToolDraft[] = [{}, { query: "" }, { query: "x", count: "0" }, { query: "x", count: "1.5" }, { query: "x", sort: "99" }];
+    for (const draft of drafts)
       expect(() => buildToolArguments(fields, draft)).toThrow();
   });
   it("falls back for nested objects, arrays, references and complex constraints", () => {
