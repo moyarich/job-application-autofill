@@ -32,7 +32,5 @@ host-approved HTTPS endpoint and a tool-name to read/write access map.
 Never derive endpoint or permissions from untrusted requests. The deployment
 must enforce outbound network restrictions, including private network access.
 Token authentication uses the scoped `accessToken` secret; writes additionally
-require `configuration.allowWrites`. The adapter uses the stateless 2026-07-28
-protocol with JSON responses only. SSE, older session-based servers, OAuth,
-stdio and interactive input requests are not supported by this initial adapter.
+require `configuration.allowWrites`. The adapter uses only the stateless MCP 2026-07-28 protocol. It accepts bounded JSON and request-scoped SSE responses, with request timeouts and no automatic tool execution retries. OAuth, stdio, server-initiated requests, stream resumption and interactive multi-round-trip requests are not supported yet.
 No AI or model credentials are needed.
