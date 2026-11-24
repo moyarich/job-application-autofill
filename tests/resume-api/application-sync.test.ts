@@ -77,6 +77,16 @@ describe("application transfer", () => {
       expect(save).not.toHaveBeenCalled();
       expect(callConnectionTool.mock.calls).toHaveLength(3);
       expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
+      callConnectionTool.mockResolvedValueOnce({
+        records: [],
+      });
+      // A stale review must fail before either side is written.
+      await expect(sync.resolveConnectionChange("profile", "connection", {
+        applicationId: "job",
+        reviewToken: report.changes[0].reviewToken,
+        choice: "remote",
+      })).rejects.toThrow("Invalid Airtable record");
+      expect(save).not.toHaveBeenCalled();
     } finally {
       db.close();
     }
