@@ -26,8 +26,8 @@ function Connections({ profileId }: { profileId: string }) {
   const [endpoints, setEndpoints] = useState<string[]>([]);
   const [endpoint, setEndpoint] = useState("");
   const [authentication, setAuthentication] = useState<"none" | "token">("token");
-  const [readTools, setReadTools] = useState("");
-  const [writeTools, setWriteTools] = useState("");
+  const [discovered, setDiscovered] = useState<Omit<ConnectionTool, "access">[] | null>(null);
+  const [permissions, setPermissions] = useState<Record<string, "read" | "write">>({});
   const [allowWrites, setAllowWrites] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -91,6 +91,27 @@ function Connections({ profileId }: { profileId: string }) {
     }
   }
 
+  function resetDiscovery() {
+    setDiscovered(null);
+    setPermissions({});
+  }
+
+  function discover() {
+    const accessToken = authentication === "token" ? token.current?.value ?? "" : "";
+    if (authentication === "token" && !accessToken) {
+      setError("Enter a bearer token first.");
+      return;
+    }
+    resetDiscovery();
+    void run(async (signal) => {
+      const tools = await connectionRequest<Omit<ConnectionTool, "access">[]>(
+        profileId, "connectors/mcp-discover", "POST",
+        { endpoint, authentication, accessToken }, signal,
+      );
+      if (!signal.aborted) setDiscovered(tools);
+    });
+  }
+
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -99,10 +120,8 @@ function Connections({ profileId }: { profileId: string }) {
     const accessToken = needsToken ? token.current?.value ?? "" : "";
     if (needsToken && !accessToken) return;
     if (token.current) token.current.value = "";
-    const tools = Object.fromEntries([
-      ...readTools.split(/\s+/).filter(Boolean).map((tool) => [tool, "read"]),
-      ...writeTools.split(/\s+/).filter(Boolean).map((tool) => [tool, "write"]),
-    ]);
+    const tools = Object.fromEntries(Object.entries(permissions).filter(([, access]) => access === "read" || allowWrites));
+    if (isMcp && (!discovered || !Object.keys(tools).length)) return;
     void run(async (signal) => {
       const saved = await connectionRequest<Connection>(
         profileId,
@@ -114,6 +133,7 @@ function Connections({ profileId }: { profileId: string }) {
       if (signal.aborted) return;
       setConnections((current) => [...current, saved]);
       setShowForm(false);
+      resetDiscovery();
       setName("");
       setAllowWrites(false);
       setNotice("Connection saved. Test it to verify credentials.");
@@ -203,7 +223,7 @@ function Connections({ profileId }: { profileId: string }) {
               Service
               <select
                 value={connectorId}
-                onChange={(event) => setConnectorId(event.target.value)}
+                onChange={(event) => { setConnectorId(event.target.value); resetDiscovery(); }}
                 disabled={busy}
               >
                 {connectors.map((item) => (
@@ -225,24 +245,24 @@ function Connections({ profileId }: { profileId: string }) {
             </label>
             {connectorId === "mcp" && <>
               <label>Approved MCP endpoint
-                <select value={endpoint} onChange={(event) => setEndpoint(event.target.value)}>
+                <select disabled={busy} value={endpoint} onChange={(event) => { setEndpoint(event.target.value); resetDiscovery(); if (token.current) token.current.value = ""; }}>
                   {endpoints.map((url) => <option key={url} value={url}>{url}</option>)}
                 </select>
               </label>
               <label>Authentication
-                <select value={authentication} onChange={(event) => setAuthentication(event.target.value === "none" ? "none" : "token")}>
+                <select disabled={busy} value={authentication} onChange={(event) => { setAuthentication(event.target.value === "none" ? "none" : "token"); resetDiscovery(); }}>
                   <option value="token">Bearer token</option>
                   <option value="none">None</option>
                 </select>
               </label>
-              <label>Approved read tool names (space separated)<textarea value={readTools} onChange={(event) => setReadTools(event.target.value)} /></label>
-              <label>Approved write tool names (space separated)<textarea value={writeTools} onChange={(event) => setWriteTools(event.target.value)} /></label>
+
               <p>Only approve known tools from a trusted server. Read/write labels are your classification, not a guarantee of server behavior.</p>
             </>}
             {(connectorId !== "mcp" || authentication === "token") && <label>
               {connectorId === "mcp" ? "Bearer token" : "Personal access token"}
               <input
                 ref={token}
+                onChange={resetDiscovery}
                 type="password"
                 required
                 maxLength={4096}
@@ -267,6 +287,34 @@ function Connections({ profileId }: { profileId: string }) {
               />
               Allow external record creation and updates
             </label>
+            {connectorId === "mcp" && <>
+              <button type="button" disabled={busy || !endpoint} onClick={discover}>Discover tools</button>
+              {discovered && <fieldset disabled={busy} className="connections-form">
+                <legend>Approve discovered tools</legend>
+                {discovered.length === 0 && <p>No supported tools discovered.</p>}
+                {discovered.map((tool) => (
+                  <div key={tool.name}>
+                    <label>{tool.name}
+                      <select value={Object.hasOwn(permissions, tool.name) ? permissions[tool.name] : ""} onChange={(event) => {
+                        const access = event.target.value;
+                        setPermissions((current) => {
+                          const next = { ...current };
+                          if (access === "read" || access === "write") Object.defineProperty(next, tool.name, { value: access, enumerable: true, writable: true, configurable: true });
+                          else delete next[tool.name];
+                          return next;
+                        });
+                      }}>
+                        <option value="">Not approved</option>
+                        <option value="read">Read</option>
+                        <option value="write" disabled={!allowWrites}>Write</option>
+                      </select>
+                    </label>
+                    <p>{tool.description}</p>
+                    <details><summary>Input schema</summary><pre>{JSON.stringify(tool.inputSchema, null, 2)}</pre></details>
+                  </div>
+                ))}
+              </fieldset>}
+            </>}
             <p>
               Configure MOYA_CONNECTOR_KEY on the server before saving.
               Tokens are not returned to the dashboard.
@@ -274,7 +322,7 @@ function Connections({ profileId }: { profileId: string }) {
             <div className="actions">
               <button
                 type="submit"
-                disabled={busy || !selected || (connectorId === "mcp" && !endpoint)}
+                disabled={busy || !selected || (connectorId === "mcp" && (!endpoint || !discovered || !Object.values(permissions).some((access) => access === "read" || allowWrites)))}
               >
                 Save connection
               </button>
@@ -283,6 +331,7 @@ function Connections({ profileId }: { profileId: string }) {
                 disabled={busy}
                 onClick={() => {
                   setShowForm(false);
+                  resetDiscovery();
                   setName("");
                   setAllowWrites(false);
                 }}

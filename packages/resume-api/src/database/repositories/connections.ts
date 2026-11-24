@@ -216,6 +216,37 @@ export function createConnections(
     }
   }
 
+  async function discoverMcpTools(profileId: string, raw: unknown) {
+    const owner = requireProfile(profileId);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid discovery configuration.");
+    const value = raw as Record<string, unknown>;
+    const endpoint = requireEndpoint(value.endpoint);
+    const authentication = value.authentication;
+    const token = value.accessToken;
+    if ((authentication !== "token" && authentication !== "none") ||
+      typeof token !== "string" || token.length > 4096 || /\s/.test(token) ||
+      (authentication === "token" ? !token : token !== "") ||
+      Object.keys(value).some((key) => !["endpoint", "authentication", "accessToken"].includes(key)))
+      throw new Error("Invalid discovery credentials.");
+    const connector = createMcpConnector({
+      manifest: { ...mcpManifest, authentication },
+      endpoint,
+      tools: {},
+      discoveryOnly: true,
+    });
+    const session = await connector.connect({
+      connectionId: "discovery",
+      profileId: owner,
+      configuration: { allowWrites: false },
+      getSecret: async (name) => name === "accessToken" && authentication === "token" ? token : undefined,
+    });
+    try {
+      return (await session.listTools()).map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
+    } finally {
+      await session.close();
+    }
+  }
+
   function listConnectionTools(profileId: string, id: string) {
     return withConnection(profileId, id, (session) => session.listTools());
   }
@@ -238,6 +269,7 @@ export function createConnections(
 
   return {
     listMcpEndpoints: approvedMcpEndpoints,
+    discoverMcpTools,
     listConnectors,
     listConnections,
     addConnection,

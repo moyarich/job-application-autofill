@@ -7,6 +7,9 @@ export const handleConnections: RouteHandler = async ({
   store,
   profileId,
 }) => {
+  if (url.pathname === "/api/connectors/mcp-discover" && req.method === "POST") {
+    return reply(200, await store.discoverMcpTools(profileId, await req.readJson()));
+  }
   if (url.pathname === "/api/connectors/mcp-endpoints" && req.method === "GET") {
     return reply(200, store.listMcpEndpoints());
   }
