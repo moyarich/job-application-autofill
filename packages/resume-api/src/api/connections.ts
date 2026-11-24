@@ -1,0 +1,39 @@
+import type { RouteHandler } from "../types/types.ts";
+import { reply } from "../server/reply.ts";
+
+export const handleConnections: RouteHandler = async ({
+  req,
+  url,
+  store,
+  profileId,
+}) => {
+  if (url.pathname === "/api/connectors" && req.method === "GET") {
+    return reply(200, store.listConnectors());
+  }
+  if (url.pathname === "/api/connections") {
+    if (req.method === "GET") {
+      return reply(200, store.listConnections(profileId));
+    }
+    if (req.method === "POST") {
+      return reply(201, store.addConnection(profileId, await req.readJson()));
+    }
+  }
+  const match = url.pathname.match(
+    /^\/api\/connections\/([0-9a-f-]{36})(?:\/(tools)(?:\/([a-zA-Z0-9_-]+))?)?$/i,
+  );
+  if (!match) return undefined;
+  const [, id, tools, name] = match;
+  if (!tools && req.method === "DELETE") {
+    return reply(200, store.removeConnection(profileId, id));
+  }
+  if (tools && !name && req.method === "GET") {
+    return reply(200, await store.listConnectionTools(profileId, id));
+  }
+  if (tools && name && req.method === "POST") {
+    return reply(
+      200,
+      await store.callConnectionTool(profileId, id, name, await req.readJson()),
+    );
+  }
+  return undefined;
+};

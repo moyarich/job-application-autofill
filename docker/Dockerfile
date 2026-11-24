@@ -26,6 +26,7 @@ COPY packages/job-application-autofill/package.json packages/job-application-aut
 COPY packages/resume/package.json packages/resume/package.json
 COPY packages/resume-api/package.json packages/resume-api/package.json
 COPY packages/job-boards/package.json packages/job-boards/package.json
+COPY packages/connectors/package.json packages/connectors/package.json
 RUN npm ci --include=optional --no-audit --no-fund
 
 FROM node-deps AS build

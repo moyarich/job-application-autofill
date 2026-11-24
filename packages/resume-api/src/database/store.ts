@@ -1,3 +1,4 @@
+import { createConnections } from "./repositories/connections.ts";
 import { createApplicationPreferences } from "./repositories/application-preferences.ts";
 import { reusableAnswer } from "@moyarich/job-boards/screening-policy";
 import { openConnection } from "./connection.ts";
@@ -1178,6 +1179,7 @@ export function openStore(
     return listApplicationAnswers(owner, id);
   }
   return {
+    ...createConnections(db, requireProfile),
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
     createProfile,
