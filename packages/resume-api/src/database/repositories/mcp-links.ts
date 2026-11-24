@@ -4,7 +4,8 @@ import type { createConnections } from "./connections.ts";
 
 export function remoteIdentifier(value: unknown): string | undefined {
   if (typeof value === "number" && Number.isSafeInteger(value)) value = String(value);
-  if (typeof value !== "string" || !value.trim() || value.length > 512 || /[\u0000-\u001f\u007f]/.test(value)) return;
+  if (typeof value !== "string" || !value.trim() || value.length > 512 ||
+    [...value].some((character) => character.charCodeAt(0) <= 31 || character.charCodeAt(0) === 127)) return;
   return value;
 }
 export function validRemotePointer(value: unknown): value is string {
