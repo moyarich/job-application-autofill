@@ -1,3 +1,4 @@
+import { createApplicationSync } from "./repositories/application-sync.ts";
 import { createConnections } from "./repositories/connections.ts";
 import { createApplicationPreferences } from "./repositories/application-preferences.ts";
 import { reusableAnswer } from "@moyarich/job-boards/screening-policy";
@@ -1178,8 +1179,10 @@ export function openStore(
     }
     return listApplicationAnswers(owner, id);
   }
+  const connections = createConnections(db, requireProfile);
   return {
-    ...createConnections(db, requireProfile),
+    ...connections,
+    ...createApplicationSync(db, connections, getJobList, updateJobRecord),
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
     createProfile,
