@@ -1,3 +1,4 @@
+import { McpToolRunner } from "./McpToolRunner";
 import { AirtableMapping } from "./AirtableMapping";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Plug, Plus, RefreshCw, Trash2 } from "lucide-react";
@@ -22,6 +23,11 @@ function Connections({ profileId }: { profileId: string }) {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectorId, setConnectorId] = useState("airtable");
   const [name, setName] = useState("");
+  const [endpoints, setEndpoints] = useState<string[]>([]);
+  const [endpoint, setEndpoint] = useState("");
+  const [authentication, setAuthentication] = useState<"none" | "token">("token");
+  const [readTools, setReadTools] = useState("");
+  const [writeTools, setWriteTools] = useState("");
   const [allowWrites, setAllowWrites] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -50,10 +56,13 @@ function Connections({ profileId }: { profileId: string }) {
         undefined,
         scope.signal,
       ),
+      connectionRequest<string[]>(profileId, "connectors/mcp-endpoints", "GET", undefined, scope.signal),
     ])
-      .then(([available, saved]) => {
+      .then(([available, saved, approved]) => {
         if (scope.signal.aborted) return;
         setConnectors(available);
+        setEndpoints(approved);
+        setEndpoint(approved[0] ?? "");
         setConnections(saved);
         setConnectorId(available[0]?.id ?? "");
       })
@@ -84,15 +93,22 @@ function Connections({ profileId }: { profileId: string }) {
 
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !token.current?.value) return;
-    const accessToken = token.current.value;
-    token.current.value = "";
+    if (busy) return;
+    const isMcp = connectorId === "mcp";
+    const needsToken = !isMcp || authentication === "token";
+    const accessToken = needsToken ? token.current?.value ?? "" : "";
+    if (needsToken && !accessToken) return;
+    if (token.current) token.current.value = "";
+    const tools = Object.fromEntries([
+      ...readTools.split(/\s+/).filter(Boolean).map((tool) => [tool, "read"]),
+      ...writeTools.split(/\s+/).filter(Boolean).map((tool) => [tool, "write"]),
+    ]);
     void run(async (signal) => {
       const saved = await connectionRequest<Connection>(
         profileId,
         "connections",
         "POST",
-        { connectorId, name, accessToken, allowWrites },
+        { connectorId, name, accessToken, allowWrites, ...(isMcp ? { endpoint, authentication, tools } : {}) },
         signal,
       );
       if (signal.aborted) return;
@@ -115,7 +131,7 @@ function Connections({ profileId }: { profileId: string }) {
         undefined,
         signal,
       );
-      if (test) {
+      if (test && connection.connectorId === "airtable") {
         if (
           connection.connectorId !== "airtable" ||
           !tools.some((tool) => tool.name === "list_bases" && tool.access === "read")
@@ -134,7 +150,7 @@ function Connections({ profileId }: { profileId: string }) {
         setInspection({
           id: connection.id,
           tools,
-          message: test
+          message: connection.connectorId === "mcp" ? "MCP tool discovery completed. Only approved tools are shown." : test
             ? "Airtable accepted the credentials."
             : "Available tools (credentials not remotely verified).",
         });
@@ -207,8 +223,24 @@ function Connections({ profileId }: { profileId: string }) {
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            <label>
-              Personal access token
+            {connectorId === "mcp" && <>
+              <label>Approved MCP endpoint
+                <select value={endpoint} onChange={(event) => setEndpoint(event.target.value)}>
+                  {endpoints.map((url) => <option key={url} value={url}>{url}</option>)}
+                </select>
+              </label>
+              <label>Authentication
+                <select value={authentication} onChange={(event) => setAuthentication(event.target.value === "none" ? "none" : "token")}>
+                  <option value="token">Bearer token</option>
+                  <option value="none">None</option>
+                </select>
+              </label>
+              <label>Approved read tool names (space separated)<textarea value={readTools} onChange={(event) => setReadTools(event.target.value)} /></label>
+              <label>Approved write tool names (space separated)<textarea value={writeTools} onChange={(event) => setWriteTools(event.target.value)} /></label>
+              <p>Only approve known tools from a trusted server. Read/write labels are your classification, not a guarantee of server behavior.</p>
+            </>}
+            {(connectorId !== "mcp" || authentication === "token") && <label>
+              {connectorId === "mcp" ? "Bearer token" : "Personal access token"}
               <input
                 ref={token}
                 type="password"
@@ -218,7 +250,7 @@ function Connections({ profileId }: { profileId: string }) {
                 spellCheck={false}
                 disabled={busy}
               />
-            </label>
+            </label>}
             {connectorId === "airtable" && (
               <p>
                 Create an Airtable personal access token with access to the
@@ -242,7 +274,7 @@ function Connections({ profileId }: { profileId: string }) {
             <div className="actions">
               <button
                 type="submit"
-                disabled={busy || selected?.authentication !== "token"}
+                disabled={busy || !selected || (connectorId === "mcp" && !endpoint)}
               >
                 Save connection
               </button>
@@ -327,6 +359,7 @@ function Connections({ profileId }: { profileId: string }) {
                     <li key={tool.name}>
                       <strong>{tool.name}</strong> · {tool.access}
                       <p>{tool.description}</p>
+                      {connection.connectorId === "mcp" && <McpToolRunner profileId={profileId} connectionId={connection.id} tool={tool} disabled={busy} />}
                     </li>
                   ))}
                 </ul>

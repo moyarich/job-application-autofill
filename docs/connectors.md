@@ -13,7 +13,7 @@ The local API owns credentials, profile-scoped records and synchronization. No m
 
 ## Data and access
 
-The backend registers Airtable only. The MCP adapter is a library building block for trusted statically configured HTTPS servers, not a general user-installable plugin system. Profile headers select local data and are not authentication. Do not expose this local API publicly.
+The backend registers native Airtable and supports profile-owned custom MCP connections. The administrator must configure exact trusted HTTPS endpoints in MOYA_MCP_ENDPOINTS. Users choose an approved endpoint, token or no authentication, and explicit read/write tool names. Generic execution uses JSON arguments and requires confirmation. This uses the SDK’s limited stateless JSON MCP transport; OAuth and arbitrary endpoints are not supported. Profile headers select local data and are not authentication. Do not expose this local API publicly.
 
 The token is encrypted with AES-256-GCM using a separate 32-byte key and authenticated connection/profile identity. The key comes from `MOYA_CONNECTOR_KEY` and must be 64 hexadecimal characters. Tool inputs are checked against registered schemas. External writes require explicit opt-in.
 

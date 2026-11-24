@@ -18,6 +18,7 @@ export interface ConnectionTool {
   name: string;
   description: string;
   access: "read" | "write";
+  inputSchema: Record<string, unknown>;
 }
 
 export async function connectionRequest<T>(

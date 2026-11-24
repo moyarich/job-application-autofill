@@ -16,6 +16,19 @@ function fixture() {
 }
 
 describe("persistent connections", () => {
+  it("restricts custom MCP to approved endpoints and profile-owned credentials", () => {
+    const { db, store } = fixture();
+    try {
+      vi.stubEnv("MOYA_MCP_ENDPOINTS", "https://mcp.example.com/mcp");
+      const config = { connectorId: "mcp", name: "Remote", endpoint: "https://mcp.example.com/mcp", authentication: "token", accessToken: "secret", tools: { search: "read" } };
+      expect(() => store.addConnection("first", { ...config, endpoint: "https://other.example.com/mcp" })).toThrow("not approved");
+      const row = store.addConnection("first", config);
+      expect(row.connectorId).toBe("mcp");
+      expect(store.listConnections("second")).toEqual([]);
+      expect(JSON.stringify(db.prepare("SELECT * FROM connections").get())).not.toContain("secret");
+      expect(store.listMcpEndpoints()).toEqual(["https://mcp.example.com/mcp"]);
+    } finally { db.close(); }
+  });
   it("encrypts tokens and isolates connection metadata by profile", async () => {
     const { db, store } = fixture();
     try {
