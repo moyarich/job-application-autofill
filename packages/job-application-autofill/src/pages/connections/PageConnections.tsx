@@ -1,3 +1,4 @@
+import { AirtableMapping } from "./AirtableMapping";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Plug, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { WorkspaceHeader } from "../../components/WorkspaceHeader/WorkspaceHeader";
@@ -298,6 +299,9 @@ function Connections({ profileId }: { profileId: string }) {
                 </button>
               </div>
             </div>
+            {connection.connectorId === "airtable" && (
+              <AirtableMapping profileId={profileId} connection={connection} />
+            )}
             {removeId === connection.id && (
               <div className="connections-confirm">
                 <p>Remove this local connection and its stored token?</p>
