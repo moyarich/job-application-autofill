@@ -203,7 +203,6 @@ export function createConnections(
       const connector = createMcpConnector({
         manifest: { ...mcpManifest, authentication: config.authentication },
         endpoint: config.endpoint,
-        protocol: "auto",
         tools: config.tools,
       });
       session = await connector.connect(context);
@@ -232,7 +231,6 @@ export function createConnections(
     const connector = createMcpConnector({
       manifest: { ...mcpManifest, authentication },
       endpoint,
-      protocol: "auto",
       tools: {},
       discoveryOnly: true,
     });

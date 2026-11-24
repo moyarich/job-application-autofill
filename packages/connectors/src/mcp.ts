@@ -6,11 +6,9 @@ export interface McpOptions {
   tools: Readonly<Record<string, ConnectorTool["access"]>>;
   /** Discovery-only sessions cannot invoke tools, even if an allowlist is supplied. */
   discoveryOnly?: boolean;
-  protocol?: "modern" | "legacy" | "auto";
 }
 
 const version = "2026-07-28";
-const legacyVersions = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const maxResponseBytes = 2 * 1024 * 1024;
 
 function record(value: unknown): Record<string, unknown> {
@@ -72,11 +70,7 @@ async function readMessage(response: Response, id: number): Promise<Record<strin
   }
 }
 
-class McpProtocolError extends Error {
-  constructor(readonly code: number) { super("MCP protocol error."); }
-}
-
-/** Modern and legacy Streamable HTTP for trusted, host-configured servers. */
+/** Stateless MCP 2026-07-28 Streamable HTTP for trusted, host-configured servers. */
 export function createMcpConnector(
   options: McpOptions,
   request: typeof fetch = fetch,
@@ -107,106 +101,47 @@ export function createMcpConnector(
       }
       const controller = new AbortController();
       let nextId = 0;
-      let negotiated = version;
-      let sessionId: string | undefined;
-      let mode: "modern" | "legacy" = options.protocol === "legacy" ? "legacy" : "modern";
-      let initialized: Promise<void> | undefined;
-      const protocol = options.protocol ?? "modern";
-      function headersFor(method: string, params: Record<string, unknown>) {
+
+      async function rpc(method: string, params: Record<string, unknown>) {
+        if (controller.signal.aborted) throw new Error("MCP session is closed.");
+        const id = ++nextId;
         const headers = new Headers({
           Accept: "application/json, text/event-stream",
           "Content-Type": "application/json",
+          "MCP-Protocol-Version": version,
+          "Mcp-Method": method,
         });
+        if (typeof params.name === "string") headers.set("Mcp-Name", params.name);
         if (token) headers.set("Authorization", "Bearer " + token);
-        if (mode === "modern") {
-          headers.set("MCP-Protocol-Version", version);
-          headers.set("Mcp-Method", method);
-          if (typeof params.name === "string") headers.set("Mcp-Name", params.name);
-        } else if (method !== "initialize") {
-          headers.set("MCP-Protocol-Version", negotiated);
-          if (sessionId) headers.set("Mcp-Session-Id", sessionId);
-        }
-        return headers;
-      }
-
-      async function send(method: string, params: Record<string, unknown>, notification = false) {
-        if (controller.signal.aborted) throw new Error("MCP session is closed.");
-        const id = ++nextId;
         const response = await request(endpoint, {
           method: "POST",
-          headers: headersFor(method, params),
+          headers,
           redirect: "error",
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
           body: JSON.stringify({
             jsonrpc: "2.0",
-            ...(notification ? {} : { id }),
+            id,
             method,
-            params: mode === "modern" ? {
+            params: {
               ...params,
               _meta: {
                 "io.modelcontextprotocol/protocolVersion": version,
                 "io.modelcontextprotocol/clientInfo": { name: "Moya", version: "0.1.0" },
                 "io.modelcontextprotocol/clientCapabilities": {},
               },
-            } : params,
+            },
           }),
         }).catch(() => { throw new Error("MCP request failed."); });
-        if (notification) {
-          await response.body?.cancel();
-          if (response.status !== 202) throw new Error("MCP notification rejected.");
-          return {};
-        }
-        if (!response.ok && !response.headers.get("content-type")?.includes("application/json")) {
+        if (!response.ok) {
           await response.body?.cancel();
           throw new Error("MCP HTTP error: " + response.status);
         }
         const message = await readMessage(response, id);
-        if (message.jsonrpc !== "2.0" || message.id !== id) throw new Error("Invalid MCP response.");
-        if (message.error) {
-          const error = record(message.error);
-          throw new McpProtocolError(typeof error.code === "number" ? error.code : 0);
-        }
-        if (!response.ok) throw new Error("MCP HTTP error: " + response.status);
+        if (message.jsonrpc !== "2.0" || message.id !== id || message.error)
+          throw new Error("Invalid or unsuccessful MCP response.");
         const result = record(message.result);
-        if (mode === "modern" && result.resultType !== "complete") throw new Error("Unsupported MCP result type.");
-        if (method === "initialize") {
-          const assigned = response.headers.get("Mcp-Session-Id");
-          if (assigned && !/^[\\x21-\\x7e]{1,1024}$/.test(assigned)) throw new Error("Invalid MCP session identifier.");
-          sessionId = assigned ?? undefined;
-        }
+        if (result.resultType !== "complete") throw new Error("Unsupported MCP result type.");
         return result;
-      }
-
-      async function initialize() {
-        if (protocol === "auto") {
-          try {
-            await send("server/discover", {});
-            return;
-          } catch (error) {
-            // Only an explicit unsupported-method/version response triggers fallback.
-            // Never retry a tool invocation in another protocol.
-            if (!(error instanceof McpProtocolError) || ![-32601, -32022].includes(error.code)) throw error;
-            mode = "legacy";
-          }
-        }
-        if (mode === "legacy") {
-          const result = await send("initialize", {
-            protocolVersion: legacyVersions[0],
-            capabilities: {},
-            clientInfo: { name: "Moya", version: "0.1.0" },
-          });
-          if (typeof result.protocolVersion !== "string" || !legacyVersions.includes(result.protocolVersion))
-            throw new Error("Unsupported negotiated MCP protocol version.");
-          negotiated = result.protocolVersion;
-          await send("notifications/initialized", {}, true);
-        }
-      }
-
-      async function rpc(method: string, params: Record<string, unknown>) {
-        if (controller.signal.aborted) throw new Error("MCP session is closed.");
-        initialized ??= initialize();
-        await initialized;
-        return send(method, params);
       }
       async function listTools(): Promise<ConnectorTool[]> {
         const found = new Map<string, ConnectorTool>();
@@ -255,15 +190,7 @@ export function createMcpConnector(
           return rpc("tools/call", { name, arguments: record(input) });
         },
         async close() {
-          if (controller.signal.aborted) return;
           controller.abort();
-          if (sessionId) {
-            const headers = headersFor("close", {});
-            try {
-              const response = await request(endpoint, { method: "DELETE", headers, redirect: "error", signal: AbortSignal.timeout(3000) });
-              await response.body?.cancel();
-            } catch { /* Session cleanup is best effort. */ }
-          }
         },
       };
     },
