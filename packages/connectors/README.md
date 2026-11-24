@@ -36,3 +36,5 @@ require `configuration.allowWrites`. The adapter uses the stateless 2026-07-28
 protocol with JSON responses only. SSE, older session-based servers, OAuth,
 stdio and interactive input requests are not supported by this initial adapter.
 No AI or model credentials are needed.
+
+The MCP adapter supports `protocol: "modern"` (default), `"legacy"`, or `"auto"`. Auto probes `server/discover` and falls back only for explicit unsupported-method/version errors. Legacy Streamable HTTP negotiates 2025-11-25, 2025-06-18 or 2025-03-26, carries session headers and attempts session cleanup. Both modes accept bounded JSON or request-scoped SSE responses. Tool execution is never automatically retried across protocols. Server-initiated requests, reconnect/resume and OAuth are not supported.
