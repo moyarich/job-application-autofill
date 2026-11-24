@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 
-const CURRENT_SCHEMA_VERSION = 13;
+const CURRENT_SCHEMA_VERSION = 14;
 const initialTables = [
   "profiles.sql",
   "profile-contact.sql",
@@ -18,6 +18,7 @@ const initialTables = [
   "connection-sync-runs.sql",
   "connection-schedules.sql",
   "connection-mcp.sql",
+  "connection-workflows.sql",
 ] as const;
 
 function tableSql(name: string): string {
@@ -96,6 +97,7 @@ export function initializeDatabase(db: DatabaseSync): void {
         db.exec(tableSql("connection-mcp.sql"));
         db.exec("INSERT INTO connection_mcp SELECT * FROM connection_mcp_previous; DROP TABLE connection_mcp_previous");
       } else db.exec(tableSql("connection-mcp.sql"));
+      db.exec(tableSql("connection-workflows.sql"));
       db.exec("PRAGMA user_version = " + CURRENT_SCHEMA_VERSION);
       db.exec("COMMIT");
     } catch (error) {
