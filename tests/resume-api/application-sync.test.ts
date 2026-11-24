@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import {
   createApplicationSync,
+  classifyChange,
   normalizedUrl,
   parseMapping,
 } from "../../packages/resume-api/src/database/repositories/application-sync.ts";
@@ -15,6 +16,15 @@ const mapping = {
 };
 
 describe("application transfer", () => {
+  it("distinguishes independent edits, conflicts, convergence and missing records", () => {
+    expect(classifyChange("a", "a", "a", "a")).toBe("unchanged");
+    expect(classifyChange("a", "a", "b", "a")).toBe("local_changed");
+    expect(classifyChange("a", "a", "a", "b")).toBe("remote_changed");
+    expect(classifyChange("a", "a", "b", "c")).toBe("conflict");
+    expect(classifyChange("a", "a", "b", "b")).toBe("converged");
+    expect(classifyChange("a", "b", "a", "b")).toBe("diverged");
+    expect(classifyChange("a", "a", "a", null)).toBe("remote_missing");
+  });
   it("validates field identifiers and normalizes HTTPS URLs", () => {
     expect(parseMapping(mapping)).toEqual(mapping);
     expect(() => parseMapping({
@@ -58,6 +68,14 @@ describe("application transfer", () => {
       expect(callConnectionTool).toHaveBeenCalledTimes(2);
       expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
       expect(sync.listConnectionRecordLinks("profile", "connection")).toEqual([]);
+      db.prepare("INSERT INTO connection_record_links VALUES(?,?,?,?,?,?,?,?,?)")
+        .run("connection", "profile", "job", "app123", "tbl123", "rec1", "old-local", "old-remote", "2026-11-24");
+      const report = await sync.reviewConnectionChanges("profile", "connection");
+      expect(report.changes).toHaveLength(1);
+      expect(report.changes[0].state).toBe("converged");
+      expect(save).not.toHaveBeenCalled();
+      expect(callConnectionTool.mock.calls).toHaveLength(3);
+      expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
     } finally {
       db.close();
     }

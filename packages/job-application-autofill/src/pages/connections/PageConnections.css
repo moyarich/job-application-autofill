@@ -60,3 +60,21 @@
 .connection-inspection li + li {
   margin-top: 10px;
 }
+
+.connection-comparison {
+  overflow-x: auto;
+}
+.connection-comparison table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.connection-comparison th,
+.connection-comparison td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  border-bottom: 1px solid var(--line);
+}
