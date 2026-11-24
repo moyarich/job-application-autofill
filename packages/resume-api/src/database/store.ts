@@ -1,3 +1,4 @@
+import { createMcpImports } from "./repositories/mcp-import.ts";
 import { createMcpWorkflows } from "./repositories/mcp-workflows.ts";
 import { createApplicationSync } from "./repositories/application-sync.ts";
 import { createConnections } from "./repositories/connections.ts";
@@ -1184,6 +1185,7 @@ export function openStore(
   return {
     ...connections,
     ...createMcpWorkflows(db, connections, getJobList),
+    ...createMcpImports(db, connections, getJobList, updateJobRecord),
     ...createApplicationSync(db, connections, getJobList, updateJobRecord),
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
