@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DatabaseSync } from "node:sqlite";
+import { readFileSync } from "node:fs";
 import {
   createApplicationSync,
   normalizedUrl,
@@ -30,7 +31,9 @@ describe("application transfer", () => {
   it("imports new URLs only and skips existing exports", async () => {
     const db = new DatabaseSync(":memory:");
     try {
-      db.exec("CREATE TABLE connection_mappings(connection_id TEXT PRIMARY KEY, mapping_json TEXT)");
+      db.exec("CREATE TABLE connections(id TEXT PRIMARY KEY); CREATE TABLE applications(profile_id TEXT, id TEXT, PRIMARY KEY(profile_id,id)); CREATE TABLE connection_mappings(connection_id TEXT PRIMARY KEY, mapping_json TEXT)");
+      db.exec(readFileSync(new URL("../../packages/resume-api/src/database/tables/connection-transfers.sql", import.meta.url), "utf8"));
+      db.exec("INSERT INTO connections VALUES('connection'); INSERT INTO applications VALUES('profile','job')");
       const listConnections = vi.fn(() => [
         { id: "connection", connectorId: "airtable", allowWrites: true },
       ]);
@@ -53,6 +56,8 @@ describe("application transfer", () => {
       expect(save).not.toHaveBeenCalled();
       expect(await sync.exportConnectionApplication("profile", "connection", { jobId: "job" })).toEqual({ created: false, reason: "already exists" });
       expect(callConnectionTool).toHaveBeenCalledTimes(2);
+      expect(sync.listConnectionHistory("profile", "connection")).toHaveLength(2);
+      expect(sync.listConnectionRecordLinks("profile", "connection")).toEqual([]);
     } finally {
       db.close();
     }

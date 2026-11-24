@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { createConnections } from "./connections.ts";
 
@@ -51,6 +51,48 @@ export function createApplicationSync(
   saveJob: (raw: unknown, profileId: string) => unknown,
 ) {
   const running = new Set<string>();
+  const hash = (values: unknown[]) =>
+    createHash("sha256").update(JSON.stringify(values)).digest("hex");
+  const localHash = (job: Job) =>
+    hash(keys.map((key) => key === "url" ? normalizedUrl(job.url) : job[key]));
+  const remoteHash = (record: RemoteRecord, mapping: Mapping) =>
+    hash(keys.map((key) => key === "url"
+      ? normalizedUrl(record.fields[mapping.fields.url])
+      : record.fields[mapping.fields[key]] ?? ""));
+  function linkedRemote(id: string, mapping: Mapping, remoteId: string) {
+    return db.prepare(
+      "SELECT application_id FROM connection_record_links WHERE connection_id=? AND base_id=? AND table_id=? AND remote_id=?",
+    ).get(id, mapping.baseId, mapping.tableId, remoteId);
+  }
+  function linkedLocal(id: string, mapping: Mapping, jobId: string) {
+    return db.prepare(
+      "SELECT remote_id FROM connection_record_links WHERE connection_id=? AND base_id=? AND table_id=? AND application_id=?",
+    ).get(id, mapping.baseId, mapping.tableId, jobId);
+  }
+  function link(profileId: string, id: string, mapping: Mapping, job: Job, record: RemoteRecord) {
+    if (!/^rec[A-Za-z0-9]+$/.test(record.id))
+      throw new Error("Invalid Airtable record identity.");
+    db.prepare(
+      "INSERT INTO connection_record_links VALUES(?,?,?,?,?,?,?,?,?)",
+    ).run(id, profileId, job.id, mapping.baseId, mapping.tableId, record.id,
+      localHash(job), remoteHash(record, mapping), new Date().toISOString());
+  }
+  function listConnectionHistory(profileId: string, id: string) {
+    requireConnection(profileId, id);
+    return db.prepare(
+      "SELECT id,direction,status,started_at AS startedAt,finished_at AS finishedAt,result_json AS resultJson FROM connection_transfer_runs WHERE connection_id=? ORDER BY started_at DESC,id DESC LIMIT 50",
+    ).all(id).map(({ resultJson, ...row }) => ({
+      ...row,
+      result: typeof resultJson === "string" ? JSON.parse(resultJson) as unknown : null,
+    }));
+  }
+  function listConnectionRecordLinks(profileId: string, id: string) {
+    const mapping = getConnectionMapping(profileId, id);
+    if (!mapping) return [];
+    return db.prepare(
+      "SELECT application_id AS applicationId,remote_id AS remoteId,linked_at AS linkedAt FROM connection_record_links WHERE connection_id=? AND profile_id=? AND base_id=? AND table_id=? ORDER BY application_id",
+    ).all(id, profileId, mapping.baseId, mapping.tableId);
+  }
   function requireConnection(profileId: string, id: string) {
     const connection = connections.listConnections(profileId).find((item) => item.id === id);
     if (connection?.connectorId !== "airtable") throw new Error("Airtable connection not found.");
@@ -76,6 +118,11 @@ export function createApplicationSync(
     ))) throw new Error("Mapped fields must be compatible text or URL fields.");
     requireConnection(profileId, id);
     if (running.has(id)) throw new Error("Transfer in progress.");
+    const previous = getConnectionMapping(profileId, id);
+    if (previous && JSON.stringify(previous) !== JSON.stringify(mapping) &&
+      db.prepare("SELECT 1 FROM connection_record_links WHERE connection_id=? LIMIT 1").get(id)) {
+      throw new Error("Create a separate connection to change a mapping with linked records.");
+    }
     db.prepare("INSERT INTO connection_mappings VALUES(?,?) ON CONFLICT(connection_id) DO UPDATE SET mapping_json=excluded.mapping_json").run(id, JSON.stringify(mapping));
     return mapping;
   }
@@ -97,17 +144,30 @@ export function createApplicationSync(
     } while (offset);
     return result;
   }
-  async function transfer<T>(id: string, action: () => Promise<T>) {
+  async function transfer<T>(profileId: string, id: string, direction: "import" | "export", action: () => Promise<T>) {
+    requireConnection(profileId, id);
     if (running.has(id)) throw new Error("Transfer in progress.");
     running.add(id);
+    const runId = randomUUID();
     try {
-      return await action();
+      db.prepare("INSERT INTO connection_transfer_runs(id,connection_id,direction,status,started_at) VALUES(?,?,?,'running',?)")
+        .run(runId, id, direction, new Date().toISOString());
+      try {
+        const result = await action();
+        db.prepare("UPDATE connection_transfer_runs SET status='completed',finished_at=?,result_json=? WHERE id=?")
+          .run(new Date().toISOString(), JSON.stringify(result), runId);
+        return result;
+      } catch (error) {
+        db.prepare("UPDATE connection_transfer_runs SET status='failed',finished_at=? WHERE id=?")
+          .run(new Date().toISOString(), runId);
+        throw error;
+      }
     } finally {
       running.delete(id);
     }
   }
   function importConnectionApplications(profileId: string, id: string) {
-    return transfer(id, async () => {
+    return transfer(profileId, id, "import", async () => {
       const mapping = getConnectionMapping(profileId, id);
       if (!mapping) throw new Error("Save a field mapping first.");
       const remote = await records(profileId, id, mapping);
@@ -116,6 +176,10 @@ export function createApplicationSync(
       let imported = 0;
       let skipped = 0;
       for (const record of remote) {
+        if (!/^rec[A-Za-z0-9]+$/.test(record.id) || linkedRemote(id, mapping, record.id)) {
+          skipped++;
+          continue;
+        }
         const fields = record.fields;
         const url = normalizedUrl(fields[mapping.fields.url]);
         const company = fields[mapping.fields.company];
@@ -127,8 +191,10 @@ export function createApplicationSync(
           skipped++;
           continue;
         }
-        saveJob({ revision: 0, job: { id: randomUUID(), company, role, url, notes,
-          status: "saved", createdAt: new Date().toISOString() } }, profileId);
+        const job = { id: randomUUID(), company, role, url, notes,
+          status: "saved", createdAt: new Date().toISOString() };
+        saveJob({ revision: 0, job }, profileId);
+        link(profileId, id, mapping, job, record);
         existing.add(url);
         imported++;
       }
@@ -136,7 +202,7 @@ export function createApplicationSync(
     });
   }
   function exportConnectionApplication(profileId: string, id: string, raw: unknown) {
-    return transfer(id, async () => {
+    return transfer(profileId, id, "export", async () => {
       if (!requireConnection(profileId, id).allowWrites) throw new Error("Connection is read only.");
       const mapping = getConnectionMapping(profileId, id);
       if (!mapping) throw new Error("Save a field mapping first.");
@@ -144,15 +210,18 @@ export function createApplicationSync(
       const job = getJobs(profileId).jobs.find((item) => item.id === jobId);
       const url = normalizedUrl(job?.url);
       if (!job || !url) throw new Error("Choose an application with a valid HTTPS URL.");
+      if (linkedLocal(id, mapping, job.id)) return { created: false, reason: "already linked" };
       const remote = await records(profileId, id, mapping);
       if (remote.some((record) => normalizedUrl(record.fields[mapping.fields.url]) === url))
         return { created: false, reason: "already exists" };
       const fields = Object.fromEntries(keys.map((key) => [mapping.fields[key], key === "url" ? url : job[key]]));
-      await connections.callConnectionTool(profileId, id, "create_record", {
+      const record = await connections.callConnectionTool(profileId, id, "create_record", {
         baseId: mapping.baseId, tableId: mapping.tableId, fields,
-      });
+      }) as RemoteRecord;
+      requireConnection(profileId, id);
+      link(profileId, id, mapping, job, record);
       return { created: true };
     });
   }
-  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication };
+  return { getConnectionMapping, saveConnectionMapping, importConnectionApplications, exportConnectionApplication, listConnectionHistory, listConnectionRecordLinks };
 }
