@@ -24,6 +24,10 @@ export function createMcpLinks(db: DatabaseSync, connections: ReturnType<typeof 
     return db.prepare("SELECT application_id AS applicationId,remote_id AS remoteId,direction,linked_at AS linkedAt FROM connection_mcp_links WHERE connection_id=? AND profile_id=? ORDER BY linked_at DESC,application_id")
       .all(id, profileId) as { applicationId: string; remoteId: string; direction: string; linkedAt: string }[];
   }
+  function reviewLinks(profileId: string, id: string) {
+    requireOwner(profileId, id);
+    return db.prepare("SELECT application_id AS applicationId,remote_id AS remoteId,direction,baseline_hash AS baselineHash FROM connection_mcp_links WHERE connection_id=? AND profile_id=? ORDER BY application_id").all(id, profileId) as { applicationId: string; remoteId: string; direction: string; baselineHash: string }[];
+  }
   function listMcpUncertainExports(profileId: string, id: string) {
     requireOwner(profileId, id);
     return db.prepare("SELECT application_id AS applicationId,attempted_at AS attemptedAt FROM connection_mcp_export_attempts WHERE connection_id=? AND profile_id=? ORDER BY attempted_at DESC")
@@ -56,5 +60,5 @@ export function createMcpLinks(db: DatabaseSync, connections: ReturnType<typeof 
       db.exec("COMMIT");
     } catch (error) { db.exec("ROLLBACK"); throw error; }
   }
-  return { listMcpLinks, listMcpUncertainExports, assertUnlinked, assertMappingMutable, insertLink, reserveExport, completeExport };
+  return { reviewLinks, listMcpLinks, listMcpUncertainExports, assertUnlinked, assertMappingMutable, insertLink, reserveExport, completeExport };
 }
