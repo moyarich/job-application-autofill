@@ -29,6 +29,8 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const mcpHistory = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-sync-history$/i);
+  if (mcpHistory && req.method === "GET") return reply(200, store.listMcpSyncHistory(profileId, mcpHistory[1]));
   const mcpSync = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-sync$/i);
   if (mcpSync && req.method === "POST") return reply(200, await store.syncMcpApplications(profileId, mcpSync[1], await req.readJson()));
   const mcpResolution = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/(mcp-resolve|mcp-update-workflow)$/i);

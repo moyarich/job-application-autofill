@@ -1,3 +1,4 @@
+import { createMcpSyncHistory, type SyncSummary } from "./mcp-sync-history.ts";
 import { planMcpSync } from "./mcp-sync.ts";
 import type { DatabaseSync } from "node:sqlite";
 import Ajv, { type AnySchema } from "ajv";
@@ -41,6 +42,8 @@ export function createMcpResolution(
   getJobs: (profileId: string) => { jobs: ReviewJob[]; revisions: Record<string, number> },
 ) {
   const running = new Set<string>();
+  const activeSync = new Set<string>();
+  const history = createMcpSyncHistory(db);
   const ajv = new Ajv();
   function requireOwner(profileId: string, id: string) { links.reviewLinks(profileId, id); }
   function getMcpUpdateWorkflow(profileId: string, id: string) {
@@ -120,32 +123,52 @@ export function createMcpResolution(
     const workflow = getMcpUpdateWorkflow(profileId, id);
     return { workflow, updateToken: workflow ? baselineHash(workflow) : null };
   }
+  function listMcpSyncHistory(profileId: string, id: string) {
+    requireOwner(profileId, id);
+    return history.list(id, activeSync.has(id));
+  }
   async function syncMcpApplications(profileId: string, id: string, raw: unknown) {
     requireOwner(profileId, id);
     if (!object(raw) || raw.confirm !== true) throw new Error("Confirm synchronization first.");
     if (running.has(id)) throw new Error("Resolution or synchronization in progress.");
     running.add(id);
+    activeSync.add(id);
+    let runId: string | undefined;
+    let result: SyncSummary | null = null;
+    let phase: "review_failed" | "run_failed" = "review_failed";
     try {
+      runId = history.start(id);
       const config = getMcpUpdateConfig(profileId, id);
       // A saved write mapping is not permission to invoke it in a batch.
       const allowRemoteWrites = !!config.updateToken && raw.updateToken === config.updateToken;
       const report = await review.reviewMcpChanges(profileId, id);
       const plan = planMcpSync(report.changes, allowRemoteWrites);
-      const result = { checked: report.changes.length, unchanged: plan.unchanged, applied: 0, deferred: plan.deferred, failed: 0, stopped: false };
-      for (const [index, item] of plan.actions.entries()) {
+      phase = "run_failed";
+      result = { checked: report.changes.length, unchanged: plan.unchanged, applied: 0, deferred: plan.deferred + plan.actions.length, failed: 0, stopped: false };
+      history.progress(id, runId, result);
+      for (const item of plan.actions) {
         try {
           await applyResolution(profileId, id, { applicationId: item.applicationId, reviewToken: item.reviewToken, choice: item.choice, updateToken: config.updateToken });
           result.applied++;
+          result.deferred--;
         } catch {
           // The write may have happened. Stop instead of retrying or continuing a possibly stale batch.
           result.failed++;
-          result.deferred += plan.actions.length - index - 1;
+          result.deferred--;
           result.stopped = true;
           break;
         }
+        history.progress(id, runId, result);
       }
+      history.finish(id, runId, result, result.failed ? "resolution_failed" : null);
       return result;
-    } finally { running.delete(id); }
+    } catch (error) {
+      if (runId) {
+        if (result) result.stopped = true;
+        history.finish(id, runId, result, phase);
+      }
+      throw error;
+    } finally { activeSync.delete(id); running.delete(id); }
   }
-  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange, syncMcpApplications };
+  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange, syncMcpApplications, listMcpSyncHistory };
 }
