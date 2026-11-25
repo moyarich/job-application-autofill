@@ -56,3 +56,7 @@ Set optional remote record ID pointers relative to each imported record or the e
 ### MCP change review
 
 Use an import workflow with a stable ID pointer to compare linked applications against a single structured read-tool response. Review is read-only and compares only mapped fields. Imported associations use their original import snapshot; exported associations are marked baseline unverified because outgoing arguments do not prove remote values. Missing IDs are reported as not returned, never deleted. Invalid or duplicate remote IDs require review. No baselines are modified, and no automatic conflict resolution is performed.
+
+### Explicit MCP resolution
+
+Review linked records, then confirm Keep remote, Keep local, or Accept matching values. Keep remote updates mapped fields only and preserves other application data. Keep local requires an approved existing-record update tool with a stable ID argument and mappings for every reviewed field. Configure it using the JSON update workflow editor. The API checks the review token and application revision again, and verifies remote writes by reading the record back. Verified hashes are stored separately from the original transfer snapshot. Remote services do not universally support compare-and-swap; concurrent remote changes may still occur between read and write. Failed or uncertain remote writes require a fresh review, not automatic retries. No scheduled or automatic synchronization is introduced.

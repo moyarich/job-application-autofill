@@ -26,7 +26,7 @@ export function createMcpLinks(db: DatabaseSync, connections: ReturnType<typeof 
   }
   function reviewLinks(profileId: string, id: string) {
     requireOwner(profileId, id);
-    return db.prepare("SELECT application_id AS applicationId,remote_id AS remoteId,direction,baseline_hash AS baselineHash FROM connection_mcp_links WHERE connection_id=? AND profile_id=? ORDER BY application_id").all(id, profileId) as { applicationId: string; remoteId: string; direction: string; baselineHash: string }[];
+    return db.prepare("SELECT application_id AS applicationId,remote_id AS remoteId,direction,baseline_hash AS baselineHash,b.local_hash AS localHash,b.remote_hash AS remoteHash FROM connection_mcp_links l LEFT JOIN connection_mcp_baselines b USING(connection_id,remote_id) WHERE l.connection_id=? AND profile_id=? ORDER BY application_id").all(id, profileId) as { applicationId: string; remoteId: string; direction: string; baselineHash: string; localHash: string | null; remoteHash: string | null }[];
   }
   function listMcpUncertainExports(profileId: string, id: string) {
     requireOwner(profileId, id);

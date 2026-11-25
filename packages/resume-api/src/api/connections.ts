@@ -29,6 +29,13 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const mcpResolution = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/(mcp-resolve|mcp-update-workflow)$/i);
+  if (mcpResolution) {
+    const [, id, action] = mcpResolution;
+    if (action === "mcp-resolve" && req.method === "POST") return reply(200, await store.resolveMcpChange(profileId, id, await req.readJson()));
+    if (action === "mcp-update-workflow" && req.method === "GET") return reply(200, store.getMcpUpdateConfig(profileId, id));
+    if (action === "mcp-update-workflow" && req.method === "PUT") return reply(200, await store.saveMcpUpdateWorkflow(profileId, id, await req.readJson()));
+  }
   const mcpChanges = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-changes$/i);
   if (mcpChanges && req.method === "POST") return reply(200, await store.reviewMcpChanges(profileId, mcpChanges[1]));
   const mcpLinks = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-links$/i);
