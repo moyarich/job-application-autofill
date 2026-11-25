@@ -1,3 +1,4 @@
+import { planMcpSync } from "./mcp-sync.ts";
 import type { DatabaseSync } from "node:sqlite";
 import Ajv, { type AnySchema } from "ajv";
 import { baselineHash, type createMcpLinks } from "./mcp-links.ts";
@@ -65,13 +66,11 @@ export function createMcpResolution(
     db.prepare("INSERT INTO connection_mcp_update_workflows VALUES(?,?) ON CONFLICT(connection_id) DO UPDATE SET config_json=excluded.config_json").run(id, JSON.stringify(workflow));
     return workflow;
   }
-  async function resolveMcpChange(profileId: string, id: string, raw: unknown) {
+  async function applyResolution(profileId: string, id: string, raw: unknown) {
     requireOwner(profileId, id);
     if (!object(raw) || typeof raw.applicationId !== "string" || typeof raw.reviewToken !== "string" ||
         !["local", "remote", "accept"].includes(String(raw.choice))) throw new Error("Select a reviewed resolution.");
-    if (running.has(id)) throw new Error("Resolution in progress.");
-    running.add(id);
-    try {
+    {
       const mapping = imports.getMcpImport(profileId, id);
       if (!mapping) throw new Error("Import mapping required.");
       const update = raw.choice === "local" ? getMcpUpdateWorkflow(profileId, id) : null;
@@ -109,11 +108,44 @@ export function createMcpResolution(
         db.exec("COMMIT");
       } catch (error) { db.exec("ROLLBACK"); throw error; }
       return { resolved: true };
-    } finally { running.delete(id); }
+    }
+  }
+  async function resolveMcpChange(profileId: string, id: string, raw: unknown) {
+    if (running.has(id)) throw new Error("Resolution in progress.");
+    running.add(id);
+    try { return await applyResolution(profileId, id, raw); }
+    finally { running.delete(id); }
   }
   function getMcpUpdateConfig(profileId: string, id: string) {
     const workflow = getMcpUpdateWorkflow(profileId, id);
     return { workflow, updateToken: workflow ? baselineHash(workflow) : null };
   }
-  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange };
+  async function syncMcpApplications(profileId: string, id: string, raw: unknown) {
+    requireOwner(profileId, id);
+    if (!object(raw) || raw.confirm !== true) throw new Error("Confirm synchronization first.");
+    if (running.has(id)) throw new Error("Resolution or synchronization in progress.");
+    running.add(id);
+    try {
+      const config = getMcpUpdateConfig(profileId, id);
+      // A saved write mapping is not permission to invoke it in a batch.
+      const allowRemoteWrites = !!config.updateToken && raw.updateToken === config.updateToken;
+      const report = await review.reviewMcpChanges(profileId, id);
+      const plan = planMcpSync(report.changes, allowRemoteWrites);
+      const result = { checked: report.changes.length, unchanged: plan.unchanged, applied: 0, deferred: plan.deferred, failed: 0, stopped: false };
+      for (const [index, item] of plan.actions.entries()) {
+        try {
+          await applyResolution(profileId, id, { applicationId: item.applicationId, reviewToken: item.reviewToken, choice: item.choice, updateToken: config.updateToken });
+          result.applied++;
+        } catch {
+          // The write may have happened. Stop instead of retrying or continuing a possibly stale batch.
+          result.failed++;
+          result.deferred += plan.actions.length - index - 1;
+          result.stopped = true;
+          break;
+        }
+      }
+      return result;
+    } finally { running.delete(id); }
+  }
+  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange, syncMcpApplications };
 }

@@ -87,7 +87,7 @@ export function createMcpChangeReview(
           }
         }
         const reviewToken = baselineHash([profileId, id, workflow, link, snapshot.revisions[job.id], local, remote]);
-        return [{ applicationId: link.applicationId, remoteId: link.remoteId, state, local, remote, reviewToken, revision: snapshot.revisions[job.id] }];
+        return [{ applicationId: link.applicationId, remoteId: link.remoteId, state, local, remote, reviewToken, verifiedBaseline: !!link.localHash && !!link.remoteHash, revision: snapshot.revisions[job.id] }];
       });
       return { checkedAt: new Date().toISOString(), changes };
     } finally { running.delete(id); }
