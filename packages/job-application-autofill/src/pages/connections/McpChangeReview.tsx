@@ -1,3 +1,4 @@
+import { McpSchedule } from "./McpSchedule";
 import { McpSyncHistory } from "./McpSyncHistory";
 import { useState } from "react";
 import { connectionRequest } from "../../api/connections";
@@ -48,6 +49,7 @@ export function McpChangeReview({ profileId, connectionId }: { profileId: string
       <button type="button" disabled={busy} onClick={() => { setBusy(true); setError(""); setUpdateToken(null); void Promise.resolve().then(() => connectionRequest(profileId, path + "/mcp-update-workflow", "PUT", JSON.parse(config))).then(() => connectionRequest<{ updateToken: string | null }>(profileId, path + "/mcp-update-workflow")).then((result) => setUpdateToken(result.updateToken)).catch(() => setError("Invalid update configuration.")).finally(() => setBusy(false)); }}>Save update configuration</button>
     </details>
     {notice && <p role="status">{notice}</p>}
+    <McpSchedule profileId={profileId} connectionId={connectionId} updateToken={updateToken} />
     <McpSyncHistory profileId={profileId} connectionId={connectionId} />
     {report && <>
       <p>{report.changes.length} linked records checked · {new Date(report.checkedAt).toLocaleString()}</p>

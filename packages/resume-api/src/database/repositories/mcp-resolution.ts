@@ -170,5 +170,5 @@ export function createMcpResolution(
       throw error;
     } finally { activeSync.delete(id); running.delete(id); }
   }
-  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange, syncMcpApplications, listMcpSyncHistory };
+  return { getMcpUpdateConfig, saveMcpUpdateWorkflow, resolveMcpChange, syncMcpApplications, listMcpSyncHistory, isMcpBusy: (id: string) => running.has(id) };
 }
