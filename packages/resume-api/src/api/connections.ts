@@ -29,6 +29,9 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const mcpSchedule = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-schedule$/i);
+  if (mcpSchedule && req.method === "GET") return reply(200, store.getMcpSchedule(profileId, mcpSchedule[1]));
+  if (mcpSchedule && req.method === "PUT") return reply(200, store.saveMcpSchedule(profileId, mcpSchedule[1], await req.readJson()));
   const mcpHistory = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-sync-history$/i);
   if (mcpHistory && req.method === "GET") return reply(200, store.listMcpSyncHistory(profileId, mcpHistory[1]));
   const mcpSync = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-sync$/i);

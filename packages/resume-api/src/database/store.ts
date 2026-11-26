@@ -1,3 +1,4 @@
+import { createMcpSchedules } from "./repositories/mcp-schedules.ts";
 import { createMcpResolution } from "./repositories/mcp-resolution.ts";
 import { createMcpChangeReview } from "./repositories/mcp-change-review.ts";
 import { createMcpLinks } from "./repositories/mcp-links.ts";
@@ -1188,6 +1189,9 @@ export function openStore(
   const links = createMcpLinks(db, connections);
   const imports = createMcpImports(db, connections, getJobList, updateJobRecord, links);
   const review = createMcpChangeReview(connections, imports, links, getJobList);
+  const resolution = createMcpResolution(db, connections, imports, links, review, getJobList);
+  const schedules = createMcpSchedules(db, connections, imports, links, resolution);
+  const airtable = createApplicationSync(db, connections, getJobList, updateJobRecord);
   return {
     ...connections,
     listMcpLinks: links.listMcpLinks,
@@ -1195,8 +1199,12 @@ export function openStore(
     ...createMcpWorkflows(db, connections, getJobList, links),
     ...imports,
     ...review,
-    ...createMcpResolution(db, connections, imports, links, review, getJobList),
-    ...createApplicationSync(db, connections, getJobList, updateJobRecord),
+    ...resolution,
+    ...schedules,
+    ...airtable,
+    async runDueConnectionSchedules() {
+      await Promise.all([airtable.runDueConnectionSchedules(), schedules.runDueMcpSchedules()]);
+    },
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
     createProfile,
