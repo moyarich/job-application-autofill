@@ -52,3 +52,7 @@ Configure an approved read tool and fixed JSON arguments, a JSON Pointer to the 
 ### MCP record associations
 
 Set optional remote record ID pointers relative to each imported record or the export result's structuredContent. IDs must be stable and unique within the connection (one remote dataset per connection). Linked imports are created atomically with their association. Linked exports reserve an attempt before calling the remote tool and clear it only after a successful association; uncertain outcomes remain blocked. Existing mapping changes are blocked once links or uncertain attempts exist; configure a separate connection for a different dataset. The dashboard exposes links and uncertain attempts. Baseline hashes represent imported application data or outgoing export arguments, not a verified common remote/local baseline. No automatic reconciliation, backfill, unlink operation or synchronization is provided. Untracked workflows remain available when no ID pointer is configured.
+
+### MCP change review
+
+Use an import workflow with a stable ID pointer to compare linked applications against a single structured read-tool response. Review is read-only and compares only mapped fields. Imported associations use their original import snapshot; exported associations are marked baseline unverified because outgoing arguments do not prove remote values. Missing IDs are reported as not returned, never deleted. Invalid or duplicate remote IDs require review. No baselines are modified, and no automatic conflict resolution is performed.

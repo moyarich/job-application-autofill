@@ -1,3 +1,4 @@
+import { McpChangeReview } from "./McpChangeReview";
 import { useState } from "react";
 import { connectionRequest } from "../../api/connections";
 type Report = { links: { applicationId: string; remoteId: string; direction: string; linkedAt: string }[]; uncertainExports: { applicationId: string; attemptedAt: string }[] };
@@ -15,6 +16,7 @@ export function McpRecordLinks({ profileId, connectionId }: { profileId: string;
     <h3>Record associations</h3>
     <button type="button" disabled={busy} onClick={() => void refresh()}>{report ? "Refresh associations" : "View associations"}</button>
     {error && <p role="alert">{error}</p>}
+    <McpChangeReview profileId={profileId} connectionId={connectionId} />
     {report && <>
       <p>{report.links.length} linked applications</p>
       <ul>{report.links.map((link) => <li key={link.applicationId}>{link.applicationId} — {link.remoteId} ({link.direction})</li>)}</ul>

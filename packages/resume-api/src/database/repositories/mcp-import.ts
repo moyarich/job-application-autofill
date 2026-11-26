@@ -9,7 +9,7 @@ const required = ["company", "role", "url"] as const;
 const optional = ["notes", "status"] as const;
 type Field = (typeof required)[number] | (typeof optional)[number];
 type Mapping = Record<(typeof required)[number], string> & Partial<Record<(typeof optional)[number], string>>;
-type Workflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Mapping; remoteIdPath?: string };
+export type ImportWorkflow = { tool: string; args: Record<string, unknown>; recordsPath: string; fields: Mapping; remoteIdPath?: string };
 type Candidate = { index: number; remoteId?: string; company: string; role: string; url: string; notes: string; status: string };
 type Preview = { owner: string; connectionId: string; config: string; expires: number; records: Candidate[] };
 function object(value: unknown): value is Record<string, unknown> {
@@ -30,7 +30,7 @@ export function pointer(value: unknown, path: string): unknown {
   }
   return value;
 }
-export function parseImportWorkflow(raw: unknown): Workflow {
+export function parseImportWorkflow(raw: unknown): ImportWorkflow {
   if (!object(raw) || Object.keys(raw).some((key) => !["tool", "args", "recordsPath", "fields", "remoteIdPath"].includes(key)) ||
     typeof raw.tool !== "string" || !/^[A-Za-z0-9_.-]{1,128}$/.test(raw.tool) ||
     !object(raw.args) || JSON.stringify(raw.args).length > 16000 ||
@@ -50,10 +50,14 @@ export function normalizeImportUrl(value: unknown): string | undefined {
     return url.href.length <= 4000 ? url.href : undefined;
   } catch { return; }
 }
-export function mapImportRecords(workflow: Workflow, result: unknown, existing: Iterable<string>, linkedIds: Iterable<string> = []) {
+export function readImportRows(workflow: ImportWorkflow, result: unknown): unknown[] {
   if (!object(result) || result.isError === true) throw new Error("Remote tool reported failure.");
   const source = pointer(result.structuredContent, workflow.recordsPath);
   if (!Array.isArray(source) || source.length > 500) throw new Error("Expected a structured record array of at most 500 entries.");
+  return source;
+}
+export function mapImportRecords(workflow: ImportWorkflow, result: unknown, existing: Iterable<string>, linkedIds: Iterable<string> = []) {
+  const source = readImportRows(workflow, result);
   const urls = new Set(existing);
   const remoteIds = new Set(linkedIds);
   const records: Candidate[] = [];
@@ -99,7 +103,7 @@ export function createMcpImports(
     const row = db.prepare("SELECT config_json FROM connection_import_workflows WHERE connection_id=?").get(id) as { config_json: string } | undefined;
     return row ? parseImportWorkflow(JSON.parse(row.config_json)) : null;
   }
-  async function validateTool(profileId: string, id: string, workflow: Workflow) {
+  async function validateTool(profileId: string, id: string, workflow: ImportWorkflow) {
     const tool = (await connections.listConnectionTools(profileId, id)).find((item) => item.name === workflow.tool && item.access === "read");
     if (!tool || !ajv.compile(tool.inputSchema as AnySchema)(workflow.args)) throw new Error("Approved read tool or valid arguments required.");
   }
