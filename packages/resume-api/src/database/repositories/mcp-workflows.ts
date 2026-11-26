@@ -2,26 +2,28 @@ import { createHash, randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { createConnections } from "./connections.ts";
 import Ajv, { type AnySchema } from "ajv";
+import { remoteIdentifier, validRemotePointer, type createMcpLinks } from "./mcp-links.ts";
+import { pointer } from "./mcp-import.ts";
 
 export const applicationFields = ["id", "company", "role", "url", "status", "createdAt", "notes"] as const;
 type Field = (typeof applicationFields)[number];
 type Job = Record<Field, string>;
-type Workflow = { tool: string; fields: Record<string, Field>; constants: Record<string, unknown> };
+type Workflow = { tool: string; fields: Record<string, Field>; constants: Record<string, unknown>; remoteIdPath?: string };
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 export function parseWorkflow(raw: unknown): Workflow {
-  if (!object(raw) || Object.keys(raw).some((key) => !["tool", "fields", "constants"].includes(key)) ||
+  if (!object(raw) || Object.keys(raw).some((key) => !["tool", "fields", "constants", "remoteIdPath"].includes(key)) ||
     typeof raw.tool !== "string" || !/^[A-Za-z0-9_.-]{1,128}$/.test(raw.tool) ||
-    !object(raw.fields) || !object(raw.constants)) throw new Error("Invalid workflow.");
+    !object(raw.fields) || !object(raw.constants) || (raw.remoteIdPath !== undefined && !validRemotePointer(raw.remoteIdPath))) throw new Error("Invalid workflow.");
   const fields = Object.entries(raw.fields);
   const constants = Object.entries(raw.constants);
   if (!fields.length || fields.length + constants.length > 50 ||
     fields.some(([key, field]) => !key || key.length > 128 || !applicationFields.includes(field as Field)) ||
     constants.some(([key]) => !key || key.length > 128 || Object.hasOwn(raw.fields as object, key)) ||
     JSON.stringify(raw.constants).length > 16000) throw new Error("Invalid workflow arguments.");
-  return { tool: raw.tool, fields: Object.fromEntries(fields) as Workflow["fields"], constants: Object.fromEntries(constants) };
+  return { tool: raw.tool, fields: Object.fromEntries(fields) as Workflow["fields"], constants: Object.fromEntries(constants), ...(typeof raw.remoteIdPath === "string" ? { remoteIdPath: raw.remoteIdPath } : {}) };
 }
 export function buildWorkflowArguments(workflow: Workflow, job: Job) {
   return Object.fromEntries([
@@ -33,6 +35,7 @@ export function createMcpWorkflows(
   db: DatabaseSync,
   connections: ReturnType<typeof createConnections>,
   getJobs: (profileId: string) => { jobs: Job[] },
+  links: ReturnType<typeof createMcpLinks>,
 ) {
   const running = new Set<string>();
   const ajv = new Ajv();
@@ -62,6 +65,7 @@ export function createMcpWorkflows(
     await toolFor(profileId, id, workflow);
     requireConnection(profileId, id);
     if (running.has(id)) throw new Error("Workflow running.");
+    links.assertMappingMutable(profileId, id, getMcpWorkflow(profileId, id), workflow);
     db.prepare("INSERT INTO connection_workflows VALUES(?,?) ON CONFLICT(connection_id) DO UPDATE SET config_json=excluded.config_json")
       .run(id, JSON.stringify(workflow));
     return workflow;
@@ -72,10 +76,11 @@ export function createMcpWorkflows(
     const tool = await toolFor(profileId, id, workflow);
     const job = getJobs(profileId).jobs.find((item) => item.id === jobId);
     if (!job) throw new Error("Application not found.");
+    links.assertUnlinked(profileId, id, job.id);
     const args = buildWorkflowArguments(workflow, job);
     if (!ajv.compile(tool.inputSchema as AnySchema)(args)) throw new Error("Mapped arguments do not satisfy the tool schema.");
     const reviewToken = createHash("sha256").update(JSON.stringify([id, job.id, workflow, tool.inputSchema, args])).digest("hex");
-    return { tool: workflow.tool, args, reviewToken };
+    return { tool: workflow.tool, args, reviewToken, remoteIdPath: workflow.remoteIdPath };
   }
   async function executeMcpWorkflow(profileId: string, id: string, raw: unknown) {
     requireConnection(profileId, id);
@@ -89,8 +94,14 @@ export function createMcpWorkflows(
       db.prepare("INSERT INTO connection_transfer_runs(id,connection_id,direction,status,started_at) VALUES(?,?,'export','running',?)")
         .run(runId, id, new Date().toISOString());
       try {
+        if (preview.remoteIdPath) links.reserveExport(profileId, id, raw.jobId);
         const result = await connections.callConnectionTool(profileId, id, preview.tool, preview.args);
         if (object(result) && result.isError === true) throw new Error("Remote tool reported failure.");
+        if (preview.remoteIdPath) {
+          const remoteId = remoteIdentifier(pointer(object(result) ? result.structuredContent : undefined, preview.remoteIdPath));
+          if (!remoteId) throw new Error("Export outcome requires reconciliation: missing remote identifier.");
+          links.completeExport(profileId, id, raw.jobId, remoteId, preview.args);
+        }
         db.prepare("UPDATE connection_transfer_runs SET status='completed',finished_at=?,result_json=? WHERE id=?")
           .run(new Date().toISOString(), JSON.stringify({ executed: true }), runId);
         return result;

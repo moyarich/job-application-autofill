@@ -29,6 +29,8 @@ export const handleConnections: RouteHandler = async ({
       return reply(201, store.addConnection(profileId, await req.readJson()));
     }
   }
+  const mcpLinks = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/mcp-links$/i);
+  if (mcpLinks && req.method === "GET") return reply(200, { links: store.listMcpLinks(profileId, mcpLinks[1]), uncertainExports: store.listMcpUncertainExports(profileId, mcpLinks[1]) });
   const importWorkflow = url.pathname.match(/^\/api\/connections\/([0-9a-f-]{36})\/import-workflow(?:\/(preview|execute))?$/i);
   if (importWorkflow) {
     const [, id, action] = importWorkflow;

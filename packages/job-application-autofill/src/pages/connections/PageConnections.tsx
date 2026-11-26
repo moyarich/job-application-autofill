@@ -1,3 +1,4 @@
+import { McpRecordLinks } from "./McpRecordLinks";
 import { McpApplicationImport } from "./McpApplicationImport";
 import { McpApplicationWorkflow } from "./McpApplicationWorkflow";
 import { McpToolRunner } from "./McpToolRunner";
@@ -401,6 +402,7 @@ function Connections({ profileId }: { profileId: string }) {
                 </button>
               </div>
             </div>
+            {connection.connectorId === "mcp" && <McpRecordLinks profileId={profileId} connectionId={connection.id} />}
             {connection.connectorId === "mcp" && <McpApplicationImport profileId={profileId} connectionId={connection.id} />}
             {connection.connectorId === "mcp" && connection.allowWrites && <McpApplicationWorkflow profileId={profileId} connectionId={connection.id} />}
             {connection.connectorId === "airtable" && (
