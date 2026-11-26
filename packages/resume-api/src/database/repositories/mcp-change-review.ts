@@ -2,11 +2,11 @@ import { baselineHash, remoteIdentifier, type createMcpLinks } from "./mcp-links
 import { mapImportRecords, normalizeImportUrl, pointer, readImportRows, type ImportWorkflow, type createMcpImports } from "./mcp-import.ts";
 import type { createConnections } from "./connections.ts";
 
-type Job = { id: string; company: string; role: string; url: string; notes: string; status: string; createdAt: string };
-type Values = { company: string; role: string; url: string; notes?: string; status?: string };
+export type ReviewJob = { id: string; company: string; role: string; url: string; notes: string; status: string; createdAt: string };
+export type Values = { company: string; role: string; url: string; notes?: string; status?: string };
 export type McpChangeState = "unchanged" | "local_changed" | "remote_changed" | "conflict" | "converged" | "baseline_unverified" | "not_returned" | "invalid_remote";
 
-export function mappedValues(workflow: ImportWorkflow, job: Pick<Job, "company" | "role" | "url" | "notes" | "status">): Values {
+export function mappedValues(workflow: ImportWorkflow, job: Pick<ReviewJob, "company" | "role" | "url" | "notes" | "status">): Values {
   return {
     company: job.company.trim(), role: job.role.trim(), url: normalizeImportUrl(job.url) ?? job.url,
     ...(workflow.fields.notes ? { notes: job.notes } : {}),
@@ -17,7 +17,7 @@ export function mappedValues(workflow: ImportWorkflow, job: Pick<Job, "company" 
 /** Import baselines include immutable local identity and creation time.
  * Reconstruct the imported shape, excluding unmapped fields from comparison.
  */
-export function classifyImported(workflow: ImportWorkflow, job: Job, remote: Values, baseline: string): McpChangeState {
+export function classifyImported(workflow: ImportWorkflow, job: ReviewJob, remote: Values, baseline: string): McpChangeState {
   const local = mappedValues(workflow, job);
   const originalShape = (values: Values) => ({
     id: job.id, company: values.company, role: values.role, url: values.url,
@@ -32,11 +32,20 @@ export function classifyImported(workflow: ImportWorkflow, job: Job, remote: Val
   return "conflict";
 }
 
+export function classifyVerified(local: Values, remote: Values, localBaseline: string, remoteBaseline: string): McpChangeState {
+  const l = baselineHash(local), r = baselineHash(remote);
+  if (l === localBaseline && r === remoteBaseline) return "unchanged";
+  if (l === r) return "converged";
+  if (l === localBaseline) return "remote_changed";
+  if (r === remoteBaseline) return "local_changed";
+  return "conflict";
+}
+
 export function createMcpChangeReview(
   connections: ReturnType<typeof createConnections>,
   imports: ReturnType<typeof createMcpImports>,
   links: ReturnType<typeof createMcpLinks>,
-  getJobs: (profileId: string) => { jobs: Job[] },
+  getJobs: (profileId: string) => { jobs: ReviewJob[]; revisions: Record<string, number> },
 ) {
   const running = new Set<string>();
   async function reviewMcpChanges(profileId: string, id: string) {
@@ -58,7 +67,8 @@ export function createMcpChangeReview(
         if (byId.has(remoteId)) ambiguous.add(remoteId);
         else byId.set(remoteId, row);
       }
-      const jobs = new Map(getJobs(profileId).jobs.map((job) => [job.id, job]));
+      const snapshot = getJobs(profileId);
+      const jobs = new Map(snapshot.jobs.map((job) => [job.id, job]));
       const changes = links.reviewLinks(profileId, id).flatMap((link) => {
         const job = jobs.get(link.applicationId);
         if (!job) return [];
@@ -73,10 +83,11 @@ export function createMcpChangeReview(
           if (!mapped.records.length) state = "invalid_remote";
           else {
             remote = mappedValues(workflow, mapped.records[0]);
-            state = link.direction === "import" ? classifyImported(workflow, job, remote, link.baselineHash) : "baseline_unverified";
+            state = link.localHash && link.remoteHash ? classifyVerified(local, remote, link.localHash, link.remoteHash) : link.direction === "import" ? classifyImported(workflow, job, remote, link.baselineHash) : "baseline_unverified";
           }
         }
-        return [{ applicationId: link.applicationId, remoteId: link.remoteId, state, local, remote }];
+        const reviewToken = baselineHash([profileId, id, workflow, link, snapshot.revisions[job.id], local, remote]);
+        return [{ applicationId: link.applicationId, remoteId: link.remoteId, state, local, remote, reviewToken, revision: snapshot.revisions[job.id] }];
       });
       return { checkedAt: new Date().toISOString(), changes };
     } finally { running.delete(id); }

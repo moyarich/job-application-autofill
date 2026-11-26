@@ -1,3 +1,4 @@
+import { createMcpResolution } from "./repositories/mcp-resolution.ts";
 import { createMcpChangeReview } from "./repositories/mcp-change-review.ts";
 import { createMcpLinks } from "./repositories/mcp-links.ts";
 import { createMcpImports } from "./repositories/mcp-import.ts";
@@ -1186,13 +1187,15 @@ export function openStore(
   const connections = createConnections(db, requireProfile);
   const links = createMcpLinks(db, connections);
   const imports = createMcpImports(db, connections, getJobList, updateJobRecord, links);
+  const review = createMcpChangeReview(connections, imports, links, getJobList);
   return {
     ...connections,
     listMcpLinks: links.listMcpLinks,
     listMcpUncertainExports: links.listMcpUncertainExports,
     ...createMcpWorkflows(db, connections, getJobList, links),
     ...imports,
-    ...createMcpChangeReview(connections, imports, links, getJobList),
+    ...review,
+    ...createMcpResolution(db, connections, imports, links, review, getJobList),
     ...createApplicationSync(db, connections, getJobList, updateJobRecord),
     ...createApplicationPreferences(db, requireProfile),
     listProfiles,
