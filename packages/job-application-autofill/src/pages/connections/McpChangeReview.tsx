@@ -16,6 +16,8 @@ export function McpChangeReview({ profileId, connectionId }: { profileId: string
   const [updateToken, setUpdateToken] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{ item: Change; choice: string } | null>(null);
   const [notice, setNotice] = useState("");
+  const [confirmSync, setConfirmSync] = useState(false);
+  const [pushChanges, setPushChanges] = useState(false);
   const path = "connections/" + encodeURIComponent(connectionId);
   const [showUnchanged, setShowUnchanged] = useState(false);
   async function review() {
@@ -29,6 +31,14 @@ export function McpChangeReview({ profileId, connectionId }: { profileId: string
     <h4>Review record changes</h4>
     <p>Comparison is read-only until you confirm a resolution. Records absent from this response may be on another page or excluded by a filter.</p>
     <button type="button" disabled={busy} onClick={() => void review()}>{busy ? "Checking…" : "Check for changes"}</button>
+    <button type="button" disabled={busy} onClick={() => { setConfirmSync(true); setPushChanges(false); setConfirmation(null); }}>Sync now</button>
+    {confirmSync && <div className="connections-confirm">
+      <p>Apply up to 20 safe changes with verified baselines. Conflicts and unverified records are skipped. No records are created or deleted.</p>
+      <label className="connections-checkbox"><input type="checkbox" checked={pushChanges} disabled={busy || !updateToken} onChange={(event) => setPushChanges(event.target.checked)} /> Also update remote records using the loaded update workflow</label>
+      {!updateToken && <p>Load or save an update workflow to enable remote writes.</p>}
+      <button type="button" disabled={busy} onClick={() => { setConfirmSync(false); setBusy(true); setReport(null); setError(""); setNotice(""); void connectionRequest<{ checked: number; unchanged: number; applied: number; deferred: number; failed: number; stopped: boolean }>(profileId, path + "/mcp-sync", "POST", { confirm: true, updateToken: pushChanges ? updateToken : null }).then((result) => setNotice("Checked " + result.checked + "; unchanged " + result.unchanged + "; applied " + result.applied + "; deferred " + result.deferred + "; failed " + result.failed + (result.stopped ? ". Stopped: review again before retrying." : "."))).catch(() => setError("Synchronization failed. Check changes before retrying.")).finally(() => setBusy(false)); }}>Confirm synchronization</button>
+      <button type="button" disabled={busy} onClick={() => setConfirmSync(false)}>Cancel</button>
+    </div>}
     {error && <p role="alert">{error}</p>}
     <details><summary>Configure approved remote update tool</summary>
       <p>Map the remote ID argument and every reviewed field to declared tool arguments. Use only an update-existing-record tool, not a create tool.</p>
